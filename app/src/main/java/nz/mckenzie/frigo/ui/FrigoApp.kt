@@ -46,7 +46,12 @@ fun FrigoApp(container: AppContainer) {
             CircularProgressIndicator()
         }
 
-        is Gate.SignedOut -> LoginScreen(container.repository, state.message)
+        is Gate.SignedOut -> LoginScreen(
+            repository = container.repository,
+            notice = state.message,
+            initialAddress = state.address,
+            initialUsername = state.username,
+        )
 
         is Gate.SignedIn -> MainScaffold(container, state)
     }

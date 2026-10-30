@@ -2,6 +2,41 @@
 
 Why the app is built the way it is. Things that were tried, rejected, or measured.
 
+## Sign-in is a JSON body and a cookie, which is what 0.18 wants
+
+Frigate 0.18 takes the sign-in as JSON:
+
+```
+POST /api/login
+{"user": "...", "password": "..."}
+```
+
+It answers with an empty body and the session as a JWT in a `Set-Cookie` header.
+There is no `/api/refresh` endpoint; the token lasts a day, and `/api/auth`
+lengthens it when a request arrives inside the last half hour.
+
+Rejected: a form post with `username` and `password`, which is what the app did
+first. Frigate validates the body against a model, so a form posted to 0.18 comes
+back as `422 Unprocessable Entity` with no hint about which field was wrong. That
+is the error that showed up on a real server and could not show up against the
+mock, because the mock had been written to match the client.
+
+The JWT is read out of the cookie rather than from a field in the body, and its
+name is left to the server, since `auth.cookie_name` is configurable. Any cookie
+value shaped like a JWT (three parts, dots between) is taken.
+
+That token then goes in an `Authorization: Bearer` header on every request.
+Frigate's own nginx forwards that header to its auth subrequest, so the bearer
+token works for the API, the stills and the MJPEG stream alike, without the app
+holding a cookie jar.
+
+## The stream takes `height`, not `h`
+
+Frigate 0.18 names the query parameter `height` on both `/{camera}/latest.jpg`
+and `/{camera}`. The app used `h`, which FastAPI ignores, so the server quietly
+served 360 pixels at 3 frames a second whatever the menu said. Found by reading
+the query models rather than by noticing the picture looked soft.
+
 ## Live view is MJPEG, not WebRTC as the default
 
 Frigate's own docs make the argument: MSE is their default because it runs over

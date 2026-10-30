@@ -3,13 +3,6 @@ package nz.mckenzie.frigo.data
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** The pair Frigate hands back from /api/login and /api/refresh. */
-@Serializable
-data class Tokens(
-    @SerialName("access_token") val accessToken: String,
-    @SerialName("refresh_token") val refreshToken: String,
-)
-
 /**
  * Only the pieces of /api/config this app reads. Everything else in the file is
  * ignored, so a Frigate release that adds config keys does not break parsing.

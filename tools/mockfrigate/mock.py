@@ -5,13 +5,18 @@ Serves the handful of endpoints the app calls, so the app can be exercised
 without pointing it at a real Frigate. The MJPEG stream cycles three frames, so
 there is something moving to look at.
 
-Sign in with any username and password when using this: it says yes to `test`
-and `test`, and no to everything else, which is enough to try the error path too.
+The sign-in here behaves like Frigate 0.18: a JSON body of `user` and
+`password`, and a JWT in a cookie header. Anything else gets a 422, which is
+exactly what a client with the wrong request shape should get.
+
+Sign in as `test` with the password `test`. Any other password is refused, on
+purpose, so the error message can be tried too.
 
     python tools/mockfrigate/mock.py
 
 Then point the app at:
-    http://10.0.2.2:8099      from an emulator on this machine
+
+    http://10.0.2.2:8099       from an emulator on this machine
     http://<this machine>:8099 from a phone on the same network
 """
 import json
@@ -33,7 +38,11 @@ CAMERAS = {
     "offline_cam": {"enabled": False},
 }
 
-TOKENS = {"access_token": "access-token", "refresh_token": "refresh-token"}
+# Shaped like a real JWT: three dot-separated parts. Restart with MOCK_TOKEN=...
+# to make the running app's saved token stop working, which is how the session
+# expiry path gets tested.
+TOKEN = os.environ.get("MOCK_TOKEN", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwicm9sZSI6ImFkbWluIn0.c2lnbmF0dXJl")
+COOKIE_NAME = "frigate_token"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -43,11 +52,13 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     # --- plumbing ---------------------------------------------------------
-    def send_json(self, payload, status=200):
+    def send_json(self, payload, status=200, headers=None):
         body = json.dumps(payload).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        for key, value in (headers or {}).items():
+            self.send_header(key, value)
         self.end_headers()
         self.wfile.write(body)
 
@@ -58,8 +69,19 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def bearer(self):
+        header = self.headers.get("Authorization", "")
+        return header[len("Bearer "):] if header.startswith("Bearer ") else None
+
+    def cookie_token(self):
+        for part in (self.headers.get("Cookie") or "").split(";"):
+            name, _, value = part.strip().partition("=")
+            if name == COOKIE_NAME:
+                return value
+        return None
+
     def authorised(self):
-        return self.headers.get("Authorization") == "Bearer " + TOKENS["access_token"]
+        return TOKEN in (self.bearer(), self.cookie_token())
 
     # --- endpoints --------------------------------------------------------
     def do_POST(self):
@@ -68,13 +90,19 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
 
         if path == "/api/login":
-            form = dict(pair.split("=", 1) for pair in body.decode().split("&") if "=" in pair)
-            if form.get("username") == "test" and form.get("password") == "test":
-                return self.send_json(TOKENS)
-            return self.send_json({"message": "Invalid credentials"}, status=401)
-
-        if path == "/api/refresh":
-            return self.send_json(TOKENS)
+            try:
+                payload = json.loads(body.decode() or "{}")
+            except ValueError:
+                payload = None
+            if not isinstance(payload, dict) or "user" not in payload or "password" not in payload:
+                return self.send_json(missing_fields(payload), status=422)
+            if payload["user"] == "test" and payload["password"] == "test":
+                return self.send_json(
+                    {},
+                    status=200,
+                    headers={"Set-Cookie": f"{COOKIE_NAME}={TOKEN}; Path=/; HttpOnly; Max-Age=86400"},
+                )
+            return self.send_json({"message": "Login failed"}, status=401)
 
         return self.send_json({"message": "not found"}, status=404)
 
@@ -82,15 +110,24 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
 
         if path == "/api/auth":
+            # 202, not 200, and no body. Frigate refreshes the cookie here.
             if not self.authorised():
-                return self.send_json({"message": "unauthorized"}, status=401)
-            return self.send_json({"username": "test", "role": "admin"})
+                return self.send_json({"message": "Authentication failed"}, status=401)
+            self.send_response(202)
+            self.send_header("remote-user", "test")
+            self.send_header("remote-role", "admin")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
 
         if not self.authorised():
             return self.send_json({"message": "unauthorized"}, status=401)
 
         if path == "/api/config":
             return self.send_json({"cameras": CAMERAS})
+
+        if path == "/api/profile":
+            return self.send_json({"username": "test", "role": "admin", "allowed_cameras": list(CAMERAS)})
 
         if path == "/api/events":
             now = time.time()
@@ -102,7 +139,6 @@ class Handler(BaseHTTPRequestHandler):
                     "sub_label": None,
                     "start_time": now - 300 * i,
                     "end_time": now - 290 * i,
-                    "top_score": 0.87,
                     "has_clip": True,
                     "has_snapshot": True,
                     "zones": ["North_driveway"],
@@ -146,6 +182,22 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             # The player closed the stream, which is what leaving the screen does.
             return
+
+
+def missing_fields(payload):
+    """The same complaint FastAPI makes when a required body field is absent."""
+    detail = []
+    for field in ("user", "password"):
+        if not isinstance(payload, dict) or field not in payload:
+            detail.append(
+                {
+                    "type": "missing",
+                    "loc": ["body", field],
+                    "msg": "Field required",
+                    "input": payload,
+                }
+            )
+    return {"detail": detail} if detail else {"detail": [{"type": "invalid", "loc": ["body"], "msg": "Bad request body"}]}
 
 
 class QuietServer(ThreadingHTTPServer):

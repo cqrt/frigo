@@ -17,6 +17,17 @@ purpose, so the error message can be tried too.
 It serves five cameras, one of them disabled, three events, thumbnails, snapshots
 and an endless MJPEG stream that cycles three frames.
 
+Sign-in behaves like Frigate 0.18: a JSON body of `user` and `password`, and the
+session as a JWT in a `Set-Cookie` header. Send it a form body and it answers
+with the same 422 a real server gives, which is the point of the exercise.
+
+To watch the app notice an expired session, restart the server with a different
+token, then open the app:
+
+```
+MOCK_TOKEN=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0In0.b3RoZXI python tools/mockfrigate/mock.py
+```
+
 The app assumes HTTPS unless you type a scheme, so include `http://` when you
 point it at this.
 

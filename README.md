@@ -17,8 +17,11 @@ camera and tap an event for the full snapshot.
 
 You enter the same address you use in a browser, your username, and your
 password. If you reach Frigate through a reverse proxy, that is the proxy address,
-port included. The app keeps the sign-in on the phone and renews it quietly, so
-you only do this once.
+port included. The app keeps the sign-in on the phone.
+
+Frigate's session lasts a day, and it is lengthened every time you open the app.
+Leave it longer than that and you sign in again, with your address and username
+already filled in.
 
 ## How live view works
 

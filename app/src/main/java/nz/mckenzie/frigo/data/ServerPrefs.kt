@@ -11,10 +11,13 @@ import kotlinx.coroutines.flow.first
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "frigo")
 
 /**
- * Remembers which server you signed in to and keeps the token pair between
+ * Remembers which server you signed in to and keeps the session between
  * launches, so the app opens straight to your cameras.
  *
- * The tokens sit in DataStore, which lives in this app's private storage and is
+ * The address and username outlive the token. When Frigate expires the session
+ * you sign in again, and those two fields are already filled in.
+ *
+ * The token sits in DataStore, which lives in this app's private storage and is
  * not readable by other apps. Backup is off in the manifest for the same reason.
  */
 class ServerPrefs(private val context: Context) {
@@ -22,8 +25,7 @@ class ServerPrefs(private val context: Context) {
     data class Stored(
         val baseUrl: String,
         val username: String,
-        val accessToken: String?,
-        val refreshToken: String?,
+        val token: String?,
     )
 
     suspend fun read(): Stored? {
@@ -33,8 +35,7 @@ class ServerPrefs(private val context: Context) {
         return Stored(
             baseUrl = baseUrl,
             username = username,
-            accessToken = prefs[Keys.accessToken],
-            refreshToken = prefs[Keys.refreshToken],
+            token = prefs[Keys.token],
         )
     }
 
@@ -42,8 +43,7 @@ class ServerPrefs(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[Keys.baseUrl] = stored.baseUrl
             prefs[Keys.username] = stored.username
-            stored.accessToken?.let { prefs[Keys.accessToken] = it }
-            stored.refreshToken?.let { prefs[Keys.refreshToken] = it }
+            if (stored.token != null) prefs[Keys.token] = stored.token else prefs.remove(Keys.token)
         }
     }
 
@@ -54,7 +54,6 @@ class ServerPrefs(private val context: Context) {
     private object Keys {
         val baseUrl = stringPreferencesKey("base_url")
         val username = stringPreferencesKey("username")
-        val accessToken = stringPreferencesKey("access_token")
-        val refreshToken = stringPreferencesKey("refresh_token")
+        val token = stringPreferencesKey("token")
     }
 }

@@ -38,9 +38,11 @@ import nz.mckenzie.frigo.ui.friendlyMessage
 fun LoginScreen(
     repository: FrigoRepository,
     notice: String? = null,
+    initialAddress: String = "",
+    initialUsername: String = "",
 ) {
-    var address by rememberSaveable { mutableStateOf("") }
-    var username by rememberSaveable { mutableStateOf("") }
+    var address by rememberSaveable { mutableStateOf(initialAddress) }
+    var username by rememberSaveable { mutableStateOf(initialUsername) }
     var password by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember(notice) { mutableStateOf(notice) }
