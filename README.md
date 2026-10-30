@@ -56,6 +56,22 @@ variables:
 ./gradlew :app:assembleRelease
 ```
 
+## Releasing
+
+You cut a release on the GitHub website. Open Actions, pick Release, run the
+workflow, and type the version as `0.2.0`. It builds the signed APK, tags the
+commit, and puts the APK on the release page. Pushing a `v0.2.0` tag does the
+same thing if you'd rather do that from the command line.
+
+The version code comes from the version in the tag, so `0.2.1` becomes 201. A
+phone with 0.2.1 already installed will take 0.3.0 as an update without you
+uninstalling anything.
+
+The key that signs the APK lives in the repository's secrets, so no key material
+is ever committed. Backup: there's a copy of the key and its password at
+`~/.frigo/frigo-release.jks`, and the password in the gitignored
+`keystore.properties`. Lose that and no future build will install over this one.
+
 ## Where things live
 
 - `data/FrigateApi.kt` — the Frigate endpoints this app uses, written against OkHttp.

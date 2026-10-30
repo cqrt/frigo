@@ -56,3 +56,30 @@ machine has on `PATH` is newer than Gradle 8.13 supports.
 
 `nz.mckenzie.frigo`, matching the other Android project on this machine. The
 repository is `cqrt/frigo`.
+
+## Releases are built on GitHub, from a tag
+
+The phone has no Android SDK on it, and a release you can install has to be
+signed with the same key every time or Android refuses to update it. Both point
+the same way: the build belongs on a runner, and the key belongs in a secret.
+
+Rejected: building releases on this machine and uploading the APK by hand. It
+works, but the version code is then whatever was typed, and the release notes
+come from nowhere.
+
+The version code is derived from the version in the tag (`0.2.1` -> 201) rather
+than from the workflow's run number. Run numbers start at 1 and climb, so a
+runner number would sit below APKs already built locally, which Android treats
+as a downgrade.
+
+The signing key was generated on this machine and copied to the repository's
+secrets. `~/.frigo/frigo-release.jks` and the gitignored `keystore.properties`
+are the only copies outside GitHub. There is no second chance to sign an update
+with a lost key: an APK signed with a new key will not install over the old one.
+
+## CI builds both APKs
+
+`ci.yml` runs `assembleDebug assembleRelease` on every push and pull request. The
+release build is minified, so the shrinker rules are tested on a runner rather
+than on the phone.
+
