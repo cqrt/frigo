@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -35,14 +37,17 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.MjpegReader
+import nz.mckenzie.frigo.ui.components.StatusBarIcons
 import nz.mckenzie.frigo.ui.friendlyMessage
 import java.io.IOException
 
@@ -64,39 +69,49 @@ fun PlayerScreen(
     var height by rememberSaveable(cameraName) { mutableIntStateOf(720) }
     var rate by rememberSaveable(cameraName) { mutableIntStateOf(5) }
     var menuOpen by remember { mutableStateOf(false) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     LaunchedEffect(cameraName, height, rate) {
-        connecting = true
-        problem = null
-        while (currentCoroutineContext().isActive) {
-            try {
-                repository.openMjpeg(cameraName, height, rate).use { response ->
-                    val body = response.body ?: throw IOException("The server sent no stream")
-                    val reader = MjpegReader(body.byteStream())
-                    withContext(Dispatchers.IO) {
-                        while (isActive) {
-                            val bytes = reader.nextFrame() ?: break
-                            val bitmap = MjpegReader.decode(bytes) ?: continue
-                            withContext(Dispatchers.Main.immediate) {
-                                frame = bitmap.asImageBitmap()
-                                connecting = false
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            connecting = true
+            problem = null
+            while (isActive) {
+                try {
+                    repository.openMjpeg(cameraName, height, rate).use { response ->
+                        val body = response.body ?: throw IOException("The server sent no stream")
+                        val reader = MjpegReader(body.byteStream())
+                        withContext(Dispatchers.IO) {
+                            while (isActive) {
+                                val bytes = reader.nextFrame() ?: break
+                                val bitmap = MjpegReader.decode(bytes) ?: continue
+                                withContext(Dispatchers.Main.immediate) {
+                                    frame = bitmap.asImageBitmap()
+                                    connecting = false
                                 }
-
+                            }
                         }
                     }
+                    problem = "The stream stopped."
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Throwable) {
+                    problem = error.friendlyMessage()
                 }
-                problem = "The stream stopped."
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (error: Throwable) {
-                problem = error.friendlyMessage()
+                connecting = true
+                delay(2_000)
             }
-            connecting = true
-            delay(2_000)
         }
     }
 
-    Column(Modifier.fillMaxSize().background(Color.Black)) {
+    StatusBarIcons(darkIcons = false)
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+    ) {
         TopAppBar(
             title = { Text(title) },
             navigationIcon = {

@@ -101,6 +101,7 @@ dependencies {
     implementation(libs.compose.activity)
     implementation(libs.compose.navigation)
     implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.viewmodel.compose)
     debugImplementation(libs.compose.tooling)
 

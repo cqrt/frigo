@@ -88,21 +88,30 @@ private fun MainScaffold(container: AppContainer, server: Gate.SignedIn) {
         NavHost(
             navController = navController,
             startDestination = "cameras",
-            modifier = Modifier.padding(padding),
         ) {
             composable("cameras") {
-                CamerasScreen(container) { camera ->
+                CamerasScreen(
+                    container = container,
+                    modifier = Modifier.padding(padding),
+                ) { camera ->
                     navController.navigate("$PLAYER_PREFIX${camera.name}")
                 }
             }
             composable("events") {
-                EventsScreen(container)
+                EventsScreen(container, Modifier.padding(padding))
             }
             composable("settings") {
-                SettingsScreen(container.repository, server.baseUrl, server.username)
+                SettingsScreen(
+                    repository = container.repository,
+                    baseUrl = server.baseUrl,
+                    username = server.username,
+                    modifier = Modifier.padding(padding),
+                )
             }
             composable("$PLAYER_PREFIX{camera}") { entry ->
                 val camera = entry.arguments?.getString("camera") ?: return@composable
+                // The player draws its own background under the system bars, so
+                // it deliberately ignores the scaffold padding.
                 PlayerScreen(
                     repository = container.repository,
                     cameraName = camera,

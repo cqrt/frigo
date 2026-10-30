@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,14 +53,15 @@ import nz.mckenzie.frigo.ui.components.CachedImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EventsScreen(container: AppContainer) {
+fun EventsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val viewModel: EventsViewModel = viewModel(factory = EventsViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
     var opened by remember { mutableStateOf<FrigateEvent?>(null) }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Events") },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             actions = {
                 IconButton(onClick = viewModel::refresh) {
                     Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
@@ -227,10 +229,13 @@ private fun FrigateEvent.title(): String {
     return if (subLabel.isNullOrBlank()) base else "$base · $subLabel"
 }
 
-private fun relativeTime(millis: Long): String =
-    DateUtils.getRelativeTimeSpanString(
+private fun relativeTime(millis: Long): String {
+    val now = System.currentTimeMillis()
+    if (now - millis < 60_000) return "Just now"
+    return DateUtils.getRelativeTimeSpanString(
         millis,
-        System.currentTimeMillis(),
+        now,
         DateUtils.MINUTE_IN_MILLIS,
         DateUtils.FORMAT_ABBREV_RELATIVE,
     ).toString()
+}

@@ -17,6 +17,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -44,13 +47,19 @@ fun CameraStill(
     contentScale: ContentScale = ContentScale.Crop,
 ) {
     var frame by remember(camera) { mutableStateOf<ImageBitmap?>(null) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     LaunchedEffect(camera, height, intervalMillis) {
-        while (isActive) {
-            val bytes = repository.latestFrame(camera, height)
-            val decoded = bytes?.let { withContext(Dispatchers.Default) { it.toImageBitmapOrNull() } }
-            if (decoded != null) frame = decoded
-            delay(intervalMillis)
+        // Only while the screen is actually in front of you: these are network
+        // requests per second, and the app sitting in the background should not
+        // keep making them.
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (isActive) {
+                val bytes = repository.latestFrame(camera, height)
+                val decoded = bytes?.let { withContext(Dispatchers.Default) { it.toImageBitmapOrNull() } }
+                if (decoded != null) frame = decoded
+                delay(intervalMillis)
+            }
         }
     }
 

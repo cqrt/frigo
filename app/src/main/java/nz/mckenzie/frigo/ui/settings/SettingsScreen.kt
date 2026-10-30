@@ -13,9 +13,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.BuildConfig
@@ -27,11 +29,15 @@ fun SettingsScreen(
     repository: FrigoRepository,
     baseUrl: String,
     username: String,
+    modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
 
-    Column(Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text("Settings") })
+    Column(modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text("Settings") },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+        )
 
         Column(
             modifier = Modifier
