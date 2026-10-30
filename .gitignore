@@ -1,0 +1,18 @@
+# Built by Gradle
+.gradle/
+build/
+local.properties
+*.iml
+
+# Android Studio
+.idea/
+captures/
+
+# Signing material is never committed
+keystore.properties
+*.jks
+*.keystore
+
+# OS noise
+.DS_Store
+Thumbs.db

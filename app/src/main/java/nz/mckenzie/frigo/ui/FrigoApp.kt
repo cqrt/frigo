@@ -1,0 +1,124 @@
+package nz.mckenzie.frigo.ui
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavController
+import nz.mckenzie.frigo.data.AppContainer
+import nz.mckenzie.frigo.data.Gate
+import nz.mckenzie.frigo.data.prettyCameraName
+import nz.mckenzie.frigo.ui.cameras.CamerasScreen
+import nz.mckenzie.frigo.ui.cameras.PlayerScreen
+import nz.mckenzie.frigo.ui.events.EventsScreen
+import nz.mckenzie.frigo.ui.login.LoginScreen
+import nz.mckenzie.frigo.ui.settings.SettingsScreen
+
+@Composable
+fun FrigoApp(container: AppContainer) {
+    val gate by container.repository.gate.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) { container.repository.restore() }
+
+    when (val state = gate) {
+        Gate.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+
+        is Gate.SignedOut -> LoginScreen(container.repository, state.message)
+
+        is Gate.SignedIn -> MainScaffold(container, state)
+    }
+}
+
+private data class Tab(val route: String, val label: String, val icon: ImageVector)
+
+private val Tabs = listOf(
+    Tab("cameras", "Cameras", Icons.Filled.Home),
+    Tab("events", "Events", Icons.AutoMirrored.Filled.List),
+    Tab("settings", "Settings", Icons.Filled.Settings),
+)
+
+private const val PLAYER_PREFIX = "player/"
+
+@Composable
+private fun MainScaffold(container: AppContainer, server: Gate.SignedIn) {
+    val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
+    val watching = currentRoute?.startsWith(PLAYER_PREFIX) == true
+
+    Scaffold(
+        bottomBar = {
+            if (!watching) {
+                NavigationBar {
+                    Tabs.forEach { tab ->
+                        NavigationBarItem(
+                            selected = currentRoute == tab.route,
+                            onClick = { navController.switchTo(tab.route) },
+                            icon = { Icon(tab.icon, contentDescription = null) },
+                            label = { Text(tab.label) },
+                        )
+                    }
+                }
+            }
+        },
+    ) { padding ->
+        NavHost(
+            navController = navController,
+            startDestination = "cameras",
+            modifier = Modifier.padding(padding),
+        ) {
+            composable("cameras") {
+                CamerasScreen(container) { camera ->
+                    navController.navigate("$PLAYER_PREFIX${camera.name}")
+                }
+            }
+            composable("events") {
+                EventsScreen(container)
+            }
+            composable("settings") {
+                SettingsScreen(container.repository, server.baseUrl, server.username)
+            }
+            composable("$PLAYER_PREFIX{camera}") { entry ->
+                val camera = entry.arguments?.getString("camera") ?: return@composable
+                PlayerScreen(
+                    repository = container.repository,
+                    cameraName = camera,
+                    title = prettyCameraName(camera),
+                    onBack = { navController.popBackStack() },
+                )
+            }
+        }
+    }
+}
+
+/** Moves between tabs without stacking them up, keeping each tab's scroll. */
+private fun NavController.switchTo(route: String) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
