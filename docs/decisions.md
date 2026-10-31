@@ -35,9 +35,16 @@ holding a cookie jar.
 Frigate publishes every new event to a websocket at `/ws`, and its own web page
 listens there. The app does the same: one socket, opened with the bearer token,
 and each message is a JSON envelope of `topic` and `payload`. New events arrive on
-`frigate/events` with `type` of `new`, `update` or `end`, and only `new` sets the
-phone off, because `update` follows every time a detail changes and `end` is the
-object leaving.
+`events` with `type` of `new`, `update` or `end`, and only `new` sets the phone
+off, because `update` follows every time a detail changes and `end` is the object
+leaving.
+
+The topic name cost a bug. Frigate's MQTT topics carry a `frigate/` prefix, and
+the socket sends the bare name: `events`, `reviews`, `stats`. The app looked for
+`frigate/events`, and the mock sent that, so the mock agreed with the app and
+neither agreed with the server. Nothing arrived, ever. Both names are accepted
+now, and the mock sends what 0.18 sends. That is the second time a mock written
+from the client's assumption hid a real incompatibility, after the login body.
 
 Rejected: asking `/api/events` every few seconds. It would need the app awake to
 poll, it would use battery all night, and it would arrive up to a poll interval

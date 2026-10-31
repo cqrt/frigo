@@ -240,7 +240,9 @@ class Handler(BaseHTTPRequestHandler):
             "zones": ["driveway"],
         }
         message = {
-            "topic": "frigate/events",
+            # Frigate puts the topic out on the socket without the `frigate/`
+            # prefix its MQTT topics carry. Its own page listens for "events".
+            "topic": "events",
             "payload": json.dumps({"type": "new", "before": {}, "after": event}),
         }
         self.send_frame(json.dumps(message).encode())

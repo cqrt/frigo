@@ -189,11 +189,15 @@ class AlertService : Service() {
      * Frigate sends every message it publishes, each as `{"topic": ..., "payload":
      * ...}`. The ones that matter here are the new events, and only the ones you
      * ticked.
+     *
+     * The topic is `events`. Frigate's own page listens for that name, and the
+     * server strips the `frigate/` prefix its MQTT brokers use before it goes out
+     * on the socket. Some builds keep the prefix, so both names are taken.
      */
     private fun onMessage(text: String) {
         val root = runCatching { json.parseToJsonElement(text) as? JsonObject }.getOrNull() ?: return
         val topic = root.text("topic") ?: return
-        if (topic != "frigate/events") return
+        if (topic.removePrefix("frigate/") != "events") return
 
         // The payload is the event as a JSON string, but a plain object arrives
         // the same way in some builds.
