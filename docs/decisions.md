@@ -72,6 +72,27 @@ the player is a plain scrub bar rather than a frame-accurate timeline.
 
 Cost: Media3 takes the release APK from 1.6 MB to 2.4 MB.
 
+## Zoom scales the frame the phone already has
+
+The pinch is a scale and a translation on the picture, done by the GPU. The
+stream is untouched: it keeps sending the same frames at the size the menu asked
+for.
+
+Rejected: asking the server for a cropped region of the camera as you pinch. It
+would mean a request per gesture, the stream would restart at each one, and
+Frigate's MJPEG endpoint has no crop parameter anyway.
+
+The zoom belongs to the screen rather than to a frame. A new frame arrives every
+moment, so state held per frame would be thrown away once a second, and the view
+would jump back to the whole picture while you were still pinching.
+
+The picture can be dragged only until its edge meets the edge of the screen. Any
+further and you are looking at black, which looks like the app broke rather than
+like the edge of the camera.
+
+The cost is softness: these are 720p frames, so a 4x zoom is 180 pixels stretched
+across the screen. That is what the player's 1080p option is for.
+
 ## The stream takes `height`, not `h`
 
 Frigate 0.18 names the query parameter `height` on both `/{camera}/latest.jpg`

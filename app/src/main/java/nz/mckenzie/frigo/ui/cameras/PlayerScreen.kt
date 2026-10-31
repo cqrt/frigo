@@ -2,9 +2,12 @@ package nz.mckenzie.frigo.ui.cameras
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -25,6 +28,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,10 +36,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -54,6 +64,9 @@ import java.io.IOException
 /** The heights and rates offered in the player. Bigger means more data. */
 private val Heights = listOf(1080, 720, 480)
 private val Rates = listOf(15, 10, 5, 2)
+
+/** How far in a pinch can go. Past this the picture is just soft pixels. */
+private const val MaxZoom = 5f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -147,13 +160,8 @@ fun PlayerScreen(
         )
 
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            frame?.let {
-                Image(
-                    bitmap = it,
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize(),
-                )
+            frame?.let { bitmap ->
+                ZoomableStill(bitmap = bitmap, camera = cameraName)
             }
 
             if (connecting) {
@@ -190,4 +198,88 @@ fun PlayerScreen(
             }
         }
     }
+}
+
+/**
+ * The picture, with a pinch to zoom in, a drag to move around it, and a double
+ * tap to go back to the whole frame.
+ *
+ * A new frame arrives every moment, so the zoom belongs to the screen rather than
+ * to any one picture: the frames change underneath while the view stays where you
+ * put it.
+ */
+@Composable
+private fun ZoomableStill(
+    bitmap: ImageBitmap,
+    camera: String,
+    modifier: Modifier = Modifier,
+) {
+    var scale by remember(camera) { mutableFloatStateOf(1f) }
+    var offset by remember(camera) { mutableStateOf(Offset.Zero) }
+    var viewport by remember(camera) { mutableStateOf(IntSize.Zero) }
+    var fitted by remember(camera) { mutableStateOf(IntSize.Zero) }
+
+    // Zooming keeps the point between your fingers where it is, which is what
+    // makes a pinch feel like it is grabbing the picture.
+    fun zoomTo(next: Float, around: Offset, drag: Offset = Offset.Zero) {
+        val factor = next / scale
+        val centre = Offset(viewport.width / 2f, viewport.height / 2f)
+        val fromCentre = around - centre
+        val moved = fromCentre - (fromCentre - offset) * factor + drag
+        scale = next
+        offset = keepInside(moved, next, fitted, viewport)
+    }
+
+    Box(
+        modifier
+            .clipToBounds()
+            .onSizeChanged { viewport = it }
+            .pointerInput(camera) {
+                detectTapGestures(
+                    onDoubleTap = { point ->
+                        if (scale > 1f) {
+                            scale = 1f
+                            offset = Offset.Zero
+                        } else {
+                            zoomTo(2.5f, point)
+                        }
+                    },
+                )
+            }
+            .pointerInput(camera) {
+                detectTransformGestures { centroid, pan, zoom, _ ->
+                    val next = (scale * zoom).coerceIn(1f, MaxZoom)
+                    zoomTo(next, centroid, pan)
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            bitmap = bitmap,
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier
+                .aspectRatio(bitmap.width.toFloat() / bitmap.height)
+                .onSizeChanged { fitted = it }
+                .graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale,
+                    translationX = offset.x,
+                    translationY = offset.y,
+                ),
+        )
+    }
+}
+
+/**
+ * Stops the picture being dragged away from the screen: it can move until its
+ * edge meets the edge of the view, and no further.
+ */
+private fun keepInside(offset: Offset, scale: Float, fitted: IntSize, viewport: IntSize): Offset {
+    val roomX = ((fitted.width * scale - viewport.width) / 2f).coerceAtLeast(0f)
+    val roomY = ((fitted.height * scale - viewport.height) / 2f).coerceAtLeast(0f)
+    return Offset(
+        x = offset.x.coerceIn(-roomX, roomX),
+        y = offset.y.coerceIn(-roomY, roomY),
+    )
 }

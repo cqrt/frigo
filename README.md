@@ -6,7 +6,8 @@ already run, so there is nothing to install on the server side.
 ## What it does
 
 **Cameras.** A grid of your cameras, each tile updating about once a second. Tap
-one and it fills the screen with a live view.
+one and it fills the screen with a live view. Pinch to zoom in, drag to move
+around, and double tap to go back to the whole picture.
 
 **Events.** What Frigate has recorded, newest first, with thumbnails. Filter by
 camera and tap an event to watch it. An event with a play mark on its thumbnail
@@ -39,6 +40,9 @@ guarantee, and it needs no extra ports or router changes.
 The trade is bandwidth, since every frame is a whole picture. The player's menu
 sets the height and frame rate, and the label in the corner tells you which you
 are on.
+
+Zooming scales the picture the phone already has, so the stream keeps asking for
+the same frames. At 720p and 5x it is soft, which is why the menu offers 1080p.
 
 WebRTC through go2rtc is planned as an option for low latency. It needs port 8555
 forwarded to your Frigate machine, both TCP and UDP. Without that forward, WebRTC
