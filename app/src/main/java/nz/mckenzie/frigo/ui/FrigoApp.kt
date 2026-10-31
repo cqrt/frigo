@@ -4,10 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -74,8 +72,8 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 
 private val Tabs = listOf(
     Tab("cameras", "Cameras", Icons.Filled.Home),
-    Tab("reviews", "Reviews", Icons.Filled.Star),
-    Tab("explore", "Explore", Icons.AutoMirrored.Filled.List),
+    Tab("reviews", "Review", FrigoIcons.Reviews),
+    Tab("explore", "Explore", FrigoIcons.Search),
     Tab("settings", "Settings", Icons.Filled.Settings),
 )
 

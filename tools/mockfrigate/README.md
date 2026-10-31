@@ -44,6 +44,15 @@ MOCK_TOKEN=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0In0.b3RoZXI python tools/mockfri
 The app assumes HTTPS unless you type a scheme, so include `http://` when you
 point it at this.
 
+To see every request the app makes, which is how the refresh button was
+checked, start it loud:
+
+```
+MOCK_VERBOSE=1 python tools/mockfrigate/mock.py
+```
+
+Each line then carries the path, so you can count what a tap costs.
+
 ## The frames
 
 `frame0.jpg` to `frame2.jpg` are generated, not photographed. To make new ones on

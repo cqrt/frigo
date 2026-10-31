@@ -5,11 +5,13 @@ already run, so there is nothing to install on the server side.
 
 ## What it does
 
-**Cameras.** A grid of your cameras, each tile updating about once a second. Tap
-one and it fills the screen with a live view. Pinch to zoom in, drag to move
-around, and double tap to go back to the whole picture.
+**Cameras.** Your cameras, each picture updating about once a second. One button
+changes how they're laid out: two to a row, one to a line, or one picture filling
+the width with its name on it. Tap one and it fills the screen with a live view.
+Pinch to zoom in, drag to move around, and double tap to go back to the whole
+picture.
 
-**Reviews.** The moments Frigate thought were worth a look, newest first. Frigate
+**Review.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review
 rather than twenty events. Tap one to watch the clip of that time. Alerts and
 detections are separate halves of the list. Watch past halfway and the review

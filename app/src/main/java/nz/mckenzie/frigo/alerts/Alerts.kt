@@ -10,6 +10,7 @@ import androidx.core.app.NotificationManagerCompat
 import nz.mckenzie.frigo.MainActivity
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.FrigateEvent
+import nz.mckenzie.frigo.data.ServerPrefs
 import nz.mckenzie.frigo.data.prettyCameraName
 
 /**
@@ -32,8 +33,12 @@ object Alerts {
      * connection is doing. It sits in the shade the whole time the service runs,
      * so it is worth it saying something true about what is going on.
      */
-    fun watching(context: Context, state: WatchState, cameras: Int): NotificationCompat.Builder {
-        val text = state.text(cameras)
+    fun watching(
+        context: Context,
+        state: WatchState,
+        alerts: ServerPrefs.Alerts,
+    ): NotificationCompat.Builder {
+        val text = state.text(alerts)
         val open = PendingIntent.getActivity(
             context,
             0,
@@ -105,10 +110,20 @@ sealed interface WatchState {
     data class NotReaching(val detail: String) : WatchState
     data object SignedOut : WatchState
 
-    fun text(cameras: Int): String {
+    /**
+     * What the quiet notification says. It counts the cameras you ticked, and it
+     * says so when a list is empty, because that is the reason nothing buzzes.
+     */
+    fun text(alerts: ServerPrefs.Alerts): String {
         if (this is SignedOut) return "Your session has expired. Open Frigo and sign in again."
-        if (cameras == 0) return "No cameras ticked, so nothing will buzz. Tick some in Settings."
-        val watching = if (cameras == 1) "One camera" else "$cameras cameras"
+        if (alerts.cameras.isEmpty()) {
+            return "No cameras ticked, so nothing will buzz. Tick some in Settings."
+        }
+        if (alerts.labels.isEmpty()) {
+            return "No objects ticked, so nothing will buzz. Tick some in Settings."
+        }
+        val count = alerts.cameras.size
+        val watching = if (count == 1) "One camera" else "$count cameras"
         return when (this) {
             Connecting -> "$watching. Connecting to your server."
             Connected -> "$watching. New events arrive as they happen."

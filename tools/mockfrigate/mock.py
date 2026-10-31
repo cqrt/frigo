@@ -32,6 +32,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# Every request on the console, for when you want to see what the app asks for.
+VERBOSE = os.environ.get("MOCK_VERBOSE") == "1"
 FRAMES = [open(os.path.join(HERE, f"frame{i}.jpg"), "rb").read() for i in range(3)]
 # A test pattern, so a clip that plays is obviously playing.
 CLIP = open(os.path.join(HERE, "clip.mp4"), "rb").read()
@@ -80,7 +82,10 @@ class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     def log_message(self, *args):
-        pass
+        # Quiet by default: the app asks for a still a second per camera, and the
+        # console would be nothing else. Set MOCK_VERBOSE=1 to see every request.
+        if VERBOSE:
+            super().log_message(*args)
 
     # --- plumbing ---------------------------------------------------------
     def send_json(self, payload, status=200, headers=None):

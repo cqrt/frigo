@@ -70,9 +70,26 @@ class FrigoRepository(
     private val _alerts = MutableStateFlow(ServerPrefs.Alerts())
     val alerts: StateFlow<ServerPrefs.Alerts> = _alerts.asStateFlow()
 
+    /**
+     * Whether the alert choices have been read off the phone yet. The service
+     * starts by itself after a restart, before any screen has run, and it needs
+     * the saved choices rather than a blank slate.
+     */
+    @Volatile private var alertsLoaded = false
+
+    /**
+     * Reads what should set your phone off, once. Safe to call from anywhere;
+     * the second caller gets the choices already in memory.
+     */
+    suspend fun loadAlerts() {
+        if (alertsLoaded) return
+        _alerts.value = prefs.readAlerts()
+        alertsLoaded = true
+    }
+
     /** Called once on launch. Keeps you signed in if the token still works. */
     suspend fun restore() {
-        _alerts.value = prefs.readAlerts()
+        loadAlerts()
         val saved = prefs.read()
         if (saved == null || saved.token.isNullOrBlank()) {
             _gate.value = Gate.SignedOut(
@@ -211,12 +228,18 @@ class FrigoRepository(
     suspend fun setAlerts(next: ServerPrefs.Alerts) {
         prefs.writeAlerts(next)
         _alerts.value = next
+        alertsLoaded = true
     }
 
     /** Whether the reviews list shows the ones you've already watched. */
     suspend fun readShowReviewed(): Boolean = prefs.readShowReviewed()
 
     suspend fun setShowReviewed(on: Boolean) = prefs.writeShowReviewed(on)
+
+    /** Which way the cameras are laid out, remembered between launches. */
+    suspend fun readCameraLayout(): Int = prefs.readCameraLayout()
+
+    suspend fun setCameraLayout(layout: Int) = prefs.writeCameraLayout(layout)
 
     suspend fun latestFrame(camera: String, height: Int = 360): ByteArray? = runCatching {
         authorized { baseUrl, token -> api.latestFrame(baseUrl, token, camera, height) }

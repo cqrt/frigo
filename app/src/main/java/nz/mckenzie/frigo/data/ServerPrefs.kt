@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -87,6 +88,12 @@ class ServerPrefs(private val context: Context) {
         context.dataStore.edit { prefs -> prefs[Keys.showReviewed] = on }
     }
 
+    /** Which way the cameras are laid out: a grid, a list, or one picture to a row. */
+    suspend fun readCameraLayout(): Int = context.dataStore.data.first()[Keys.cameraLayout] ?: 0
+
+    suspend fun writeCameraLayout(layout: Int) {
+        context.dataStore.edit { prefs -> prefs[Keys.cameraLayout] = layout }
+    }
     /**
      * Signing out drops the server and the token. The alert choices stay, so
      * signing back in to the same server does not mean ticking everything again.
@@ -107,5 +114,6 @@ class ServerPrefs(private val context: Context) {
         val alertCameras = stringSetPreferencesKey("alert_cameras")
         val alertLabels = stringSetPreferencesKey("alert_labels")
         val showReviewed = booleanPreferencesKey("show_reviewed")
+        val cameraLayout = intPreferencesKey("camera_layout")
     }
 }

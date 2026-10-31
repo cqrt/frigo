@@ -491,3 +491,39 @@ with a lost key: an APK signed with a new key will not install over the old one.
 release build is minified, so the shrinker rules are tested on a runner rather
 than on the phone.
 
+## The quiet notification follows what you tick
+
+The notification under "Watching for alerts" counts the cameras you ticked. Two
+things were wrong with it. It only changed when the connection changed, so
+ticking a camera left the old words up. And after a phone restart the service
+started before any screen had run, so it had no choices in memory at all: it said
+nothing was ticked and nothing buzzed.
+
+It now reads the saved choices when it starts and redraws itself whenever they
+change. It also names the list that is empty, cameras or objects, rather than
+blaming the cameras every time.
+
+## Three camera layouts, one button
+
+The home page has three looks behind the button beside refresh: two to a row, one
+to a line, and one picture filling the width with its name on a dark fade. The
+fade is there because a camera pointed at a bright wall would leave white text
+unreadable.
+
+The icon shows the look you get next, not the one you're in, so a tap always
+moves you somewhere you can see coming. The choice is kept on the phone.
+
+Material's own icon set has no play mark in a box, no magnifying glass with room
+for a label, and no wide frame, so Reviews, Explore, the grid and the list marks
+are vectors drawn in `ui/Icons.kt`. The depth in the Reviews mark is one path at
+22% opacity, tinted along with everything else.
+
+## The refresh button on the home page
+
+The pictures already come in about once a second, so the button had almost
+nothing to do while it only reloaded the list of cameras. It now makes every
+camera fetch a picture at once, which matters on a slow link where the one on
+screen is a while old. Counted against the mock: four cameras, one request each,
+as the button is pressed.
+
+

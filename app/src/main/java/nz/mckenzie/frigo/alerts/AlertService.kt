@@ -18,6 +18,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -58,6 +59,9 @@ class AlertService : Service() {
     private var job: Job? = null
     private var state: WatchState = WatchState.Connecting
 
+    /** True once Android has the foreground notification, so updates land on it. */
+    private var shown = false
+
     /** When each camera last buzzed, so one visitor does not set the phone off twice. */
     private val lastBuzzed = mutableMapOf<String, Long>()
 
@@ -78,6 +82,15 @@ class AlertService : Service() {
         super.onCreate()
         container = (application as FrigoApplication).container
         createChannels()
+
+        // The quiet notification counts the cameras you ticked, so it follows the
+        // Settings screen: tick a camera and it says one camera, not none. The
+        // saved choices are read first, because after a phone restart this service
+        // runs before any screen has, and it would otherwise start with nothing.
+        scope.launch {
+            container.repository.loadAlerts()
+            container.repository.alerts.collect { showWatching() }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -240,26 +253,31 @@ class AlertService : Service() {
     }
 
     private fun showWatching() {
-        val cameras = container.repository.alerts.value.cameras.size
-        val notification = Alerts.watching(this, state, cameras).build()
+        val notification = watchingNotification()
+        if (shown) {
+            // Already up: replace the text rather than take the service down and
+            // put it back, which would flicker in the shade.
+            NotificationManagerCompat.from(this).notify(Alerts.WATCHING_ID, notification)
+            return
+        }
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         } else {
             0
         }
         ServiceCompat.startForeground(this, Alerts.WATCHING_ID, notification, type)
+        shown = true
     }
 
     /** Keeps the quiet notification in step with the connection. */
     private fun setState(next: WatchState) {
         if (state == next) return
         state = next
-        val manager = NotificationManagerCompat.from(this)
-        manager.notify(Alerts.WATCHING_ID, showWatchingNotification())
+        showWatching()
     }
 
-    private fun showWatchingNotification(): Notification =
-        Alerts.watching(this, state, container.repository.alerts.value.cameras.size).build()
+    private fun watchingNotification(): Notification =
+        Alerts.watching(this, state, container.repository.alerts.value).build()
 
     private fun createChannels() {
         val manager = getSystemService(NotificationManager::class.java)

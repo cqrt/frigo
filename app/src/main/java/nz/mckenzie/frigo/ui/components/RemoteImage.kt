@@ -37,6 +37,9 @@ internal fun ByteArray.toImageBitmapOrNull(): ImageBitmap? {
 /**
  * One still, refreshed once a second while it is on screen. Slow enough not to
  * matter for a camera that is not moving, quick enough that you notice a person.
+ *
+ * [refreshKey] is for the refresh button: change it and a new picture is fetched
+ * at once, rather than when the next second comes round.
  */
 @Composable
 fun CameraStill(
@@ -45,12 +48,13 @@ fun CameraStill(
     modifier: Modifier = Modifier,
     height: Int = 360,
     intervalMillis: Long = 1_000,
+    refreshKey: Int = 0,
     contentScale: ContentScale = ContentScale.Crop,
 ) {
     var frame by remember(camera) { mutableStateOf<ImageBitmap?>(null) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
-    LaunchedEffect(camera, height, intervalMillis) {
+    LaunchedEffect(camera, height, intervalMillis, refreshKey) {
         // Only while the screen is actually in front of you: these are network
         // requests per second, and the app sitting in the background should not
         // keep making them.

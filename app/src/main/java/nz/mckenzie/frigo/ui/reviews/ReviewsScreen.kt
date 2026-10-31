@@ -64,7 +64,7 @@ fun ReviewsScreen(container: AppContainer, modifier: Modifier = Modifier) {
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Reviews") },
+            title = { Text("Review") },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             actions = {
                 IconButton(onClick = viewModel::refresh) {
