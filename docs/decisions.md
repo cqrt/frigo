@@ -986,3 +986,32 @@ Checked on the emulator: a drag left and a drag right of the same distance movin
 same number of minutes, four ten point nudges back moving a couple of minutes and
 stopping there, the strip still jumping the bar to the moment tapped, and Live still
 putting the playhead back at now.
+
+
+## A flick carries, and a finger stops it
+
+The bar coasts again after a flick, because throwing the day along and watching it
+settle is worth having, and because the runaways were never the coasting: they were
+the bar reading its own rounded moment back as an instruction, and a finger landing
+without stopping the coast. Both are fixed underneath, so the coast on top is safe.
+
+A flick is a release with speed behind it. Let go with the finger still moving and
+the day carries on: a hard throw is capped and covers about twenty minutes, a gentle
+one a few. Let go with the hand at rest and nothing happens, whatever the last few
+points of the drag looked like, so stopping on a second and lifting off keeps you on
+that second. The coast dies out inside a second.
+
+A finger anywhere on the bar takes the coast away at once, before it has moved far
+enough to count as a drag, so a hand landing on a bar that is still gliding stops it
+dead rather than joining in.
+
+The speed of the drag is measured from the touch events, not from the clock, and the
+emulator's injected move events carry no speed at all, so a flick has to be tried
+with a swipe rather than with a held drag.
+
+Checked on the emulator: a hard swipe forward carrying from twenty nine minutes past
+one to forty nine minutes past one and settling there within a second, the same swipe
+with a finger landing put down at thirteen oh one and holding there through two
+seconds of waiting, a slow drag and release staying where it was let go, four ten
+point nudges back moving a minute and no more, the strip still jumping the bar to the
+moment tapped, and Live still putting the playhead back at now.

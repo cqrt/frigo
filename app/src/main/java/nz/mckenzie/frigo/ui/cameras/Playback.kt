@@ -1,11 +1,16 @@
 package nz.mckenzie.frigo.ui.cameras
 
+import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.animateDecay
+import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
@@ -30,8 +35,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -55,8 +62,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.FrigateReview
@@ -239,6 +248,20 @@ private fun DayPill(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 /**
+ * A flick carries the day on after the finger leaves, the way throwing a strip of
+ * film would. Below [MinFling] a release was a hand coming to rest, not a throw, so
+ * the bar stops where it was let go; above [MaxFling] the speed is capped, so a hard
+ * throw cannot cross the day in one go and lose you. [FlingFriction] brings it to a
+ * stop inside a second: a hard throw carries about twenty minutes.
+ */
+private const val MinFling = 260f
+private const val MaxFling = 3_600f
+private const val FlingFriction = 2.6f
+
+/** How long a hand can be still before letting go and still count as a flick. */
+private const val HoldMillis = 140L
+
+/**
  * The whole day in one thin strip: the stretches Frigate kept, a sliver for
  * everything it flagged, and a box around the hour the bar below is showing.
  *
@@ -365,6 +388,11 @@ private fun ScrubBar(
     // the value is rounded to a step, so the round trip lands behind the playhead
     // and a correction would drag it back, over and over, once for every pixel.
     var said by remember { mutableDoubleStateOf(Double.NaN) }
+    // When the finger last moved. A hand that has stopped before letting go is not
+    // a flick, whatever the last few pixels of it looked like.
+    var lastMoved by remember { mutableLongStateOf(0L) }
+    var coasting by remember { mutableStateOf<Job?>(null) }
+    val scope = rememberCoroutineScope()
     val pick by rememberUpdatedState(onPick)
     val measurer = rememberTextMeasurer()
 
@@ -376,19 +404,25 @@ private fun ScrubBar(
 
     fun momentAt(px: Float): Double = dayStart + px / scale
 
-    val drag = rememberDraggableState { delta ->
-        if (scale <= 0f) return@rememberDraggableState
-        // The day moves with your finger: drag left and later comes under the
-        // playhead, the way a strip of film would. Where the finger stops, the bar
-        // stops: there is no coasting on after it, which is the one thing a bar you
-        // are reading off a still cannot do.
-        val wanted = (moved - delta).coerceIn(least, most)
-        moved = wanted
-        val moment = quantise(momentAt(wanted + width / 2f))
+    // Move the day to a place on the bar, and say where that landed. The say is
+    // what stops the round trip above from being read as somebody else's move.
+    fun slideTo(px: Float) {
+        if (scale <= 0f) return
+        val next = px.coerceIn(least, most)
+        moved = next
+        val moment = quantise(momentAt(next + width / 2f))
         if (moment != said) {
             said = moment
             pick(moment)
         }
+    }
+
+    val drag = rememberDraggableState { delta ->
+        coasting?.cancel()
+        // The day moves with your finger: drag left and later comes under the
+        // playhead, the way a strip of film would.
+        lastMoved = System.nanoTime()
+        slideTo(moved - delta)
     }
 
     // The strip, a day chip, another camera, or the clock while live: the bar
@@ -397,7 +431,27 @@ private fun ScrubBar(
     LaunchedEffect(chosen, dayStart, width) {
         if (scale <= 0f || chosen == said) return@LaunchedEffect
         val wanted = ((chosen - dayStart).toFloat() * scale - width / 2f).coerceIn(least, most)
-        if (abs(wanted - moved) > scale * ScrubStep / 2f) moved = wanted
+        if (abs(wanted - moved) > scale * ScrubStep / 2f) {
+            coasting?.cancel()
+            moved = wanted
+        }
+    }
+
+    // Let go in the middle of a flick and the day carries on a little, the way a
+    // strip of film would if you threw it. It stops on its own in well under a
+    // second, and the moment a finger comes back down it stops at once.
+    fun letGo(velocity: Float) {
+        coasting?.cancel()
+        val still = (System.nanoTime() - lastMoved) / 1_000_000
+        val start = (-velocity).coerceIn(-MaxFling, MaxFling)
+        if (still > HoldMillis || abs(start) < MinFling) return
+        coasting = scope.launch {
+            var previous = 0f
+            AnimationState(0f, start).animateDecay(exponentialDecay(FlingFriction)) {
+                slideTo(moved + (value - previous))
+                previous = value
+            }
+        }
     }
 
     Box(
@@ -407,7 +461,21 @@ private fun ScrubBar(
             .clip(RoundedCornerShape(10.dp))
             .background(Color.White.copy(alpha = 0.08f))
             .onSizeChanged { width = it.width.toFloat() }
-            .draggable(state = drag, orientation = Orientation.Horizontal),
+            // A finger on the bar stops it, before it has moved far enough to
+            // count as a drag. Resting a hand on a bar that is still gliding is the
+            // one thing that must stop it dead.
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    coasting?.cancel()
+                }
+            }
+            .draggable(
+                state = drag,
+                orientation = Orientation.Horizontal,
+                onDragStarted = { coasting?.cancel() },
+                onDragStopped = { velocity -> letGo(velocity) },
+            ),
     ) {
         Canvas(Modifier.fillMaxSize()) {
             if (scale <= 0f) return@Canvas
