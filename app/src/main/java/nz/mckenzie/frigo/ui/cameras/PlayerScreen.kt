@@ -3,6 +3,8 @@ package nz.mckenzie.frigo.ui.cameras
 import android.content.res.Configuration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +37,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,7 +48,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
@@ -59,14 +64,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.MjpegReader
+import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.components.HideSystemBars
 import nz.mckenzie.frigo.ui.components.LiveSound
 import nz.mckenzie.frigo.ui.components.StatusBarIcons
 import nz.mckenzie.frigo.ui.friendlyMessage
 import java.io.IOException
+import kotlin.math.abs
 
 /** The heights and rates offered in the player. Bigger means more data. */
 private val Heights = listOf(1080, 720, 480)
@@ -80,28 +88,49 @@ private const val MaxZoom = 5f
 fun PlayerScreen(
     repository: FrigoRepository,
     cameraName: String,
-    title: String,
     onBack: () -> Unit,
 ) {
-    var frame by remember(cameraName) { mutableStateOf<ImageBitmap?>(null) }
-    var problem by remember(cameraName) { mutableStateOf<String?>(null) }
-    var connecting by remember(cameraName) { mutableStateOf(true) }
-    var height by rememberSaveable(cameraName) { mutableIntStateOf(720) }
-    var rate by rememberSaveable(cameraName) { mutableIntStateOf(5) }
+    // Which camera is on screen. Swiping changes this rather than navigating, so
+    // Back still lands on the grid you came from.
+    var watching by rememberSaveable(cameraName) { mutableStateOf(cameraName) }
+    var cameras by remember { mutableStateOf<List<Camera>>(emptyList()) }
+    var zoomed by remember(cameraName) { mutableStateOf(false) }
+
+    val title = cameras.firstOrNull { it.name == watching }?.title ?: prettyCameraName(watching)
+
+    var frame by remember(watching) { mutableStateOf<ImageBitmap?>(null) }
+    var problem by remember(watching) { mutableStateOf<String?>(null) }
+    var connecting by remember(watching) { mutableStateOf(true) }
+    var height by rememberSaveable(watching) { mutableIntStateOf(720) }
+    var rate by rememberSaveable(watching) { mutableIntStateOf(5) }
     var menuOpen by remember { mutableStateOf(false) }
-    var sound by rememberSaveable(cameraName) { mutableStateOf(false) }
-    var noSound by rememberSaveable(cameraName) { mutableStateOf(false) }
+    var sound by rememberSaveable(watching) { mutableStateOf(false) }
+    var noSound by rememberSaveable(watching) { mutableStateOf(false) }
     val landscape =
         LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
-    LaunchedEffect(cameraName, height, rate) {
+    // The order the grid shows, so a swipe goes wherever the grid would.
+    LaunchedEffect(Unit) {
+        runCatching { repository.cameras() }.onSuccess { cameras = it }
+    }
+
+    // The last camera leads round to the first, so a swipe is never a dead end.
+    fun step(by: Int) {
+        val names = cameras.map { it.name }
+        val at = names.indexOf(watching)
+        if (names.size < 2 || at < 0) return
+        watching = names[(at + by + names.size) % names.size]
+        zoomed = false
+    }
+
+    LaunchedEffect(watching, height, rate) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             connecting = true
             problem = null
             while (isActive) {
                 try {
-                    repository.openMjpeg(cameraName, height, rate).use { response ->
+                    repository.openMjpeg(watching, height, rate).use { response ->
                         val body = response.body ?: throw IOException("The server sent no stream")
                         val reader = MjpegReader(body.byteStream())
                         withContext(Dispatchers.IO) {
@@ -132,7 +161,7 @@ fun PlayerScreen(
     // phone is the button.
     HideSystemBars(landscape)
 
-    LiveSound(repository = repository, camera = cameraName, playing = sound) {
+    LiveSound(repository = repository, camera = watching, playing = sound) {
         sound = false
         noSound = true
     }
@@ -188,7 +217,16 @@ fun PlayerScreen(
 
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             frame?.let { bitmap ->
-                ZoomableStill(bitmap = bitmap, camera = cameraName)
+                SwipeForNextCamera(
+                    enabled = cameras.size > 1 && !zoomed,
+                    onSwipe = ::step,
+                ) {
+                    ZoomableStill(
+                        bitmap = bitmap,
+                        camera = watching,
+                        onZoom = { zoomed = it },
+                    )
+                }
             }
 
             if (connecting) {
@@ -271,6 +309,7 @@ fun PlayerScreen(
 private fun ZoomableStill(
     bitmap: ImageBitmap,
     camera: String,
+    onZoom: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var scale by remember(camera) { mutableFloatStateOf(1f) }
@@ -287,6 +326,7 @@ private fun ZoomableStill(
         val moved = fromCentre - (fromCentre - offset) * factor + drag
         scale = next
         offset = keepInside(moved, next, fitted, viewport)
+        onZoom(next > 1f)
     }
 
     Box(
@@ -299,6 +339,7 @@ private fun ZoomableStill(
                         if (scale > 1f) {
                             scale = 1f
                             offset = Offset.Zero
+                            onZoom(false)
                         } else {
                             zoomTo(2.5f, point)
                         }
@@ -341,4 +382,61 @@ private fun keepInside(offset: Offset, scale: Float, fitted: IntSize, viewport: 
         x = offset.x.coerceIn(-roomX, roomX),
         y = offset.y.coerceIn(-roomY, roomY),
     )
+}
+
+/** How far a finger has to travel sideways before it counts as a swipe. */
+private val SwipeDistance = 90.dp
+
+/**
+ * Watches for a sideways swipe and says which way it went: 1 for the next camera,
+ * -1 for the one before.
+ *
+ * The picture underneath takes traffic first unless [enabled] is true, in which
+ * case this gets the events before it does. When you are zoomed in, a sideways
+ * drag is you moving around the picture, so [enabled] is false and this keeps out
+ * of the way entirely.
+ *
+ * Only a drag that is mostly sideways and long enough counts, and only a drag
+ * consumes anything, so a tap and a double tap still reach the picture.
+ */
+@Composable
+private fun SwipeForNextCamera(
+    enabled: Boolean,
+    onSwipe: (Int) -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val swipe by rememberUpdatedState(onSwipe)
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .pointerInput(enabled) {
+                if (!enabled) return@pointerInput
+                val far = SwipeDistance.toPx()
+                val slop = viewConfiguration.touchSlop
+                awaitEachGesture {
+                    val down = awaitFirstDown(
+                        requireUnconsumed = false,
+                        pass = PointerEventPass.Initial,
+                    )
+                    var across = 0f
+                    var downTheScreen = 0f
+                    var swiping = false
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        across += change.positionChange().x
+                        downTheScreen += change.positionChange().y
+                        if (!swiping && abs(across) > slop && abs(across) > abs(downTheScreen)) {
+                            swiping = true
+                        }
+                        if (swiping) change.consume()
+                        if (!change.pressed) break
+                    }
+                    if (swiping && abs(across) >= far) swipe(if (across < 0f) 1 else -1)
+                }
+            },
+    ) {
+        content()
+    }
 }

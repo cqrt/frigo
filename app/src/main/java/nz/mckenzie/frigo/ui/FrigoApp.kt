@@ -29,7 +29,6 @@ import androidx.navigation.NavController
 import nz.mckenzie.frigo.alerts.AlertService
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.Gate
-import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.cameras.CamerasScreen
 import nz.mckenzie.frigo.ui.cameras.PlayerScreen
 import nz.mckenzie.frigo.ui.explore.ExploreScreen
@@ -149,7 +148,6 @@ private fun MainScaffold(
                 PlayerScreen(
                     repository = container.repository,
                     cameraName = camera,
-                    title = prettyCameraName(camera),
                     onBack = { navController.popBackStack() },
                 )
             }
