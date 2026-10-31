@@ -14,13 +14,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -30,6 +26,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,11 +63,6 @@ fun ReviewsScreen(container: AppContainer, modifier: Modifier = Modifier) {
         TopAppBar(
             title = { Text("Review") },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-            actions = {
-                IconButton(onClick = viewModel::refresh) {
-                    Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
-                }
-            },
         )
 
         SingleChoiceSegmentedButtonRow(
@@ -113,7 +105,13 @@ fun ReviewsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             )
         }
 
-        Box(Modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            // The full screen spinner takes over when there is nothing to show,
+            // so the pull indicator only appears over a list that has content.
+            isRefreshing = state.loading && state.reviews.isNotEmpty(),
+            onRefresh = viewModel::refresh,
+            modifier = Modifier.fillMaxSize(),
+        ) {
             when {
                 state.loading && state.reviews.isEmpty() ->
                     CircularProgressIndicator(Modifier.align(Alignment.Center))

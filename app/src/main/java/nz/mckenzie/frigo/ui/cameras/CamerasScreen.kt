@@ -19,8 +19,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -63,6 +62,7 @@ fun CamerasScreen(
     val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val layout by viewModel.layout.collectAsStateWithLifecycle()
+    val liveTiles by viewModel.liveTiles.collectAsStateWithLifecycle()
     val refreshKey by viewModel.refreshKey.collectAsStateWithLifecycle()
 
     Column(modifier.fillMaxSize()) {
@@ -70,18 +70,17 @@ fun CamerasScreen(
             title = { Text("Cameras") },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             actions = {
-                IconButton(onClick = viewModel::refresh) {
-                    if (refreshing) {
-                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                    } else {
-                        Icon(Icons.Filled.Refresh, contentDescription = "Refresh the pictures")
-                    }
-                }
                 LayoutButton(layout, viewModel::cycleLayout)
             },
         )
 
-        Box(Modifier.fillMaxSize()) {
+        // Pulling the pictures down asks for them again, which is quicker than
+        // the second the tiles wait between shots.
+        PullToRefreshBox(
+            isRefreshing = refreshing,
+            onRefresh = viewModel::refresh,
+            modifier = Modifier.fillMaxSize(),
+        ) {
             when {
                 loading && cameras.isEmpty() -> CircularProgressIndicator(Modifier.align(Alignment.Center))
 
@@ -108,7 +107,9 @@ fun CamerasScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(cameras, key = { it.name }) { camera ->
-                        CameraTile(container.repository, camera, refreshKey) { onOpenCamera(camera) }
+                        CameraTile(container.repository, camera, refreshKey, liveTiles) {
+                            onOpenCamera(camera)
+                        }
                     }
                 }
 
@@ -118,7 +119,9 @@ fun CamerasScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(cameras, key = { it.name }) { camera ->
-                        CameraRow(container.repository, camera, refreshKey) { onOpenCamera(camera) }
+                        CameraRow(container.repository, camera, refreshKey, liveTiles) {
+                            onOpenCamera(camera)
+                        }
                     }
                 }
 
@@ -128,7 +131,9 @@ fun CamerasScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(cameras, key = { it.name }) { camera ->
-                        CameraWide(container.repository, camera, refreshKey) { onOpenCamera(camera) }
+                        CameraWide(container.repository, camera, refreshKey, liveTiles) {
+                            onOpenCamera(camera)
+                        }
                     }
                 }
             }
@@ -168,6 +173,7 @@ private fun CameraTile(
     repository: FrigoRepository,
     camera: Camera,
     refreshKey: Int,
+    live: Boolean,
     onClick: () -> Unit,
 ) {
     Card(
@@ -179,6 +185,7 @@ private fun CameraTile(
                 repository = repository,
                 camera = camera.name,
                 refreshKey = refreshKey,
+                live = live,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(16f / 9f)
@@ -201,6 +208,7 @@ private fun CameraRow(
     repository: FrigoRepository,
     camera: Camera,
     refreshKey: Int,
+    live: Boolean,
     onClick: () -> Unit,
 ) {
     Surface(
@@ -213,6 +221,7 @@ private fun CameraRow(
                 repository = repository,
                 camera = camera.name,
                 refreshKey = refreshKey,
+                live = live,
                 modifier = Modifier
                     .padding(8.dp)
                     .size(width = 128.dp, height = 72.dp),
@@ -238,6 +247,7 @@ private fun CameraWide(
     repository: FrigoRepository,
     camera: Camera,
     refreshKey: Int,
+    live: Boolean,
     onClick: () -> Unit,
 ) {
     Card(
@@ -250,6 +260,7 @@ private fun CameraWide(
                 repository = repository,
                 camera = camera.name,
                 refreshKey = refreshKey,
+                live = live,
                 modifier = Modifier.fillMaxSize(),
             )
             Box(

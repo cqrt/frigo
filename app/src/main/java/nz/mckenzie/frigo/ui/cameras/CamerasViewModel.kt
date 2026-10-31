@@ -42,6 +42,10 @@ class CamerasViewModel(private val repository: FrigoRepository) : ViewModel() {
     private val _layout = MutableStateFlow(CameraLayout.Grid)
     val layout = _layout.asStateFlow()
 
+    /** Whether each tile plays a live stream instead of taking a picture a second. */
+    private val _liveTiles = MutableStateFlow(false)
+    val liveTiles = _liveTiles.asStateFlow()
+
     /** Bumped by a refresh: every tile takes a new picture when it changes. */
     private val _refreshKey = MutableStateFlow(0)
     val refreshKey = _refreshKey.asStateFlow()
@@ -52,6 +56,9 @@ class CamerasViewModel(private val repository: FrigoRepository) : ViewModel() {
                 CameraLayout.Grid
             }
         }
+        // Collected rather than read once, so flipping it in Settings changes the
+        // tiles you come back to.
+        viewModelScope.launch { repository.liveTiles.collect { _liveTiles.value = it } }
         refresh()
     }
 

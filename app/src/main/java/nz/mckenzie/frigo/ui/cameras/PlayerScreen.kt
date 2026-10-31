@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -34,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -57,6 +60,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.MjpegReader
+import nz.mckenzie.frigo.ui.FrigoIcons
+import nz.mckenzie.frigo.ui.components.HideSystemBars
+import nz.mckenzie.frigo.ui.components.Landscape
 import nz.mckenzie.frigo.ui.components.StatusBarIcons
 import nz.mckenzie.frigo.ui.friendlyMessage
 import java.io.IOException
@@ -82,6 +88,7 @@ fun PlayerScreen(
     var height by rememberSaveable(cameraName) { mutableIntStateOf(720) }
     var rate by rememberSaveable(cameraName) { mutableIntStateOf(5) }
     var menuOpen by remember { mutableStateOf(false) }
+    var fullscreen by rememberSaveable(cameraName) { mutableStateOf(false) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     LaunchedEffect(cameraName, height, rate) {
@@ -117,6 +124,10 @@ fun PlayerScreen(
     }
 
     StatusBarIcons(darkIcons = false)
+    HideSystemBars(fullscreen)
+    Landscape(fullscreen)
+    // Back leaves the whole screen before it leaves the camera.
+    BackHandler(enabled = fullscreen) { fullscreen = false }
 
     Column(
         Modifier
@@ -125,39 +136,44 @@ fun PlayerScreen(
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
-        TopAppBar(
-            title = { Text(title) },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-            },
-            actions = {
-                IconButton(onClick = { menuOpen = true }) {
-                    Icon(Icons.Filled.MoreVert, contentDescription = "Stream quality")
-                }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    Heights.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text("${option}p") },
-                            onClick = { height = option; menuOpen = false },
-                        )
+        if (!fullscreen) {
+            TopAppBar(
+                title = { Text(title) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                    Rates.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text("$option frames a second") },
-                            onClick = { rate = option; menuOpen = false },
-                        )
+                },
+                actions = {
+                    IconButton(onClick = { menuOpen = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "Stream quality")
                     }
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Black,
-                titleContentColor = Color.White,
-                navigationIconContentColor = Color.White,
-                actionIconContentColor = Color.White,
-            ),
-        )
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        Heights.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text("${option}p") },
+                                onClick = { height = option; menuOpen = false },
+                            )
+                        }
+                        Rates.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text("$option frames a second") },
+                                onClick = { rate = option; menuOpen = false },
+                            )
+                        }
+                    }
+                    IconButton(onClick = { fullscreen = true }) {
+                        Icon(FrigoIcons.Fullscreen, contentDescription = "Fill the screen")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Black,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White,
+                ),
+            )
+        }
 
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             frame?.let { bitmap ->
@@ -184,7 +200,7 @@ fun PlayerScreen(
                 }
             }
 
-            if (frame != null) {
+            if (frame != null && !fullscreen) {
                 Text(
                     text = "MJPEG · ${height}p · $rate fps",
                     color = Color.White.copy(alpha = 0.7f),
@@ -195,6 +211,25 @@ fun PlayerScreen(
                         .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 )
+            }
+
+            // The bar this came from is gone, so the way out sits over the picture.
+            if (fullscreen) {
+                IconButton(
+                    onClick = { fullscreen = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .displayCutoutPadding()
+                        .padding(10.dp)
+                        .background(Color.Black.copy(alpha = 0.45f), CircleShape),
+                ) {
+                    Icon(
+                        imageVector = FrigoIcons.FullscreenOut,
+                        contentDescription = "Leave fullscreen",
+                        tint = Color.White,
+                    )
+                }
             }
         }
     }

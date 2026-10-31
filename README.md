@@ -7,30 +7,36 @@ already run, so there is nothing to install on the server side.
 
 **Cameras.** Your cameras, each picture updating about once a second. One button
 changes how they're laid out: two to a row, one to a line, or one picture filling
-the width with its name on it. Tap one and it fills the screen with a live view.
-Pinch to zoom in, drag to move around, and double tap to go back to the whole
-picture.
+the width with its name on it. Pull the list down and every camera fetches a
+fresh picture. Tap one and it opens as a live view. Pinch to zoom in, drag to
+move around, and double tap to go back to the whole picture.
+
+The frame button in the corner turns the phone on its side and takes the bars
+away, so the picture gets the whole screen. The same mark brings them back, and
+so does Back.
 
 **Review.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review
 rather than twenty events. Tap one to watch the clip of that time. Alerts and
 detections are separate halves of the list. Watch past halfway and the review
 counts as watched, here and on the web page, so it leaves the list. Show reviewed
-brings the watched ones back.
+brings the watched ones back. Pull the list down for what has happened since.
 
 **Explore.** What Frigate has recorded, newest first, with thumbnails, the way
 the Explore page on the server has it. Narrow it by camera, by what was seen, by
 the person Frigate recognised, and by day: today, yesterday, or a day you pick
-from a calendar. Tap an event to watch it. An event with a play mark on its
-thumbnail has a clip, and the clip plays full screen with a scrub bar. One
-without a play mark shows the still Frigate kept.
+from a calendar. Pull the list down to run the search again. Tap an event to
+watch it. An event with a play mark on its thumbnail has a clip, and the clip
+plays with a scrub bar. In fullscreen it keeps the whole screen until you leave
+it. One without a play mark shows the still Frigate kept.
 
 **Alerts.** Your phone tells you when Frigate sees one of the things you picked,
 with a picture. Tap the alert and that camera opens. The back arrow goes to the
 camera grid.
 
 **Settings.** Shows which server you are signed in to, what to tell you about,
-and signs you out.
+and signs you out. A switch here plays the home page tiles live, which costs more
+data and battery.
 
 ## Signing in
 
@@ -51,8 +57,11 @@ already filled in.
 
 ## How live view works
 
-The camera grid and the full screen player ask the server for a stream of still
-frames over the same HTTPS connection as everything else (`/api/<camera>`).
+The full screen player asks the server for a stream of still frames over the same
+HTTPS connection as everything else (`/api/<camera>`). The tiles on the home page
+ask for one picture a second instead, which is cheap. Switch live pictures on in
+Settings and each tile keeps the same stream open at five frames a second and
+360p, which is smoother and costs more data and battery.
 
 That choice follows Frigate's own reasoning. Frigate deliberately serves its web
 live view as MSE rather than WebRTC, because MSE runs over TCP and every frame

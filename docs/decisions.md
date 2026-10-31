@@ -505,10 +505,9 @@ blaming the cameras every time.
 
 ## Three camera layouts, one button
 
-The home page has three looks behind the button beside refresh: two to a row, one
-to a line, and one picture filling the width with its name on a dark fade. The
-fade is there because a camera pointed at a bright wall would leave white text
-unreadable.
+The home page has three looks behind one button: two to a row, one to a line, and
+one picture filling the width with its name on a dark fade. The fade is there
+because a camera pointed at a bright wall would leave white text unreadable.
 
 The icon shows the look you get next, not the one you're in, so a tap always
 moves you somewhere you can see coming. The choice is kept on the phone.
@@ -518,12 +517,104 @@ for a label, and no wide frame, so Reviews, Explore, the grid and the list marks
 are vectors drawn in `ui/Icons.kt`. The depth in the Reviews mark is one path at
 22% opacity, tinted along with everything else.
 
-## The refresh button on the home page
+## Pulling the list down instead of a refresh button
 
 The pictures already come in about once a second, so the button had almost
 nothing to do while it only reloaded the list of cameras. It now makes every
 camera fetch a picture at once, which matters on a slow link where the one on
 screen is a while old. Counted against the mock: four cameras, one request each,
 as the button is pressed.
+
+That button is gone. Pulling the list down does the same thing, and the same
+gesture is used for the same purpose on Review and Explore, where there was a
+button that did it too. The bar keeps only what changes the screen you are
+looking at, which on Cameras is the layout button.
+
+Counted against the mock after the change: one pull on Cameras costs one
+`/api/config` and one `/api/profile`; one pull on Review costs one `/api/review`;
+one pull on Explore costs one `/api/events`. Nothing else goes out, so the
+gesture refreshes the list and does not restart the pictures' own second.
+
+"Try again" buttons stay where they are. They appear when there is nothing on
+screen and the request failed, which is a different job from pulling a list that
+is already there.
+
+## Fullscreen means the phone on its side
+
+Filling the screen first meant hiding the bars in portrait, which leaves the
+picture in a letterbox with black above and below it. A camera picture is wide,
+so fullscreen now turns the phone to landscape as well: the bars go, the picture
+reaches every edge, and the whole screen is the camera.
+
+Two calls do it. `HideSystemBars` takes the status and navigation bars away and
+puts them back on the way out. `Landscape` asks for a landscape orientation and
+hands the phone back afterwards.
+
+The inset controller comes from the view rather than the activity, because a clip
+plays in a dialog with a window of its own and the activity's controller would
+hide the wrong bars. `ViewCompat.getWindowInsetsController(view)` is deprecated in
+core 1.17 in favour of a call that takes the window, and it is kept on purpose
+with a note. Below API 30 it falls back to the activity's bars, which leaves a
+dialog's bars up rather than breaking anything.
+
+The manifest already declares `configChanges="orientation|screenSize|screenLayout|
+keyboardHidden|uiMode"`, so the rotation is handled in place. The screen is not
+rebuilt, the stream is not reopened, and nothing flickers.
+
+The exit mark floats in the top right over the picture, because the bar it would
+have sat in is gone. Back leaves fullscreen first on the live player and closes
+the clip on a clip, so Back never does two things at once.
+
+Checked on the emulator both ways, portrait to landscape and back, on the live
+player and on a clip: bars away, picture edge to edge, exit mark reachable, Back
+returning to portrait. The system's "Viewing full screen" notice appeared once
+and was dismissed; it shows again only after the app has been away for a while.
+
+## Live pictures on the home page
+
+The tiles take one picture a second, which is cheap enough to leave on all day.
+That is also slow: someone walking past appears a second late, and the picture
+jumps.
+
+There is now a switch in Settings, off to begin with, that plays each tile from
+the same MJPEG stream the player uses, at five frames a second and 360p. Five
+frames a second is enough to follow a person and far short of what a tile a
+quarter of the screen wide can show at that height.
+
+The choice is a boolean in DataStore read as a flow, so the tiles change as soon
+as the switch moves rather than at the next launch.
+
+A camera the server will not stream falls back to a picture a second. Two failed
+attempts in a row is enough to know, and a still always works, so a tile that
+cannot stream shows something rather than staying grey.
+
+It is a switch rather than the default because four open streams cost a great
+deal more of both the phone's data and its battery than four pictures a second,
+and the warning under the switch says so. Measured on the emulator: with the
+switch on, all four tiles open `/api/<camera>?height=360&fps=5` and stop asking
+for `latest.jpg`; with it off, `latest.jpg` comes round again.
+
+## There is no live sound through Frigate's API
+
+The web page has sound, so the assumption was that the app could have it too.
+It cannot, and the reason is where the sound comes from.
+
+`/api/openapi.json` lists all 167 routes on the server. Two of them mention
+go2rtc, `/go2rtc/streams` and `/go2rtc/streams/{stream_name}`, and both report
+stream state rather than carrying media. There is no audio, no talk, and no
+media route at all. The web page gets its sound from go2rtc's own port (1984),
+which Frigate's API does not proxy.
+
+Making the account an admin does not change this. The admin role opens
+`/api/go2rtc` itself, which turns out to be Frigate's path for a camera named
+go2rtc, and it answers "Camera not found". Every media path under it, with or
+without a dot, comes back `{"detail":"Not Found"}`, including `stream.mp4`,
+`stream.aac`, `stream.m3u8` and `frame.jpeg`. The reverse proxy passes only
+dot-free paths under `/api/go2rtc/`, so nothing on the go2rtc port is reachable
+through the address the app uses.
+
+So a sound toggle would be a switch that sometimes does nothing, which is worse
+than no switch. Either the go2rtc port gets its own hostname through the proxy,
+or live view stays silent and the app says nothing about sound.
 
 

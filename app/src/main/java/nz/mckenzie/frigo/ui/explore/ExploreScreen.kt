@@ -21,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -31,13 +30,13 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -80,11 +79,6 @@ fun ExploreScreen(container: AppContainer, modifier: Modifier = Modifier) {
         TopAppBar(
             title = { Text("Explore") },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-            actions = {
-                IconButton(onClick = viewModel::refresh) {
-                    Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
-                }
-            },
         )
 
         if (state.cameras.size > 1) {
@@ -151,7 +145,13 @@ fun ExploreScreen(container: AppContainer, modifier: Modifier = Modifier) {
             }
         }
 
-        Box(Modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            // The full screen spinner takes over when there is nothing to show,
+            // so the pull indicator only appears over a list that has content.
+            isRefreshing = state.loading && state.events.isNotEmpty(),
+            onRefresh = viewModel::refresh,
+            modifier = Modifier.fillMaxSize(),
+        ) {
             when {
                 state.loading && state.events.isEmpty() ->
                     CircularProgressIndicator(Modifier.align(Alignment.Center))

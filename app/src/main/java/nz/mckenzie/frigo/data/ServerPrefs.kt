@@ -9,7 +9,9 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "frigo")
 
@@ -94,6 +96,19 @@ class ServerPrefs(private val context: Context) {
     suspend fun writeCameraLayout(layout: Int) {
         context.dataStore.edit { prefs -> prefs[Keys.cameraLayout] = layout }
     }
+
+    /**
+     * Whether the home page plays each camera live rather than taking a picture
+     * every second. A flow, so changing it in Settings reaches the tiles without
+     * the app being restarted.
+     */
+    val liveTiles: Flow<Boolean> =
+        context.dataStore.data.map { prefs -> prefs[Keys.liveTiles] ?: false }
+
+    suspend fun writeLiveTiles(on: Boolean) {
+        context.dataStore.edit { prefs -> prefs[Keys.liveTiles] = on }
+    }
+
     /**
      * Signing out drops the server and the token. The alert choices stay, so
      * signing back in to the same server does not mean ticking everything again.
@@ -115,5 +130,6 @@ class ServerPrefs(private val context: Context) {
         val alertLabels = stringSetPreferencesKey("alert_labels")
         val showReviewed = booleanPreferencesKey("show_reviewed")
         val cameraLayout = intPreferencesKey("camera_layout")
+        val liveTiles = booleanPreferencesKey("live_tiles")
     }
 }

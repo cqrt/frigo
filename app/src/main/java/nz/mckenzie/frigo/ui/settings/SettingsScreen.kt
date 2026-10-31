@@ -58,6 +58,7 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val alerts by repository.alerts.collectAsStateWithLifecycle()
+    val liveTiles by repository.liveTiles.collectAsStateWithLifecycle(initialValue = false)
 
     var cameras by remember { mutableStateOf<List<Camera>>(emptyList()) }
     var labels by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -216,6 +217,27 @@ fun SettingsScreen(
                     "as the rest of the app. It works wherever your browser works, with no extra ports. " +
                     "You can trade latency for bandwidth in the player's menu.",
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Live pictures on the home page",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                Switch(
+                    checked = liveTiles,
+                    onCheckedChange = { on -> scope.launch { repository.setLiveTiles(on) } },
+                )
+            }
+            Text(
+                text = "Each tile keeps a stream open, so it uses more data and more battery " +
+                    "than one picture a second.",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 

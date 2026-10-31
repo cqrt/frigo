@@ -2,6 +2,7 @@ package nz.mckenzie.frigo.data
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -240,6 +241,11 @@ class FrigoRepository(
     suspend fun readCameraLayout(): Int = prefs.readCameraLayout()
 
     suspend fun setCameraLayout(layout: Int) = prefs.writeCameraLayout(layout)
+
+    /** Whether the home page tiles play live. A flow, so Settings is felt at once. */
+    val liveTiles: Flow<Boolean> get() = prefs.liveTiles
+
+    suspend fun setLiveTiles(on: Boolean) = prefs.writeLiveTiles(on)
 
     suspend fun latestFrame(camera: String, height: Int = 360): ByteArray? = runCatching {
         authorized { baseUrl, token -> api.latestFrame(baseUrl, token, camera, height) }

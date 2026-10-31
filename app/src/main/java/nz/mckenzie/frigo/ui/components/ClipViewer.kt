@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
@@ -32,6 +33,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +56,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
 import nz.mckenzie.frigo.data.FrigateException
+import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.friendlyMessage
 import java.io.File
 
@@ -94,6 +97,7 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
     var received by remember(subject.stillKey) { mutableLongStateOf(0L) }
     var problem by remember(subject.stillKey) { mutableStateOf<Problem?>(null) }
     var started by remember(subject.stillKey) { mutableStateOf(false) }
+    var fullscreen by rememberSaveable(subject.stillKey) { mutableStateOf(false) }
 
     val clip = subject.clip
 
@@ -126,6 +130,8 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
         ),
     ) {
         StatusBarIcons(darkIcons = false)
+        HideSystemBars(fullscreen)
+        Landscape(fullscreen)
 
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             val ready = file
@@ -153,29 +159,38 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
             }
 
             Column(Modifier.fillMaxSize()) {
-                Row(
-                    modifier = Modifier
-                        .statusBarsPadding()
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 4.dp, top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = subject.title,
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = subject.subtitle,
-                            color = Color.White.copy(alpha = 0.7f),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close", tint = Color.White)
+                if (!fullscreen) {
+                    Row(
+                        modifier = Modifier
+                            .statusBarsPadding()
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 4.dp, top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = subject.title,
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = subject.subtitle,
+                                color = Color.White.copy(alpha = 0.7f),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        IconButton(onClick = { fullscreen = true }) {
+                            Icon(
+                                imageVector = FrigoIcons.Fullscreen,
+                                contentDescription = "Fill the screen",
+                                tint = Color.White,
+                            )
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Filled.Close, contentDescription = "Close", tint = Color.White)
+                        }
                     }
                 }
 
@@ -209,6 +224,25 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
 
                         !started -> CircularProgressIndicator(color = Color.White)
                     }
+                }
+            }
+
+            // In fullscreen the title bar is gone, so the way back sits on the picture.
+            if (fullscreen) {
+                IconButton(
+                    onClick = { fullscreen = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .displayCutoutPadding()
+                        .padding(12.dp)
+                        .background(Color.Black.copy(alpha = 0.42f), CircleShape),
+                ) {
+                    Icon(
+                        imageVector = FrigoIcons.FullscreenOut,
+                        contentDescription = "Leave fullscreen",
+                        tint = Color.White,
+                    )
                 }
             }
         }
