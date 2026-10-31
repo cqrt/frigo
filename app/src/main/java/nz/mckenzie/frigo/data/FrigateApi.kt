@@ -83,6 +83,16 @@ class FrigateApi(
         return json.decodeFromString(FrigateConfig.serializer(), request.okBody())
     }
 
+    /** Which cameras this user may watch, and which role they have. */
+    fun profile(baseUrl: String, token: String): FrigateProfile {
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/profile"))
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return json.decodeFromString(FrigateProfile.serializer(), request.okBody())
+    }
+
     fun events(
         baseUrl: String,
         token: String,

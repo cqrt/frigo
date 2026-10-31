@@ -116,9 +116,20 @@ class FrigoRepository(
         _gate.value = Gate.SignedOut()
     }
 
+    /**
+     * The cameras to show, and only the ones this user may watch.
+     *
+     * `/api/config` lists every camera on the server no matter who asks, so a
+     * restricted user would be shown cameras that answer 403 when the app asks
+     * for a picture. `/api/profile` carries the list the role allows, and that
+     * is what filters this. A user who may see everything gets no list, which
+     * means all of them.
+     */
     suspend fun cameras(): List<Camera> = authorized { baseUrl, token ->
+        val allowed = api.profile(baseUrl, token).allowedCameras
         api.config(baseUrl, token).cameras
             .filterValues { it.enabled }
+            .filter { (name, _) -> allowed == null || name in allowed }
             .map { (name, config) ->
                 Camera(name = name, title = config.friendlyName ?: prettyCameraName(name))
             }

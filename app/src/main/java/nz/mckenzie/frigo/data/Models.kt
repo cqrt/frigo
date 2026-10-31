@@ -12,6 +12,19 @@ data class FrigateConfig(
     val cameras: Map<String, CameraConfig> = emptyMap(),
 )
 
+/**
+ * What the signed-in user is allowed to see. `/api/config` answers with every
+ * camera on the server whatever the user's role, so this is the only place that
+ * says which ones are theirs. `allowed_cameras` is absent or null for a user who
+ * may see them all.
+ */
+@Serializable
+data class FrigateProfile(
+    val username: String = "",
+    val role: String = "",
+    @SerialName("allowed_cameras") val allowedCameras: List<String>? = null,
+)
+
 @Serializable
 data class CameraConfig(
     val enabled: Boolean = true,

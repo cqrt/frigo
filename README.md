@@ -32,6 +32,13 @@ You enter the same address you use in a browser, your username, and your
 password. If you reach Frigate through a reverse proxy, that is the proxy address,
 port included. The app keeps the sign-in on the phone.
 
+If your Frigate has roles set up, you see the cameras your role allows and no
+others.
+
+Frigate's own certificate is one it made for itself, and a phone refuses those. If
+the app says it doesn't trust the certificate, sign in through the address your
+proxy serves, which has a certificate from a real authority.
+
 Frigate's session lasts a day, and it is lengthened every time you open the app.
 Leave it longer than that and you sign in again, with your address and username
 already filled in.

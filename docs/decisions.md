@@ -59,21 +59,54 @@ The event player and the review player share `ui/components/ClipViewer.kt`. Both
 screens were showing the same dialog with different titles, and the second copy
 would have drifted from the first.
 
-## Reviews have no test on a real server yet
+## Reviews, checked against a real 0.18.2 server
 
-Everything above was checked against the mock, which now serves `/api/review` in
-the shape 0.18 sends: `id`, `camera`, `start_time`, `end_time`, `severity`,
-`has_been_reviewed`, `thumb_path` and `data` with `objects`, `zones`, `sub_labels`
-and `detections`. One thing is worth watching on a real server. The endpoint's
-response model declares `start_time` and `end_time` as datetimes, which would go
-out as text like `"2026-10-31T02:15:44.123456"`, but the handler answers with the
-database rows themselves, so the times are epoch seconds the way events are. If a
-release ever starts sending text, the app's parse of the list fails and the screen
-says the server's answer made no sense rather than showing wrong times.
+The Reviews tab was built on the mock and then run against a real Frigate 0.18.2
+through a proxy, signed in as a restricted user with two cameras. What it answered:
 
-The review clip is `/api/review/<id>/clip.mp4`, cut from recordings the same way
-an event's clip is. The mock serves a short file, so it plays; a server with
-recordings switched off has nothing to cut and the player says so.
+- `start_time` and `end_time` arrive as epoch seconds with fractions
+  (`1793418289.280371`), the same as events, not as datetime text. The app's
+  numeric parse is right.
+- `data` carries more than the app reads: `verified_objects`, `thumb_time` and
+  `metadata`, which is null here. Parsing is lenient, so those are ignored.
+- A sub label turns up as a person's name in `data.sub_labels`, which is where
+  "Person, Angie" in the list comes from.
+- The first detection's event thumbnail answers with a JPEG, and
+  `/api/review/<id>/clip.mp4` answers `200 video/mp4`. Both work with the bearer
+  token the app already sends.
+- A review stays open for as long as something keeps being seen, so one can cover
+  three hours. Its clip is the whole stretch, cut from recordings on request, and
+  the player shows it as a three hour file. That is Frigate's answer, not a bug in
+  the app, but it is worth knowing before tapping an old review on a phone plan.
+
+The mock now follows what the real server does here.
+
+## A restricted user only sees their cameras
+
+`/api/config` answers with every camera on the server whatever role is asking, so
+the first build showed a restricted user the whole house and a grid of tiles that
+answered 403. `/api/profile` is the endpoint that knows better: it carries
+`allowed_cameras`, the list the role permits. The camera list is now the enabled
+cameras from the config, narrowed to that list. A user who may see everything gets
+no list, which is read as all of them.
+
+Alerts come from the same feed for every user, so the app listens to everything it
+is shown and filters as before, by the cameras and objects ticked in Settings.
+
+## A certificate the phone doesn't trust says so
+
+Frigate serves its own self-signed certificate on 8971 unless it has been given a
+real one, and a phone refuses it. That used to come out as "Can't reach the server.
+Check your connection", which sends you looking at the wrong thing.
+
+`SSLHandshakeException` and `SSLPeerUnverifiedException` are both `IOException`s,
+so they have to be caught before the general case. A handshake failure now says the
+phone doesn't trust the certificate and points at the proxy's address; a name
+mismatch says the address doesn't match the certificate.
+
+The proxy's address is the one to type when the server's own address is refused:
+the certificate there is issued by a real authority, and the app reaches the same
+server through it.
 
 ## Alerts come from Frigate's message feed, not from polling
 
