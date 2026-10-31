@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -63,6 +64,7 @@ import nz.mckenzie.frigo.data.MjpegReader
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.components.HideSystemBars
 import nz.mckenzie.frigo.ui.components.Landscape
+import nz.mckenzie.frigo.ui.components.LiveSound
 import nz.mckenzie.frigo.ui.components.StatusBarIcons
 import nz.mckenzie.frigo.ui.friendlyMessage
 import java.io.IOException
@@ -89,6 +91,8 @@ fun PlayerScreen(
     var rate by rememberSaveable(cameraName) { mutableIntStateOf(5) }
     var menuOpen by remember { mutableStateOf(false) }
     var fullscreen by rememberSaveable(cameraName) { mutableStateOf(false) }
+    var sound by rememberSaveable(cameraName) { mutableStateOf(false) }
+    var noSound by rememberSaveable(cameraName) { mutableStateOf(false) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     LaunchedEffect(cameraName, height, rate) {
@@ -129,6 +133,11 @@ fun PlayerScreen(
     // Back leaves the whole screen before it leaves the camera.
     BackHandler(enabled = fullscreen) { fullscreen = false }
 
+    LiveSound(repository = repository, camera = cameraName, playing = sound) {
+        sound = false
+        noSound = true
+    }
+
     Column(
         Modifier
             .fillMaxSize()
@@ -145,6 +154,12 @@ fun PlayerScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { sound = !sound; noSound = false }) {
+                        Icon(
+                            imageVector = if (sound) FrigoIcons.Sound else FrigoIcons.SoundOff,
+                            contentDescription = if (sound) "Turn the sound off" else "Turn the sound on",
+                        )
+                    }
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Filled.MoreVert, contentDescription = "Stream quality")
                     }
@@ -202,7 +217,7 @@ fun PlayerScreen(
 
             if (frame != null && !fullscreen) {
                 Text(
-                    text = "MJPEG · ${height}p · $rate fps",
+                    text = "MJPEG · ${height}p · $rate fps" + if (sound) " · sound" else "",
                     color = Color.White.copy(alpha = 0.7f),
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier
@@ -211,24 +226,53 @@ fun PlayerScreen(
                         .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 )
+                if (noSound) {
+                    Text(
+                        text = "No sound came through.",
+                        color = Color.White.copy(alpha = 0.6f),
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(start = 12.dp, bottom = 38.dp)
+                            .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
             }
 
-            // The bar this came from is gone, so the way out sits over the picture.
+            // The bar this came from is gone, so the way out sits over the picture,
+            // with the sound beside it.
             if (fullscreen) {
-                IconButton(
-                    onClick = { fullscreen = false },
+                Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .statusBarsPadding()
                         .displayCutoutPadding()
-                        .padding(10.dp)
-                        .background(Color.Black.copy(alpha = 0.45f), CircleShape),
+                        .padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(
-                        imageVector = FrigoIcons.FullscreenOut,
-                        contentDescription = "Leave fullscreen",
-                        tint = Color.White,
-                    )
+                    IconButton(
+                        onClick = { sound = !sound; noSound = false },
+                        modifier = Modifier
+                            .padding(end = 6.dp)
+                            .background(Color.Black.copy(alpha = 0.45f), CircleShape),
+                    ) {
+                        Icon(
+                            imageVector = if (sound) FrigoIcons.Sound else FrigoIcons.SoundOff,
+                            contentDescription = if (sound) "Turn the sound off" else "Turn the sound on",
+                            tint = Color.White,
+                        )
+                    }
+                    IconButton(
+                        onClick = { fullscreen = false },
+                        modifier = Modifier.background(Color.Black.copy(alpha = 0.45f), CircleShape),
+                    ) {
+                        Icon(
+                            imageVector = FrigoIcons.FullscreenOut,
+                            contentDescription = "Leave fullscreen",
+                            tint = Color.White,
+                        )
+                    }
                 }
             }
         }

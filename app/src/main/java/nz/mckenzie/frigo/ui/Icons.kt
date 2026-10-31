@@ -98,6 +98,24 @@ object FrigoIcons {
         }
     }
 
+    /** A speaker with two sound waves, for turning the sound on. */
+    val Sound: ImageVector by lazy {
+        vector("Sound") {
+            path("M4 9.6h3.3L11.8 5.4v13.2L7.3 14.4H4a1 1 0 0 1-1-1v-2.8a1 1 0 0 1 1-1z")
+            path("M15.4 9.3a3.8 3.8 0 0 1 0 5.4", strokeWidth = 2f)
+            path("M18 6.7a7.4 7.4 0 0 1 0 10.6", strokeWidth = 2f)
+        }
+    }
+
+    /** The same speaker crossed out, for turning it off. */
+    val SoundOff: ImageVector by lazy {
+        vector("SoundOff") {
+            path("M4 9.6h3.3L11.8 5.4v13.2L7.3 14.4H4a1 1 0 0 1-1-1v-2.8a1 1 0 0 1 1-1z")
+            path("M15.2 9.8l4.6 4.6", strokeWidth = 2f)
+            path("M19.8 9.8l-4.6 4.6", strokeWidth = 2f)
+        }
+    }
+
     /** A wide frame with the name written on it, shown on the button that goes from the list to the wide look. */
     val Wide: ImageVector by lazy {
         vector("Wide") {

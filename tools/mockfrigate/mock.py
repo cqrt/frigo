@@ -218,6 +218,16 @@ class Handler(BaseHTTPRequestHandler):
         if path.endswith("/latest.jpg"):
             return self.send_bytes(FRAMES[0], "image/jpeg")
 
+        if path == "/api/stream.aac":
+            # Sound, which on a real server comes from go2rtc's own port rather
+            # than from this API. Point MOCK_SOUND at a file of ADTS AAC to serve
+            # it; without one, this answers the way a server with no such path
+            # does.
+            sound = os.environ.get("MOCK_SOUND")
+            if not sound or not os.path.exists(sound):
+                return self.send_json({"detail": "Not Found"}, status=404)
+            return self.stream_audio(sound)
+
         if path.startswith("/api/"):
             return self.stream_mjpeg()
 
@@ -349,6 +359,25 @@ class Handler(BaseHTTPRequestHandler):
                 time.sleep(0.15)
         except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             # The player closed the stream, which is what leaving the screen does.
+            return
+
+    def stream_audio(self, path):
+        with open(path, "rb") as sound:
+            body = sound.read()
+        self.send_response(200)
+        self.send_header("Content-Type", "audio/aac")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.close_connection = True
+        try:
+            # Round and round: a real one never ends, and a short file played
+            # once would look like the server dropping the stream.
+            while True:
+                self.wfile.write(body)
+                self.wfile.flush()
+                time.sleep(1)
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             return
 
 

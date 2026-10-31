@@ -53,6 +53,17 @@ MOCK_VERBOSE=1 python tools/mockfrigate/mock.py
 
 Each line then carries the path, so you can count what a tap costs.
 
+The sound button in the player asks for `/api/stream.aac`, which a real server
+answers from go2rtc's own port rather than from the API. Point the mock at a file
+of ADTS AAC and it serves it round and round:
+
+```
+MOCK_SOUND=/path/to/sound.aac python tools/mockfrigate/mock.py
+```
+
+Without that variable the path answers 404, which is how a server with no second
+path set up behaves, and the app's "No sound came through." can be seen.
+
 ## The frames
 
 `frame0.jpg` to `frame2.jpg` are generated, not photographed. To make new ones on

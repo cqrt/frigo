@@ -73,6 +73,10 @@ The trade is bandwidth, since every frame is a whole picture. The player's menu
 sets the height and frame rate, and the label in the corner tells you which you
 are on.
 
+A speaker button in the player adds the camera's sound. Frigate's API has none in
+it, so the sound comes from go2rtc, the stream server inside Frigate, through one
+more path on your proxy ([setup](docs/sound.md)).
+
 Zooming scales the picture the phone already has, so the stream keeps asking for
 the same frames. At 720p and 5x it is soft, which is why the menu offers 1080p.
 
@@ -183,3 +187,4 @@ is ever committed. Backup: there's a copy of the key and its password at
 - `alerts/` - the service that holds the message feed and the notifications it posts.
 - `ui/` - one folder per screen, Compose throughout.
 - `ui/components/ClipViewer.kt` - the full screen clip player that an event or a review opens.
+- `ui/components/LiveSound.kt` - the camera's sound, for the speaker button in the player.

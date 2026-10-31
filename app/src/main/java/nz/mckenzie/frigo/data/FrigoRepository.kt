@@ -275,6 +275,19 @@ class FrigoRepository(
     }
 
     /**
+     * The address of a camera's sound and the token to send with it.
+     *
+     * Frigate's API carries no sound at all, so this goes to go2rtc through the
+     * proxy, under a path of its own. It is a stream rather than a file: it runs
+     * until it is closed.
+     */
+    fun soundSource(camera: String): ClipSource {
+        val current = stored ?: throw FrigateException(401, "Not signed in")
+        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        return ClipSource(url = "${current.baseUrl}/api/stream.aac?src=$camera", token = token)
+    }
+
+    /**
      * A review's clip. Frigate cuts it from your recordings when it is asked for
      * one, so the period it covers is the review's start and end.
      */

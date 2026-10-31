@@ -617,4 +617,36 @@ So a sound toggle would be a switch that sometimes does nothing, which is worse
 than no switch. Either the go2rtc port gets its own hostname through the proxy,
 or live view stays silent and the app says nothing about sound.
 
+## The sound reaches the app under one more path
+
+The proxy now hands one path to go2rtc's port: `/api/stream.aac`. The app asks
+for `/api/stream.aac?src=door_cam` on the address it already uses, and that path
+goes to port 1984 untouched. Everything else still goes to Frigate.
+
+That path rather than a tidier `/audio/` because a custom location in Nginx Proxy
+Manager sends the path as it arrives. `/audio/api/stream.aac` would reach go2rtc
+as a route it does not have. `/api/stream.aac` arrives as itself, needs no
+rewrite, and cannot collide with a Frigate route because there is no such one.
+
+Measured against the live server: `200`, `audio/aac`, 26 kB in six seconds, which
+is about 34 kbit/s at 8 kHz mono. All four cameras answer, and the three real ones
+carry sound; the printer has none, so its stream is silent.
+
+The sound is played by a second ExoPlayer of its own, made when the switch goes on
+and released when it goes off, so nothing is downloaded while it is silent. It
+carries the token as well as the URL: go2rtc ignores it, but a proxy access list
+later would not.
+
+Checked on the emulator: the switch opens the stream once, an audio track goes
+active in the mixer, the caption reads "MJPEG · 720p · 5 fps · sound", the switch
+survives going into fullscreen, and turning it off logs the player's release.
+Mocked as a server without the path, the switch falls back on its own and says
+"No sound came through."
+
+The sound sits behind the picture by however long go2rtc takes to fill its
+buffer, which is small but not nothing, and the two streams drift apart for as
+long as the view is open. Lip sync was never going to be right on a doorway
+camera at 8 kHz, so the app does not try to correct it.
+
+
 
