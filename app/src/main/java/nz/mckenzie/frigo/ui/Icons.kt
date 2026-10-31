@@ -78,26 +78,6 @@ object FrigoIcons {
         }
     }
 
-    /** Four corners opening outward, for the button that fills the screen with the picture. */
-    val Fullscreen: ImageVector by lazy {
-        vector("Fullscreen") {
-            path("M4 9V5.4A1.4 1.4 0 0 1 5.4 4H9", strokeWidth = 2f)
-            path("M15 4h3.6A1.4 1.4 0 0 1 20 5.4V9", strokeWidth = 2f)
-            path("M20 15v3.6A1.4 1.4 0 0 1 18.6 20H15", strokeWidth = 2f)
-            path("M9 20H5.4A1.4 1.4 0 0 1 4 18.6V15", strokeWidth = 2f)
-        }
-    }
-
-    /** The same corners turned inward, for the way back out of fullscreen. */
-    val FullscreenOut: ImageVector by lazy {
-        vector("FullscreenOut") {
-            path("M9 4v3.6A1.4 1.4 0 0 1 7.6 9H4", strokeWidth = 2f)
-            path("M15 4v3.6A1.4 1.4 0 0 0 16.4 9H20", strokeWidth = 2f)
-            path("M20 15h-3.6A1.4 1.4 0 0 0 15 16.4V20", strokeWidth = 2f)
-            path("M4 15h3.6A1.4 1.4 0 0 1 9 16.4V20", strokeWidth = 2f)
-        }
-    }
-
     /** A speaker with two sound waves, for turning the sound on. */
     val Sound: ImageVector by lazy {
         vector("Sound") {

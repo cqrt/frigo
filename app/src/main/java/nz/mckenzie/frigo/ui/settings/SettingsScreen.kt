@@ -110,19 +110,13 @@ fun SettingsScreen(
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
             Text("Alerts", style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = "Your phone tells you when Frigate sees something, with a picture. " +
-                    "Tapping the alert opens that camera.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Tell me when something is seen",
+                    text = "Enable",
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f),
                 )
@@ -171,39 +165,27 @@ fun SettingsScreen(
 
                 if (alerts.cameras.isEmpty() || alerts.labels.isEmpty()) {
                     Text(
-                        text = "Nothing is ticked in one of those lists, so nothing will buzz.",
+                        text = "Nothing ticked in one list, so nothing will buzz.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
 
-                Text(
-                    text = "Frigo stays connected in the background to do this, which shows a " +
-                        "quiet notification while it runs. Close the app and alerts keep coming. " +
-                        "Android can stop it after a while to save battery; the battery settings " +
-                        "below is where you make that less likely.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                TextButton(
-                    onClick = {
-                        runCatching {
-                            context.startActivity(
-                                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            )
-                        }
+                TextButton(onClick = {
+                    runCatching {
+                        context.startActivity(
+                            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
                     }
-                ) {
+                }) {
                     Text("Battery settings")
                 }
             }
 
             if (blocked) {
                 Text(
-                    text = "Android isn't allowing Frigo to post notifications, so alerts can't " +
-                        "show. Notifications for this app are in Android's settings.",
+                    text = "Notifications are off for Frigo in Android.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -211,21 +193,12 @@ fun SettingsScreen(
 
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
-            Text("Live view", style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = "Live view asks the server for a stream of still frames over the same connection " +
-                    "as the rest of the app. It works wherever your browser works, with no extra ports. " +
-                    "You can trade latency for bandwidth in the player's menu.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Live pictures on the home page",
+                    text = "Live pictures",
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f),
                 )
@@ -234,12 +207,6 @@ fun SettingsScreen(
                     onCheckedChange = { on -> scope.launch { repository.setLiveTiles(on) } },
                 )
             }
-            Text(
-                text = "Each tile keeps a stream open, so it uses more data and more battery " +
-                    "than one picture a second.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
 
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 

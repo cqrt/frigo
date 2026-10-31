@@ -261,10 +261,17 @@ class FrigateApi(
         }
     }
 
-    /** A single still, used for the camera grid. */
+    /**
+     * A single still, used for the camera grid.
+     *
+     * Each request carries a different address. Anything caching pictures on the
+     * way here, such as Cloudflare, caches a `.jpg` under its address, and would
+     * otherwise hand back the first picture it ever saw.
+     */
     fun latestFrame(baseUrl: String, token: String, camera: String, height: Int): ByteArray {
         val target = url(baseUrl, "/api/$camera/latest.jpg").newBuilder()
             .addQueryParameter("height", height.toString())
+            .addQueryParameter("t", System.currentTimeMillis().toString())
             .build()
         return Request.Builder()
             .url(target)

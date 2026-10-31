@@ -11,9 +11,8 @@ the width with its name on it. Pull the list down and every camera fetches a
 fresh picture. Tap one and it opens as a live view. Pinch to zoom in, drag to
 move around, and double tap to go back to the whole picture.
 
-The frame button in the corner turns the phone on its side and takes the bars
-away, so the picture gets the whole screen. The same mark brings them back, and
-so does Back.
+Turn the phone on its side and the picture gets the whole screen, with no bars
+around it. Turn it back and the bar comes with it. There's no button for it.
 
 **Review.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review
@@ -27,8 +26,8 @@ the Explore page on the server has it. Narrow it by camera, by what was seen, by
 the person Frigate recognised, and by day: today, yesterday, or a day you pick
 from a calendar. Pull the list down to run the search again. Tap an event to
 watch it. An event with a play mark on its thumbnail has a clip, and the clip
-plays with a scrub bar. In fullscreen it keeps the whole screen until you leave
-it. One without a play mark shows the still Frigate kept.
+plays with a scrub bar. On its side the clip fills the screen and the close mark
+sits on the picture. One without a play mark shows the still Frigate kept.
 
 **Alerts.** Your phone tells you when Frigate sees one of the things you picked,
 with a picture. Tap the alert and that camera opens. The back arrow goes to the

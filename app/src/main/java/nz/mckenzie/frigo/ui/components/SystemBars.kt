@@ -3,10 +3,8 @@ package nz.mckenzie.frigo.ui.components
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.content.pm.ActivityInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -67,28 +65,6 @@ fun HideSystemBars(hidden: Boolean) {
         }
         onDispose {
             ViewCompat.getWindowInsetsController(view)?.show(WindowInsetsCompat.Type.systemBars())
-        }
-    }
-}
-
-/**
- * Turns the screen on its side while [on] is true, and hands it back to the phone
- * afterwards. A camera picture is wide, and on its side it gets the whole screen
- * rather than a letterboxed strip of it.
- *
- * The manifest already lets this activity handle a rotation itself, so turning
- * the phone does not throw away what is on screen.
- */
-@Composable
-fun Landscape(on: Boolean) {
-    val activity = LocalContext.current.findActivity() ?: return
-
-    DisposableEffect(on, activity) {
-        if (on) {
-            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        }
-        onDispose {
-            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
     }
 }

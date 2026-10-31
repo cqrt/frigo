@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.ui.cameras
 
+import android.content.res.Configuration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -7,7 +8,6 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,7 +37,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.activity.compose.BackHandler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -49,6 +48,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -63,7 +63,6 @@ import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.MjpegReader
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.components.HideSystemBars
-import nz.mckenzie.frigo.ui.components.Landscape
 import nz.mckenzie.frigo.ui.components.LiveSound
 import nz.mckenzie.frigo.ui.components.StatusBarIcons
 import nz.mckenzie.frigo.ui.friendlyMessage
@@ -90,9 +89,10 @@ fun PlayerScreen(
     var height by rememberSaveable(cameraName) { mutableIntStateOf(720) }
     var rate by rememberSaveable(cameraName) { mutableIntStateOf(5) }
     var menuOpen by remember { mutableStateOf(false) }
-    var fullscreen by rememberSaveable(cameraName) { mutableStateOf(false) }
     var sound by rememberSaveable(cameraName) { mutableStateOf(false) }
     var noSound by rememberSaveable(cameraName) { mutableStateOf(false) }
+    val landscape =
+        LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     LaunchedEffect(cameraName, height, rate) {
@@ -128,10 +128,9 @@ fun PlayerScreen(
     }
 
     StatusBarIcons(darkIcons = false)
-    HideSystemBars(fullscreen)
-    Landscape(fullscreen)
-    // Back leaves the whole screen before it leaves the camera.
-    BackHandler(enabled = fullscreen) { fullscreen = false }
+    // On its side, the picture gets the whole screen. No button: turning the
+    // phone is the button.
+    HideSystemBars(landscape)
 
     LiveSound(repository = repository, camera = cameraName, playing = sound) {
         sound = false
@@ -145,7 +144,7 @@ fun PlayerScreen(
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
-        if (!fullscreen) {
+        if (!landscape) {
             TopAppBar(
                 title = { Text(title) },
                 navigationIcon = {
@@ -176,9 +175,6 @@ fun PlayerScreen(
                                 onClick = { rate = option; menuOpen = false },
                             )
                         }
-                    }
-                    IconButton(onClick = { fullscreen = true }) {
-                        Icon(FrigoIcons.Fullscreen, contentDescription = "Fill the screen")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -215,7 +211,7 @@ fun PlayerScreen(
                 }
             }
 
-            if (frame != null && !fullscreen) {
+            if (frame != null && !landscape) {
                 Text(
                     text = "MJPEG · ${height}p · $rate fps" + if (sound) " · sound" else "",
                     color = Color.White.copy(alpha = 0.7f),
@@ -226,53 +222,37 @@ fun PlayerScreen(
                         .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 )
-                if (noSound) {
-                    Text(
-                        text = "No sound came through.",
-                        color = Color.White.copy(alpha = 0.6f),
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(start = 12.dp, bottom = 38.dp)
-                            .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
-                }
             }
 
-            // The bar this came from is gone, so the way out sits over the picture,
-            // with the sound beside it.
-            if (fullscreen) {
-                Row(
+            if (noSound) {
+                Text(
+                    text = "No sound came through.",
+                    color = Color.White.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 12.dp, bottom = if (landscape) 12.dp else 46.dp)
+                        .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
+
+            // On its side there is no bar, so the sound sits over the picture.
+            if (landscape) {
+                IconButton(
+                    onClick = { sound = !sound; noSound = false },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .statusBarsPadding()
                         .displayCutoutPadding()
-                        .padding(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .padding(10.dp)
+                        .background(Color.Black.copy(alpha = 0.45f), CircleShape),
                 ) {
-                    IconButton(
-                        onClick = { sound = !sound; noSound = false },
-                        modifier = Modifier
-                            .padding(end = 6.dp)
-                            .background(Color.Black.copy(alpha = 0.45f), CircleShape),
-                    ) {
-                        Icon(
-                            imageVector = if (sound) FrigoIcons.Sound else FrigoIcons.SoundOff,
-                            contentDescription = if (sound) "Turn the sound off" else "Turn the sound on",
-                            tint = Color.White,
-                        )
-                    }
-                    IconButton(
-                        onClick = { fullscreen = false },
-                        modifier = Modifier.background(Color.Black.copy(alpha = 0.45f), CircleShape),
-                    ) {
-                        Icon(
-                            imageVector = FrigoIcons.FullscreenOut,
-                            contentDescription = "Leave fullscreen",
-                            tint = Color.White,
-                        )
-                    }
+                    Icon(
+                        imageVector = if (sound) FrigoIcons.Sound else FrigoIcons.SoundOff,
+                        contentDescription = if (sound) "Turn the sound off" else "Turn the sound on",
+                        tint = Color.White,
+                    )
                 }
             }
         }

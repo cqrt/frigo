@@ -589,8 +589,9 @@ attempts in a row is enough to know, and a still always works, so a tile that
 cannot stream shows something rather than staying grey.
 
 It is a switch rather than the default because four open streams cost a great
-deal more of both the phone's data and its battery than four pictures a second,
-and the warning under the switch says so. Measured on the emulator: with the
+deal more of both the phone's data and its battery than four pictures a second.
+The switch says "Live pictures" and nothing else; Settings explains no feature
+(see the entry on that below). Measured on the emulator: with the
 switch on, all four tiles open `/api/<camera>?height=360&fps=5` and stop asking
 for `latest.jpg`; with it off, `latest.jpg` comes round again.
 
@@ -650,3 +651,49 @@ camera at 8 kHz, so the app does not try to correct it.
 
 
 
+
+## Turning the phone is the way into fullscreen
+
+The player had a frame button that turned the screen on its side. It was a button
+for something the phone already does, and it forced the rotation the other way
+when you left, which could leave the phone on its side while the rest of the app
+was upright.
+
+Now the layout follows the phone. On its side, the camera or the clip fills the
+screen and the bars are gone; upright, the bar comes back. The button, the two
+vectors it used and the back handler that left fullscreen are all deleted.
+
+The first time it happens on a phone, Android itself says "Viewing full screen,
+to exit swipe down from the top". That is the system's own notice about hidden
+bars, shown once, and the app does not repeat it.
+
+On its side there is no bar to hold the sound switch or the way out, so both sit
+on the picture: sound at the top right for the camera, a close mark at the top
+right for a clip. The caption about the picture stays portrait only, because it
+is the sort of thing you read before you turn the phone, not after.
+
+## Settings says what it does, not why
+
+Settings had paragraphs under its switches: three about battery, three about live
+view, and a switch labelled "Tell me when something is seen". It is a settings
+screen. You come to it to change one thing.
+
+So the switches are named and the paragraphs are gone. "Enable" is the whole
+label for alerts. "Live pictures" is the whole label for the tiles. What used to
+be explained in prose is either obvious from the switch or belongs in the README:
+the battery link stays, because a link you cannot find is not a link, and the one
+line still there is the one that tells you a list is empty and nothing will buzz.
+
+## Every still carries a different address
+
+The home page tiles take a picture a second, and on the real server they stayed
+on the same picture for as long as the page was open. Pulling made no difference,
+which was the clue: the app was asking again, and getting the same bytes back.
+
+Nothing in the app caches them. The address it asked for never changed, and the
+server sits behind Cloudflare, which caches a .jpg under its address. The first
+picture answered for every request after it.
+
+So each still now carries a timestamp in its query string, ?height=360&t=....
+Frigate ignores the parameter. Anything caching the picture no longer has an
+address to cache it under, and the tile shows what the camera sees now.

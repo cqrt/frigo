@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.ui.components
 
+import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -33,12 +34,12 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,7 +57,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
 import nz.mckenzie.frigo.data.FrigateException
-import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.friendlyMessage
 import java.io.File
 
@@ -97,7 +97,9 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
     var received by remember(subject.stillKey) { mutableLongStateOf(0L) }
     var problem by remember(subject.stillKey) { mutableStateOf<Problem?>(null) }
     var started by remember(subject.stillKey) { mutableStateOf(false) }
-    var fullscreen by rememberSaveable(subject.stillKey) { mutableStateOf(false) }
+    // On its side, the clip gets the whole screen. Turning the phone is the button.
+    val landscape =
+        LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     val clip = subject.clip
 
@@ -130,8 +132,7 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
         ),
     ) {
         StatusBarIcons(darkIcons = false)
-        HideSystemBars(fullscreen)
-        Landscape(fullscreen)
+        HideSystemBars(landscape)
 
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             val ready = file
@@ -159,7 +160,7 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
             }
 
             Column(Modifier.fillMaxSize()) {
-                if (!fullscreen) {
+                if (!landscape) {
                     Row(
                         modifier = Modifier
                             .statusBarsPadding()
@@ -179,13 +180,6 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
                                 text = subject.subtitle,
                                 color = Color.White.copy(alpha = 0.7f),
                                 style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        IconButton(onClick = { fullscreen = true }) {
-                            Icon(
-                                imageVector = FrigoIcons.Fullscreen,
-                                contentDescription = "Fill the screen",
-                                tint = Color.White,
                             )
                         }
                         IconButton(onClick = onDismiss) {
@@ -227,10 +221,10 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
                 }
             }
 
-            // In fullscreen the title bar is gone, so the way back sits on the picture.
-            if (fullscreen) {
+            // On its side the header is gone, so the way out sits on the picture.
+            if (landscape) {
                 IconButton(
-                    onClick = { fullscreen = false },
+                    onClick = onDismiss,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .statusBarsPadding()
@@ -239,8 +233,8 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
                         .background(Color.Black.copy(alpha = 0.42f), CircleShape),
                 ) {
                     Icon(
-                        imageVector = FrigoIcons.FullscreenOut,
-                        contentDescription = "Leave fullscreen",
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Close",
                         tint = Color.White,
                     )
                 }

@@ -21,6 +21,7 @@ Then point the app at:
 """
 import base64
 import hashlib
+import itertools
 import json
 import os
 import select
@@ -35,6 +36,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # Every request on the console, for when you want to see what the app asks for.
 VERBOSE = os.environ.get("MOCK_VERBOSE") == "1"
 FRAMES = [open(os.path.join(HERE, f"frame{i}.jpg"), "rb").read() for i in range(3)]
+# Which frame the next still request gets. See the latest.jpg route.
+STILL = itertools.count()
 # A test pattern, so a clip that plays is obviously playing.
 CLIP = open(os.path.join(HERE, "clip.mp4"), "rb").read()
 
@@ -216,7 +219,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_bytes(CLIP, "video/mp4")
 
         if path.endswith("/latest.jpg"):
-            return self.send_bytes(FRAMES[0], "image/jpeg")
+            # A new frame for each request, so a tile that stops asking for
+            # pictures shows up as one that stops changing.
+            return self.send_bytes(FRAMES[next(STILL) % len(FRAMES)], "image/jpeg")
 
         if path == "/api/stream.aac":
             # Sound, which on a real server comes from go2rtc's own port rather
