@@ -231,7 +231,13 @@ class FrigoRepository(
     ): File = withContext(Dispatchers.IO) {
         val name = key.replace(NOT_IN_A_FILENAME, "_") + ".mp4"
         val clip = File(clipDir, name)
-        if (clip.isFile && clip.length() > 0) return@withContext clip
+        if (clip.isFile && clip.length() > 0) {
+            // A clip kept from an earlier version, or one that arrived sound,
+            // gets the same check. It costs a few milliseconds and does nothing
+            // at all to a file that is already right.
+            ClipRepair.repair(clip)
+            return@withContext clip
+        }
 
         clipDir.mkdirs()
         forgetOldClips()
