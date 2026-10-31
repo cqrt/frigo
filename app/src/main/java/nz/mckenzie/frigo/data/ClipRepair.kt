@@ -114,27 +114,31 @@ internal object ClipRepair {
             for (group in moofs) {
                 val prepared = group.map { prepared(it, tracks.getValue(it.track), typical[it.track]) }
                 val span = prepared
-                    .filter { it.ticks >= 0 }
+                    .filter { it.unsaid == 0L }
                     .maxOfOrNull { it.ticks.toDouble() / it.track.scale }
                     ?: 0.0
 
                 for (fragment in prepared) {
-                    if (fragment.ticks < 0) {
-                        // A traf that leaves every length to its own default: the
-                        // default is what a player believes the track lasts, and
-                        // Frigate's can claim hours. Give it this moof's span.
-                        val each = if (span > 0) {
-                            minOf((span * fragment.track.scale).roundToLong(), fragment.longest)
-                        } else {
-                            minOf(fragment.fragment.defaultDuration, fragment.longest)
-                                .takeIf { it > 0 }
-                                ?: fragment.nominal
-                        }
-                        fragment.ticks = each * fragment.fragment.truns.sumOf { it.count.toLong() }
-                        fragment.putDefault(each)
-                    } else {
-                        fragment.putDefault(fragment.nominal)
+                    // Samples whose length nothing states: this track's own typical
+                    // length if any fragment says one, otherwise the span of this
+                    // fragment split between them, so the track keeps pace with the
+                    // others that share it.
+                    val each = when {
+                        fragment.unsaid == 0L -> fragment.nominal
+                        fragment.ticks > 0 -> fragment.nominal
+                        fragment.typical != null -> fragment.typical
+                        span > 0 -> maxOf(
+                            1L,
+                            minOf(
+                                (span * fragment.track.scale).roundToLong() / fragment.unsaid,
+                                fragment.longest,
+                            ),
+                        )
+
+                        else -> fragment.nominal
                     }
+                    fragment.ticks += each * fragment.unsaid
+                    fragment.putDefault(each)
 
                     val now = running.getValue(fragment.fragment.track)
                     if (fragment.fragment.tfdtAt >= 0) {
@@ -150,36 +154,53 @@ internal object ClipRepair {
                     }
                 }
             }
-            if (!changed) return false
-
-            // The lengths the movie declares, so the scrub bar tells the truth.
+            // The lengths the movie declares, so the scrub bar tells the truth. A
+            // clip that declares none gets one; one that already says how long it
+            // is keeps the number it arrived with.
             var seconds = 0.0
             for ((id, track) in tracks) {
                 val end = running.getValue(id)
                 seconds = maxOf(seconds, end.toDouble() / track.scale)
                 val at = track.mdhd.contentStart + if (track.mdhdVersion == 1) 24 else 16
-                writes += value(at, end, track.mdhdVersion == 1)
+                add(writes, at, end, track.mdhdVersion == 1)?.let { changed = true }
             }
             val movieLength = (seconds * movieScale).roundToLong()
             for (track in tracks.values) {
                 val at = track.tkhd.contentStart + if (track.tkhdVersion == 1) 28 else 20
-                writes += value(at, movieLength, track.tkhdVersion == 1)
+                add(writes, at, movieLength, track.tkhdVersion == 1)?.let { changed = true }
             }
-            writes += value(
+            add(
+                writes,
                 mvhd.contentStart + if (mvhdVersion == 1) 24 else 16,
                 movieLength,
                 mvhdVersion == 1,
-            )
+            )?.let { changed = true }
             val mehd = find(moov, "mvex")?.let { find(it, "mehd") }
             if (mehd != null) {
-                writes += value(mehd.contentStart + 4, movieLength, version(mehd) == 1)
+                add(writes, mehd.contentStart + 4, movieLength, version(mehd) == 1)?.let {
+                    changed = true
+                }
             }
+            if (!changed) return false
 
             for (write in writes) {
                 file.seek(write.at)
                 file.write(write.bytes)
             }
             return true
+        }
+
+        /**
+         * Adds a write for a number the file doesn't already say, and answers it,
+         * or answers null when the file says it already.
+         */
+        private fun add(writes: ArrayList<Write>, at: Long, number: Long, wide: Boolean): Write? {
+            val write = value(at, number, wide)
+            val now = ByteArray(write.bytes.size)
+            read(at, now, now.size)
+            if (now.contentEquals(write.bytes)) return null
+            writes += write
+            return write
         }
 
         /** One `traf`: which track, when it starts, and the lengths of its samples. */
@@ -221,8 +242,10 @@ internal object ClipRepair {
 
         /**
          * A fragment with its impossible sample lengths replaced, and what it now
-         * lasts. `ticks` is -1 when every sample leaves its length to the default,
-         * in which case the whole fragment is a single stretch of time.
+         * lasts. A `trun` can leave every length to the header's default, which is
+         * the truth when it is a believable length and a nonsense number when it
+         * isn't; samples that end up with no length at all are counted in `unsaid`
+         * and the caller finds one for them.
          */
         private fun prepared(fragment: Fragment, track: Track, typical: Long?): Prepared {
             val longest = (TOO_LONG_SECONDS * track.scale).toLong()
@@ -230,12 +253,16 @@ internal object ClipRepair {
                 ?: fragment.defaultDuration.takeIf { it in 1..longest }
                 ?: maxOf(1L, track.scale / 20)
             val ceiling = minOf(longest, nominal * OUTLIER)
+            val fallback = fragment.defaultDuration.takeIf { it in 1..ceiling }
 
             val body = fragment.body.copyOf()
-            var ticks = -1L
+            var ticks = 0L
+            var unsaid = 0L
             for (trun in fragment.truns) {
-                if (trun.flags and TRUN_SAMPLE_DURATION == 0) continue
-                if (ticks < 0) ticks = 0L
+                if (trun.flags and TRUN_SAMPLE_DURATION == 0) {
+                    if (fallback != null) ticks += fallback * trun.count else unsaid += trun.count
+                    continue
+                }
                 var at = trun.samplesAt
                 val step = stride(trun.flags)
                 repeat(trun.count) {
@@ -249,7 +276,7 @@ internal object ClipRepair {
                     at += step
                 }
             }
-            return Prepared(fragment, track, body, ticks, nominal, ceiling, longest)
+            return Prepared(fragment, track, body, ticks, unsaid, typical, nominal, ceiling, longest)
         }
 
         /** The length a frame normally lasts on each track. */
@@ -379,6 +406,10 @@ internal object ClipRepair {
         val track: Track,
         val body: ByteArray,
         var ticks: Long,
+        /** How many samples have no length anywhere, and need one found for them. */
+        val unsaid: Long,
+        /** The length this track's other samples have, when any fragment says one. */
+        val typical: Long?,
         val nominal: Long,
         val ceiling: Long,
         val longest: Long,

@@ -215,7 +215,9 @@ to ExoPlayer as a file. A download has no ten second watchdog, it reports how mu
 has arrived, closing the viewer stops it, and the player reads something complete:
 it starts at once, seeking works, and a bad minute on the network costs a retry
 rather than the clip. Files are kept for a day and reused, so watching one twice
-costs one download.
+costs one download. A file already on the phone is checked and repaired the same
+way when it is opened, so a clip downloaded by an older version is fixed rather
+than fetched again.
 
 Frigate's ffmpeg can leave a response open long after the last byte has gone, a
 minute or more, so a quiet response ends the copy rather than failing it. What
@@ -293,21 +295,37 @@ held the first frame, then the phone gave up waiting: `Input dispatching timed o
 So the app repairs the file after the download and before the player sees it. A
 sample claiming more than two seconds, or more than four times the track's median
 sample, is given the median instead. Each fragment is laid at the end of the one
-before it on its own track. A `traf` that leaves every length to its default gets
-that default set to the span of the other tracks in the same fragment, and any
-default that claims more than two seconds is replaced. Then `mdhd`, `tkhd`, `mvhd`
-and `mehd` are given the lengths that result, so the scrub bar tells the truth.
+before it on its own track.
+
+A `trun` can leave the lengths out and leave them to the `tfhd` default. That
+default is worth believing only when it is a believable length: the sound track's
+1024 ticks at 8,000 a second is right, and the two-hour ones are not. A default
+that is believable is used as it stands. One that isn't gets the span of the other
+tracks in the same fragment, and the default is rewritten to match. Then `mdhd`,
+`tkhd`, `mvhd` and `mehd` are given the lengths that result, so the scrub bar tells
+the truth. A clip whose samples already say the right thing but whose header says
+it is no length at all gets only those header numbers filled in.
 
 No picture or sound is touched: only the numbers that say when to show it. The
 whole file is read and understood before anything is written, so a clip the walk
 does not follow, such as one cut short mid-fragment, is left exactly as it arrived.
 Reading a 25 MB clip takes about ten milliseconds.
 
-Measured over nine clips from this server: five needed the repair. `beeeva`
-declared 2:36:09 for 5.05 seconds of content and now says 00:00:05. `7zytxv`
-declared 1:04:41 and now says 1:53. `9sopxg` declared 17:01:51 and now says 00:57,
-which is the review it came from. All three play in the app. The four that needed
-nothing are unchanged, byte for byte.
+Measured over eleven clips from this server: four had sample lengths and clocks that
+needed changing, all eleven said nothing about their own length, and every one kept
+its picture and sound byte for byte. `beeeva` declared 2:36:09 for 5.05 seconds of
+content and now says 00:00:05. `7zytxv` declared 1:04:41 and now says 1:53.
+`9sopxg` declared 17:01:51 and now says 00:57, which is the review it came from.
+`opxb12` is 40 seconds long and plays as 00:40.
+
+The first version of this got `opxb12` wrong, and it is worth recording why. Three
+of its sound fragments leave their sample lengths to the default of 1024 ticks. The
+repair read those as unknown, fell back to the video's span of two seconds, and
+gave every sample in them two seconds: 39.8 seconds of sound became 104.4, and the
+fragments after the third were laid thirty seconds into the future. The sound's
+clock jumped ahead of the picture's, so the player dropped every frame whose time
+had passed: the picture stopped while the sound went on. The clip plays correctly
+on a desktop because a desktop never sees that file; it is ours.
 
 Rejected: remuxing the clip with ffmpeg. It writes a correct file, but ffmpeg is
 between 15 and 40 MB in an APK and takes seconds per clip on a phone. Rewriting the
