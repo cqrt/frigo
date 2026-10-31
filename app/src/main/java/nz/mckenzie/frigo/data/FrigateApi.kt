@@ -16,6 +16,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import java.io.File
+import java.net.SocketTimeoutException
+import java.util.concurrent.CancellationException
 
 /**
  * The handful of Frigate endpoints this app needs. Calls block, so everything
@@ -28,6 +31,8 @@ class FrigateApi(
     private val client: OkHttpClient,
     /** Same client settings but with no read timeout, for the endless MJPEG body. */
     private val streamClient: OkHttpClient = client,
+    /** Roomier timeouts than the rest, for a clip that arrives slowly. */
+    private val clipClient: OkHttpClient = client,
 ) {
 
     private val json = Json {
@@ -145,6 +150,75 @@ class FrigateApi(
             .get()
             .build()
         return json.decodeFromString(ListSerializer(FrigateReview.serializer()), request.okBody())
+    }
+
+    /**
+     * Copies a clip into a file as it arrives.
+     *
+     * Frigate sends a clip with no length and no support for ranges, cutting it
+     * out of the recordings while the response goes out. There is nothing to skip
+     * to and no way to resume, so this is a straight copy of the body, reporting
+     * how much has landed.
+     *
+     * A response that goes quiet ends the copy rather than failing it. Frigate's
+     * ffmpeg writes the clip as a series of fragments, each one playable on its
+     * own, and it can leave the connection open after the last one has gone. What
+     * arrived is a clip that plays to where the server got to.
+     *
+     * `shouldKeepGoing` is checked between chunks: closing the viewer stops the
+     * download rather than leaving it running with nobody watching.
+     */
+    fun downloadClip(
+        source: ClipSource,
+        target: File,
+        onProgress: (Long) -> Unit,
+        shouldKeepGoing: () -> Boolean,
+    ) {
+        val request = Request.Builder()
+            .url(source.url)
+            .header("Authorization", "Bearer ${source.token}")
+            .get()
+            .build()
+
+        clipClient.newCall(request).execute().use { response ->
+            // These two would otherwise arrive as "the server has no such
+            // endpoint" or "that username and password weren't accepted", neither
+            // of which is what happened.
+            if (response.code == 400 || response.code == 404) {
+                throw FrigateException(response.code, NO_CLIP)
+            }
+            if (response.code == 401 || response.code == 403) {
+                throw FrigateException(response.code, "Your session has expired. Sign in again.")
+            }
+            if (!response.isSuccessful) throw response.toException()
+
+            val body = response.body
+                ?: throw FrigateException(response.code, "The server sent nothing.")
+
+            var total = 0L
+            try {
+                body.byteStream().use { input ->
+                    target.outputStream().use { out ->
+                        val buffer = ByteArray(64 * 1024)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read == -1) break
+                            out.write(buffer, 0, read)
+                            total += read
+                            if (total > MAX_CLIP_BYTES) throw FrigateException(0, CLIP_TOO_BIG)
+                            if (!shouldKeepGoing()) throw CancellationException("clip download stopped")
+                            onProgress(total)
+                        }
+                    }
+                }
+            } catch (quiet: SocketTimeoutException) {
+                // The server stopped sending part way through. What arrived is a
+                // clip; keeping it beats throwing it away.
+                if (total == 0L) throw quiet
+            }
+
+            if (total == 0L) throw FrigateException(0, EMPTY_CLIP)
+        }
     }
 
     /** A single still, used for the camera grid. */
@@ -281,5 +355,18 @@ class FrigateApi(
 
     private companion object {
         val JSON = "application/json; charset=utf-8".toMediaType()
+
+        /** A clip is cut from recordings, so it goes when they do. */
+        const val NO_CLIP = "Frigate has no clip for this one any more. It cuts clips out " +
+            "of your recordings, so an old one goes when the recordings do."
+
+        /** Beyond this a review covers hours and the phone runs out of room. */
+        const val MAX_CLIP_BYTES = 400L * 1024 * 1024
+        const val CLIP_TOO_BIG = "This clip is too long to fetch, at over 400 MB. " +
+            "Reviews stay open while something keeps being seen, so an old one can " +
+            "cover hours of recording."
+
+        const val EMPTY_CLIP = "The server sent an empty clip. Its recordings may not " +
+            "cover that moment yet, so try again in a moment."
     }
 }

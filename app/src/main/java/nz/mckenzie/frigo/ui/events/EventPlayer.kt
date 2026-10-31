@@ -22,16 +22,19 @@ fun EventPlayerDialog(
     event: FrigateEvent,
     onDismiss: () -> Unit,
 ) {
-    // Frigate hands out the clip's address and the token it needs; the player then
-    // fetches the clip itself.
+    // Frigate hands out the clip's address and the token it needs; the repository
+    // fetches it into a file, and the viewer plays that.
     val subject = remember(event.id, event.hasClip) {
+        val source = if (event.hasClip) {
+            runCatching { repository.clipSource(event.id) }.getOrNull()
+        } else {
+            null
+        }
         ClipSubject(
             title = event.title(),
             subtitle = "${prettyCameraName(event.camera)} · ${relativeTime(event.startedAtMillis)}",
-            clip = if (event.hasClip) {
-                runCatching { repository.clipSource(event.id) }.getOrNull()
-            } else {
-                null
+            clip = source?.let { clip ->
+                { onProgress -> repository.clipFile(clip, "event-${event.id}", onProgress) }
             },
             stillKey = "snapshot-${event.id}",
             still = { repository.snapshot(event.id) },

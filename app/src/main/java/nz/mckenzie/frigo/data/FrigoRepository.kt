@@ -1,6 +1,7 @@
 package nz.mckenzie.frigo.data
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -9,6 +10,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Response
+import java.io.File
+import java.io.IOException
 
 /** What the app is showing: a spinner, the login form, or your cameras. */
 sealed interface Gate {
@@ -52,7 +55,11 @@ data class StreamSource(val url: String, val token: String)
 class FrigoRepository(
     private val api: FrigateApi,
     private val prefs: ServerPrefs,
+    /** Where fetched clips are kept, so watching one twice costs one download. */
+    cacheDir: File,
 ) {
+
+    private val clipDir = File(cacheDir, "clips")
 
     private val mutex = Mutex()
     @Volatile private var stored: ServerPrefs.Stored? = null
@@ -208,6 +215,49 @@ class FrigoRepository(
     }
 
     /**
+     * The clip as a file on the phone, fetched if it isn't already there.
+     *
+     * Frigate cuts a clip while it sends it, with no length and no support for
+     * ranges, and a phone on a home connection can see it arrive in dribs. A
+     * player reading that stream directly calls it stuck after ten seconds
+     * without progress and gives up. Copied to a file first, the player has the
+     * whole clip: it starts at once, it can be scrubbed, and a bad minute on the
+     * network costs a retry rather than the clip.
+     */
+    suspend fun clipFile(
+        source: ClipSource,
+        key: String,
+        onProgress: (Long) -> Unit,
+    ): File = withContext(Dispatchers.IO) {
+        val name = key.replace(NOT_IN_A_FILENAME, "_") + ".mp4"
+        val clip = File(clipDir, name)
+        if (clip.isFile && clip.length() > 0) return@withContext clip
+
+        clipDir.mkdirs()
+        forgetOldClips()
+
+        val part = File(clipDir, "$name.part")
+        val job = coroutineContext[Job]
+        try {
+            api.downloadClip(source, part, onProgress) { job?.isActive != false }
+            if (!part.renameTo(clip)) throw IOException("The clip couldn't be moved into place")
+            clip
+        } catch (failure: Throwable) {
+            part.delete()
+            clip.delete()
+            throw failure
+        }
+    }
+
+    /** Yesterday's clips are not worth the room. */
+    private fun forgetOldClips() {
+        val yesterday = System.currentTimeMillis() - 24L * 60 * 60 * 1000
+        clipDir.listFiles()?.forEach { file ->
+            if (file.lastModified() < yesterday) file.delete()
+        }
+    }
+
+    /**
      * Frigate's message feed, for the service that watches for alerts. Null when
      * nobody is signed in, which is also when there is nothing to watch.
      *
@@ -277,6 +327,9 @@ class FrigoRepository(
     }
 
     companion object {
+        /** Clips are named after the review or event they belong to. */
+        private val NOT_IN_A_FILENAME = Regex("[^A-Za-z0-9._-]")
+
         /**
          * Takes what people actually type - `frigate.example.com`, a full URL, or
          * one that already ends in /api - and returns a clean base.

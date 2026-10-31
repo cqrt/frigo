@@ -76,8 +76,9 @@ through a proxy, signed in as a restricted user with two cameras. What it answer
   token the app already sends.
 - A review stays open for as long as something keeps being seen, so one can cover
   three hours. Its clip is the whole stretch, cut from recordings on request, and
-  the player shows it as a three hour file. That is Frigate's answer, not a bug in
-  the app, but it is worth knowing before tapping an old review on a phone plan.
+  the app fetches the whole thing, which is why it stops at 400 MB. That is
+  Frigate's answer, not a bug in the app, but it is worth knowing before tapping an
+  old review on a phone plan.
 
 The mock now follows what the real server does here.
 
@@ -202,32 +203,48 @@ event, so three things follow:
   nothing you could do in the app would bring it back.
 - The encode happens on request, so the first frame takes a moment to arrive.
 
-## The clip plays as it arrives, which is why Media3 is in the build
+## The clip is fetched into a file, then played
 
-The player is ExoPlayer with a `DefaultHttpDataSource` whose default request
-properties carry the bearer token. The clip endpoint sits behind Frigate's auth
-like everything else, and the player has to make its own requests, so the token
-goes on every one of them rather than being attached to a single call.
+Frigate cuts a clip out of your recordings while it sends it: no length, no support
+for jumping about inside it, and the connection can go quiet for a while. Media3
+calls a player that makes no progress for ten seconds stuck and stops it, with
+`ERROR_CODE_TIMEOUT`. Over a home connection on a phone that was most clips.
 
-Rejected: downloading the clip to a temp file and then playing it. Frigate has to
-encode the clip before it sends anything, so the wait would sit in front of the
-player with nothing to show, and the file would need cleaning up afterwards.
+So the clip is copied into `cacheDir/clips` by the app's own client and then handed
+to ExoPlayer as a file. A download has no ten second watchdog, it reports how much
+has arrived, closing the viewer stops it, and the player reads something complete:
+it starts at once, seeking works, and a bad minute on the network costs a retry
+rather than the clip. Files are kept for a day and reused, so watching one twice
+costs one download.
+
+Frigate's ffmpeg can leave a response open long after the last byte has gone, a
+minute or more, so a quiet response ends the copy rather than failing it. What
+arrived is a clip and it plays to where the server got to. A clip Frigate never
+finished writing plays to that point and then says so, without offering a retry:
+fetching it again gives the same short file.
+
+Measured on the real server: thirteen of the fourteen newest alert clips came down
+in 0.2 to 3 seconds over both the local network and the proxy, sizes from 0.3 MB to
+32 MB, at up to 10 MB a second. The fourteenth, `1793420629.779106-0xx4wx`, stops
+at 278 KB every time and holds the connection for another 90 seconds without
+sending anything. Its first fragment declares 289 KB, so the file it would have been
+is short by that much. It reads the same over the local network, so the proxy is not
+the cause. The player gets one decoded frame out of it and then reaches the end.
+
+Rejected: playing the stream as it arrives. That was the first version, and the ten
+second watchdog is what it cost. It cannot be turned off, and it is the right rule
+for a live stream that has gone quiet.
 
 Rejected: the platform `MediaPlayer` and `VideoView`. `VideoView` cannot set a
 request header, and `MediaPlayer` only reports failure as an integer, which is not
 enough to tell "your session expired" from "the clip is gone".
 
-Two settings are there because of how the endpoint behaves. Load errors are retried
-twice, and the connect and read timeouts are fifteen and sixty seconds. Frigate can
-take a while to produce the first byte, and a clip plays through a proxy that holds
-the connection open, so a short patience was giving up on clips that would have
-arrived. The cost is that a server which is switched off leaves the spinner up for
-longer than it used to.
+The client used for the download has its own timeouts: fifteen seconds to connect
+and thirty for a read. The read timeout is what ends a response that has gone quiet,
+and thirty seconds is long enough that a slow fragment is not mistaken for the end.
 
-Seeking is not free. Frigate streams a file it is writing, with no range support,
-so a jump back or forward asks again and the encode starts over from the seek
-point. That is fine over a phone on the same network as the server, and it is why
-the player is a plain scrub bar rather than a frame-accurate timeline.
+Seeking is free now. The player has the whole file, so a jump is a jump inside it
+rather than a new request that starts the encode over.
 
 ## A clip that fails says why
 

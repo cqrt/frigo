@@ -21,7 +21,15 @@ class AppContainer(context: Context) {
         .readTimeout(0, TimeUnit.MILLISECONDS)
         .build()
 
-    private val api = FrigateApi(requestClient, streamClient)
+    // A clip is cut from recordings as it is sent, and can arrive slowly over a
+    // home connection, so the read timeout is long. A response that goes quiet
+    // for longer than this ends the copy with what arrived rather than failing.
+    private val clipClient = requestClient.newBuilder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
 
-    val repository = FrigoRepository(api, ServerPrefs(context))
+    private val api = FrigateApi(requestClient, streamClient, clipClient)
+
+    val repository = FrigoRepository(api, ServerPrefs(context), context.cacheDir)
 }

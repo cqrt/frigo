@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.ui.components
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,8 +25,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -47,23 +50,25 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.ui.PlayerView
-import nz.mckenzie.frigo.data.ClipSource
+import nz.mckenzie.frigo.data.FrigateException
+import nz.mckenzie.frigo.ui.friendlyMessage
+import java.io.File
 
 /**
- * What the full-screen viewer is showing: a title, the line under it, the clip if
- * there is one, and a still to show when there is not.
+ * What the full-screen viewer is showing: a title, the line under it, a clip if
+ * there is one, and a still to show while the clip is on its way.
  */
 data class ClipSubject(
     val title: String,
     val subtitle: String,
-    /** Null when Frigate kept no clip, which leaves the still on screen. */
-    val clip: ClipSource?,
+    /**
+     * Null when Frigate kept no clip, which leaves the still on screen. Otherwise
+     * this fetches the clip and hands back the file it landed in, saying how much
+     * has arrived as it goes.
+     */
+    val clip: (suspend (onProgress: (Long) -> Unit) -> File)?,
     val stillKey: String,
     val still: suspend () -> ByteArray?,
     /** Said at the bottom when there is no clip at all. */
@@ -73,16 +78,42 @@ data class ClipSubject(
 /**
  * One clip filling the screen, with its title over the top.
  *
- * Frigate cuts a clip out of your recordings when it is asked for one, so a clip
- * is only there for as long as the recordings are.
+ * Frigate cuts a clip out of your recordings when it is asked for one, and sends
+ * it with no length and no support for jumping about inside it. So the clip is
+ * fetched into a file first and played from there. A player reading the stream
+ * directly calls it stuck after ten seconds without progress, which is what a
+ * home connection on a phone does often enough to matter.
  */
 @Composable
 fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
     var attempt by remember(subject.stillKey) { mutableIntStateOf(0) }
+    var file by remember(subject.stillKey) { mutableStateOf<File?>(null) }
+    var received by remember(subject.stillKey) { mutableLongStateOf(0L) }
     var problem by remember(subject.stillKey) { mutableStateOf<Problem?>(null) }
     var started by remember(subject.stillKey) { mutableStateOf(false) }
-    val clip = remember(subject.clip?.url, attempt) { subject.clip }
-    val playing = clip != null && problem == null
+
+    val clip = subject.clip
+
+    // Keyed on the attempt so "Try again" asks the server again. Closing the
+    // viewer cancels this, which stops the download where it got to.
+    LaunchedEffect(clip, attempt) {
+        if (clip == null) return@LaunchedEffect
+        file = null
+        received = 0L
+        problem = null
+        started = false
+        try {
+            file = clip { bytes ->
+                // Every chunk would recompose the screen; four updates a megabyte
+                // is enough to watch.
+                if (bytes - received >= 256 * 1024) received = bytes
+            }
+        } catch (stop: kotlinx.coroutines.CancellationException) {
+            throw stop
+        } catch (failure: Throwable) {
+            problem = problemFrom(failure)
+        }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -94,9 +125,12 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
         StatusBarIcons(darkIcons = false)
 
         Box(Modifier.fillMaxSize().background(Color.Black)) {
-            if (playing) {
+            val ready = file
+            // A clip that failed to play leaves its own controls behind, so the
+            // still goes back up and the reason is read over that.
+            if (ready != null && problem == null) {
                 ClipPlayer(
-                    source = clip!!,
+                    file = ready,
                     onStarted = { started = true },
                     onProblem = { problem = it },
                     // Keeps the player's own controls clear of the gesture bar.
@@ -143,11 +177,14 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
 
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     when {
-                        playing && !started -> CircularProgressIndicator(color = Color.White)
-
                         problem != null -> ProblemPanel(
                             problem = problem!!,
                             onRetry = {
+                                // A clip that downloaded short stays short on disk.
+                                // Remove it so the retry fetches it again rather
+                                // than playing the same broken file.
+                                file?.delete()
+                                file = null
                                 problem = null
                                 started = false
                                 attempt++
@@ -155,12 +192,18 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
                             onClose = onDismiss,
                         )
 
-                        subject.note != null -> FootNote(
-                            text = subject.note,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 32.dp),
-                        )
+                        clip == null -> subject.note?.let {
+                            FootNote(
+                                text = it,
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 32.dp),
+                            )
+                        }
+
+                        ready == null -> GettingClip(received = received)
+
+                        !started -> CircularProgressIndicator(color = Color.White)
                     }
                 }
             }
@@ -168,10 +211,40 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
     }
 }
 
+/** Said while the clip is being fetched, with how much has arrived. */
+@Composable
+private fun GettingClip(received: Long) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        CircularProgressIndicator(color = Color.White)
+        Text(
+            text = "Getting the clip…",
+            color = Color.White,
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        if (received > 0) {
+            Text(
+                text = megabytes(received),
+                color = Color.White.copy(alpha = 0.6f),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+}
+
+private fun megabytes(bytes: Long): String = "%.1f MB".format(bytes / 1048576.0)
+
 @Composable
 private fun ProblemPanel(problem: Problem, onRetry: () -> Unit, onClose: () -> Unit) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(32.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(32.dp)
+            // Readable over whatever the still happens to be.
+            .background(Color.Black.copy(alpha = 0.8f), MaterialTheme.shapes.large)
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -210,12 +283,12 @@ private fun FootNote(text: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * The clip itself. The token goes on every request, because Frigate's auth covers
- * the clip as well as the API.
+ * The clip itself, played from a file on the phone. There is no token and no
+ * network in here: by the time the player starts, the whole clip is on disk.
  */
 @Composable
 private fun ClipPlayer(
-    source: ClipSource,
+    file: File,
     onStarted: () -> Unit,
     onProblem: (Problem) -> Unit,
     modifier: Modifier = Modifier,
@@ -226,27 +299,11 @@ private fun ClipPlayer(
     val currentProblem by rememberUpdatedState(onProblem)
     var wasPlaying by remember { mutableStateOf(false) }
 
-    val player = remember(source) {
-        val http = DefaultHttpDataSource.Factory()
-            .setDefaultRequestProperties(mapOf("Authorization" to "Bearer ${source.token}"))
-            .setUserAgent("Frigo")
-            .setAllowCrossProtocolRedirects(true)
-            // Frigate cuts the clip with ffmpeg before it sends anything, so the
-            // first byte can take a moment. A phone on a slow connection to a
-            // long clip needs longer than a LAN does.
-            .setConnectTimeoutMs(15_000)
-            .setReadTimeoutMs(60_000)
+    val player = remember(file) {
         ExoPlayer.Builder(context)
-            .setMediaSourceFactory(
-                DefaultMediaSourceFactory(context)
-                    .setDataSourceFactory(http)
-                    // Two more attempts, so a hiccup on the way to the first byte
-                    // doesn't end the clip.
-                    .setLoadErrorHandlingPolicy(DefaultLoadErrorHandlingPolicy(2))
-            )
             .build()
             .apply {
-                setMediaItem(MediaItem.fromUri(source.url))
+                setMediaItem(MediaItem.fromUri(Uri.fromFile(file)))
                 playWhenReady = true
                 prepare()
             }
@@ -259,7 +316,7 @@ private fun ClipPlayer(
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                currentProblem(problemFrom(error))
+                currentProblem(playbackProblemFrom(error))
             }
         }
         player.addListener(listener)
@@ -299,94 +356,71 @@ private fun ClipPlayer(
     )
 }
 
-/** Why the clip didn't play, in a sentence with something to do about it. */
-private fun problemFrom(error: PlaybackException): Problem {
-    // The reason sits somewhere down the chain, so look at all of it rather than
-    // only the first cause. A proxy's answer and a decoder's complaint arrive at
-    // different depths.
-    val chain = generateSequence<Throwable>(error) { it.cause }.toList()
-    val status = chain.filterIsInstance<HttpDataSource.InvalidResponseCodeException>()
-        .firstOrNull()?.responseCode
-
+/** Why the fetch failed, in a sentence with something to do about it. */
+private fun problemFrom(failure: Throwable): Problem {
+    val status = (failure as? FrigateException)?.status ?: 0
     val detail = buildString {
-        append(error.errorCodeName)
-        if (status != null) {
-            append(" · the server answered ").append(status)
-        } else {
-            val cause = chain.drop(1).firstOrNull()
-            if (cause != null) append(" · ").append(cause.javaClass.simpleName)
-            val said = chain.drop(1).firstNotNullOfOrNull { cause ->
-                cause.message?.takeIf { it.isNotBlank() }
-            }
-            if (said != null) append(": ").append(said.take(90))
+        if (status > 0) append("the server answered ").append(status)
+        else append(failure.javaClass.simpleName)
+        failure.message?.takeIf { it.isNotBlank() }?.let {
+            append(": ").append(it.take(90))
         }
     }
-    android.util.Log.w("Frigo", "clip failed: $detail", error)
+    android.util.Log.w("Frigo", "clip fetch failed: $detail", failure)
 
-    return when {
-        status == 401 || status == 403 -> Problem(
-            message = "Your session has expired. Sign in again.",
-            canRetry = false,
-            detail = detail,
-        )
+    return Problem(
+        message = failure.friendlyMessage(),
+        // A refused token needs a new sign-in, not another try.
+        canRetry = status != 401 && status != 403,
+        detail = detail,
+    )
+}
 
-        status == 400 || status == 404 -> Problem(
-            message = "Frigate has no clip for this one any more. It cuts clips out " +
-                "of your recordings, so an old one goes when the recordings do.",
-            canRetry = false,
-            detail = detail,
-        )
+/** Why a clip that was already on the phone didn't play. */
+private fun playbackProblemFrom(error: PlaybackException): Problem {
+    val detail = buildString {
+        append(error.errorCodeName)
+        error.cause?.let { append(" · ").append(it.javaClass.simpleName) }
+    }
+    android.util.Log.w("Frigo", "clip playback failed: $detail", error)
 
-        status != null -> Problem(
-            message = "The server wouldn't send the clip. It answered $status.",
-            canRetry = true,
-            detail = detail,
-        )
-
-        error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
-            error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ||
-            error.errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED -> Problem(
-            message = "Couldn't reach your server.",
-            canRetry = true,
-            detail = detail,
-        )
-
+    return when (error.errorCode) {
         // What a phone says when it has no decoder for the video, which is
         // possible because a clip keeps whatever the camera recorded. Frigate
         // copies the stream rather than converting it, so an H.265 camera gives
         // H.265 clips.
-        error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED ||
-            error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED ||
-            error.errorCode == PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED ||
-            error.errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED -> Problem(
-            message = "This phone can't play this clip's video. A clip keeps whatever the " +
-                "camera recorded, and this one is H.265, which not every phone can decode.",
+        PlaybackException.ERROR_CODE_DECODING_FAILED,
+        PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
+        PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
+        PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED,
+        -> Problem(
+            message = "This phone can't play this clip's video. Frigate copies what the " +
+                "camera recorded rather than converting it, so these clips are H.265, and " +
+                "not every phone can decode that.",
             canRetry = false,
             detail = detail,
         )
 
-        // A proxy that answers a request for the middle of the file with the whole
-        // file again leaves the player unable to jump.
-        error.errorCode == PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE -> Problem(
-            message = "The player couldn't jump to that part of the clip. The server sends " +
-                "the whole clip every time it is asked for a piece.",
+        PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND -> Problem(
+            message = "The clip has gone from the phone. Fetch it again.",
             canRetry = true,
             detail = detail,
         )
 
-        // A proxy that blocks a request sometimes answers with its own page, which
-        // is not a video, and the player says the file is malformed.
-        error.errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED -> Problem(
-            message = "The server sent a page instead of a clip. If you reach Frigate " +
-                "through a proxy, it may have stopped this request.",
+        PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED -> Problem(
+            message = "The clip arrived incomplete. Fetch it again.",
             canRetry = true,
             detail = detail,
         )
 
-        error.errorCode == PlaybackException.ERROR_CODE_TIMEOUT -> Problem(
-            message = "The clip took too long to start. A clip is cut from your recordings " +
-                "when it is asked for, so a long one takes a moment.",
-            canRetry = true,
+        // The player reached the end of the file before the clip did. Frigate
+        // writes a clip as it goes, and for a broken one it stops writing part
+        // way through and never closes the response. Fetching it again gives the
+        // same short file, so there is nothing to try.
+        PlaybackException.ERROR_CODE_IO_UNSPECIFIED if error.isAtEndOfFile() -> Problem(
+            message = "Frigate didn't finish writing this clip, so it stops part way " +
+                "through. Fetching it again would give the same broken file.",
+            canRetry = false,
             detail = detail,
         )
 
@@ -394,9 +428,19 @@ private fun problemFrom(error: PlaybackException): Problem {
     }
 }
 
+/** Whether the failure underneath is the file simply running out. */
+private fun PlaybackException.isAtEndOfFile(): Boolean {
+    var cause: Throwable? = this.cause
+    while (cause != null) {
+        if (cause is java.io.EOFException) return true
+        cause = cause.cause
+    }
+    return false
+}
+
 /**
- * A failure the player can show, and whether trying again is worth offering.
- * The detail is the error's own name, shown small, so a report says what happened
+ * A failure the viewer can show, and whether trying again is worth offering. The
+ * detail is the failure's own name, shown small, so a report says what happened
  * rather than only that something did.
  */
 private data class Problem(

@@ -98,9 +98,11 @@ of your camera's recordings and sends it as it goes. So the clip needs recording
 switched on, and it lasts as long as they do: once the recordings have aged out,
 the event keeps its still and its clip is gone.
 
-The app plays the clip as it arrives, so the picture starts before the whole
-thing has downloaded, and the token goes with the request the way it does on
-every other screen.
+The app fetches the whole clip first, showing how much has arrived, then plays it
+from the phone. A clip sent straight into the player stalls on a slow connection,
+and the player gives up on it after ten seconds without progress. Fetched first, it
+starts at once and you can scrub through it. A clip you've watched is kept for a
+day, so watching it again costs nothing.
 
 ## What counts as a review
 

@@ -20,10 +20,13 @@ fun ReviewPlayerDialog(
     onDismiss: () -> Unit,
 ) {
     val subject = remember(review.id) {
+        val source = runCatching { repository.reviewClipSource(review.id) }.getOrNull()
         ClipSubject(
             title = review.title(),
             subtitle = "${prettyCameraName(review.camera)} · ${relativeTime(review.startedAtMillis)}",
-            clip = runCatching { repository.reviewClipSource(review.id) }.getOrNull(),
+            clip = source?.let { clip ->
+                { onProgress -> repository.clipFile(clip, "review-${review.id}", onProgress) }
+            },
             stillKey = "review-still-${review.id}",
             still = { repository.reviewThumbnail(review) },
         )
