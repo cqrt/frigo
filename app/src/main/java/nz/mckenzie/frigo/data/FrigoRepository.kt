@@ -326,9 +326,10 @@ class FrigoRepository(
         }
 
     /** A picture of the recording at that moment, for while the clip arrives. */
-    suspend fun recordingStill(camera: String, moment: Double): ByteArray? = runCatching {
-        authorized { baseUrl, token -> api.recordingStill(baseUrl, token, camera, moment) }
-    }.getOrNull()
+    suspend fun recordingStill(camera: String, moment: Double, height: Int = 720): ByteArray? =
+        runCatching {
+            authorized { baseUrl, token -> api.recordingStill(baseUrl, token, camera, moment, height) }
+        }.getOrNull()
 
     /**
      * The clip as a file on the phone, fetched if it isn't already there.

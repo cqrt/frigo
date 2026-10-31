@@ -777,3 +777,44 @@ gaps, the marker following a tap and a drag, the still arriving after the finger
 settles rather than on every step, playback of a stretch, Play greyed over a gap,
 Back returning to the live view with the tabs still hidden, and the screen's own
 Try again recovering once the mock was back.
+
+## The picture follows the finger, and so do the other cameras
+
+A still that appears when the finger stops is not what the server's own page does:
+there, dragging plays the day back like a film sped up. The screen now asks for a
+new picture on every step, with the requests conflated: one is in flight per
+camera, and when it lands the next asks for wherever the finger has got to. A slow
+server therefore sets the pace, and a fast one cannot run away with it.
+
+It can run away without a floor, which it did. The first version asked for 497
+pictures in eight seconds against a mock that answers in a millisecond, and every
+one of those is an ffmpeg job cutting a frame out of the recording on the server.
+So there is now a gap of 120 ms under the big picture, eight a second at most, and
+400 ms under the small ones, two and a half. On a real box the round trip is the
+slower of the two anyway; the floor only bites when the answer is instant.
+
+The pictures are not cached. A frame belongs to one moment, and the 16 MB image
+cache is better spent on thumbnails you scroll back past.
+
+The flow that feeds it took two goes to get right. Handing `rememberUpdatedState`
+a lambda and reading it inside `snapshotFlow` re-emits on every recomposition,
+because the lambda is a new object each time and a state holding it always looks
+changed. Each emission started another fetch, each fetch recomposed, and the loop
+fed itself. Holding the moment in the state instead means a value that only looks
+new when it is new: nought requests while sitting still, ten a second while
+dragging.
+
+The three other cameras are drawn under the big one, a third of the width each,
+with their names under them, all four at the same moment. They ask for a 360 line
+rather than 720, since nobody is looking at them closely. A camera with nothing
+recorded then comes back empty and shows as a blank tile, which is useful in
+itself: it says which camera caught the thing.
+
+The big picture is also blank when the moment falls in a gap of the camera you
+opened, and it is not asked for at all then. The stretches for that one camera are
+already known, so there is no reason to spend a request finding out what the
+answer is, and no chance of an old frame sitting under a new time.
+
+Checked on the emulator against the mock: the time and all four pictures changing
+step by step through a drag, nought requests over ten idle seconds, a blank big
+picture over a gap with the three small ones still showing, and Play greyed there.

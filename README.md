@@ -17,10 +17,13 @@ around it. Turn it back and the bar comes with it. There's no button for it.
 
 The clock in a camera's bar opens its recordings: a bar of the day, with the hours
 Frigate kept filled in and the gaps left grey. Pick the day from the buttons along
-the top, then drag along the bar. The picture at that moment shows underneath.
-Play fetches the two minutes from there and opens it in the same viewer an event
-opens in, starting fifteen seconds before the moment you picked so you see what
-led up to it. Over a gap, Play greys out and the line underneath says nothing was
+the top, then drag along the bar. The picture follows your finger as it goes, so a
+drag across the day plays back like a film sped up. The other cameras sit
+underneath at the same moment, each with its name, so you can see which one caught
+what you're after without going back to the grid. Play fetches the two minutes
+from there and opens it in the same viewer an event opens in, starting fifteen
+seconds before the moment you picked so you see what led up to it. Over a gap, Play
+greys out, the picture goes blank, and the line underneath says nothing was
 recorded then.
 
 **Review.** The moments Frigate thought were worth a look, newest first. Frigate

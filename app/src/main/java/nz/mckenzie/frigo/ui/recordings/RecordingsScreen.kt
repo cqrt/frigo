@@ -1,6 +1,8 @@
 package nz.mckenzie.frigo.ui.recordings
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
@@ -35,24 +37,32 @@ import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.withContext
+import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.RecordingDay
 import nz.mckenzie.frigo.data.RecordingSpan
-import nz.mckenzie.frigo.ui.components.CachedImage
 import nz.mckenzie.frigo.ui.components.ClipSubject
+import nz.mckenzie.frigo.ui.components.toImageBitmapOrNull
 import nz.mckenzie.frigo.ui.components.ClipViewer
 import nz.mckenzie.frigo.ui.friendlyMessage
 import java.time.Instant
@@ -67,6 +77,15 @@ private const val ClipSeconds = 120.0
 private const val LeadInSeconds = 15.0
 
 private const val SecondsInADay = 86_400.0
+
+/**
+ * How often the big picture may change, at most. Eight a second reads as video;
+ * more than that is a server cutting pictures nobody sees.
+ */
+private const val MainStillGap = 120L
+
+/** The three small ones, at two and a half a second. They are there to be noticed, not to be watched. */
+private const val OtherStillGap = 400L
 
 /**
  * The days a camera kept recordings for, and a bar of the day to drag along.
@@ -90,6 +109,7 @@ fun RecordingsScreen(
     var spans by remember { mutableStateOf<List<RecordingSpan>>(emptyList()) }
     var day by rememberSaveable(camera) { mutableStateOf<String?>(null) }
     var chosen by rememberSaveable(camera) { mutableDoubleStateOf(0.0) }
+    var others by remember { mutableStateOf<List<Camera>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var problem by remember { mutableStateOf<String?>(null) }
     var subject by remember { mutableStateOf<ClipSubject?>(null) }
@@ -107,6 +127,13 @@ fun RecordingsScreen(
             }
             .onFailure { problem = it.friendlyMessage() }
         loading = false
+    }
+
+    // The cameras to show under the picture. The grid's order, minus this one.
+    LaunchedEffect(camera) {
+        runCatching { repository.cameras() }.onSuccess { found ->
+            others = found.filter { it.name != camera }
+        }
     }
 
     // Which stretches of the chosen day were recorded, and where the marker lands
@@ -250,8 +277,47 @@ fun RecordingsScreen(
                     Button(onClick = ::play, enabled = recorded) { Text("Play") }
                 }
 
-                if (recorded) {
-                    MomentStill(repository = repository, camera = camera, moment = chosen)
+                MomentStill(
+                    repository = repository,
+                    camera = camera,
+                    moment = chosen,
+                    enabled = recorded,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f),
+                )
+
+                // The rest of the cameras at the same moment, so you can see
+                // which one caught what you are looking for without going back.
+                if (others.isNotEmpty()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        others.forEach { other ->
+                            Column(Modifier.weight(1f)) {
+                                MomentStill(
+                                    repository = repository,
+                                    camera = other.name,
+                                    moment = chosen,
+                                    height = 360,
+                                    minGapMillis = OtherStillGap,
+                                    contentDescription = other.title,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(16f / 9f),
+                                )
+                                Text(
+                                    text = other.title,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp),
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -351,32 +417,74 @@ private fun Timeline(
 }
 
 /**
- * The picture Frigate cuts from the recording at that moment, so you know what
- * you are about to watch before you press Play.
+ * The recording at that moment, redrawn as the marker moves.
  *
- * Dragging across the day changes [moment] many times a second, so the picture is
- * only asked for once the finger has settled. Each one is kept in the image cache
- * under its own moment, so dragging back over ground you have covered costs
- * nothing.
+ * Dragging changes [moment] many times a second, far more often than a picture of
+ * it can be cut and sent. So the requests are conflated: one is in flight at a
+ * time, and when it lands the next one asks for wherever the finger is by then. A
+ * fast drag through a quiet hour plays as a run of pictures rather than a stall,
+ * and the last one you land on is the one that stays.
+ *
+ * [minGapMillis] keeps one picture from following another too closely. Frigate
+ * cuts each one out of the recording with ffmpeg when it is asked, so a server
+ * that answers quickly would otherwise be asked thousands of times over a drag.
+ *
+ * Nothing is cached. A picture here belongs to one moment and nothing else, and
+ * the cache is small enough to be wanted by thumbnails instead.
+ *
+ * A moment with no recording behind it comes back empty, and the picture goes
+ * with it: an old frame sitting under a new moment would be a lie about the time.
+ * [enabled] on false does the same without asking, for a camera whose stretches
+ * you already know it has nothing in.
  */
 @Composable
-private fun MomentStill(repository: FrigoRepository, camera: String, moment: Double) {
-    var settled by remember { mutableStateOf(moment) }
+private fun MomentStill(
+    repository: FrigoRepository,
+    camera: String,
+    moment: Double,
+    modifier: Modifier = Modifier,
+    height: Int = 720,
+    minGapMillis: Long = MainStillGap,
+    enabled: Boolean = true,
+    contentDescription: String? = null,
+) {
+    var frame by remember(camera) { mutableStateOf<ImageBitmap?>(null) }
+    // The moment as it stands now. Held in a state so the loop below wakes when
+    // the finger moves, without being tied to the moment it started on and
+    // without re-emitting a moment that has not changed.
+    val latest by rememberUpdatedState(moment)
 
-    LaunchedEffect(moment) {
-        delay(350)
-        settled = moment
+    LaunchedEffect(camera, height, minGapMillis, enabled) {
+        if (!enabled) {
+            frame = null
+            return@LaunchedEffect
+        }
+        snapshotFlow { latest }
+            .conflate()
+            .collect { at ->
+                val started = System.nanoTime()
+                val bytes = runCatching { repository.recordingStill(camera, at, height) }.getOrNull()
+                frame = bytes?.let { withContext(Dispatchers.Default) { it.toImageBitmapOrNull() } }
+
+                val spent = (System.nanoTime() - started) / 1_000_000
+                if (spent < minGapMillis) delay(minGapMillis - spent)
+            }
     }
 
-    CachedImage(
-        cacheKey = "recording-$camera-${settled.toLong()}",
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f)
-            .clip(RoundedCornerShape(14.dp)),
-        contentScale = ContentScale.Crop,
-        load = { repository.recordingStill(camera, settled) },
-    )
+    Box(
+        modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        frame?.let { picture ->
+            Image(
+                bitmap = picture,
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
 }
 
 /** Midnight at the start of that day, where the phone is. */
