@@ -240,6 +240,10 @@ class FrigoRepository(
         val job = coroutineContext[Job]
         try {
             api.downloadClip(source, part, onProgress) { job?.isActive != false }
+            // The clip arrives with the recordings' timing, which can leave a
+            // player holding the first frame for hours. Straightening it costs a
+            // moment and changes nothing on a clip that is already sound.
+            if (ClipRepair.repair(part)) android.util.Log.i("Frigo", "clip timing repaired")
             if (!part.renameTo(clip)) throw IOException("The clip couldn't be moved into place")
             clip
         } catch (failure: Throwable) {

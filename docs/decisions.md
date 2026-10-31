@@ -271,6 +271,48 @@ this server is H.265, Main profile, level 5.0.
 
 Cost: Media3 takes the release APK from 1.6 MB to 2.4 MB.
 
+## A clip's timings are rewritten so it plays
+
+A clip Frigate cuts with `-c copy` keeps the recordings' timing rather than getting
+new timing. On this server that timing is broken in three ways, and together they
+stop a player.
+
+- A sample can declare a length that is not a frame. One clip's first video sample
+  claims 842,800,096 ticks, which at 90,000 a second is two hours and thirty-six
+  minutes for a clip with five seconds of picture in it.
+- Every fragment restarts its decode time at zero, so a player reading the file in
+  order sees the same time arrive again and again.
+- A track that declares no sample lengths, here the audio, leaves the length to its
+  `tfhd` default, and that default stands for the whole clip. One is 74,915,565 at
+  8,000 a second, which is two hours and thirty-six minutes.
+
+The player takes the movie's length from its longest track, so the audio default
+alone was enough to make a five second clip a two and a half hour one. ExoPlayer
+held the first frame, then the phone gave up waiting: `Input dispatching timed out`.
+
+So the app repairs the file after the download and before the player sees it. A
+sample claiming more than two seconds, or more than four times the track's median
+sample, is given the median instead. Each fragment is laid at the end of the one
+before it on its own track. A `traf` that leaves every length to its default gets
+that default set to the span of the other tracks in the same fragment, and any
+default that claims more than two seconds is replaced. Then `mdhd`, `tkhd`, `mvhd`
+and `mehd` are given the lengths that result, so the scrub bar tells the truth.
+
+No picture or sound is touched: only the numbers that say when to show it. The
+whole file is read and understood before anything is written, so a clip the walk
+does not follow, such as one cut short mid-fragment, is left exactly as it arrived.
+Reading a 25 MB clip takes about ten milliseconds.
+
+Measured over nine clips from this server: five needed the repair. `beeeva`
+declared 2:36:09 for 5.05 seconds of content and now says 00:00:05. `7zytxv`
+declared 1:04:41 and now says 1:53. `9sopxg` declared 17:01:51 and now says 00:57,
+which is the review it came from. All three play in the app. The four that needed
+nothing are unchanged, byte for byte.
+
+Rejected: remuxing the clip with ffmpeg. It writes a correct file, but ffmpeg is
+between 15 and 40 MB in an APK and takes seconds per clip on a phone. Rewriting the
+numbers in place does the same job to the same file in milliseconds.
+
 ## Zoom scales the frame the phone already has
 
 The pinch is a scale and a translation on the picture, done by the GPU. The

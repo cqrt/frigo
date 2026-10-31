@@ -104,6 +104,10 @@ and the player gives up on it after ten seconds without progress. Fetched first,
 starts at once and you can scrub through it. A clip you've watched is kept for a
 day, so watching it again costs nothing.
 
+Some clips arrive from Frigate saying the wrong thing about their own timing. A
+player reads that as a wait of hours and sits on the first frame. The app corrects
+the timing before it plays, and the picture and sound themselves are untouched.
+
 ## What counts as a review
 
 A review is a stretch of time, not a single object. While something stays in a
