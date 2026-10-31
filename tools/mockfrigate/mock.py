@@ -30,6 +30,7 @@ import socket
 import struct
 import sys
 import time
+import zoneinfo
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
@@ -208,12 +209,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_bytes(FRAMES[0], "image/jpeg")
 
         if path == "/api/review":
-            # Frigate's endpoint is singular. It answers alerts first, each
-            # newest first, the way the real one orders them by severity.
+            # Frigate's endpoint is singular. Without a severity it sends alerts
+            # and detections together, which is what the timeline's spikes ask for.
             query = parse_qs(urlparse(self.path).query)
-            severity = (query.get("severity") or ["alert"])[0]
+            severity = (query.get("severity") or [None])[0]
             reviewed = (query.get("reviewed") or [None])[0]
-            return self.send_json(reviews(severity, reviewed))
+            cameras = listed(query, "cameras") or listed(query, "camera")
+            after = float(query["after"][0]) if query.get("after") else None
+            before = float(query["before"][0]) if query.get("before") else None
+            return self.send_json(reviews(severity, reviewed, cameras, after, before))
 
         if path.startswith("/api/review/") and path.endswith("/clip.mp4"):
             # Cut from recordings on a real server; here it is one short file.
@@ -222,8 +226,17 @@ class Handler(BaseHTTPRequestHandler):
         if path.endswith("/recordings/summary"):
             # Which days and hours a camera has footage for. The mock keeps the
             # last three days, most of the day, with a couple of hours missing so
-            # the gaps show.
-            today = datetime.datetime.now(datetime.timezone.utc).date()
+            # the gaps show. The days are worked out in the timezone the app asks
+            # for, so Today is today where the phone is rather than where the mock
+            # runs. Windows has no time zone database of its own, so without the
+            # tzdata package this falls back to the machine's own clock, which is
+            # right whenever the two agree.
+            asked = (parse_qs(urlparse(self.path).query).get("timezone") or ["utc"])[0]
+            try:
+                where = zoneinfo.ZoneInfo(asked)
+            except (zoneinfo.ZoneInfoNotFoundError, ValueError):
+                where = datetime.datetime.now().astimezone().tzinfo
+            today = datetime.datetime.now(where).date()
             days = []
             for back in range(3):
                 day = today - datetime.timedelta(days=back)
@@ -485,12 +498,21 @@ def events(raw_query):
     return answer[:limit]
 
 
-def reviews(severity, reviewed=None):
+def reviews(severity, reviewed=None, cameras=None, after=None, before=None):
     """Reviews shaped like 0.18's, newest first, with both kinds served.
 
     `reviewed` is what the app asks for: "0" for the ones still to watch, "1"
     for the ones watched, and None for both, which is what Frigate does.
+
+    With no `severity` this answers a spread across the window asked for, which
+    is the timeline's question. A window is a day wide, so a handful of fixed
+    ones near now would leave the bar almost empty and say nothing about the
+    two colours. The spread is worked out from the window, so asking twice
+    gives the same spikes in the same places.
     """
+    if severity is None:
+        return spread(after, before, cameras)
+
     now = time.time()
     seen = {
         "alert": [
@@ -508,6 +530,12 @@ def reviews(severity, reviewed=None):
     answer = []
     for index, (camera, objects, zones, ago, length) in enumerate(seen):
         started = now - ago
+        if cameras and camera not in cameras:
+            continue
+        if after is not None and started + length < after:
+            continue
+        if before is not None and started > before:
+            continue
         review_id = f"1700000{index}00.000000-{severity}"
         watched = review_id in REVIEWED
         if reviewed == "0" and watched:
@@ -532,6 +560,43 @@ def reviews(severity, reviewed=None):
                     "sub_labels": [],
                     "significant_motion_areas": [],
                     "zones": zones,
+                },
+            }
+        )
+    return answer
+
+
+def spread(after, before, cameras):
+    """A day's worth of reviews across a window, so the bar has spikes to draw."""
+    if after is None or before is None or before <= after:
+        return []
+
+    step = (before - after) / 90
+    answer = []
+    for index in range(90):
+        started = after + (index + 0.5) * step
+        # One in seven is an alert, the rest detections, so both colours show. The
+        # camera changes on five and the kind on seven, so every camera gets both.
+        severity = "alert" if index % 7 == 3 else "detection"
+        camera = list(CAMERAS)[index % len(CAMERAS)]
+        if cameras and camera not in cameras:
+            continue
+        answer.append(
+            {
+                "id": f"spread-{int(started)}-{severity}",
+                "camera": camera,
+                "start_time": started,
+                "end_time": started + step * (2 if severity == "alert" else 0.7),
+                "severity": severity,
+                "has_been_reviewed": index % 4 == 0,
+                "thumb_path": f"/clips/{camera}/spread-{index}.webp",
+                "data": {
+                    "audio": [],
+                    "detections": [f"{started:.6f}-spread{index}"],
+                    "objects": ["person"],
+                    "sub_labels": [],
+                    "significant_motion_areas": [],
+                    "zones": [],
                 },
             }
         )

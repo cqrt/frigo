@@ -818,3 +818,71 @@ answer is, and no chance of an old frame sitting under a new time.
 Checked on the emulator against the mock: the time and all four pictures changing
 step by step through a drag, nought requests over ten idle seconds, a blank big
 picture over a gap with the three small ones still showing, and Play greyed there.
+
+## The day's bar moves onto the camera screen
+
+The bar was a screen of its own, opened by a clock in the camera's bar. Every look
+back meant leaving the live picture, and the live picture is where you start when
+you want to see what just happened. So the bar now sits under the live view on the
+camera screen, and the screen, the route and the clock icon are gone.
+
+The picture the bar draws is the one the screen is about. Live video while you are
+live, and the recording at the marker once you touch the bar. A pill on the picture
+says Live and takes you back to the stream, which is the only way to get there
+again. On its side the bar goes and the stream keeps running: there is nothing to
+drag with the phone sideways, and leaving a still up that you could not move would
+be worse than showing the camera.
+
+While live the marker sits at now, stepped every fifteen seconds, and Play offers
+the two minutes up to now. That keeps the time under the bar true and gives Play a
+meaning in both states: what just happened while live, what led up to the marker
+once you have dragged.
+
+The height of the picture is whatever is left after the bar and the strip of other
+cameras, and the picture is centred in it rather than top-aligned, which is what it
+was doing before the bar arrived to make the leftover space obvious.
+
+## Spikes, from the reviews the server already keeps
+
+Frigate's own page marks a day with a coloured strip of what it flagged, and the
+bar was saying only where the footage was, not where anything happened. The spikes
+are Frigate's reviews for that one camera and that one day: /api/review with
+cameras, after and before. Alerts are red and stand taller; detections are amber and
+sit low, so a quiet hour of detections cannot bury an alert in it.
+
+Reviewed and unreviewed both come back. The bar is a record of the day, not a list
+of things still to watch, so marking a review watched does not rub it out of the
+history.
+
+No limit is sent. The endpoint takes one, and Frigate orders alert kinds first and
+newest first inside each, so a limit would quietly drop part of the day rather than
+the end of the list. A day's reviews on one camera is a small answer anyway.
+
+The request sends whole seconds. A double put straight into a URL comes out as
+1.7934444E9, and the digits that fall off are the edges of the day.
+
+## A camera you tap into keeps the moment
+
+Tapping one of the other cameras under the picture brings it up in the picture at
+the same moment, so you can follow a person from the drive to the door without
+going back to the grid and hunting for the time again. A swipe still means browsing
+live, so it goes back to the stream on the next camera; the two gestures do
+different things because that is what they are for.
+
+This needed the day, the marker and the live flag to stop being keyed on the
+camera. Keyed, they were thrown away the moment the camera changed and came back at
+their starting values, which put the marker at that camera's latest recording and
+the picture back on the stream. They now live on the screen and are reset by the
+fetch that follows a camera change, unless the change came from a tile.
+
+A moment after now counts as a gap. The stretches can only be trusted as far as the
+clock, and a marker dragged past it would otherwise offer a clip whose end is
+before its start.
+
+Checked on the emulator against the mock: the bar under the live picture with Today
+on it, red and amber spikes, a drag that moved the marker and the picture together,
+Live taking the picture back to the stream, the strip appearing with three named
+cameras, a tap on one moving the main picture to that camera at the same moment, a
+swipe going back to live, another day's spikes loading on its chip, Play opening the
+clip of the stretch, the phone on its side showing the stream with no bar, and
+nought requests over ten idle seconds.

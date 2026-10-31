@@ -178,6 +178,38 @@ class FrigateApi(
     }
 
     /**
+     * Every review Frigate kept on one camera between two moments, alerts and
+     * detections together, watched or not. This is what the timeline draws its
+     * spikes from.
+     *
+     * No limit is sent. The bar covers a whole day, and a limit would cut the
+     * oldest part of it off without saying so. The server answers alert kinds
+     * first and newest first within each, so the order is no use: each one
+     * carries its own severity and start time.
+     */
+    fun reviewSpikes(
+        baseUrl: String,
+        token: String,
+        camera: String,
+        after: Double,
+        before: Double,
+    ): List<FrigateReview> {
+        val builder = url(baseUrl, "/api/review").newBuilder()
+            .addQueryParameter("cameras", camera)
+            // Whole seconds: a double put into a URL comes out as 1.7934444E9, and
+            // the digits past that are the edges of the day.
+            .addQueryParameter("after", after.toLong().toString())
+            .addQueryParameter("before", before.toLong().toString())
+
+        val request = Request.Builder()
+            .url(builder.build())
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return json.decodeFromString(ListSerializer(FrigateReview.serializer()), request.okBody())
+    }
+
+    /**
      * Tells Frigate a review has been watched, which is what takes it out of the
      * list for everyone, the web page included.
      */

@@ -198,6 +198,10 @@ class FrigoRepository(
         )
     }
 
+    /** The moments Frigate flagged on one camera over a stretch of the day. */
+    suspend fun reviewSpikes(camera: String, after: Double, before: Double): List<FrigateReview> =
+        authorized { baseUrl, token -> api.reviewSpikes(baseUrl, token, camera, after, before) }
+
     /**
      * Says a review has been watched. Frigate keeps that on the server, so the
      * web page drops it from its list too.
