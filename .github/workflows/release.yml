@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release, e.g. 0.2.0'
+        description: 'Version to release, e.g. 0.7.3'
         required: true
 
 permissions:
@@ -54,11 +54,20 @@ jobs:
             exit 1
           fi
 
-          # 0.2.1 -> 201. Derived from the version rather than the run number, so a
-          # phone that already has 0.2.1 always accepts 0.3.0 next.
+          # 0.7.3 -> 703. Derived from the version rather than the run number, so a
+          # phone that already has 0.7.3 always accepts 0.7.4 next.
           MAJOR="$(echo "${VERSION}" | cut -d. -f1)"
           MINOR="$(echo "${VERSION}" | cut -d. -f2)"
           PATCH="$(echo "${VERSION}" | cut -d. -f3)"
+
+          # The code gives each part two decimal places, so 0.7.100 and 0.8.0 are
+          # both 800. A part past 99 would quietly take another release's code,
+          # and the phone would refuse it as a downgrade or install the wrong one.
+          if [ "${MINOR}" -gt 99 ] || [ "${PATCH}" -gt 99 ]; then
+            echo "::error::${VERSION} has a part above 99; the version code only has room for two digits of each"
+            exit 1
+          fi
+
           CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
 
           echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"

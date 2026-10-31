@@ -470,10 +470,15 @@ Rejected: building releases on this machine and uploading the APK by hand. It
 works, but the version code is then whatever was typed, and the release notes
 come from nowhere.
 
-The version code is derived from the version in the tag (`0.2.1` -> 201) rather
+The version code is derived from the version in the tag (`0.7.3` -> 703) rather
 than from the workflow's run number. Run numbers start at 1 and climb, so a
 runner number would sit below APKs already built locally, which Android treats
 as a downgrade.
+
+The last number counts up to 99 before the middle one moves, so a run of small
+releases stays inside one minor version. The code gives each part two decimal
+places, so `0.7.100` and `0.8.0` are both 800, and the workflow refuses a part
+above 99 rather than publish a release with another one's code.
 
 The signing key was generated on this machine and copied to the repository's
 secrets. `~/.frigo/frigo-release.jks` and the gitignored `keystore.properties`

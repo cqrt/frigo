@@ -147,12 +147,16 @@ variables:
 ## Releasing
 
 You cut a release on the GitHub website. Open Actions, pick Release, run the
-workflow, and type the version as `0.2.0`. It builds the signed APK, tags the
-commit, and puts the APK on the release page. Pushing a `v0.2.0` tag does the
+workflow, and type the version as `0.7.3`. It builds the signed APK, tags the
+commit, and puts the APK on the release page. Pushing a `v0.7.3` tag does the
 same thing if you'd rather do that from the command line.
 
-The version code comes from the version in the tag, so `0.2.1` becomes 201. A
-phone with 0.2.1 already installed will take 0.3.0 as an update without you
+The last number counts up for each release, from `0.7.0` to `0.7.99`, and only
+then does the middle number move on to `0.8.0`. So a fix or a small change is
+`0.7.4`, and the releases stay in order without a new number every time.
+
+The version code comes from the version in the tag, so `0.7.3` becomes 703. A
+phone with 0.7.3 already installed will take 0.7.4 as an update without you
 uninstalling anything.
 
 The key that signs the APK lives in the repository's secrets, so no key material
