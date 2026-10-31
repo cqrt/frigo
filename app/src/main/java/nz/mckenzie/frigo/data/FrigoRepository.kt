@@ -247,6 +247,11 @@ class FrigoRepository(
 
     suspend fun setLiveTiles(on: Boolean) = prefs.writeLiveTiles(on)
 
+    /** Which colours the app uses. A flow, so Settings changes it at once. */
+    val theme: Flow<Int> get() = prefs.theme
+
+    suspend fun setTheme(mode: Int) = prefs.writeTheme(mode)
+
     suspend fun latestFrame(camera: String, height: Int = 360): ByteArray? = runCatching {
         authorized { baseUrl, token -> api.latestFrame(baseUrl, token, camera, height) }
     }.getOrNull()

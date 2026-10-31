@@ -701,3 +701,18 @@ picture answered for every request after it.
 So each still now carries a timestamp in its query string, ?height=360&t=....
 Frigate ignores the parameter. Anything caching the picture no longer has an
 address to cache it under, and the tile shows what the camera sees now.
+
+## The colours follow a choice, not the wallpaper
+
+The app used to take its colours from the phone and only from the phone. System,
+Day and Night now sit under Appearance in Settings, and System is what it does
+until you pick something else, so nothing changes for anyone who leaves it alone.
+
+The choice is an ordinal in the existing preferences file, so it outlives a
+restart and needs no migration: no key means System. The value is read in
+Activity's setContent, above everything, because the sign-in page is themed too
+and there is no point in a dark app with a white door.
+
+Choosing Day while the phone is in night mode keeps the app light, which is the
+whole reason the choice exists: a phone that dims with the sun is not much use
+with a camera view you want lit.

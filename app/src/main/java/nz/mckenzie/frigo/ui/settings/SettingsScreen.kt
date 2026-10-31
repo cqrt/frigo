@@ -46,6 +46,7 @@ import nz.mckenzie.frigo.BuildConfig
 import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.ServerPrefs
+import nz.mckenzie.frigo.ui.theme.ThemeMode
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -59,6 +60,9 @@ fun SettingsScreen(
     val context = LocalContext.current
     val alerts by repository.alerts.collectAsStateWithLifecycle()
     val liveTiles by repository.liveTiles.collectAsStateWithLifecycle(initialValue = false)
+    val theme by repository.theme.collectAsStateWithLifecycle(
+        initialValue = ThemeMode.System.ordinal,
+    )
 
     var cameras by remember { mutableStateOf<List<Camera>>(emptyList()) }
     var labels by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -211,6 +215,27 @@ fun SettingsScreen(
 
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
+            Text("Appearance", style = MaterialTheme.typography.titleSmall)
+
+            Text(
+                text = "Theme",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ThemeMode.entries.forEach { mode ->
+                    FilterChip(
+                        selected = theme == mode.ordinal,
+                        onClick = { scope.launch { repository.setTheme(mode.ordinal) } },
+                        label = { Text(mode.label()) },
+                    )
+                }
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+
             Button(
                 onClick = { scope.launch { repository.signOut() } },
                 modifier = Modifier.fillMaxWidth(),
@@ -228,8 +253,7 @@ fun SettingsScreen(
     }
 }
 
-/** An "Enable" label with its switch on the right. */
-@Composable
+/** An "Enable" label with its switch on the right. */@Composable
 private fun Enable(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -283,4 +307,11 @@ private fun Row(label: String, value: String) {
         )
         Text(text = value, style = MaterialTheme.typography.bodyMedium)
     }
+}
+
+/** What the chip says. */
+private fun ThemeMode.label(): String = when (this) {
+    ThemeMode.System -> "System"
+    ThemeMode.Day -> "Day"
+    ThemeMode.Night -> "Night"
 }

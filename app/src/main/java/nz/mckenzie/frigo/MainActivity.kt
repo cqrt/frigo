@@ -4,9 +4,12 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nz.mckenzie.frigo.ui.FrigoApp
 import nz.mckenzie.frigo.ui.theme.FrigoTheme
+import nz.mckenzie.frigo.ui.theme.ThemeMode
 
 class MainActivity : ComponentActivity() {
 
@@ -29,7 +32,12 @@ class MainActivity : ComponentActivity() {
         val container = (application as FrigoApplication).container
 
         setContent {
-            FrigoTheme {
+            // The colours follow the choice in Settings, which is read here so
+            // every screen, the sign-in page included, is under it.
+            val theme by container.repository.theme.collectAsStateWithLifecycle(
+                initialValue = ThemeMode.System.ordinal,
+            )
+            FrigoTheme(ThemeMode.entries.getOrElse(theme) { ThemeMode.System }) {
                 FrigoApp(
                     container = container,
                     openCamera = cameraToWatch.value,

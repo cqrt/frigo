@@ -36,7 +36,9 @@ camera grid.
 **Settings.** Shows which server you are signed in to, signs you out, and holds
 two switches: one for notifications, and one that plays the home page tiles live.
 You pick the cameras and objects that buzz. There's a link to the phone's battery
-settings, because that's where you stop Android shutting Frigo down.
+settings, because that's where you stop Android shutting Frigo down. Under
+Appearance you choose the colours: System follows the phone, Day stays light, and
+Night stays dark.
 
 ## Signing in
 

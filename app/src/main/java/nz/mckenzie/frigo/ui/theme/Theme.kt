@@ -53,13 +53,33 @@ private val DayColors = lightColorScheme(
     outline = Color(0xFFB4BEC9),
 )
 
+/**
+ * Which colours the app uses. The order matches the numbers kept in
+ * [nz.mckenzie.frigo.data.ServerPrefs], because the number is what is stored.
+ */
+enum class ThemeMode {
+    /** Whatever the phone is set to, which is what the app did before. */
+    System,
+
+    /** Light colours, whatever the phone is set to. */
+    Day,
+
+    /** Dark colours, whatever the phone is set to. */
+    Night,
+}
+
 @Composable
 fun FrigoTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    mode: ThemeMode = ThemeMode.System,
     content: @Composable () -> Unit,
 ) {
+    val dark = when (mode) {
+        ThemeMode.System -> isSystemInDarkTheme()
+        ThemeMode.Day -> false
+        ThemeMode.Night -> true
+    }
     MaterialTheme(
-        colorScheme = if (darkTheme) NightColors else DayColors,
+        colorScheme = if (dark) NightColors else DayColors,
         content = content,
     )
 }

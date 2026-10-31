@@ -110,6 +110,16 @@ class ServerPrefs(private val context: Context) {
     }
 
     /**
+     * Which colours the app uses: the phone's own choice, always day, or always
+     * night. A flow, so the screen changes under you as you pick.
+     */
+    val theme: Flow<Int> = context.dataStore.data.map { prefs -> prefs[Keys.theme] ?: 0 }
+
+    suspend fun writeTheme(theme: Int) {
+        context.dataStore.edit { prefs -> prefs[Keys.theme] = theme }
+    }
+
+    /**
      * Signing out drops the server and the token. The alert choices stay, so
      * signing back in to the same server does not mean ticking everything again.
      */
@@ -131,5 +141,6 @@ class ServerPrefs(private val context: Context) {
         val showReviewed = booleanPreferencesKey("show_reviewed")
         val cameraLayout = intPreferencesKey("camera_layout")
         val liveTiles = booleanPreferencesKey("live_tiles")
+        val theme = intPreferencesKey("theme")
     }
 }
