@@ -15,7 +15,8 @@ has a clip, and the clip plays full screen with a scrub bar. One without a play
 mark shows the still Frigate kept.
 
 **Alerts.** Your phone tells you when Frigate sees one of the things you picked,
-with a picture. Tap the alert and that camera opens.
+with a picture. Tap the alert and that camera opens. The back arrow goes to the
+camera grid.
 
 **Settings.** Shows which server you are signed in to, what to tell you about,
 and signs you out.

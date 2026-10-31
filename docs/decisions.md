@@ -94,6 +94,22 @@ extras. Sharing one request code across alerts meant every alert in the shade
 opened the newest camera. Each notification now takes the next id and uses it as
 the request code too.
 
+## An alert's camera sits on top of the grid
+
+The app used to make the tapped camera the first screen, so there was nothing
+behind it. The back arrow called `popBackStack()`, which had nothing to pop and
+did nothing, and the only way out was to close the app. The grid is now always
+the first screen and the camera is pushed on top, so back lands on the grid with
+the tabs back.
+
+Tapping an alert while the app is already open used to make a second copy of the
+screen, which is the same bug wearing a different hat: the new copy also had
+nothing behind it. `MainActivity` is `singleTop` and reads the camera in
+`onNewIntent`, so the tap arrives as a new intent at the screen that is already
+there. The camera is state rather than a value read once at startup, and it clears
+itself once the app has opened it, because a leftover value would send you back to
+that camera every time the screen was rebuilt.
+
 ## An event's clip is cut from recordings, not stored per event
 
 Frigate 0.18's `/api/events/{id}/clip.mp4` looks up the recordings that cover the

@@ -38,7 +38,7 @@ import nz.mckenzie.frigo.ui.login.LoginScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
 
 @Composable
-fun FrigoApp(container: AppContainer, openCamera: String? = null) {
+fun FrigoApp(container: AppContainer, openCamera: String? = null, onCameraOpened: () -> Unit = {}) {
     val gate by container.repository.gate.collectAsStateWithLifecycle()
     val alerts by container.repository.alerts.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -64,7 +64,7 @@ fun FrigoApp(container: AppContainer, openCamera: String? = null) {
             initialUsername = state.username,
         )
 
-        is Gate.SignedIn -> MainScaffold(container, state, openCamera)
+        is Gate.SignedIn -> MainScaffold(container, state, openCamera, onCameraOpened)
     }
 }
 
@@ -79,11 +79,25 @@ private val Tabs = listOf(
 private const val PLAYER_PREFIX = "player/"
 
 @Composable
-private fun MainScaffold(container: AppContainer, server: Gate.SignedIn, openCamera: String? = null) {
+private fun MainScaffold(
+    container: AppContainer,
+    server: Gate.SignedIn,
+    openCamera: String?,
+    onCameraOpened: () -> Unit,
+) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val watching = currentRoute?.startsWith(PLAYER_PREFIX) == true
+
+    // A tapped alert asks for one camera, and it sits on top of the grid rather
+    // than replacing it. Back from there lands on the grid with the tabs back,
+    // which is where you want to be after looking.
+    LaunchedEffect(openCamera) {
+        val camera = openCamera ?: return@LaunchedEffect
+        navController.navigate("$PLAYER_PREFIX$camera") { launchSingleTop = true }
+        onCameraOpened()
+    }
 
     Scaffold(
         bottomBar = {
@@ -103,7 +117,7 @@ private fun MainScaffold(container: AppContainer, server: Gate.SignedIn, openCam
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = openCamera?.let { "$PLAYER_PREFIX$it" } ?: "cameras",
+            startDestination = "cameras",
         ) {
             composable("cameras") {
                 CamerasScreen(
