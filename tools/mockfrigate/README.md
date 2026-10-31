@@ -20,6 +20,14 @@ of the three events. The third event has no clip, so the still-only path is
 reachable too. The clip is a test pattern, made with ffmpeg, so a clip that plays
 is obviously playing.
 
+`/api/labels` answers with the objects the app can tick in Settings. `/ws` is a
+websocket that behaves like Frigate's message feed: it takes the same bearer
+token, and every twenty seconds it publishes a new event, alternating a person on
+the door camera with a car on the north camera. That alternation is the point.
+Tick `person` only and the car never buzzes; untick the door camera and the person
+never does. It answers pings and closes when the app closes, which is what a real
+server does when it goes away.
+
 Sign-in behaves like Frigate 0.18: a JSON body of `user` and `password`, and the
 session as a JWT in a `Set-Cookie` header. Send it a form body and it answers
 with the same 422 a real server gives, which is the point of the exercise.

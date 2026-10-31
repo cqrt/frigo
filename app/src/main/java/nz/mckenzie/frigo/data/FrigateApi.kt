@@ -1,6 +1,7 @@
 package nz.mckenzie.frigo.data
 
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -115,6 +116,16 @@ class FrigateApi(
             .get()
             .build()
             .okBytes()
+    }
+
+    /** The objects this server looks for: `person`, `car`, and whatever else is set up. */
+    fun labels(baseUrl: String, token: String): List<String> {
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/labels"))
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return json.decodeFromString(ListSerializer(String.serializer()), request.okBody())
     }
 
     fun eventThumbnail(baseUrl: String, token: String, eventId: String): ByteArray {

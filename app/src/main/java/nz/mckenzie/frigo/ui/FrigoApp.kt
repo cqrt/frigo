@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -26,6 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavController
+import nz.mckenzie.frigo.alerts.AlertService
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.Gate
 import nz.mckenzie.frigo.data.prettyCameraName
@@ -36,10 +38,19 @@ import nz.mckenzie.frigo.ui.login.LoginScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
 
 @Composable
-fun FrigoApp(container: AppContainer) {
+fun FrigoApp(container: AppContainer, openCamera: String? = null) {
     val gate by container.repository.gate.collectAsStateWithLifecycle()
+    val alerts by container.repository.alerts.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) { container.repository.restore() }
+
+    // The switch in Settings says what should happen, and this makes it true
+    // whenever the app opens: watching while signed in, nothing otherwise.
+    LaunchedEffect(gate, alerts.on) {
+        if (gate is Gate.SignedIn && alerts.on) AlertService.start(context)
+        else AlertService.stop(context)
+    }
 
     when (val state = gate) {
         Gate.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -53,7 +64,7 @@ fun FrigoApp(container: AppContainer) {
             initialUsername = state.username,
         )
 
-        is Gate.SignedIn -> MainScaffold(container, state)
+        is Gate.SignedIn -> MainScaffold(container, state, openCamera)
     }
 }
 
@@ -68,7 +79,7 @@ private val Tabs = listOf(
 private const val PLAYER_PREFIX = "player/"
 
 @Composable
-private fun MainScaffold(container: AppContainer, server: Gate.SignedIn) {
+private fun MainScaffold(container: AppContainer, server: Gate.SignedIn, openCamera: String? = null) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -92,7 +103,7 @@ private fun MainScaffold(container: AppContainer, server: Gate.SignedIn) {
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = "cameras",
+            startDestination = openCamera?.let { "$PLAYER_PREFIX$it" } ?: "cameras",
         ) {
             composable("cameras") {
                 CamerasScreen(

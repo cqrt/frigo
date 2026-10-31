@@ -30,6 +30,63 @@ Frigate's own nginx forwards that header to its auth subrequest, so the bearer
 token works for the API, the stills and the MJPEG stream alike, without the app
 holding a cookie jar.
 
+## Alerts come from Frigate's message feed, not from polling
+
+Frigate publishes every new event to a websocket at `/ws`, and its own web page
+listens there. The app does the same: one socket, opened with the bearer token,
+and each message is a JSON envelope of `topic` and `payload`. New events arrive on
+`frigate/events` with `type` of `new`, `update` or `end`, and only `new` sets the
+phone off, because `update` follows every time a detail changes and `end` is the
+object leaving.
+
+Rejected: asking `/api/events` every few seconds. It would need the app awake to
+poll, it would use battery all night, and it would arrive up to a poll interval
+late. The socket is silent until something happens.
+
+Rejected: Frigate's own notifications. 0.18 sends those over web push, which needs
+a browser vendor's push service and a service worker; a native app cannot register
+with it (`frigate/comms/webpush.py` builds those pushers from browser
+subscriptions). The feed is the same source the web page reads, so the phone gets
+the same thing without a vendor in between.
+
+Events rather than reviews: a review carries `severity`, but an event carries
+`label` and `camera` directly, which is what the filter needs.
+
+## The watcher is a foreground service with the specialUse type
+
+Android stops an app's network work once it goes into the background, so the
+socket can only be held from a service, and a service can only run that long with
+a notification on screen. That is the quiet "Watching for alerts" one.
+
+The type is `specialUse`, with the reason written into the manifest: the app holds
+a connection to a server the user runs. `dataSync` would have fit the shape of the
+work, but on Android 15 and later it is capped at six hours a day, and an alert
+that stops at six hours is not an alert.
+
+Two consequences are handled: the service reads the saved sign-in from DataStore
+itself, because after a phone restart it starts before any screen has run and the
+in-memory copy is empty; and a `BOOT_COMPLETED` receiver starts it again, so the
+switch means alerts keep working after a restart without opening the app.
+
+## Twenty seconds of quiet per camera
+
+Frigate starts a new event for the same visitor when they move between zones or
+reappear after a gap, so a naive notification per event buzzes three times for one
+person walking to the door. Twenty seconds per camera is long enough to swallow
+those, short enough that a second person a moment later still gets through.
+
+The cost is that a genuinely different person within twenty seconds of the first
+on the same camera is silent. Sounding once for a visitor is better than sounding
+three times.
+
+## Each alert carries its own tap
+
+`PendingIntent` identity ignores extras: two intents with the same action and
+component are the same pending intent, and `FLAG_UPDATE_CURRENT` overwrites the
+extras. Sharing one request code across alerts meant every alert in the shade
+opened the newest camera. Each notification now takes the next id and uses it as
+the request code too.
+
 ## An event's clip is cut from recordings, not stored per event
 
 Frigate 0.18's `/api/events/{id}/clip.mp4` looks up the recordings that cover the

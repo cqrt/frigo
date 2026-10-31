@@ -34,6 +34,13 @@ sealed interface Gate {
 data class ClipSource(val url: String, val token: String)
 
 /**
+ * Frigate's message feed, and the token it needs. The app stays connected to it
+ * while it is watching for alerts, and each new event arrives as a message
+ * rather than being asked for.
+ */
+data class StreamSource(val url: String, val token: String)
+
+/**
  * Everything that talks to Frigate. It holds the session token and hands the
  * screens plain data.
  *
@@ -53,8 +60,12 @@ class FrigoRepository(
     private val _gate = MutableStateFlow<Gate>(Gate.Loading)
     val gate: StateFlow<Gate> = _gate.asStateFlow()
 
+    private val _alerts = MutableStateFlow(ServerPrefs.Alerts())
+    val alerts: StateFlow<ServerPrefs.Alerts> = _alerts.asStateFlow()
+
     /** Called once on launch. Keeps you signed in if the token still works. */
     suspend fun restore() {
+        _alerts.value = prefs.readAlerts()
         val saved = prefs.read()
         if (saved == null || saved.token.isNullOrBlank()) {
             _gate.value = Gate.SignedOut(
@@ -119,6 +130,18 @@ class FrigoRepository(
             api.events(baseUrl, token, camera = camera, labels = null, limit = limit, before = before)
         }
 
+    /** The objects this server has been set up to look for, which is what you choose from. */
+    suspend fun labels(): List<String> = authorized { baseUrl, token ->
+        // Lower case, the way Frigate names them on an event. The settings screen
+        // capitalises them for display.
+        api.labels(baseUrl, token).distinct().sorted()
+    }
+
+    suspend fun setAlerts(next: ServerPrefs.Alerts) {
+        prefs.writeAlerts(next)
+        _alerts.value = next
+    }
+
     suspend fun latestFrame(camera: String, height: Int = 360): ByteArray? = runCatching {
         authorized { baseUrl, token -> api.latestFrame(baseUrl, token, camera, height) }
     }.getOrNull()
@@ -144,6 +167,20 @@ class FrigoRepository(
         val current = stored ?: throw FrigateException(401, "Not signed in")
         val token = current.token ?: throw FrigateException(401, "Not signed in")
         return ClipSource(url = "${current.baseUrl}/api/events/$eventId/clip.mp4", token = token)
+    }
+
+    /**
+     * Frigate's message feed, for the service that watches for alerts. Null when
+     * nobody is signed in, which is also when there is nothing to watch.
+     *
+     * The saved sign-in is read here when this process has not loaded it yet. The
+     * service starts on its own after a phone restart, before any screen has run,
+     * and without this it would find nothing and give up.
+     */
+    suspend fun streamSource(): StreamSource? {
+        val current = stored ?: prefs.read()?.also { stored = it } ?: return null
+        val token = current.token ?: return null
+        return StreamSource(url = "${current.baseUrl}/ws", token = token)
     }
 
     /**

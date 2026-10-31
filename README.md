@@ -14,7 +14,11 @@ camera and tap an event to watch it. An event with a play mark on its thumbnail
 has a clip, and the clip plays full screen with a scrub bar. One without a play
 mark shows the still Frigate kept.
 
-**Settings.** Shows which server you are signed in to, and signs you out.
+**Alerts.** Your phone tells you when Frigate sees one of the things you picked,
+with a picture. Tap the alert and that camera opens.
+
+**Settings.** Shows which server you are signed in to, what to tell you about,
+and signs you out.
 
 ## Signing in
 
@@ -47,6 +51,32 @@ the same frames. At 720p and 5x it is soft, which is why the menu offers 1080p.
 WebRTC through go2rtc is planned as an option for low latency. It needs port 8555
 forwarded to your Frigate machine, both TCP and UDP. Without that forward, WebRTC
 connects and then shows nothing, which is why it is not the default.
+
+## How alerts reach your phone
+
+Frigate publishes each new event to a message feed, the same one its own web page
+listens to (`/ws`). The app keeps a single connection open to that feed, so an
+alert arrives as Frigate sees something rather than at the next poll.
+
+The connection lives in a background service, because Android will not let an app
+hold one otherwise. Android shows a notification for any such service, so there is
+a quiet "Watching for alerts" one in the shade. It says how many cameras are
+ticked and whether the connection is up, and it is the app's way of saying it is
+still there. Switching alerts off in Settings stops the service and takes the
+notification away.
+
+You choose what buzzes: the cameras, the objects, or both. The first time you
+switch alerts on, every camera is ticked and `person` is picked if your server
+looks for it. A camera that has just buzzed stays quiet for twenty seconds, so one
+visitor walking past is one notification.
+
+Android can stop a background app to save battery, and it will do that after a
+while on its own. If alerts go quiet, open the app once and they start again.
+"Battery settings" in Settings is where you make that less likely.
+
+The app does not use Frigate's own web push. That needs a browser's push service,
+which a native app cannot register with. The message feed is the same source, and
+it works over the address you already have.
 
 ## How clips play
 
@@ -94,7 +124,8 @@ is ever committed. Backup: there's a copy of the key and its password at
 
 ## Where things live
 
-- `data/FrigateApi.kt` — the Frigate endpoints this app uses, written against OkHttp.
-- `data/FrigoRepository.kt` — tokens, renewal, and the calls the screens make.
-- `data/MjpegReader.kt` — pulls JPEG frames out of the live stream.
-- `ui/` — one folder per screen, Compose throughout.
+- `data/FrigateApi.kt` - the Frigate endpoints this app uses, written against OkHttp.
+- `data/FrigoRepository.kt` - tokens, renewal, and the calls the screens make.
+- `data/MjpegReader.kt` - pulls JPEG frames out of the live stream.
+- `alerts/` - the service that holds the message feed and the notifications it posts.
+- `ui/` - one folder per screen, Compose throughout.

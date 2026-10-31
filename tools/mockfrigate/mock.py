@@ -19,9 +19,13 @@ Then point the app at:
     http://10.0.2.2:8099       from an emulator on this machine
     http://<this machine>:8099 from a phone on the same network
 """
+import base64
+import hashlib
 import json
 import os
+import select
 import socket
+import struct
 import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -45,6 +49,12 @@ CAMERAS = {
 # expiry path gets tested.
 TOKEN = os.environ.get("MOCK_TOKEN", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwicm9sZSI6ImFkbWluIn0.c2lnbmF0dXJl")
 COOKIE_NAME = "frigate_token"
+
+# What the mock says it can look for. The settings screen lists these.
+LABELS = ["person", "car", "dog", "cat"]
+
+# The websocket handshake's fixed magic string, from RFC 6455.
+WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -111,6 +121,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path
 
+        if path == "/ws":
+            # Frigate's message feed. Nginx checks the token before this point on
+            # a real server, and the mock checks it itself.
+            if not self.authorised():
+                return self.send_json({"message": "unauthorized"}, status=401)
+            return self.serve_alerts()
+
         if path == "/api/auth":
             # 202, not 200, and no body. Frigate refreshes the cookie here.
             if not self.authorised():
@@ -127,6 +144,9 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/config":
             return self.send_json({"cameras": CAMERAS})
+
+        if path == "/api/labels":
+            return self.send_json(LABELS)
 
         if path == "/api/profile":
             return self.send_json({"username": "test", "role": "admin", "allowed_cameras": list(CAMERAS)})
@@ -164,6 +184,107 @@ class Handler(BaseHTTPRequestHandler):
             return self.stream_mjpeg()
 
         return self.send_json({"message": "not found"}, status=404)
+
+    # --- the message feed -------------------------------------------------
+    # Frigate's `/ws` is the same feed its web interface listens to. Every
+    # message is JSON with a topic and a payload, and the payload is itself
+    # JSON for an event.
+
+    alerts_sent = 0
+
+    def serve_alerts(self):
+        key = self.headers.get("Sec-WebSocket-Key")
+        if not key:
+            return self.send_json({"message": "not a websocket request"}, status=400)
+
+        accept = base64.b64encode(
+            hashlib.sha1((key + WS_GUID).encode()).digest()
+        ).decode()
+        self.send_response(101, "Switching Protocols")
+        self.send_header("Upgrade", "websocket")
+        self.send_header("Connection", "Upgrade")
+        self.send_header("Sec-WebSocket-Accept", accept)
+        self.end_headers()
+        self.wfile.flush()
+        self.close_connection = True
+
+        # Something arrives shortly after connecting, then every twenty seconds,
+        # so an alert is never a long wait while trying this out.
+        next_alert = time.time() + 8
+        try:
+            while True:
+                ready, _, _ = select.select([self.connection], [], [], 1)
+                if ready and not self.read_frame():
+                    return
+                if time.time() >= next_alert:
+                    self.send_alert()
+                    next_alert = time.time() + 20
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, OSError):
+            return
+
+    def send_alert(self):
+        camera, label = [("door_cam", "person"), ("north_cam", "car")][
+            Handler.alerts_sent % 2
+        ]
+        Handler.alerts_sent += 1
+        now = time.time()
+        event = {
+            "id": f"{now:.6f}-mock{Handler.alerts_sent}",
+            "camera": camera,
+            "label": label,
+            "sub_label": None,
+            "start_time": now,
+            "end_time": None,
+            "has_clip": True,
+            "has_snapshot": True,
+            "zones": ["driveway"],
+        }
+        message = {
+            "topic": "frigate/events",
+            "payload": json.dumps({"type": "new", "before": {}, "after": event}),
+        }
+        self.send_frame(json.dumps(message).encode())
+
+    def send_frame(self, payload):
+        length = len(payload)
+        if length < 126:
+            header = bytes([0x81, length])
+        elif length < 65536:
+            header = bytes([0x81, 126]) + struct.pack(">H", length)
+        else:
+            header = bytes([0x81, 127]) + struct.pack(">Q", length)
+        self.connection.sendall(header + payload)
+
+    def read_frame(self):
+        """Reads one frame from the app. False means it has gone away."""
+        head = self.connection.recv(2)
+        if len(head) < 2:
+            return False
+
+        opcode = head[0] & 0x0F
+        masked = bool(head[1] & 0x80)
+        length = head[1] & 0x7F
+        if length == 126:
+            length = struct.unpack(">H", self.connection.recv(2))[0]
+        elif length == 127:
+            length = struct.unpack(">Q", self.connection.recv(8))[0]
+
+        mask = self.connection.recv(4) if masked else b""
+        body = b""
+        while len(body) < length:
+            chunk = self.connection.recv(length - len(body))
+            if not chunk:
+                return False
+            body += chunk
+        if masked:
+            body = bytes(byte ^ mask[i % 4] for i, byte in enumerate(body))
+
+        if opcode == 0x8:
+            return False
+        if opcode == 0x9:
+            # A ping has to be answered, or the app decides the connection died.
+            self.connection.sendall(bytes([0x8A, len(body)]) + body)
+        return True
 
     def stream_mjpeg(self):
         self.send_response(200)

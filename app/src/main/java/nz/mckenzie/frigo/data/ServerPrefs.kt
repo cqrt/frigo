@@ -3,8 +3,10 @@ package nz.mckenzie.frigo.data
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.first
 
@@ -28,6 +30,20 @@ class ServerPrefs(private val context: Context) {
         val token: String?,
     )
 
+    /**
+     * What should set your phone off: nothing at all, or the cameras and the
+     * objects you picked.
+     */
+    data class Alerts(
+        val on: Boolean = false,
+        val cameras: Set<String> = emptySet(),
+        val labels: Set<String> = emptySet(),
+    ) {
+        /** True when this event is one of the ones you asked to hear about. */
+        fun wants(camera: String, label: String): Boolean =
+            on && camera in cameras && label in labels
+    }
+
     suspend fun read(): Stored? {
         val prefs = context.dataStore.data.first()
         val baseUrl = prefs[Keys.baseUrl] ?: return null
@@ -47,13 +63,41 @@ class ServerPrefs(private val context: Context) {
         }
     }
 
+    suspend fun readAlerts(): Alerts {
+        val prefs = context.dataStore.data.first()
+        return Alerts(
+            on = prefs[Keys.alertsOn] ?: false,
+            cameras = prefs[Keys.alertCameras] ?: emptySet(),
+            labels = prefs[Keys.alertLabels] ?: emptySet(),
+        )
+    }
+
+    suspend fun writeAlerts(alerts: Alerts) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.alertsOn] = alerts.on
+            prefs[Keys.alertCameras] = alerts.cameras
+            prefs[Keys.alertLabels] = alerts.labels
+        }
+    }
+
+    /**
+     * Signing out drops the server and the token. The alert choices stay, so
+     * signing back in to the same server does not mean ticking everything again.
+     */
     suspend fun clear() {
-        context.dataStore.edit { it.clear() }
+        context.dataStore.edit { prefs ->
+            prefs.remove(Keys.baseUrl)
+            prefs.remove(Keys.username)
+            prefs.remove(Keys.token)
+        }
     }
 
     private object Keys {
         val baseUrl = stringPreferencesKey("base_url")
         val username = stringPreferencesKey("username")
         val token = stringPreferencesKey("token")
+        val alertsOn = booleanPreferencesKey("alerts_on")
+        val alertCameras = stringSetPreferencesKey("alert_cameras")
+        val alertLabels = stringSetPreferencesKey("alert_labels")
     }
 }
