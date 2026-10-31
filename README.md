@@ -33,9 +33,10 @@ sits on the picture. One without a play mark shows the still Frigate kept.
 with a picture. Tap the alert and that camera opens. The back arrow goes to the
 camera grid.
 
-**Settings.** Shows which server you are signed in to, what to tell you about,
-and signs you out. A switch here plays the home page tiles live, which costs more
-data and battery.
+**Settings.** Shows which server you are signed in to, signs you out, and holds
+two switches: one for notifications, and one that plays the home page tiles live.
+You pick the cameras and objects that buzz. There's a link to the phone's battery
+settings, because that's where you stop Android shutting Frigo down.
 
 ## Signing in
 

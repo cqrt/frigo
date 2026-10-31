@@ -109,79 +109,34 @@ fun SettingsScreen(
 
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
-            Text("Alerts", style = MaterialTheme.typography.titleSmall)
+            Text("Notifications", style = MaterialTheme.typography.titleSmall)
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "Enable",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                Switch(
-                    checked = alerts.on,
-                    onCheckedChange = { wanted ->
-                        blocked = false
-                        if (!wanted) {
-                            save(alerts.copy(on = false))
-                            return@Switch
-                        }
-                        val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                            ContextCompat.checkSelfPermission(
-                                context,
-                                Manifest.permission.POST_NOTIFICATIONS,
-                            ) != PackageManager.PERMISSION_GRANTED
-                        if (needsPermission) {
-                            askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        } else {
-                            switchOn()
-                        }
-                    },
-                )
-            }
+            Text(
+                text = "You'll be alerted when Frigate spots something. Tap the notification for live view.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
-            if (alerts.on) {
-                Pick(
-                    title = "Cameras",
-                    options = cameras.map { it.name to it.title },
-                    chosen = alerts.cameras,
-                    onToggle = { name, ticked ->
-                        val next = if (ticked) alerts.cameras + name else alerts.cameras - name
-                        save(alerts.copy(cameras = next))
-                    },
-                )
-
-                Pick(
-                    title = "Objects",
-                    options = labels.map { it to it.replaceFirstChar { c -> c.uppercase() } },
-                    chosen = alerts.labels,
-                    onToggle = { name, ticked ->
-                        val next = if (ticked) alerts.labels + name else alerts.labels - name
-                        save(alerts.copy(labels = next))
-                    },
-                )
-
-                if (alerts.cameras.isEmpty() || alerts.labels.isEmpty()) {
-                    Text(
-                        text = "Nothing ticked in one list, so nothing will buzz.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-
-                TextButton(onClick = {
-                    runCatching {
-                        context.startActivity(
-                            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        )
+            Enable(
+                checked = alerts.on,
+                onCheckedChange = { wanted ->
+                    blocked = false
+                    if (!wanted) {
+                        save(alerts.copy(on = false))
+                        return@Enable
                     }
-                }) {
-                    Text("Battery settings")
-                }
-            }
+                    val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS,
+                        ) != PackageManager.PERMISSION_GRANTED
+                    if (needsPermission) {
+                        askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        switchOn()
+                    }
+                },
+            )
 
             if (blocked) {
                 Text(
@@ -191,22 +146,68 @@ fun SettingsScreen(
                 )
             }
 
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+            Pick(
+                title = "Cameras",
+                options = cameras.map { it.name to it.title },
+                chosen = alerts.cameras,
+                onToggle = { name, ticked ->
+                    val next = if (ticked) alerts.cameras + name else alerts.cameras - name
+                    save(alerts.copy(cameras = next))
+                },
+            )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            Pick(
+                title = "Objects",
+                options = labels.map { it to it.replaceFirstChar { c -> c.uppercase() } },
+                chosen = alerts.labels,
+                onToggle = { name, ticked ->
+                    val next = if (ticked) alerts.labels + name else alerts.labels - name
+                    save(alerts.copy(labels = next))
+                },
+            )
+
+            if (alerts.on && (alerts.cameras.isEmpty() || alerts.labels.isEmpty())) {
                 Text(
-                    text = "Live pictures",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                Switch(
-                    checked = liveTiles,
-                    onCheckedChange = { on -> scope.launch { repository.setLiveTiles(on) } },
+                    text = "Nothing ticked in one list, so nothing will buzz.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
+
+            Text(
+                text = "Frigo runs in the background to keep the alerts coming. To prevent " +
+                    "Android from shutting down Frigo to save battery, tap below to turn off " +
+                    "battery optimization for Frigo.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            TextButton(onClick = {
+                runCatching {
+                    context.startActivity(
+                        Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                }
+            }) {
+                Text("Battery Settings")
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+
+            Text("Live View", style = MaterialTheme.typography.titleSmall)
+
+            Text(
+                text = "Show live video on the Cameras tab. Will require more device and " +
+                    "network resources.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Enable(
+                checked = liveTiles,
+                onCheckedChange = { on -> scope.launch { repository.setLiveTiles(on) } },
+            )
 
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
@@ -224,6 +225,22 @@ fun SettingsScreen(
                 modifier = Modifier.padding(top = 16.dp),
             )
         }
+    }
+}
+
+/** An "Enable" label with its switch on the right. */
+@Composable
+private fun Enable(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "Enable",
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

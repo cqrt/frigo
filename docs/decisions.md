@@ -590,8 +590,8 @@ cannot stream shows something rather than staying grey.
 
 It is a switch rather than the default because four open streams cost a great
 deal more of both the phone's data and its battery than four pictures a second.
-The switch says "Live pictures" and nothing else; Settings explains no feature
-(see the entry on that below). Measured on the emulator: with the
+It sits under "Live View" in Settings, which says one sentence about the cost.
+Measured on the emulator: with the
 switch on, all four tiles open `/api/<camera>?height=360&fps=5` and stop asking
 for `latest.jpg`; with it off, `latest.jpg` comes round again.
 
@@ -672,17 +672,21 @@ on the picture: sound at the top right for the camera, a close mark at the top
 right for a clip. The caption about the picture stays portrait only, because it
 is the sort of thing you read before you turn the phone, not after.
 
-## Settings says what it does, not why
+## Settings says what it does, in one sentence
 
 Settings had paragraphs under its switches: three about battery, three about live
-view, and a switch labelled "Tell me when something is seen". It is a settings
-screen. You come to it to change one thing.
+view, and a switch labelled "Tell me when something is seen". Clearing all of it
+went too far the other way, so the page now gives each section one sentence and
+nothing more.
 
-So the switches are named and the paragraphs are gone. "Enable" is the whole
-label for alerts. "Live pictures" is the whole label for the tiles. What used to
-be explained in prose is either obvious from the switch or belongs in the README:
-the battery link stays, because a link you cannot find is not a link, and the one
-line still there is the one that tells you a list is empty and nothing will buzz.
+"Notifications" and "Live View" are the two headings. Under each, a sentence says
+what the switch does, then "Enable" and its switch. Cameras and Objects come as
+chips, not a list of switches, because there are few of each and a chip reads at a
+glance. The battery paragraph is about the phone's settings rather than this
+screen, so it has to point somewhere, and the button under it does the pointing.
+
+The words are the user's own, with "tap" where they had written "click", because
+there is no mouse.
 
 ## Every still carries a different address
 
