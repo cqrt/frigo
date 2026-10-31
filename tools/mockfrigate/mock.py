@@ -29,7 +29,7 @@ import struct
 import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FRAMES = [open(os.path.join(HERE, f"frame{i}.jpg"), "rb").read() for i in range(3)]
@@ -177,6 +177,17 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/events/") and path.endswith(".jpg"):
             return self.send_bytes(FRAMES[0], "image/jpeg")
 
+        if path == "/api/review":
+            # Frigate's endpoint is singular. It answers alerts first, each
+            # newest first, the way the real one orders them by severity.
+            query = parse_qs(urlparse(self.path).query)
+            severity = (query.get("severity") or ["alert"])[0]
+            return self.send_json(reviews(severity))
+
+        if path.startswith("/api/review/") and path.endswith("/clip.mp4"):
+            # Cut from recordings on a real server; here it is one short file.
+            return self.send_bytes(CLIP, "video/mp4")
+
         if path.endswith("/latest.jpg"):
             return self.send_bytes(FRAMES[0], "image/jpeg")
 
@@ -312,6 +323,49 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             # The player closed the stream, which is what leaving the screen does.
             return
+
+
+def reviews(severity):
+    """Reviews shaped like 0.18's, newest first, with both kinds served."""
+    now = time.time()
+    seen = {
+        "alert": [
+            ("door_cam", ["person"], ["driveway"], 40, 120),
+            ("north_cam", ["car"], ["driveway"], 900, 60),
+            ("door_cam", ["person"], ["driveway"], 5400, 75),
+        ],
+        "detection": [
+            ("south_cam", ["dog"], ["garden"], 200, 30),
+            ("3d_printer", ["person"], [], 3600, 20),
+            ("north_cam", ["car"], ["street"], 7200, 45),
+        ],
+    }.get(severity, [])
+
+    answer = []
+    for index, (camera, objects, zones, ago, length) in enumerate(seen):
+        started = now - ago
+        answer.append(
+            {
+                "id": f"1700000{index}00.000000-{severity}",
+                "camera": camera,
+                "start_time": started,
+                "end_time": started + length,
+                "severity": severity,
+                "has_been_reviewed": False,
+                # A path on the server's disk on a real server. The app takes its
+                # picture from the first detection, so this only has to be there.
+                "thumb_path": f"/clips/{camera}/review-{severity}-{index}-thumb.webp",
+                "data": {
+                    "audio": [],
+                    "detections": [f"{started:.6f}-{severity}{index}"],
+                    "objects": objects,
+                    "sub_labels": [],
+                    "significant_motion_areas": [],
+                    "zones": zones,
+                },
+            }
+        )
+    return answer
 
 
 def missing_fields(payload):

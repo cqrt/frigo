@@ -130,6 +130,23 @@ class FrigoRepository(
             api.events(baseUrl, token, camera = camera, labels = null, limit = limit, before = before)
         }
 
+    /** The moments Frigate thought were worth a look, newest first. */
+    suspend fun reviews(
+        severity: String,
+        limit: Int = 30,
+        before: Double? = null,
+    ): List<FrigateReview> = authorized { baseUrl, token ->
+        api.reviews(baseUrl, token, severity = severity, limit = limit, before = before)
+    }
+
+    /**
+     * The picture for a review. Frigate keeps a thumbnail for the review itself,
+     * but that file sits behind the web server rather than the API, so this uses
+     * the thumbnail of the first thing it saw instead, which is the same picture.
+     */
+    suspend fun reviewThumbnail(review: FrigateReview): ByteArray? =
+        review.detections.firstOrNull()?.let { thumbnail(it) }
+
     /** The objects this server has been set up to look for, which is what you choose from. */
     suspend fun labels(): List<String> = authorized { baseUrl, token ->
         // Lower case, the way Frigate names them on an event. The settings screen
@@ -167,6 +184,16 @@ class FrigoRepository(
         val current = stored ?: throw FrigateException(401, "Not signed in")
         val token = current.token ?: throw FrigateException(401, "Not signed in")
         return ClipSource(url = "${current.baseUrl}/api/events/$eventId/clip.mp4", token = token)
+    }
+
+    /**
+     * A review's clip. Frigate cuts it from your recordings when it is asked for
+     * one, so the period it covers is the review's start and end.
+     */
+    fun reviewClipSource(reviewId: String): ClipSource {
+        val current = stored ?: throw FrigateException(401, "Not signed in")
+        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        return ClipSource(url = "${current.baseUrl}/api/review/$reviewId/clip.mp4", token = token)
     }
 
     /**

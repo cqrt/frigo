@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -35,6 +36,7 @@ import nz.mckenzie.frigo.ui.cameras.CamerasScreen
 import nz.mckenzie.frigo.ui.cameras.PlayerScreen
 import nz.mckenzie.frigo.ui.events.EventsScreen
 import nz.mckenzie.frigo.ui.login.LoginScreen
+import nz.mckenzie.frigo.ui.reviews.ReviewsScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
 
 @Composable
@@ -72,6 +74,7 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 
 private val Tabs = listOf(
     Tab("cameras", "Cameras", Icons.Filled.Home),
+    Tab("reviews", "Reviews", Icons.Filled.Star),
     Tab("events", "Events", Icons.AutoMirrored.Filled.List),
     Tab("settings", "Settings", Icons.Filled.Settings),
 )
@@ -126,6 +129,9 @@ private fun MainScaffold(
                 ) { camera ->
                     navController.navigate("$PLAYER_PREFIX${camera.name}")
                 }
+            }
+            composable("reviews") {
+                ReviewsScreen(container, Modifier.padding(padding))
             }
             composable("events") {
                 EventsScreen(container, Modifier.padding(padding))

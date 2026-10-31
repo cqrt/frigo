@@ -30,6 +30,51 @@ Frigate's own nginx forwards that header to its auth subrequest, so the bearer
 token works for the API, the stills and the MJPEG stream alike, without the app
 holding a cookie jar.
 
+## Reviews come from `/api/review`, and the list is asked for one kind at a time
+
+Frigate 0.18 groups detections into a review: one stretch of time, from the moment
+an object appears in a zone until it leaves, with everything it saw written in the
+row. `GET /api/review` returns them, singular, while events live next door at
+`/api/events`. That mismatch is not a typo in this file.
+
+The app asks for alerts and for detections separately rather than fetching a mixed
+list. The endpoint orders by severity first and time second (`ORDER BY severity,
+start_time DESC`), so a mixed page is all the alerts followed by all the
+detections. Paging that by `before = oldest start_time` skips every detection
+newer than the oldest alert, which is the sort of hole nobody reports and everybody
+half-notices. One severity per request keeps the order honest and gives the list
+its two buttons.
+
+`after` goes out as `0` on every request. Left out, the server fills it with a day
+ago (`params.after or now - 24h`), so the window never moves and "load older"
+brings back nothing at all.
+
+A review's picture comes from its first detection's event thumbnail. Frigate keeps
+`thumb_path` for the review as well, but that is a path under `/media/frigate`
+served by its web server, not an API route, so it is not something the app can ask
+for with a token. The event thumbnail is the same picture, and it goes through an
+endpoint that is already known to work.
+
+The event player and the review player share `ui/components/ClipViewer.kt`. Both
+screens were showing the same dialog with different titles, and the second copy
+would have drifted from the first.
+
+## Reviews have no test on a real server yet
+
+Everything above was checked against the mock, which now serves `/api/review` in
+the shape 0.18 sends: `id`, `camera`, `start_time`, `end_time`, `severity`,
+`has_been_reviewed`, `thumb_path` and `data` with `objects`, `zones`, `sub_labels`
+and `detections`. One thing is worth watching on a real server. The endpoint's
+response model declares `start_time` and `end_time` as datetimes, which would go
+out as text like `"2026-10-31T02:15:44.123456"`, but the handler answers with the
+database rows themselves, so the times are epoch seconds the way events are. If a
+release ever starts sending text, the app's parse of the list fails and the screen
+says the server's answer made no sense rather than showing wrong times.
+
+The review clip is `/api/review/<id>/clip.mp4`, cut from recordings the same way
+an event's clip is. The mock serves a short file, so it plays; a server with
+recordings switched off has nothing to cut and the player says so.
+
 ## Alerts come from Frigate's message feed, not from polling
 
 Frigate publishes every new event to a websocket at `/ws`, and its own web page

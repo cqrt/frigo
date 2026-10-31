@@ -105,6 +105,38 @@ class FrigateApi(
         return json.decodeFromString(ListSerializer(FrigateEvent.serializer()), request.okBody())
     }
 
+    /**
+     * The reviews Frigate has kept: the stretches of time it thought were worth a
+     * look. `severity` narrows it to `alert` or `detection`.
+     *
+     * The endpoint is `/api/review`, singular, which is easy to get wrong when
+     * the events endpoint sitting next to it is `/api/events`.
+     *
+     * `after` is sent as zero rather than left out. Left out, the server only
+     * looks at the last day, and asking for older reviews would bring nothing
+     * back because the day window never moves.
+     */
+    fun reviews(
+        baseUrl: String,
+        token: String,
+        severity: String?,
+        limit: Int,
+        before: Double?,
+    ): List<FrigateReview> {
+        val builder = url(baseUrl, "/api/review").newBuilder()
+            .addQueryParameter("limit", limit.toString())
+            .addQueryParameter("after", "0")
+        if (!severity.isNullOrBlank()) builder.addQueryParameter("severity", severity)
+        if (before != null) builder.addQueryParameter("before", before.toString())
+
+        val request = Request.Builder()
+            .url(builder.build())
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return json.decodeFromString(ListSerializer(FrigateReview.serializer()), request.okBody())
+    }
+
     /** A single still, used for the camera grid. */
     fun latestFrame(baseUrl: String, token: String, camera: String, height: Int): ByteArray {
         val target = url(baseUrl, "/api/$camera/latest.jpg").newBuilder()

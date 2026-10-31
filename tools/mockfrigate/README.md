@@ -20,7 +20,9 @@ of the three events. The third event has no clip, so the still-only path is
 reachable too. The clip is a test pattern, made with ffmpeg, so a clip that plays
 is obviously playing.
 
-`/api/labels` answers with the objects the app can tick in Settings. `/ws` is a
+`/api/labels` answers with the objects the app can tick in Settings. `/api/review`
+answers with three alerts and three detections, newest first, and a clip for each.
+It filters on `severity` the way the real endpoint does. `/ws` is a
 websocket that behaves like Frigate's message feed: it takes the same bearer
 token, and every twenty seconds it publishes a new event, alternating a person on
 the door camera with a car on the north camera. That alternation is the point.

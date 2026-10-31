@@ -36,6 +36,39 @@ data class FrigateEvent(
     val startedAtMillis: Long get() = (startTime * 1000).toLong()
 }
 
+/**
+ * A stretch of time Frigate thought was worth a look, with what it saw in it.
+ * Frigate groups its detections into these, so you read the moments rather than
+ * every single one.
+ *
+ * `severity` is `alert` for something it judged worth telling you about,
+ * `detection` for the rest, and `significant_motion` for motion alone.
+ */
+@Serializable
+data class FrigateReview(
+    val id: String,
+    val camera: String = "",
+    @SerialName("start_time") val startTime: Double = 0.0,
+    @SerialName("end_time") val endTime: Double? = null,
+    val severity: String = "",
+    @SerialName("has_been_reviewed") val hasBeenReviewed: Boolean = false,
+    val data: ReviewData = ReviewData(),
+) {
+    /** Frigate reports times as epoch seconds, with fractional seconds. */
+    val startedAtMillis: Long get() = (startTime * 1000).toLong()
+
+    /** The event ids this review covers, which is where its picture comes from. */
+    val detections: List<String> get() = data.detections
+}
+
+@Serializable
+data class ReviewData(
+    val objects: List<String> = emptyList(),
+    @SerialName("sub_labels") val subLabels: List<String> = emptyList(),
+    val zones: List<String> = emptyList(),
+    val detections: List<String> = emptyList(),
+)
+
 /** A camera as the app shows it. */
 data class Camera(
     val name: String,

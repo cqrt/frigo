@@ -9,6 +9,11 @@ already run, so there is nothing to install on the server side.
 one and it fills the screen with a live view. Pinch to zoom in, drag to move
 around, and double tap to go back to the whole picture.
 
+**Reviews.** The moments Frigate thought were worth a look, newest first. Frigate
+groups what it saw into these, so a visitor who stays a while is one review
+rather than twenty events. Tap one to watch the clip of that time. Alerts and
+detections are separate halves of the list.
+
 **Events.** What Frigate has recorded, newest first, with thumbnails. Filter by
 camera and tap an event to watch it. An event with a play mark on its thumbnail
 has a clip, and the clip plays full screen with a scrub bar. One without a play
@@ -90,6 +95,21 @@ The app plays the clip as it arrives, so the picture starts before the whole
 thing has downloaded, and the token goes with the request the way it does on
 every other screen.
 
+## What counts as a review
+
+A review is a stretch of time, not a single object. While something stays in a
+zone, Frigate keeps one review open and adds to it. When it leaves, the review
+closes. A visitor who stands at the door for two minutes is one review, not
+twenty events.
+
+Reviews come in two kinds, and the list has a button for each. An alert is
+something Frigate saw in a zone you set alerts on. A detection is everything
+else, which is the longer list.
+
+A review's picture is the first thing it saw. Frigate keeps a separate thumbnail
+for the review, but it sits behind the web server rather than the API, so the app
+takes the event's picture instead, which is the same one.
+
 ## Building it
 
 You need JDK 17 to 23, the Android SDK with platform 36, and nothing else.
@@ -130,3 +150,4 @@ is ever committed. Backup: there's a copy of the key and its password at
 - `data/MjpegReader.kt` - pulls JPEG frames out of the live stream.
 - `alerts/` - the service that holds the message feed and the notifications it posts.
 - `ui/` - one folder per screen, Compose throughout.
+- `ui/components/ClipViewer.kt` - the full screen clip player that an event or a review opens.
