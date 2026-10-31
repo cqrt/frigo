@@ -153,8 +153,24 @@ class FrigoRepository(
         severity: String,
         limit: Int = 30,
         before: Double? = null,
+        showReviewed: Boolean = false,
     ): List<FrigateReview> = authorized { baseUrl, token ->
-        api.reviews(baseUrl, token, severity = severity, limit = limit, before = before)
+        api.reviews(
+            baseUrl,
+            token,
+            severity = severity,
+            limit = limit,
+            before = before,
+            showReviewed = showReviewed,
+        )
+    }
+
+    /**
+     * Says a review has been watched. Frigate keeps that on the server, so the
+     * web page drops it from its list too.
+     */
+    suspend fun markReviewReviewed(reviewId: String) {
+        authorized { baseUrl, token -> api.markReviewed(baseUrl, token, reviewId) }
     }
 
     /**
@@ -176,6 +192,11 @@ class FrigoRepository(
         prefs.writeAlerts(next)
         _alerts.value = next
     }
+
+    /** Whether the reviews list shows the ones you've already watched. */
+    suspend fun readShowReviewed(): Boolean = prefs.readShowReviewed()
+
+    suspend fun setShowReviewed(on: Boolean) = prefs.writeShowReviewed(on)
 
     suspend fun latestFrame(camera: String, height: Int = 360): ByteArray? = runCatching {
         authorized { baseUrl, token -> api.latestFrame(baseUrl, token, camera, height) }

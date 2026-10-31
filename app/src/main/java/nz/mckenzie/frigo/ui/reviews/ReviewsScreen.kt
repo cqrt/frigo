@@ -26,6 +26,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -88,6 +89,30 @@ fun ReviewsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             }
         }
 
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { viewModel.setShowReviewed(!state.showReviewed) }
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Show reviewed",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            Switch(checked = state.showReviewed, onCheckedChange = viewModel::setShowReviewed)
+        }
+
+        state.error?.takeIf { state.reviews.isNotEmpty() }?.let { message ->
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        }
+
         Box(Modifier.fillMaxSize()) {
             when {
                 state.loading && state.reviews.isEmpty() ->
@@ -102,16 +127,37 @@ fun ReviewsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                     Button(onClick = viewModel::refresh) { Text("Try again") }
                 }
 
-                state.reviews.isEmpty() -> Text(
-                    text = if (state.kind == ReviewKind.Alerts) {
-                        "No alerts yet. Frigate makes one when something you care about " +
-                            "is seen in a zone with alerts on."
-                    } else {
-                        "No detections yet."
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
+                state.reviews.isEmpty() -> Column(
                     modifier = Modifier.align(Alignment.Center).padding(32.dp),
-                )
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = when {
+                            state.showReviewed -> if (state.kind == ReviewKind.Alerts) {
+                                "No alerts yet. Frigate makes one when something you care " +
+                                    "about is seen in a zone with alerts on."
+                            } else {
+                                "No detections yet."
+                            }
+
+                            else -> if (state.kind == ReviewKind.Alerts) {
+                                "No alerts left to review."
+                            } else {
+                                "No detections left to review."
+                            }
+                        },
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    if (!state.showReviewed) {
+                        Text(
+                            text = "Anything you've watched is hidden. Turn on Show reviewed " +
+                                "to see it again.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
 
                 else -> LazyColumn(
                     contentPadding = PaddingValues(12.dp),
@@ -146,6 +192,7 @@ fun ReviewsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             repository = container.repository,
             review = review,
             onDismiss = { opened = null },
+            onHalfWatched = { viewModel.markReviewed(review) },
         )
     }
 }
@@ -189,7 +236,10 @@ private fun ReviewRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = relativeTime(review.startedAtMillis),
+                    text = buildString {
+                        append(relativeTime(review.startedAtMillis))
+                        if (review.hasBeenReviewed) append(" · Reviewed")
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

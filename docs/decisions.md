@@ -82,6 +82,31 @@ through a proxy, signed in as a restricted user with two cameras. What it answer
 
 The mock now follows what the real server does here.
 
+## A watched review is marked on the server, and hidden by default
+
+Frigate keeps the watched flag itself, so the phone sends it rather than keeping a
+copy: a post to `/api/reviews/viewed` with the id and `reviewed: true` answers 200
+and the web page drops the review from its list too. Checked against a real
+0.18.2 server:
+
+- `reviewed=0` returns only the reviews still to watch, `reviewed=1` only the
+  watched ones, and leaving the parameter out returns both, newest first.
+- A review can be marked and unmarked again, so the flag is a switch rather than
+  one way.
+
+Past halfway is when Frigate's own page counts a review as watched, so the app
+does the same. The clip player asks its position twice a second and marks once
+the position is half the reported length, which means a clip watched for a few
+seconds stays in the list.
+
+The list asks for `reviewed=0` and leaves the parameter out when the switch is
+on, so the server does the filtering and the paged list stays right as older
+pages arrive.
+
+Rejected: marking as soon as the clip opens, which would clear a review from the
+list before it had been watched; and a separate Reviewed button, which asks for a
+tap for something the server already counts.
+
 ## A restricted user only sees their cameras
 
 `/api/config` answers with every camera on the server whatever role is asking, so

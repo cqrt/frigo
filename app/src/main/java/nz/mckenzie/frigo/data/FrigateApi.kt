@@ -137,12 +137,16 @@ class FrigateApi(
         severity: String?,
         limit: Int,
         before: Double?,
+        showReviewed: Boolean,
     ): List<FrigateReview> {
         val builder = url(baseUrl, "/api/review").newBuilder()
             .addQueryParameter("limit", limit.toString())
             .addQueryParameter("after", "0")
         if (!severity.isNullOrBlank()) builder.addQueryParameter("severity", severity)
         if (before != null) builder.addQueryParameter("before", before.toString())
+        // Left out, the server sends reviewed and unreviewed together, which is
+        // what "show reviewed" means. Asked for, it sends one kind or the other.
+        if (!showReviewed) builder.addQueryParameter("reviewed", "0")
 
         val request = Request.Builder()
             .url(builder.build())
@@ -150,6 +154,21 @@ class FrigateApi(
             .get()
             .build()
         return json.decodeFromString(ListSerializer(FrigateReview.serializer()), request.okBody())
+    }
+
+    /**
+     * Tells Frigate a review has been watched, which is what takes it out of the
+     * list for everyone, the web page included.
+     */
+    fun markReviewed(baseUrl: String, token: String, reviewId: String) {
+        val body = """{"ids":["$reviewId"],"reviewed":true}"""
+            .toRequestBody("application/json".toMediaType())
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/reviews/viewed"))
+            .header("Authorization", "Bearer $token")
+            .post(body)
+            .build()
+        request.okBody()
     }
 
     /**

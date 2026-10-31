@@ -80,6 +80,13 @@ class ServerPrefs(private val context: Context) {
         }
     }
 
+    /** Whether the reviews list shows the ones you've already watched. */
+    suspend fun readShowReviewed(): Boolean = context.dataStore.data.first()[Keys.showReviewed] ?: false
+
+    suspend fun writeShowReviewed(on: Boolean) {
+        context.dataStore.edit { prefs -> prefs[Keys.showReviewed] = on }
+    }
+
     /**
      * Signing out drops the server and the token. The alert choices stay, so
      * signing back in to the same server does not mean ticking everything again.
@@ -99,5 +106,6 @@ class ServerPrefs(private val context: Context) {
         val alertsOn = booleanPreferencesKey("alerts_on")
         val alertCameras = stringSetPreferencesKey("alert_cameras")
         val alertLabels = stringSetPreferencesKey("alert_labels")
+        val showReviewed = booleanPreferencesKey("show_reviewed")
     }
 }

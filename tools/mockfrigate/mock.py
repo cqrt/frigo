@@ -53,6 +53,10 @@ COOKIE_NAME = "frigate_token"
 # What the mock says it can look for. The settings screen lists these.
 LABELS = ["person", "car", "dog", "cat"]
 
+# Reviews the app has marked watched, by id. The ones it lists are made up per
+# request, so this is the only thing that remembers.
+REVIEWED = set()
+
 # The websocket handshake's fixed magic string, from RFC 6455.
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
@@ -115,6 +119,20 @@ class Handler(BaseHTTPRequestHandler):
                     headers={"Set-Cookie": f"{COOKIE_NAME}={TOKEN}; Path=/; HttpOnly; Max-Age=86400"},
                 )
             return self.send_json({"message": "Login failed"}, status=401)
+
+        if path == "/api/reviews/viewed":
+            if not self.authorised():
+                return self.send_json({"message": "unauthorized"}, status=401)
+            try:
+                payload = json.loads(body.decode() or "{}")
+            except ValueError:
+                payload = None
+            if not isinstance(payload, dict) or "ids" not in payload:
+                return self.send_json({"message": "ids required"}, status=422)
+            watched = bool(payload.get("reviewed", True))
+            for review_id in payload["ids"]:
+                REVIEWED.add(review_id) if watched else REVIEWED.discard(review_id)
+            return self.send_json({"success": True})
 
         return self.send_json({"message": "not found"}, status=404)
 
@@ -182,7 +200,8 @@ class Handler(BaseHTTPRequestHandler):
             # newest first, the way the real one orders them by severity.
             query = parse_qs(urlparse(self.path).query)
             severity = (query.get("severity") or ["alert"])[0]
-            return self.send_json(reviews(severity))
+            reviewed = (query.get("reviewed") or [None])[0]
+            return self.send_json(reviews(severity, reviewed))
 
         if path.startswith("/api/review/") and path.endswith("/clip.mp4"):
             # Cut from recordings on a real server; here it is one short file.
@@ -325,8 +344,12 @@ class Handler(BaseHTTPRequestHandler):
             return
 
 
-def reviews(severity):
-    """Reviews shaped like 0.18's, newest first, with both kinds served."""
+def reviews(severity, reviewed=None):
+    """Reviews shaped like 0.18's, newest first, with both kinds served.
+
+    `reviewed` is what the app asks for: "0" for the ones still to watch, "1"
+    for the ones watched, and None for both, which is what Frigate does.
+    """
     now = time.time()
     seen = {
         "alert": [
@@ -344,14 +367,20 @@ def reviews(severity):
     answer = []
     for index, (camera, objects, zones, ago, length) in enumerate(seen):
         started = now - ago
+        review_id = f"1700000{index}00.000000-{severity}"
+        watched = review_id in REVIEWED
+        if reviewed == "0" and watched:
+            continue
+        if reviewed == "1" and not watched:
+            continue
         answer.append(
             {
-                "id": f"1700000{index}00.000000-{severity}",
+                "id": review_id,
                 "camera": camera,
                 "start_time": started,
                 "end_time": started + length,
                 "severity": severity,
-                "has_been_reviewed": False,
+                "has_been_reviewed": watched,
                 # A path on the server's disk on a real server. The app takes its
                 # picture from the first detection, so this only has to be there.
                 "thumb_path": f"/clips/{camera}/review-{severity}-{index}-thumb.webp",

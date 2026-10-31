@@ -12,7 +12,9 @@ around, and double tap to go back to the whole picture.
 **Reviews.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review
 rather than twenty events. Tap one to watch the clip of that time. Alerts and
-detections are separate halves of the list.
+detections are separate halves of the list. Watch past halfway and the review
+counts as watched, here and on the web page, so it leaves the list. Show reviewed
+brings the watched ones back.
 
 **Events.** What Frigate has recorded, newest first, with thumbnails. Filter by
 camera and tap an event to watch it. An event with a play mark on its thumbnail

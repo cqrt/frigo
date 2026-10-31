@@ -52,6 +52,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import kotlinx.coroutines.delay
 import nz.mckenzie.frigo.data.FrigateException
 import nz.mckenzie.frigo.ui.friendlyMessage
 import java.io.File
@@ -73,6 +74,8 @@ data class ClipSubject(
     val still: suspend () -> ByteArray?,
     /** Said at the bottom when there is no clip at all. */
     val note: String? = null,
+    /** Said once, when the clip passes its halfway point. */
+    val onHalfWatched: (() -> Unit)? = null,
 )
 
 /**
@@ -133,6 +136,7 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
                     file = ready,
                     onStarted = { started = true },
                     onProblem = { problem = it },
+                    onHalfWatched = subject.onHalfWatched,
                     // Keeps the player's own controls clear of the gesture bar.
                     modifier = Modifier
                         .fillMaxSize()
@@ -291,12 +295,14 @@ private fun ClipPlayer(
     file: File,
     onStarted: () -> Unit,
     onProblem: (Problem) -> Unit,
+    onHalfWatched: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val currentStarted by rememberUpdatedState(onStarted)
     val currentProblem by rememberUpdatedState(onProblem)
+    val watchedHalf by rememberUpdatedState(onHalfWatched)
     var wasPlaying by remember { mutableStateOf(false) }
 
     val player = remember(file) {
@@ -323,6 +329,20 @@ private fun ClipPlayer(
         onDispose {
             player.removeListener(listener)
             player.release()
+        }
+    }
+
+    // Half the clip is where Frigate counts a review as watched, so a clip left
+    // part way through the first half stays in the list. The player reports its
+    // position twice a second, and the check waits until the length is known.
+    LaunchedEffect(player) {
+        while (true) {
+            val length = player.duration
+            if (length > 0 && player.currentPosition * 2 >= length) {
+                watchedHalf?.invoke()
+                return@LaunchedEffect
+            }
+            delay(500)
         }
     }
 

@@ -26,6 +26,8 @@ data class ReviewsUiState(
     val loadingMore: Boolean = false,
     val error: String? = null,
     val hasMore: Boolean = true,
+    /** Whether the ones you've watched are listed too. */
+    val showReviewed: Boolean = false,
 )
 
 class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
@@ -34,7 +36,10 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
     val state = _state.asStateFlow()
 
     init {
-        refresh()
+        viewModelScope.launch {
+            _state.update { it.copy(showReviewed = repository.readShowReviewed()) }
+            refresh()
+        }
     }
 
     fun show(kind: ReviewKind) {
@@ -43,10 +48,24 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
         refresh()
     }
 
+    fun setShowReviewed(on: Boolean) {
+        if (_state.value.showReviewed == on) return
+        _state.update { it.copy(showReviewed = on, reviews = emptyList(), hasMore = true) }
+        viewModelScope.launch { runCatching { repository.setShowReviewed(on) } }
+        refresh()
+    }
+
     fun refresh() {
+        val showReviewed = _state.value.showReviewed
         viewModelScope.launch {
             _state.update { it.copy(loading = true, error = null) }
-            runCatching { repository.reviews(severity = _state.value.kind.apiValue, limit = PAGE) }
+            runCatching {
+                repository.reviews(
+                    severity = _state.value.kind.apiValue,
+                    limit = PAGE,
+                    showReviewed = showReviewed,
+                )
+            }
                 .onSuccess { reviews ->
                     _state.update {
                         it.copy(
@@ -62,6 +81,33 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
         }
     }
 
+    /**
+     * Said once a clip is over half watched, which is when Frigate counts a
+     * review as seen. The server keeps that, so the web page drops it too.
+     */
+    fun markReviewed(review: FrigateReview) {
+        if (review.hasBeenReviewed) return
+        viewModelScope.launch {
+            runCatching { repository.markReviewReviewed(review.id) }
+                .onSuccess {
+                    _state.update { current ->
+                        if (current.showReviewed) {
+                            current.copy(
+                                reviews = current.reviews.map {
+                                    if (it.id == review.id) it.copy(hasBeenReviewed = true) else it
+                                },
+                            )
+                        } else {
+                            current.copy(reviews = current.reviews.filterNot { it.id == review.id })
+                        }
+                    }
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(error = error.friendlyMessage()) }
+                }
+        }
+    }
+
     fun loadMore() {
         val current = _state.value
         if (current.loadingMore || !current.hasMore || current.reviews.isEmpty()) return
@@ -73,6 +119,7 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
                     severity = current.kind.apiValue,
                     limit = PAGE,
                     before = before,
+                    showReviewed = current.showReviewed,
                 )
             }
                 .onSuccess { older ->
