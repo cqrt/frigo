@@ -48,7 +48,7 @@ import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.components.CachedImage
-import nz.mckenzie.frigo.ui.events.relativeTime
+import nz.mckenzie.frigo.ui.relativeTime
 
 /**
  * The moments Frigate thought were worth a look, newest first. Each one is a

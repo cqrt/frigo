@@ -1,4 +1,4 @@
-package nz.mckenzie.frigo.ui.events
+package nz.mckenzie.frigo.ui.explore
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -7,6 +7,7 @@ import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.components.ClipSubject
 import nz.mckenzie.frigo.ui.components.ClipViewer
+import nz.mckenzie.frigo.ui.relativeTime
 
 /**
  * One event, filling the screen: the clip if Frigate kept one, and the still if
@@ -17,7 +18,7 @@ import nz.mckenzie.frigo.ui.components.ClipViewer
  * than the recording retention has a still and nothing else.
  */
 @Composable
-fun EventPlayerDialog(
+fun ExplorePlayerDialog(
     repository: FrigoRepository,
     event: FrigateEvent,
     onDismiss: () -> Unit,

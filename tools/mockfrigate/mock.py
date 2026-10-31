@@ -51,7 +51,22 @@ TOKEN = os.environ.get("MOCK_TOKEN", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwic
 COOKIE_NAME = "frigate_token"
 
 # What the mock says it can look for. The settings screen lists these.
-LABELS = ["person", "car", "dog", "cat"]
+LABELS = ["glass", "person", "car", "dog", "cat"]
+
+# The names Frigate has learned to recognise, which filter events as sub labels.
+SUB_LABELS = ["Angie", "Fay"]
+
+# Events the Explore list is made of: label, sub label, camera, minutes ago.
+EVENT_SEEDS = [
+    ("person", "Angie", "door_cam", 2),
+    ("car", None, "north_cam", 9),
+    ("dog", None, "south_cam", 26),
+    ("glass", None, "door_cam", 51),
+    ("person", "Fay", "door_cam", 26 * 60),
+    ("person", None, "north_cam", 30 * 60),
+    ("car", None, "north_cam", 52 * 60),
+    ("dog", None, "south_cam", 3 * 24 * 60),
+]
 
 # Reviews the app has marked watched, by id. The ones it lists are made up per
 # request, so this is the only thing that remembers.
@@ -166,26 +181,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/labels":
             return self.send_json(LABELS)
 
+        if path == "/api/sub_labels":
+            return self.send_json(SUB_LABELS)
+
         if path == "/api/profile":
             return self.send_json({"username": "test", "role": "admin", "allowed_cameras": list(CAMERAS)})
 
         if path == "/api/events":
-            now = time.time()
-            events = [
-                {
-                    "id": f"1700000000.00{i}-abcdef",
-                    "camera": ["north_cam", "door_cam", "south_cam"][i % 3],
-                    "label": ["person", "car", "dog"][i % 3],
-                    "sub_label": None,
-                    "start_time": now - 300 * i,
-                    "end_time": now - 290 * i,
-                    "has_clip": i != 2,
-                    "has_snapshot": True,
-                    "zones": ["North_driveway"],
-                }
-                for i in range(3)
-            ]
-            return self.send_json(events)
+            return self.send_json(events(urlparse(self.path).query))
 
         if path.startswith("/api/events/") and path.endswith("/clip.mp4"):
             # Frigate cuts the clip out of recordings on request. Here it is one
@@ -342,6 +345,57 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             # The player closed the stream, which is what leaving the screen does.
             return
+
+
+def listed(query, name):
+    """A comma-separated filter. Frigate keeps one value, so repeats don't add up."""
+    value = (query.get(name) or [""])[0]
+    return [part for part in (piece.strip() for piece in value.split(",")) if part]
+
+
+def events(raw_query):
+    """What Frigate has recorded, filtered the way its Explore page filters."""
+    query = parse_qs(raw_query or "")
+    now = time.time()
+
+    cameras = listed(query, "cameras") or listed(query, "camera")
+    labels = set(listed(query, "labels"))
+    subs = set(listed(query, "sub_labels"))
+    after = float(query["after"][0]) if query.get("after") else None
+    before = float(query["before"][0]) if query.get("before") else None
+    limit = int((query.get("limit") or ["100"])[0])
+
+    answer = []
+    for index, (label, sub, camera, minutes) in enumerate(EVENT_SEEDS):
+        started = now - minutes * 60
+        if cameras and camera not in cameras:
+            continue
+        if labels and label not in labels:
+            continue
+        if subs and (sub or "") not in subs:
+            continue
+        if after is not None and started < after:
+            continue
+        if before is not None and started >= before:
+            continue
+        answer.append(
+            {
+                "id": f"170000{index:03d}.000000-mock",
+                "camera": camera,
+                "label": label,
+                "sub_label": sub,
+                "start_time": started,
+                "end_time": started + 30,
+                "top_score": 0.82,
+                "has_clip": index != 3,
+                "has_snapshot": True,
+                "zones": ["driveway"],
+                "false_positive": None,
+            }
+        )
+
+    answer.sort(key=lambda event: event["start_time"], reverse=True)
+    return answer[:limit]
 
 
 def reviews(severity, reviewed=None):

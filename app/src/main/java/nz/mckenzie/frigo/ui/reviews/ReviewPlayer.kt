@@ -8,7 +8,7 @@ import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.components.ClipSubject
 import nz.mckenzie.frigo.ui.components.ClipViewer
-import nz.mckenzie.frigo.ui.events.relativeTime
+import nz.mckenzie.frigo.ui.relativeTime
 
 /**
  * One review, filling the screen with the clip of the time it covers. Frigate

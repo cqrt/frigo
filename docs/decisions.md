@@ -107,6 +107,27 @@ Rejected: marking as soon as the clip opens, which would clear a review from the
 list before it had been watched; and a separate Reviewed button, which asks for a
 tap for something the server already counts.
 
+## Explore filters, checked against a real 0.18.2 server
+
+The events tab is called Explore now, which is the name the server's page has,
+and it filters the way that page does. What the API accepts:
+
+- `after` and `before` are epoch seconds, and either end cuts the list. A day is
+  the first second of that day on the phone's calendar to the first second of the
+  next.
+- `labels` and `sub_labels` are sent as one comma-separated value. Repeating the
+  parameter does not add up: `labels=person&labels=glass` answers with glass
+  alone, because the server keeps the last one. `labels=glass,speech` answers
+  with both.
+- `/api/sub_labels` answers the names the model has learned: "Angie", "Diandra",
+  "Fay" and "Matt" on this server. That is what the People filter lists.
+- `/api/labels` includes the audio labels ("glass", "speech") beside "person", so
+  the label list has things in it that no event of a camera will ever carry.
+
+Rejected: a from and to date the way the server's page has them, which is two
+calendar trips to look at one day. The chips offer today, yesterday, and a
+calendar for anything else.
+
 ## A restricted user only sees their cameras
 
 `/api/config` answers with every camera on the server whatever role is asking, so

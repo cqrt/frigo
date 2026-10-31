@@ -34,7 +34,7 @@ import nz.mckenzie.frigo.data.Gate
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.cameras.CamerasScreen
 import nz.mckenzie.frigo.ui.cameras.PlayerScreen
-import nz.mckenzie.frigo.ui.events.EventsScreen
+import nz.mckenzie.frigo.ui.explore.ExploreScreen
 import nz.mckenzie.frigo.ui.login.LoginScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewsScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
@@ -75,7 +75,7 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 private val Tabs = listOf(
     Tab("cameras", "Cameras", Icons.Filled.Home),
     Tab("reviews", "Reviews", Icons.Filled.Star),
-    Tab("events", "Events", Icons.AutoMirrored.Filled.List),
+    Tab("explore", "Explore", Icons.AutoMirrored.Filled.List),
     Tab("settings", "Settings", Icons.Filled.Settings),
 )
 
@@ -133,8 +133,8 @@ private fun MainScaffold(
             composable("reviews") {
                 ReviewsScreen(container, Modifier.padding(padding))
             }
-            composable("events") {
-                EventsScreen(container, Modifier.padding(padding))
+            composable("explore") {
+                ExploreScreen(container, Modifier.padding(padding))
             }
             composable("settings") {
                 SettingsScreen(

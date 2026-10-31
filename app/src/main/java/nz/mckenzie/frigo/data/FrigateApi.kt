@@ -98,18 +98,29 @@ class FrigateApi(
         return json.decodeFromString(FrigateProfile.serializer(), request.okBody())
     }
 
+    /**
+     * What Frigate has recorded, newest first.
+     *
+     * `labels` and `subLabels` are sent as one comma-separated value. Repeated
+     * parameters don't add up: a request with two of them is answered with the
+     * last one alone, which was checked against 0.18.2.
+     */
     fun events(
         baseUrl: String,
         token: String,
         camera: String?,
-        labels: String?,
+        labels: List<String>,
+        subLabels: List<String>,
         limit: Int,
+        after: Double?,
         before: Double?,
     ): List<FrigateEvent> {
         val builder = url(baseUrl, "/api/events").newBuilder()
             .addQueryParameter("limit", limit.toString())
         if (!camera.isNullOrBlank()) builder.addQueryParameter("camera", camera)
-        if (!labels.isNullOrBlank()) builder.addQueryParameter("labels", labels)
+        if (labels.isNotEmpty()) builder.addQueryParameter("labels", labels.joinToString(","))
+        if (subLabels.isNotEmpty()) builder.addQueryParameter("sub_labels", subLabels.joinToString(","))
+        if (after != null) builder.addQueryParameter("after", after.toString())
         if (before != null) builder.addQueryParameter("before", before.toString())
 
         val request = Request.Builder()
@@ -118,6 +129,16 @@ class FrigateApi(
             .get()
             .build()
         return json.decodeFromString(ListSerializer(FrigateEvent.serializer()), request.okBody())
+    }
+
+    /** The names Frigate has learned to recognise, which `sub_labels` filters by. */
+    fun subLabels(baseUrl: String, token: String): List<String> {
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/sub_labels"))
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return json.decodeFromString(ListSerializer(String.serializer()), request.okBody())
     }
 
     /**

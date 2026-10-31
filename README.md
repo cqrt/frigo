@@ -16,10 +16,12 @@ detections are separate halves of the list. Watch past halfway and the review
 counts as watched, here and on the web page, so it leaves the list. Show reviewed
 brings the watched ones back.
 
-**Events.** What Frigate has recorded, newest first, with thumbnails. Filter by
-camera and tap an event to watch it. An event with a play mark on its thumbnail
-has a clip, and the clip plays full screen with a scrub bar. One without a play
-mark shows the still Frigate kept.
+**Explore.** What Frigate has recorded, newest first, with thumbnails, the way
+the Explore page on the server has it. Narrow it by camera, by what was seen, by
+the person Frigate recognised, and by day: today, yesterday, or a day you pick
+from a calendar. Tap an event to watch it. An event with a play mark on its
+thumbnail has a clip, and the clip plays full screen with a scrub bar. One
+without a play mark shows the still Frigate kept.
 
 **Alerts.** Your phone tells you when Frigate sees one of the things you picked,
 with a picture. Tap the alert and that camera opens. The back arrow goes to the

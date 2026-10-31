@@ -143,10 +143,25 @@ class FrigoRepository(
             .sortedBy { it.title.lowercase() }
     }
 
-    suspend fun events(camera: String? = null, limit: Int = 30, before: Double? = null): List<FrigateEvent> =
-        authorized { baseUrl, token ->
-            api.events(baseUrl, token, camera = camera, labels = null, limit = limit, before = before)
-        }
+    suspend fun events(
+        camera: String? = null,
+        labels: List<String> = emptyList(),
+        subLabels: List<String> = emptyList(),
+        limit: Int = 30,
+        after: Double? = null,
+        before: Double? = null,
+    ): List<FrigateEvent> = authorized { baseUrl, token ->
+        api.events(
+            baseUrl,
+            token,
+            camera = camera,
+            labels = labels,
+            subLabels = subLabels,
+            limit = limit,
+            after = after,
+            before = before,
+        )
+    }
 
     /** The moments Frigate thought were worth a look, newest first. */
     suspend fun reviews(
@@ -187,6 +202,11 @@ class FrigoRepository(
         // capitalises them for display.
         api.labels(baseUrl, token).distinct().sorted()
     }
+
+    /** The names Frigate can recognise, as a sub label on the events it records. */
+    suspend fun subLabels(): List<String> = runCatching {
+        authorized { baseUrl, token -> api.subLabels(baseUrl, token) }
+    }.getOrDefault(emptyList()).distinct().sorted()
 
     suspend fun setAlerts(next: ServerPrefs.Alerts) {
         prefs.writeAlerts(next)
