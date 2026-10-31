@@ -217,16 +217,40 @@ Rejected: the platform `MediaPlayer` and `VideoView`. `VideoView` cannot set a
 request header, and `MediaPlayer` only reports failure as an integer, which is not
 enough to tell "your session expired" from "the clip is gone".
 
-Two settings are there because of how the endpoint behaves. Load errors are not
-retried: with the default policy a server that is switched off spun for about
-eighteen seconds before saying so. And the connect timeout is eight seconds,
-because Frigate can take a while to produce the first byte, but a host that is not
-answering should not hold the screen.
+Two settings are there because of how the endpoint behaves. Load errors are retried
+twice, and the connect and read timeouts are fifteen and sixty seconds. Frigate can
+take a while to produce the first byte, and a clip plays through a proxy that holds
+the connection open, so a short patience was giving up on clips that would have
+arrived. The cost is that a server which is switched off leaves the spinner up for
+longer than it used to.
 
 Seeking is not free. Frigate streams a file it is writing, with no range support,
 so a jump back or forward asks again and the encode starts over from the seek
 point. That is fine over a phone on the same network as the server, and it is why
 the player is a plain scrub bar rather than a frame-accurate timeline.
+
+## A clip that fails says why
+
+"That clip wouldn't play" was the branch the player fell into whenever it didn't
+recognise the reason, and a report of that sentence alone can't be acted on. The
+phone a clip fails on is not the one the app is developed against, so the failure
+now carries its reason on screen.
+
+The player looks down the whole chain of causes rather than at the first one, since
+a proxy's answer and a decoder's complaint sit at different depths. What shows is
+the player's own name for the failure, the status a server answered if there was
+one, and the first thing said further down the chain, cut to ninety characters. It
+sits under the sentence in small grey text, to be read out in a report.
+
+The failures are also named rather than lumped together now: a decoder that won't
+take the video, a proxy that answered a request with a page instead of a clip, a
+request for the middle of a file that came back as the whole file, and a clip that
+took too long to start.
+
+The video matters here. A clip keeps whatever the camera recorded, because Frigate
+copies the stream instead of converting it, so an H.265 camera gives H.265 clips and
+a phone without a decoder for them can't play any of them. Every clip checked on
+this server is H.265, Main profile, level 5.0.
 
 Cost: Media3 takes the release APK from 1.6 MB to 2.4 MB.
 

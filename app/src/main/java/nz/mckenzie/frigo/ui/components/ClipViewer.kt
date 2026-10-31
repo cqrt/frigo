@@ -181,6 +181,12 @@ private fun ProblemPanel(problem: Problem, onRetry: () -> Unit, onClose: () -> U
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
         )
+        Text(
+            text = problem.detail,
+            color = Color.White.copy(alpha = 0.45f),
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (problem.canRetry) {
                 Button(onClick = onRetry) { Text("Try again") }
@@ -226,16 +232,17 @@ private fun ClipPlayer(
             .setUserAgent("Frigo")
             .setAllowCrossProtocolRedirects(true)
             // Frigate cuts the clip with ffmpeg before it sends anything, so the
-            // first byte can take a moment. The connect itself should not.
-            .setConnectTimeoutMs(8_000)
-            .setReadTimeoutMs(30_000)
+            // first byte can take a moment. A phone on a slow connection to a
+            // long clip needs longer than a LAN does.
+            .setConnectTimeoutMs(15_000)
+            .setReadTimeoutMs(60_000)
         ExoPlayer.Builder(context)
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(context)
                     .setDataSourceFactory(http)
-                    // One attempt, so a server that is down says so in seconds
-                    // rather than being retried quietly for half a minute.
-                    .setLoadErrorHandlingPolicy(DefaultLoadErrorHandlingPolicy(0))
+                    // Two more attempts, so a hiccup on the way to the first byte
+                    // doesn't end the clip.
+                    .setLoadErrorHandlingPolicy(DefaultLoadErrorHandlingPolicy(2))
             )
             .build()
             .apply {
@@ -294,22 +301,46 @@ private fun ClipPlayer(
 
 /** Why the clip didn't play, in a sentence with something to do about it. */
 private fun problemFrom(error: PlaybackException): Problem {
-    val status = (error.cause as? HttpDataSource.InvalidResponseCodeException)?.responseCode
+    // The reason sits somewhere down the chain, so look at all of it rather than
+    // only the first cause. A proxy's answer and a decoder's complaint arrive at
+    // different depths.
+    val chain = generateSequence<Throwable>(error) { it.cause }.toList()
+    val status = chain.filterIsInstance<HttpDataSource.InvalidResponseCodeException>()
+        .firstOrNull()?.responseCode
+
+    val detail = buildString {
+        append(error.errorCodeName)
+        if (status != null) {
+            append(" · the server answered ").append(status)
+        } else {
+            val cause = chain.drop(1).firstOrNull()
+            if (cause != null) append(" · ").append(cause.javaClass.simpleName)
+            val said = chain.drop(1).firstNotNullOfOrNull { cause ->
+                cause.message?.takeIf { it.isNotBlank() }
+            }
+            if (said != null) append(": ").append(said.take(90))
+        }
+    }
+    android.util.Log.w("Frigo", "clip failed: $detail", error)
+
     return when {
         status == 401 || status == 403 -> Problem(
             message = "Your session has expired. Sign in again.",
             canRetry = false,
+            detail = detail,
         )
 
         status == 400 || status == 404 -> Problem(
             message = "Frigate has no clip for this one any more. It cuts clips out " +
                 "of your recordings, so an old one goes when the recordings do.",
             canRetry = false,
+            detail = detail,
         )
 
         status != null -> Problem(
             message = "The server wouldn't send the clip. It answered $status.",
             canRetry = true,
+            detail = detail,
         )
 
         error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
@@ -317,11 +348,59 @@ private fun problemFrom(error: PlaybackException): Problem {
             error.errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED -> Problem(
             message = "Couldn't reach your server.",
             canRetry = true,
+            detail = detail,
         )
 
-        else -> Problem(message = "That clip wouldn't play.", canRetry = true)
+        // What a phone says when it has no decoder for the video, which is
+        // possible because a clip keeps whatever the camera recorded. Frigate
+        // copies the stream rather than converting it, so an H.265 camera gives
+        // H.265 clips.
+        error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED ||
+            error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED ||
+            error.errorCode == PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED ||
+            error.errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED -> Problem(
+            message = "This phone can't play this clip's video. A clip keeps whatever the " +
+                "camera recorded, and this one is H.265, which not every phone can decode.",
+            canRetry = false,
+            detail = detail,
+        )
+
+        // A proxy that answers a request for the middle of the file with the whole
+        // file again leaves the player unable to jump.
+        error.errorCode == PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE -> Problem(
+            message = "The player couldn't jump to that part of the clip. The server sends " +
+                "the whole clip every time it is asked for a piece.",
+            canRetry = true,
+            detail = detail,
+        )
+
+        // A proxy that blocks a request sometimes answers with its own page, which
+        // is not a video, and the player says the file is malformed.
+        error.errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED -> Problem(
+            message = "The server sent a page instead of a clip. If you reach Frigate " +
+                "through a proxy, it may have stopped this request.",
+            canRetry = true,
+            detail = detail,
+        )
+
+        error.errorCode == PlaybackException.ERROR_CODE_TIMEOUT -> Problem(
+            message = "The clip took too long to start. A clip is cut from your recordings " +
+                "when it is asked for, so a long one takes a moment.",
+            canRetry = true,
+            detail = detail,
+        )
+
+        else -> Problem(message = "That clip wouldn't play.", canRetry = true, detail = detail)
     }
 }
 
-/** A failure the player can show, and whether trying again is worth offering. */
-private data class Problem(val message: String, val canRetry: Boolean)
+/**
+ * A failure the player can show, and whether trying again is worth offering.
+ * The detail is the error's own name, shown small, so a report says what happened
+ * rather than only that something did.
+ */
+private data class Problem(
+    val message: String,
+    val canRetry: Boolean,
+    val detail: String,
+)
