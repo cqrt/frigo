@@ -88,6 +88,35 @@ data class Camera(
     val title: String,
 )
 
+/**
+ * A day a camera kept recordings for, and the hours in it that have some. Frigate
+ * reports the hours in the timezone it was asked about, so the day is a reading of
+ * the server's clock rather than a moment.
+ */
+@Serializable
+data class RecordingDay(
+    val day: String = "",
+    val events: Int = 0,
+    val hours: List<RecordingHour> = emptyList(),
+) {
+    /** The hours with something in them, as numbers: 0 for midnight, 23 for eleven. */
+    val hoursRecorded: Set<Int>
+        get() = hours.mapNotNull { it.hour.toIntOrNull() }.toSet()
+}
+
+@Serializable
+data class RecordingHour(
+    val hour: String = "",
+    val duration: Double = 0.0,
+)
+
+/** A stretch of recording on a camera, in epoch seconds. */
+@Serializable
+data class RecordingSpan(
+    @SerialName("start_time") val startTime: Double = 0.0,
+    @SerialName("end_time") val endTime: Double = 0.0,
+)
+
 /** A failure the UI can show as a sentence. */
 class FrigateException(val status: Int, override val message: String) : Exception(message) {
     val isAuthFailure: Boolean get() = status == 401 || status == 403

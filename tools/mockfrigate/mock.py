@@ -20,6 +20,7 @@ Then point the app at:
     http://<this machine>:8099 from a phone on the same network
 """
 import base64
+import datetime
 import hashlib
 import itertools
 import json
@@ -216,6 +217,53 @@ class Handler(BaseHTTPRequestHandler):
 
         if path.startswith("/api/review/") and path.endswith("/clip.mp4"):
             # Cut from recordings on a real server; here it is one short file.
+            return self.send_bytes(CLIP, "video/mp4")
+
+        if path.endswith("/recordings/summary"):
+            # Which days and hours a camera has footage for. The mock keeps the
+            # last three days, most of the day, with a couple of hours missing so
+            # the gaps show.
+            today = datetime.datetime.now(datetime.timezone.utc).date()
+            days = []
+            for back in range(3):
+                day = today - datetime.timedelta(days=back)
+                hours = [
+                    {"hour": f"{hour:02d}", "duration": 3000, "motion": 400, "objects": 200, "events": 1}
+                    for hour in range(24)
+                    if not (back == 0 and hour in (3, 4)) and not (back == 1 and hour < 6)
+                ]
+                days.append({"day": day.isoformat(), "events": len(hours), "hours": hours})
+            return self.send_json(days)
+
+        if path.endswith("/recordings") and not path.endswith("/summary"):
+            # The stretches recorded between two moments. Three stretches with a
+            # couple of hours missing between them, the way a camera that only
+            # records on motion looks, so the timeline has gaps to draw round.
+            query = parse_qs(urlparse(self.path).query)
+            after = float((query.get("after") or ["0"])[0])
+            before = float((query.get("before") or [str(after + 86400)])[0])
+            hour = (before - after) / 24
+            stretches = [(0, 9), (11, 15), (17, 22)]
+            return self.send_json(
+                [
+                    {
+                        "id": f"s{index}",
+                        "start_time": after + start * hour,
+                        "end_time": after + end * hour,
+                        "duration": (end - start) * hour,
+                        "path": f"/media/{index}.mp4",
+                    }
+                    for index, (start, end) in enumerate(stretches)
+                ]
+            )
+
+        if "/recordings/" in path and path.endswith("/snapshot.jpg"):
+            # A frame cut from the recording at that moment.
+            return self.send_bytes(FRAMES[next(STILL) % len(FRAMES)], "image/jpeg")
+
+        if "/start/" in path and path.endswith("/clip.mp4"):
+            # A stretch of recording, cut by ffmpeg on a real server. Here it is
+            # the one test clip.
             return self.send_bytes(CLIP, "video/mp4")
 
         if path.endswith("/latest.jpg"):

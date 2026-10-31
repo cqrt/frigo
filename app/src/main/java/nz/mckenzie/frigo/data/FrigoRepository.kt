@@ -303,6 +303,34 @@ class FrigoRepository(
     }
 
     /**
+     * A stretch of a camera's recordings, cut by Frigate as it sends it. The
+     * moments are epoch seconds, which is what its own timeline works in.
+     */
+    fun recordingClipSource(camera: String, start: Double, end: Double): ClipSource {
+        val current = stored ?: throw FrigateException(401, "Not signed in")
+        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        return ClipSource(
+            url = "${current.baseUrl}/api/$camera/start/${start.toLong()}/end/${end.toLong()}/clip.mp4",
+            token = token,
+        )
+    }
+
+    /** Which days this camera kept recordings for. */
+    suspend fun recordingDays(camera: String, timezone: String): List<RecordingDay> =
+        authorized { baseUrl, token -> api.recordingDays(baseUrl, token, camera, timezone) }
+
+    /** The stretches of recording between two moments, gaps and all. */
+    suspend fun recordingSpans(camera: String, after: Double, before: Double): List<RecordingSpan> =
+        authorized { baseUrl, token ->
+            api.recordingSpans(baseUrl, token, camera, after, before)
+        }
+
+    /** A picture of the recording at that moment, for while the clip arrives. */
+    suspend fun recordingStill(camera: String, moment: Double): ByteArray? = runCatching {
+        authorized { baseUrl, token -> api.recordingStill(baseUrl, token, camera, moment) }
+    }.getOrNull()
+
+    /**
      * The clip as a file on the phone, fetched if it isn't already there.
      *
      * Frigate cuts a clip while it sends it, with no length and no support for

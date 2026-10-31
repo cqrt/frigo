@@ -89,6 +89,7 @@ fun PlayerScreen(
     repository: FrigoRepository,
     cameraName: String,
     onBack: () -> Unit,
+    onRecordings: (String) -> Unit = {},
 ) {
     // Which camera is on screen. Swiping changes this rather than navigating, so
     // Back still lands on the grid you came from.
@@ -182,6 +183,12 @@ fun PlayerScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { onRecordings(watching) }) {
+                        Icon(
+                            imageVector = FrigoIcons.Recorded,
+                            contentDescription = "Recordings",
+                        )
+                    }
                     IconButton(onClick = { sound = !sound; noSound = false }) {
                         Icon(
                             imageVector = if (sound) FrigoIcons.Sound else FrigoIcons.SoundOff,

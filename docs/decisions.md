@@ -740,3 +740,40 @@ Checked on the emulator against the mock: swipe left goes 3d printer, door, nort
 south and round again; swipe right goes back; the same in landscape, with the bars
 hidden. Sound was on for 3d printer when a swipe opened door cam, and the speaker
 went off with it.
+
+## A day's recordings as a bar you drag along
+
+Frigate keeps the footage and hands out any stretch of it, so the app does not
+store or index recordings of its own. The clock in a camera's bar opens three
+things: the days that camera kept, the stretches within a day, and a still of the
+moment under your finger.
+
+The days come from /{camera}/recordings/summary with the phone's timezone, so an
+hour of 10 in the answer means ten o'clock where you are. The stretches come
+from /{camera}/recordings?after=&before=, and only the stretches are drawn, so
+gaps in the footage show as grey rather than a bar that claims to cover the day.
+Frigate reports the hours in the summary too, with how much motion and how many
+objects were in each, but drawing the stretches is the honest shape of it: a
+summary hour with 300 seconds of recording in it is a nearly empty hour, not a
+full one.
+
+The marker snaps to fifteen seconds. A day across the width of a phone is about
+four minutes a pixel, so finer steps would be a lie about what a finger can pick,
+and the time underneath says exactly where it landed.
+
+Play asks for two minutes from where the marker is, less fifteen seconds of
+lead-in, clamped to the day and to now, and hands it to the event viewer, which
+already fetches a clip before playing it. Frigate cuts that clip on request, so
+the first minute of a request is ffmpeg working: the still of that moment goes up
+first, which is also what you look at while you drag.
+
+The marker can sit in a gap. Rather than ask for a clip that comes back empty, the
+screen says nothing was recorded then and leaves Play greyed out. The marker
+starts at the last moment recorded that day, not at midnight, because the end of a
+day reads as 00:00 on the clock and looks like tomorrow.
+
+Checked on the emulator against the mock: three days of chips, stretches with two
+gaps, the marker following a tap and a drag, the still arriving after the finger
+settles rather than on every step, playback of a stretch, Play greyed over a gap,
+Back returning to the live view with the tabs still hidden, and the screen's own
+Try again recovering once the mock was back.

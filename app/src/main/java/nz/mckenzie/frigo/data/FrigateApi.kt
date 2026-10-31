@@ -291,6 +291,83 @@ class FrigateApi(
         return json.decodeFromString(ListSerializer(String.serializer()), request.okBody())
     }
 
+    /**
+     * Which days this camera kept recordings for, newest first, and which hours of
+     * each have something in them.
+     *
+     * The hours are asked for in the phone's own timezone, because `10` in the
+     * answer should mean ten o'clock where you are and not the server's idea of it.
+     */
+    fun recordingDays(
+        baseUrl: String,
+        token: String,
+        camera: String,
+        timezone: String,
+    ): List<RecordingDay> {
+        val target = url(baseUrl, "/api/$camera/recordings/summary").newBuilder()
+            .addQueryParameter("timezone", timezone)
+            .build()
+        val request = Request.Builder()
+            .url(target)
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return json.decodeFromString(
+            ListSerializer(RecordingDay.serializer()),
+            request.okBody(),
+        ).sortedByDescending { it.day }
+    }
+
+    /**
+     * The stretches actually recorded between two moments, so the timeline can
+     * leave out the gaps rather than draw over them.
+     */
+    fun recordingSpans(
+        baseUrl: String,
+        token: String,
+        camera: String,
+        after: Double,
+        before: Double,
+    ): List<RecordingSpan> {
+        // Whole seconds, written plainly. Frigate takes any number here, but
+        // `1.79E9` in a query string is the kind of thing caches and logs mangle.
+        val target = url(baseUrl, "/api/$camera/recordings").newBuilder()
+            .addQueryParameter("after", after.toLong().toString())
+            .addQueryParameter("before", before.toLong().toString())
+            .build()
+        val request = Request.Builder()
+            .url(target)
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return json.decodeFromString(
+            ListSerializer(RecordingSpan.serializer()),
+            request.okBody(),
+        ).sortedBy { it.startTime }
+    }
+
+    /**
+     * A picture Frigate cuts out of the recording at that moment, for showing
+     * while the clip of it arrives. JPEG only: PNG of a 1080p frame is megabytes.
+     */
+    fun recordingStill(
+        baseUrl: String,
+        token: String,
+        camera: String,
+        moment: Double,
+        height: Int = 720,
+    ): ByteArray {
+        val target = url(baseUrl, "/api/$camera/recordings/${moment.toLong()}/snapshot.jpg").newBuilder()
+            .addQueryParameter("height", height.toString())
+            .build()
+        val request = Request.Builder()
+            .url(target)
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return request.okBytes()
+    }
+
     fun eventThumbnail(baseUrl: String, token: String, eventId: String): ByteArray {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/events/$eventId/thumbnail.jpg"))

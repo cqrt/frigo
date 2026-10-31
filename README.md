@@ -15,6 +15,14 @@ to move to the next camera without going back to the grid.
 Turn the phone on its side and the picture gets the whole screen, with no bars
 around it. Turn it back and the bar comes with it. There's no button for it.
 
+The clock in a camera's bar opens its recordings: a bar of the day, with the hours
+Frigate kept filled in and the gaps left grey. Pick the day from the buttons along
+the top, then drag along the bar. The picture at that moment shows underneath.
+Play fetches the two minutes from there and opens it in the same viewer an event
+opens in, starting fifteen seconds before the moment you picked so you see what
+led up to it. Over a gap, Play greys out and the line underneath says nothing was
+recorded then.
+
 **Review.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review
 rather than twenty events. Tap one to watch the clip of that time. Alerts and

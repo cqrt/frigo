@@ -29,10 +29,12 @@ import androidx.navigation.NavController
 import nz.mckenzie.frigo.alerts.AlertService
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.Gate
+import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.cameras.CamerasScreen
 import nz.mckenzie.frigo.ui.cameras.PlayerScreen
 import nz.mckenzie.frigo.ui.explore.ExploreScreen
 import nz.mckenzie.frigo.ui.login.LoginScreen
+import nz.mckenzie.frigo.ui.recordings.RecordingsScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewsScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
 
@@ -77,6 +79,7 @@ private val Tabs = listOf(
 )
 
 private const val PLAYER_PREFIX = "player/"
+private const val RECORDINGS_PREFIX = "recordings/"
 
 @Composable
 private fun MainScaffold(
@@ -88,7 +91,8 @@ private fun MainScaffold(
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-    val watching = currentRoute?.startsWith(PLAYER_PREFIX) == true
+    val watching = currentRoute?.startsWith(PLAYER_PREFIX) == true ||
+        currentRoute?.startsWith(RECORDINGS_PREFIX) == true
 
     // A tapped alert asks for one camera, and it sits on top of the grid rather
     // than replacing it. Back from there lands on the grid with the tabs back,
@@ -148,6 +152,18 @@ private fun MainScaffold(
                 PlayerScreen(
                     repository = container.repository,
                     cameraName = camera,
+                    onBack = { navController.popBackStack() },
+                    onRecordings = { name ->
+                        navController.navigate("$RECORDINGS_PREFIX$name") { launchSingleTop = true }
+                    },
+                )
+            }
+            composable("$RECORDINGS_PREFIX{camera}") { entry ->
+                val camera = entry.arguments?.getString("camera") ?: return@composable
+                RecordingsScreen(
+                    repository = container.repository,
+                    camera = camera,
+                    title = prettyCameraName(camera),
                     onBack = { navController.popBackStack() },
                 )
             }

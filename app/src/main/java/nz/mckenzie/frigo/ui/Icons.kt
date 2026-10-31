@@ -103,6 +103,14 @@ object FrigoIcons {
             path("M5.8 14.2h6", strokeWidth = 1.8f)
         }
     }
+
+    /** A clock face, for the recordings behind a camera. */
+    val Recorded: ImageVector by lazy {
+        vector("Recorded") {
+            path("M12 3.4a8.6 8.6 0 1 0 0 17.2 8.6 8.6 0 1 0 0-17.2z", strokeWidth = 1.9f)
+            path("M12 7.4v5l3.4 2", strokeWidth = 1.9f)
+        }
+    }
 }
 
 /** Filled unless a stroke is asked for, which is how the magnifying glass is drawn. */
