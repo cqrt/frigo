@@ -956,10 +956,33 @@ The bar first coasted on after a drag, the way a scroll view does. On a list tha
 is helpful: the finger leaves and the list carries on to where you were heading. On
 this bar it is not. You are reading a still off a particular second, and a bar that
 moves under a finger that has stopped gives you a different second from the one you
-stopped on. Worse, the coasting was not being taken away when a finger landed again,
-so resting a finger on the bar and then giving it a small nudge set it going again
-from a speed nothing on the screen was asking for.
+stopped on.
 
 The bar now uses a plain drag rather than a scroll. What the finger does is the only
 thing that moves it: stop, and it stops. Crossing a day is what the strip above is
 for, not a flick.
+
+## The bar's own voice is not a request to move
+
+Taking the coasting out did not stop the bar running away, because the coasting was
+not the whole of it. The bar tells the screen where it has got to as a step: the
+moment rounded down to thirty seconds. The screen holds that value and hands it back
+to the bar, and the bar was treating any value that did not match its own position
+as somebody else moving it, and moving to match. But the rounded value always lands
+behind the playhead, by anywhere up to a step. So every step back dragged the bar
+after it, which is a jump of nine points of bar for the thirty seconds.
+
+At a step boundary the effect compounds: the bar lands exactly on a boundary, a
+pixel of movement back rounds down another step, and that drags the bar another nine
+points back, once for every event the finger sends. A slow drag back became a
+stampede, and a drag forward was only quiet because the same pull was working
+against the finger.
+
+The bar now remembers the last moment it said, and the screen's value coming back
+matching it is the bar's own voice, not an instruction. Anything else, from the
+strip, a day chip, another camera or the clock while live, still moves it.
+
+Checked on the emulator: a drag left and a drag right of the same distance moving the
+same number of minutes, four ten point nudges back moving a couple of minutes and
+stopping there, the strip still jumping the bar to the moment tapped, and Live still
+putting the playhead back at now.

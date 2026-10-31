@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -359,6 +360,11 @@ private fun ScrubBar(
     // How far the day has moved past the left edge of the bar, in pixels. The
     // playhead is at the middle, so the moment is a screen's half further on.
     var moved by remember { mutableFloatStateOf(0f) }
+    // The last moment the bar said it had moved to. Coming back in as chosen is
+    // the bar's own voice, and must not be mistaken for somebody moving the bar:
+    // the value is rounded to a step, so the round trip lands behind the playhead
+    // and a correction would drag it back, over and over, once for every pixel.
+    var said by remember { mutableDoubleStateOf(Double.NaN) }
     val pick by rememberUpdatedState(onPick)
     val measurer = rememberTextMeasurer()
 
@@ -378,14 +384,18 @@ private fun ScrubBar(
         // are reading off a still cannot do.
         val wanted = (moved - delta).coerceIn(least, most)
         moved = wanted
-        pick(quantise(momentAt(wanted + width / 2f)))
+        val moment = quantise(momentAt(wanted + width / 2f))
+        if (moment != said) {
+            said = moment
+            pick(moment)
+        }
     }
 
     // The strip, a day chip, another camera, or the clock while live: the bar
-    // moves to wherever that moment is. Under half a step is the bar reporting its
-    // own movement, and is left alone.
+    // moves to wherever that moment is. Anything the bar said itself is left
+    // alone, and so is anything under half a step away.
     LaunchedEffect(chosen, dayStart, width) {
-        if (scale <= 0f) return@LaunchedEffect
+        if (scale <= 0f || chosen == said) return@LaunchedEffect
         val wanted = ((chosen - dayStart).toFloat() * scale - width / 2f).coerceIn(least, most)
         if (abs(wanted - moved) > scale * ScrubStep / 2f) moved = wanted
     }
