@@ -8,8 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.rememberScrollableState
-import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -370,15 +370,15 @@ private fun ScrubBar(
 
     fun momentAt(px: Float): Double = dayStart + px / scale
 
-    val scrollable = rememberScrollableState { delta ->
-        if (scale <= 0f) return@rememberScrollableState 0f
+    val drag = rememberDraggableState { delta ->
+        if (scale <= 0f) return@rememberDraggableState
         // The day moves with your finger: drag left and later comes under the
-        // playhead, the way a strip of film would.
+        // playhead, the way a strip of film would. Where the finger stops, the bar
+        // stops: there is no coasting on after it, which is the one thing a bar you
+        // are reading off a still cannot do.
         val wanted = (moved - delta).coerceIn(least, most)
-        val used = moved - wanted
         moved = wanted
         pick(quantise(momentAt(wanted + width / 2f)))
-        used
     }
 
     // The strip, a day chip, another camera, or the clock while live: the bar
@@ -397,7 +397,7 @@ private fun ScrubBar(
             .clip(RoundedCornerShape(10.dp))
             .background(Color.White.copy(alpha = 0.08f))
             .onSizeChanged { width = it.width.toFloat() }
-            .scrollable(scrollable, Orientation.Horizontal),
+            .draggable(state = drag, orientation = Orientation.Horizontal),
     ) {
         Canvas(Modifier.fillMaxSize()) {
             if (scale <= 0f) return@Canvas

@@ -943,10 +943,23 @@ finger.
 Checked on the emulator against the mock: an hour across the bar with a tick every
 minute and the time every ten, the day's stretches and spikes in both bars, a drag
 that slid the day under the playhead in thirty second steps with the picture
-following it, the fixed playhead landing where the strip was tapped, the fling
-carrying from eleven in the morning to half past seven in the evening, a gap
+following it, the fixed playhead landing where the strip was tapped, a gap
 blanking the picture with Play greyed out, Live putting the stream and the playhead
 back at now, a tap between cameras keeping the moment and the bar, Yesterday
 loading at its last recorded moment, the ends of the day stopping at the ends of
 the day, Play opening the clip, the phone on its side and back, and nought requests
 over ten idle seconds.
+
+## The bar stops when the finger stops
+
+The bar first coasted on after a drag, the way a scroll view does. On a list that
+is helpful: the finger leaves and the list carries on to where you were heading. On
+this bar it is not. You are reading a still off a particular second, and a bar that
+moves under a finger that has stopped gives you a different second from the one you
+stopped on. Worse, the coasting was not being taken away when a finger landed again,
+so resting a finger on the bar and then giving it a small nudge set it going again
+from a speed nothing on the screen was asking for.
+
+The bar now uses a plain drag rather than a scroll. What the finger does is the only
+thing that moves it: stop, and it stops. Crossing a day is what the strip above is
+for, not a flick.
