@@ -14,8 +14,11 @@ Then point the app at it:
 Sign in as `test` with the password `test`. Any other password is refused, on
 purpose, so the error message can be tried too.
 
-It serves five cameras, one of them disabled, three events, thumbnails, snapshots
-and an endless MJPEG stream that cycles three frames.
+It serves five cameras, one of them disabled, three events, thumbnails, snapshots,
+an endless MJPEG stream that cycles three frames, and a four second clip for two
+of the three events. The third event has no clip, so the still-only path is
+reachable too. The clip is a test pattern, made with ffmpeg, so a clip that plays
+is obviously playing.
 
 Sign-in behaves like Frigate 0.18: a JSON body of `user` and `password`, and the
 session as a JWT in a `Set-Cookie` header. Send it a form body and it answers

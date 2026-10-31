@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -84,6 +85,7 @@ fun CachedImage(
     cacheKey: String,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
+    background: Color = MaterialTheme.colorScheme.surfaceVariant,
     load: suspend () -> ByteArray?,
 ) {
     var frame by remember(cacheKey) { mutableStateOf(ImageCache.get(cacheKey)?.asImageBitmap()) }
@@ -96,7 +98,7 @@ fun CachedImage(
         frame = decoded
     }
 
-    Box(modifier.background(MaterialTheme.colorScheme.surfaceVariant)) {
+    Box(modifier.background(background)) {
         frame?.let {
             androidx.compose.foundation.Image(
                 bitmap = it,

@@ -29,6 +29,8 @@ from urllib.parse import urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FRAMES = [open(os.path.join(HERE, f"frame{i}.jpg"), "rb").read() for i in range(3)]
+# A test pattern, so a clip that plays is obviously playing.
+CLIP = open(os.path.join(HERE, "clip.mp4"), "rb").read()
 
 CAMERAS = {
     "north_cam": {"enabled": True, "friendly_name": "North cam"},
@@ -139,13 +141,18 @@ class Handler(BaseHTTPRequestHandler):
                     "sub_label": None,
                     "start_time": now - 300 * i,
                     "end_time": now - 290 * i,
-                    "has_clip": True,
+                    "has_clip": i != 2,
                     "has_snapshot": True,
                     "zones": ["North_driveway"],
                 }
                 for i in range(3)
             ]
             return self.send_json(events)
+
+        if path.startswith("/api/events/") and path.endswith("/clip.mp4"):
+            # Frigate cuts the clip out of recordings on request. Here it is one
+            # short file, sent whole.
+            return self.send_bytes(CLIP, "video/mp4")
 
         if path.startswith("/api/events/") and path.endswith(".jpg"):
             return self.send_bytes(FRAMES[0], "image/jpeg")

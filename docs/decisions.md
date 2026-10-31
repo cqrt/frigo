@@ -30,6 +30,48 @@ Frigate's own nginx forwards that header to its auth subrequest, so the bearer
 token works for the API, the stills and the MJPEG stream alike, without the app
 holding a cookie jar.
 
+## An event's clip is cut from recordings, not stored per event
+
+Frigate 0.18's `/api/events/{id}/clip.mp4` looks up the recordings that cover the
+event and cuts them with ffmpeg while it streams the result. It is not a file per
+event, so three things follow:
+
+- A clip needs recordings switched on in Frigate, and it disappears when the
+  recordings age out. The still is kept separately and outlives it.
+- An event with `has_clip` false answers 404 "Clip not available". A range with no
+  recordings under it answers 400 "No recordings found for the specified time
+  range". The app treats both as "no clip for this one" and shows the still, since
+  nothing you could do in the app would bring it back.
+- The encode happens on request, so the first frame takes a moment to arrive.
+
+## The clip plays as it arrives, which is why Media3 is in the build
+
+The player is ExoPlayer with a `DefaultHttpDataSource` whose default request
+properties carry the bearer token. The clip endpoint sits behind Frigate's auth
+like everything else, and the player has to make its own requests, so the token
+goes on every one of them rather than being attached to a single call.
+
+Rejected: downloading the clip to a temp file and then playing it. Frigate has to
+encode the clip before it sends anything, so the wait would sit in front of the
+player with nothing to show, and the file would need cleaning up afterwards.
+
+Rejected: the platform `MediaPlayer` and `VideoView`. `VideoView` cannot set a
+request header, and `MediaPlayer` only reports failure as an integer, which is not
+enough to tell "your session expired" from "the clip is gone".
+
+Two settings are there because of how the endpoint behaves. Load errors are not
+retried: with the default policy a server that is switched off spun for about
+eighteen seconds before saying so. And the connect timeout is eight seconds,
+because Frigate can take a while to produce the first byte, but a host that is not
+answering should not hold the screen.
+
+Seeking is not free. Frigate streams a file it is writing, with no range support,
+so a jump back or forward asks again and the encode starts over from the seek
+point. That is fine over a phone on the same network as the server, and it is why
+the player is a plain scrub bar rather than a frame-accurate timeline.
+
+Cost: Media3 takes the release APK from 1.6 MB to 2.4 MB.
+
 ## The stream takes `height`, not `h`
 
 Frigate 0.18 names the query parameter `height` on both `/{camera}/latest.jpg`

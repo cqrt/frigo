@@ -110,6 +110,9 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
 
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
 }

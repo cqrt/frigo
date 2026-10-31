@@ -9,7 +9,9 @@ already run, so there is nothing to install on the server side.
 one and it fills the screen with a live view.
 
 **Events.** What Frigate has recorded, newest first, with thumbnails. Filter by
-camera and tap an event for the full snapshot.
+camera and tap an event to watch it. An event with a play mark on its thumbnail
+has a clip, and the clip plays full screen with a scrub bar. One without a play
+mark shows the still Frigate kept.
 
 **Settings.** Shows which server you are signed in to, and signs you out.
 
@@ -41,6 +43,17 @@ are on.
 WebRTC through go2rtc is planned as an option for low latency. It needs port 8555
 forwarded to your Frigate machine, both TCP and UDP. Without that forward, WebRTC
 connects and then shows nothing, which is why it is not the default.
+
+## How clips play
+
+Frigate keeps no file per event. When you tap an event, it cuts that stretch out
+of your camera's recordings and sends it as it goes. So the clip needs recordings
+switched on, and it lasts as long as they do: once the recordings have aged out,
+the event keeps its still and its clip is gone.
+
+The app plays the clip as it arrives, so the picture starts before the whole
+thing has downloaded, and the token goes with the request the way it does on
+every other screen.
 
 ## Building it
 

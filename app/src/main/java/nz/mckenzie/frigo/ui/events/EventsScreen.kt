@@ -16,9 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,8 +43,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import nz.mckenzie.frigo.data.AppContainer
@@ -141,7 +140,7 @@ fun EventsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     }
 
     opened?.let { event ->
-        SnapshotDialog(
+        EventPlayerDialog(
             repository = container.repository,
             event = event,
             onDismiss = { opened = null },
@@ -161,15 +160,32 @@ private fun EventRow(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            CachedImage(
-                cacheKey = "thumb-${event.id}",
-                modifier = Modifier
-                    .padding(8.dp)
-                    .size(width = 112.dp, height = 63.dp)
-                    .aspectRatio(16f / 9f),
-                contentScale = ContentScale.Crop,
-                load = { repository.thumbnail(event.id) },
-            )
+            Box(Modifier.padding(8.dp)) {
+                CachedImage(
+                    cacheKey = "thumb-${event.id}",
+                    modifier = Modifier
+                        .size(width = 112.dp, height = 63.dp)
+                        .aspectRatio(16f / 9f),
+                    contentScale = ContentScale.Crop,
+                    load = { repository.thumbnail(event.id) },
+                )
+                if (event.hasClip) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(24.dp)
+                            .background(Color.Black.copy(alpha = 0.45f), CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Filled.PlayArrow,
+                            contentDescription = "Has a clip",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+            }
             Column(
                 modifier = Modifier.weight(1f).padding(end = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -197,39 +213,12 @@ private fun EventRow(
     }
 }
 
-@Composable
-private fun SnapshotDialog(
-    repository: nz.mckenzie.frigo.data.FrigoRepository,
-    event: FrigateEvent,
-    onDismiss: () -> Unit,
-) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Box(Modifier.fillMaxSize().background(Color.Black)) {
-            CachedImage(
-                cacheKey = "snapshot-${event.id}",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit,
-                load = { repository.snapshot(event.id) },
-            )
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
-            ) {
-                Icon(Icons.Filled.Close, contentDescription = "Close", tint = Color.White)
-            }
-        }
-    }
-}
-
-private fun FrigateEvent.title(): String {
+internal fun FrigateEvent.title(): String {
     val base = label.replaceFirstChar { it.uppercase() }
     return if (subLabel.isNullOrBlank()) base else "$base · $subLabel"
 }
 
-private fun relativeTime(millis: Long): String {
+internal fun relativeTime(millis: Long): String {
     val now = System.currentTimeMillis()
     if (now - millis < 60_000) return "Just now"
     return DateUtils.getRelativeTimeSpanString(

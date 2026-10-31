@@ -28,6 +28,12 @@ sealed interface Gate {
 }
 
 /**
+ * Where an event's clip is, and the token the player has to send with it. The
+ * player fetches the clip itself, so it needs both rather than a call to make.
+ */
+data class ClipSource(val url: String, val token: String)
+
+/**
  * Everything that talks to Frigate. It holds the session token and hands the
  * screens plain data.
  *
@@ -42,7 +48,7 @@ class FrigoRepository(
 ) {
 
     private val mutex = Mutex()
-    private var stored: ServerPrefs.Stored? = null
+    @Volatile private var stored: ServerPrefs.Stored? = null
 
     private val _gate = MutableStateFlow<Gate>(Gate.Loading)
     val gate: StateFlow<Gate> = _gate.asStateFlow()
@@ -128,6 +134,17 @@ class FrigoRepository(
     /** The MJPEG feed. The caller closes the response when it stops watching. */
     suspend fun openMjpeg(camera: String, height: Int, fps: Int): Response =
         authorized { baseUrl, token -> api.openMjpeg(baseUrl, token, camera, height, fps) }
+
+    /**
+     * The address of an event's clip and the token it needs. Frigate cuts the clip
+     * out of your recordings on request, so it is fetched by the player rather than
+     * downloaded here.
+     */
+    fun clipSource(eventId: String): ClipSource {
+        val current = stored ?: throw FrigateException(401, "Not signed in")
+        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        return ClipSource(url = "${current.baseUrl}/api/events/$eventId/clip.mp4", token = token)
+    }
 
     /**
      * Runs [block] with the session token. A 401 means the token aged out, so we
