@@ -886,3 +886,67 @@ cameras, a tap on one moving the main picture to that camera at the same moment,
 swipe going back to live, another day's spikes loading on its chip, Play opening the
 clip of the stretch, the phone on its side showing the stream with no bar, and
 nought requests over ten idle seconds.
+
+
+## The bar scrolls an hour at a time
+
+A day squeezed across the width of a phone is four minutes a point, so a half
+minute detection is a tenth of a point: a spike you cannot see, which is the whole
+reason for a bar with spikes on it. The day now runs off the edge of the screen and
+the bar scrolls, with an hour across the width. That is twenty-four times closer,
+which puts a half minute review at about three points, and a nine minute alert at
+the width of a fingernail.
+
+The playhead is fixed in the middle and the day slides under it, half an hour
+either side, so you can see what is coming as well as what has passed. The bar
+moves with your finger: drag left and later comes into the middle, drag right and
+earlier does. A step is thirty seconds, the same as Frigate's own timeline, which
+on this scale is three points of bar: fine enough that the picture looks like it is
+following the drag rather than jumping, coarse enough that the server is not asked
+for pictures nobody can tell apart.
+
+The step has a second purpose. Frigate cuts every still out of the recording with
+ffmpeg as it is asked, so the rate of requests during a drag is the load on the
+server. A thirty second step means the number of requests a drag can ask for is
+the number of steps it covers, whatever the speed of the finger.
+
+Twenty-four screens of scrolling is too much for reaching a moment in the middle of
+the day, so the whole day sits in a thin strip above the bar, with the hour on show
+drawn as a box. Tap or drag along the strip to go anywhere at once. The two bars
+share one moment, so a tap on the strip moves the hour, and a drag on the hour
+moves the box.
+
+Nothing is drawn that is not on screen: the ticks, the labels, the stretches and
+the spikes are culled to the seconds the bar is showing, and the scroll position is
+read inside the drawing rather than in the composition, so a drag redraws this one
+bar instead of recomposing the screen.
+
+## The picture holds instead of blinking
+
+The blanks between pictures were the picture being set to nothing when a still did
+not arrive. Frigate answers from the recording, so a server busy enough to miss one
+has not unsaid the last one: the last picture now stays up until a new one replaces
+it. A moment that is known to be in a gap still blanks, because that is the answer,
+and an old frame under a new time would be a lie about when it was taken.
+
+The last dozen stills are also kept, as the bytes Frigate sent rather than decoded.
+A dozen is a couple of megabytes, where the same dozen pictures decoded would be
+tens, and it makes going back over ground you have just dragged across instant
+instead of another run of ffmpeg. Only the scrub stills use it, and only from the
+thread the picture is drawn on.
+
+The height the stills are cut at is one constant, ScrubLines, in Playback.kt. 720
+is sharp on a phone. 480 is soft but comes back sooner and costs the server less,
+and that is the first thing to turn if a slow server leaves the picture behind your
+finger.
+
+Checked on the emulator against the mock: an hour across the bar with a tick every
+minute and the time every ten, the day's stretches and spikes in both bars, a drag
+that slid the day under the playhead in thirty second steps with the picture
+following it, the fixed playhead landing where the strip was tapped, the fling
+carrying from eleven in the morning to half past seven in the evening, a gap
+blanking the picture with Play greyed out, Live putting the stream and the playhead
+back at now, a tap between cameras keeping the moment and the bar, Yesterday
+loading at its last recorded moment, the ends of the day stopping at the ends of
+the day, Play opening the clip, the phone on its side and back, and nought requests
+over ten idle seconds.

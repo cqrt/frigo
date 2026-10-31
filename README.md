@@ -15,19 +15,24 @@ to move to the next camera without going back to the grid.
 Turn the phone on its side and the picture gets the whole screen, with no bars
 around it. Turn it back and the bar comes with it. There's no button for it.
 
-A camera opens with the bar of its day under the picture: the hours Frigate kept
-filled in, the gaps left grey, and a spike along the bottom for everything it
-flagged. Red spikes are alerts, amber ones are detections. Pick the day from the
-buttons along the top, then drag along the bar. The picture follows your finger as
-it goes, so a drag across the day plays back like a film sped up, and Live on the
-picture takes you back to the stream. The other cameras sit underneath at the same
-moment, each with its name. Tap one and it comes up in the picture at the same
-moment, so you can follow something from camera to camera. Play fetches the two
-minutes from there and opens it in the same viewer an event opens in, starting
-fifteen seconds before the moment you picked so you see what led up to it. Over a
-gap, Play greys out, the picture goes blank, and the line underneath says nothing
-was recorded then. On its side the timeline goes and the live picture fills the
-screen.
+A camera opens with the day's bar under the picture. An hour fits across the
+screen, the hours Frigate kept are filled in, the gaps are left grey, and a spike
+runs along the bottom for everything it flagged: red for an alert, amber for a
+detection. Pick the day from the buttons along the top, then drag the bar. The
+hour slides past, a step every thirty seconds, and the picture follows it, so a
+drag through a quiet afternoon plays back like a film sped up. Live on the picture
+takes you back to the stream.
+
+The thin strip above the bar is the whole day. Tap it to go anywhere in it, which
+is quicker than scrolling an hour at a time.
+
+The other cameras sit underneath at the same moment, each with its name. Tap one
+and it comes up in the picture at the same moment, so you can follow something
+from camera to camera. Play fetches the two minutes from there and opens it in the
+same viewer an event opens in, starting fifteen seconds before the moment you
+picked so you see what led up to it. Over a gap, Play greys out, the picture goes
+blank, and the line underneath says nothing was recorded then. On its side the
+timeline goes and the live picture fills the screen.
 
 **Review.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review

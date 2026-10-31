@@ -257,15 +257,14 @@ fun PlayerScreen(
         barReady = true
     }
 
-    // While the picture is live the marker belongs at now, so the bar says where
-    // in the day you are and Play starts from here. Quarter minutes, the same step
-    // a tap moves in.
+    // While the picture is live the playhead belongs at now, so the bar says where
+    // in the day you are and Play starts from here. Half minutes, the same step the
+    // bar moves in.
     LaunchedEffect(live, day, zone, watching) {
         if (!live || day != LocalDate.now(zone).toString()) return@LaunchedEffect
         while (true) {
-            val now = Instant.now().epochSecond.toDouble()
-            chosen = (now / 15.0).toLong() * 15.0
-            delay(15_000)
+            chosen = quantise(Instant.now().epochSecond.toDouble())
+            delay(ScrubStep.toLong() * 1_000)
         }
     }
 
@@ -430,6 +429,7 @@ fun PlayerScreen(
                         repository = repository,
                         camera = watching,
                         moment = chosen,
+                        height = ScrubLines,
                         enabled = recorded,
                         contentScale = ContentScale.Fit,
                         contentDescription = title,
