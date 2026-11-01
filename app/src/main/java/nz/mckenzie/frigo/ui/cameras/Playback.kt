@@ -1,8 +1,16 @@
 package nz.mckenzie.frigo.ui.cameras
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDecay
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.exponentialDecay
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,9 +33,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -54,6 +66,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -72,7 +85,12 @@ import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.RecordingDay
 import nz.mckenzie.frigo.data.RecordingSpan
+import nz.mckenzie.frigo.ui.FrigoIcons
+import nz.mckenzie.frigo.ui.components.megabytes
 import nz.mckenzie.frigo.ui.components.toImageBitmapOrNull
+import nz.mckenzie.frigo.ui.friendlyMessage
+import java.io.File
+import java.io.IOException
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -127,12 +145,27 @@ private const val OtherStillGap = 400L
 private const val LiveStillMillis = 2_000L
 
 /**
+ * How long the mode pill's dot takes to fade from bright to dim. Paired with its
+ * reverse that is a shade under a second and a half for the round trip, which is
+ * slow enough to read as a pulse and not as a warning light.
+ */
+private const val ModePulseMillis = 700
+
+/**
  * Red for an alert, amber for a detection. The camera screen is black whatever
  * the theme is set to, so these are picked to sit on black rather than taken
  * from the palette.
  */
 private val AlertSpike = Color(0xFFF05252)
 private val DetectionSpike = Color(0xFFE9A23B)
+
+/**
+ * Which the picture is: red for the stream, blue for a recording. Red is the one
+ * that says something is happening now, and blue is the colour of everything you
+ * can go back over, so the bar's own blue is the blue here.
+ */
+private val LiveRed = Color(0xFFF05252)
+private val PlaybackBlue = Color(0xFF3B82F6)
 
 private val LabelStyle = TextStyle(fontSize = 10.sp, color = Color.White.copy(alpha = 0.55f))
 
@@ -147,14 +180,20 @@ private val DetectionTop = 44.dp
 private val SpikeBottom = 52.dp
 
 /**
- * The day's bar under the live picture, and what sits around it: the days to
- * choose from, a strip of the whole day to jump with, the hour you are looking
- * at, and Play.
+ * A clip as a file on the phone, with a running count of the bytes that have
+ * arrived as it comes.
+ */
+internal typealias ClipFetch = suspend (onProgress: (Long) -> Unit) -> File
+
+/**
+ * The day's bar under the picture, and what sits around it: the days to choose
+ * from, a strip of the whole day to jump with, the hour you are looking at, and
+ * whatever the corner holds: Play on the stream, Save on a recording.
  *
- * Frigate cuts a clip out of the recordings when it is asked for one, so playback
- * is a clip of the two minutes from where the playhead sits, shown in the same
- * viewer an event opens in. The playhead can sit where nothing was recorded, and
- * [canPlay] is false there rather than playing two minutes of black.
+ * Frigate cuts a clip out of the recordings when it is asked for one. On the stream
+ * the corner plays the two minutes up to now in the same viewer an event opens in.
+ * The playhead can sit where nothing was recorded, and [canPlay] is false there
+ * rather than playing two minutes of black.
  */
 @Composable
 internal fun TimelinePanel(
@@ -167,11 +206,10 @@ internal fun TimelinePanel(
     moment: String,
     caption: String,
     captionIsWarning: Boolean,
-    canPlay: Boolean,
     onDay: (String) -> Unit,
     onPick: (Double) -> Unit,
-    onPlay: () -> Unit,
     modifier: Modifier = Modifier,
+    action: @Composable () -> Unit = {},
 ) {
     val dayStart = day?.let { startOfDay(it, zone) } ?: 0.0
 
@@ -231,7 +269,7 @@ internal fun TimelinePanel(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Button(onClick = onPlay, enabled = canPlay) { Text("Play") }
+            action()
         }
     }
 }
@@ -252,6 +290,163 @@ private fun DayPill(label: String, selected: Boolean, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
     )
+}
+
+/**
+ * What the picture is: the stream, or a recording. In the bottom corner of the
+ * picture, red or blue, with a dot that brightens and dims rather than switching
+ * hard on and off. A hard blink in a corner wears thin after a few minutes of
+ * watching; a slow one still reads as alive.
+ *
+ * On the picture rather than under it, because a recording on its side fills the
+ * screen and there is no bar there to say which you are looking at.
+ */
+@Composable
+internal fun ModePill(live: Boolean, modifier: Modifier = Modifier) {
+    val colour = if (live) LiveRed else PlaybackBlue
+    val pulse = rememberInfiniteTransition(label = "mode")
+    val glow by pulse.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = ModePulseMillis, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "dot",
+    )
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .background(Color.Black.copy(alpha = 0.6f))
+            .border(1.dp, colour.copy(alpha = 0.9f), RoundedCornerShape(50))
+            .padding(start = 9.dp, end = 11.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(7.dp)
+                .alpha(glow)
+                .background(colour, CircleShape),
+        )
+        Text(
+            text = if (live) "Live" else "Playback",
+            color = Color.White,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(start = 6.dp),
+        )
+    }
+}
+
+/**
+ * Keeps the stretch the caption beside it names as a file on the phone.
+ *
+ * The phone's own save screen opens first, so where the file lands is its decision
+ * and the app asks for no permission and puts nothing in the gallery. Nothing is
+ * fetched until a place is chosen, so a tap thought better of costs nothing.
+ *
+ * [fetch] is what the viewer fetches, under the same name, so a stretch already
+ * watched in it is copied off the phone rather than asked for again.
+ */
+@Composable
+internal fun SaveClipButton(
+    name: String,
+    enabled: Boolean,
+    fetch: ClipFetch,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // Held from the tap until the save screen answers, so the file is the stretch
+    // the caption named then, however far the picture has moved on by the time a
+    // place is chosen.
+    var pending by remember { mutableStateOf<ClipFetch?>(null) }
+    var saving by remember { mutableStateOf(false) }
+    var received by remember { mutableLongStateOf(0L) }
+    var saved by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
+
+    // The save screen is remembered rather than made afresh each time: a new one
+    // every recomposition would register and unregister the launcher while a save
+    // is in the air.
+    val saveScreen = remember { ActivityResultContracts.CreateDocument("video/mp4") }
+    val ask = rememberLauncherForActivityResult(saveScreen) { place ->
+        val clip = pending
+        pending = null
+        if (place == null || clip == null) return@rememberLauncherForActivityResult
+        saving = true
+        received = 0L
+        scope.launch {
+            val outcome = runCatching {
+                val file = clip { received = it }
+                withContext(Dispatchers.IO) {
+                    val out = context.contentResolver.openOutputStream(place)
+                        ?: throw IOException("nowhere to write it")
+                    out.use { sink -> file.inputStream().use { it.copyTo(sink) } }
+                }
+            }
+            saving = false
+            saved = outcome.isSuccess
+            failed = outcome.isFailure
+            if (outcome.isFailure) received = 0L
+        }
+    }
+
+    // Saving failure is said in the button rather than in the caption, which is busy
+    // naming the stretch, and both go back to Save once they have been read.
+    LaunchedEffect(saved, failed) {
+        if (!saved && !failed) return@LaunchedEffect
+        delay(2_500)
+        saved = false
+        failed = false
+    }
+
+    val ready = enabled && !saving
+    val tone = when {
+        failed -> LiveRed
+        ready -> Color.White.copy(alpha = 0.9f)
+        else -> Color.White.copy(alpha = 0.35f)
+    }
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(Color.White.copy(alpha = 0.06f))
+            .border(1.dp, tone.copy(alpha = if (ready) 0.45f else 0.15f), RoundedCornerShape(50))
+            .clickable(enabled = ready, onClickLabel = "Save this clip") {
+                saved = false
+                failed = false
+                pending = fetch
+                ask.launch(name)
+            }
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (saving) {
+            CircularProgressIndicator(
+                color = tone,
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(13.dp),
+            )
+        } else {
+            Icon(
+                imageVector = FrigoIcons.Save,
+                contentDescription = null,
+                tint = tone,
+                modifier = Modifier.size(15.dp),
+            )
+        }
+        Text(
+            text = when {
+                saving && received > 0 -> "Saving ${megabytes(received)}"
+                saving -> "Saving"
+                saved -> "Saved"
+                failed -> "Couldn't save"
+                else -> "Save"
+            },
+            color = tone,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            modifier = Modifier.padding(start = 6.dp),
+        )
+    }
 }
 
 /**

@@ -26,8 +26,12 @@ Let go and the recording plays from where the bar stopped, and the playhead walk
 along as it plays. The button in the corner cycles the speed: 1, 2, 4, 8 and 16
 times. When the run reaches a stretch with nothing recorded, it carries on at the
 next stretch. Touch the bar and the picture stops and goes back to the still. The
-speaker in the corner turns the sound on and off. Live puts the bar back on today and
-on now, and takes you back to the stream.
+speaker in the corner turns the sound on and off. Return to Live puts the bar back
+on today and on now, and takes you back to the stream.
+
+The corner of the picture says which you're looking at: **Live** with a red dot, or
+**Playback** with a blue one. The dot brightens and dims, slowly, so it doesn't
+nag. On its side there's no bar, and the pill is what tells you where you are.
 
 The thin strip above the bar is the whole day. Tap it to go anywhere in it, which
 is quicker than scrolling an hour at a time.
@@ -35,11 +39,16 @@ is quicker than scrolling an hour at a time.
 The other cameras sit underneath at the same moment, each with its name. Tap one
 and it comes up in the picture at the same moment, so you can follow something
 from camera to camera. If the recording is playing, it plays on there from where the
-picture had reached. Play fetches the two minutes from there and opens it in the
-same viewer an event opens in, starting fifteen seconds before the moment you
-picked so you see what led up to it. Over a gap, Play greys out, the picture goes
-blank, and the line underneath says nothing was recorded then. On its side the
-timeline goes and the live picture fills the screen.
+picture had reached. Over a gap, the picture goes blank and the line underneath
+says nothing was recorded then. On its side the timeline goes and the picture fills
+the screen.
+
+The button in the bottom corner changes with the mode. On the stream it's **Play**,
+which opens the last two minutes in the viewer, with a scrub bar. On a recording
+it's **Save**, which keeps the stretch the line underneath names as a file on your
+phone. It asks where to put it first and fetches nothing until you've chosen, then
+shows how much has arrived. Nothing lands in your photos and there's no permission
+to grant.
 
 **Review.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review
@@ -99,8 +108,8 @@ cannot use MSE, so the closest equivalent is this JPEG stream: same TCP, same
 guarantee, and it needs no extra ports or router changes.
 
 The trade is bandwidth, since every frame is a whole picture. The player's menu
-sets the height and frame rate, and the label in the corner tells you which you
-are on.
+sets the height and frame rate. That menu is only there while you're watching the
+stream, since it changes nothing about a recording.
 
 A speaker button in the player adds the camera's sound. Frigate's API has none in
 it, so the sound comes from go2rtc, the stream server inside Frigate, through one
@@ -156,6 +165,13 @@ that, oldest first.
 Some clips arrive from Frigate saying the wrong thing about their own timing. A
 player reads that as a wait of hours and sits on the first frame. The app corrects
 the timing before it plays, and the picture and sound themselves are untouched.
+
+Save uses the same fetched clip. A stretch you've just watched is copied off the
+phone rather than asked for again, so saving it is instant. A stretch you haven't
+watched is fetched first, which is why the button shows how much has arrived.
+
+Frigate cuts from the nearest keyframe, so the file can start up to a second before
+the moment you picked. In a file you keep, that's harmless.
 
 ## What counts as a review
 

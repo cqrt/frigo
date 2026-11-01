@@ -266,7 +266,7 @@ private fun GettingClip(received: Long) {
     }
 }
 
-private fun megabytes(bytes: Long): String = "%.1f MB".format(bytes / 1048576.0)
+internal fun megabytes(bytes: Long): String = "%.1f MB".format(bytes / 1048576.0)
 
 @Composable
 private fun ProblemPanel(problem: Problem, onRetry: () -> Unit, onClose: () -> Unit) {

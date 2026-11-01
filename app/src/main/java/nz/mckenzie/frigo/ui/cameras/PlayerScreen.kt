@@ -17,13 +17,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -84,7 +84,9 @@ import nz.mckenzie.frigo.ui.friendlyMessage
 import java.io.IOException
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import kotlin.math.floor
 
 /** The heights and rates offered in the player. Bigger means more data. */
@@ -93,6 +95,13 @@ private val Rates = listOf(15, 10, 5, 2)
 
 /** How far in a pinch can go. Past this the picture is just soft pixels. */
 private const val MaxZoom = 5f
+
+/**
+ * How a saved clip's moment is written into its name. Dashes and a dot rather than
+ * colons, which a file system will not have, and in an order that sorts by date and
+ * time in a folder listing.
+ */
+private val SaveStamp: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm")
 
 /**
  * One camera, live, with its timelines underneath.
@@ -362,9 +371,21 @@ fun PlayerScreen(
         }
     }
 
+    // The name a fetched clip is kept under. Play and Save ask for the same one, so
+    // a stretch just watched in the viewer is copied off the phone rather than asked
+    // for again.
+    fun clipKey() = "$watching-${clipStart.toLong()}-${clipEnd.toLong()}"
+
+    // The name a saved clip is offered under: the camera and the moment it starts,
+    // so a folder of them sorts itself by date and time.
+    fun saveName(): String {
+        val at = LocalDateTime.ofInstant(Instant.ofEpochSecond(clipStart.toLong()), zone)
+        return "frigo-$watching-${at.format(SaveStamp)}.mp4"
+    }
+
     fun play() {
         if (!canPlay) return
-        val key = "$watching-${clipStart.toLong()}-${clipEnd.toLong()}"
+        val key = clipKey()
         subject = ClipSubject(
             title = title,
             subtitle = "${clock(clipStart, zone)} to ${clock(clipEnd, zone)}",
@@ -420,21 +441,25 @@ fun PlayerScreen(
                             contentDescription = if (sound) "Turn the sound off" else "Turn the sound on",
                         )
                     }
-                    IconButton(onClick = { menuOpen = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "Stream quality")
-                    }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        Heights.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text("${option}p") },
-                                onClick = { height = option; menuOpen = false },
-                            )
+                    // Size and frame rate are the stream's, so they are not offered
+                    // on a recording, where nothing here changes it.
+                    if (live) {
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "Stream quality")
                         }
-                        Rates.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text("$option frames a second") },
-                                onClick = { rate = option; menuOpen = false },
-                            )
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            Heights.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text("${option}p") },
+                                    onClick = { height = option; menuOpen = false },
+                                )
+                            }
+                            Rates.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text("$option frames a second") },
+                                    onClick = { rate = option; menuOpen = false },
+                                )
+                            }
                         }
                     }
                 },
@@ -479,19 +504,6 @@ fun PlayerScreen(
                             )
                         }
                     }
-                }
-
-                if (frame != null && !landscape) {
-                    Text(
-                        text = "MJPEG · ${height}p · $rate fps" + if (sound) " · sound" else "",
-                        color = Color.White.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(12.dp)
-                            .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
                 }
             } else {
                 // The recording at the moment on the bar, filling the picture
@@ -539,7 +551,10 @@ fun PlayerScreen(
                     }
                 }
 
-                // The way back to the stream, on the picture you are looking at.
+                // The way back to the stream, on the picture you are looking at. It is
+                // an action rather than a signpost: the mode pill in the other corner
+                // already says where you are, and two dots saying different things is
+                // one too many.
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -547,20 +562,14 @@ fun PlayerScreen(
                         .clip(RoundedCornerShape(50))
                         .background(Color.Black.copy(alpha = 0.55f))
                         .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(50))
-                        .clickable { watchLive() }
+                        .clickable(onClickLabel = "Go back to the stream") { watchLive() }
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(
-                        Modifier
-                            .size(8.dp)
-                            .background(Color(0xFF4ADE80), CircleShape),
-                    )
                     Text(
-                        text = "Live",
+                        text = "Return to Live",
                         color = Color.White,
                         style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(start = 6.dp),
                     )
                 }
 
@@ -578,6 +587,15 @@ fun PlayerScreen(
                 }
             }
 
+            // What the picture is, said on the picture. A recording on its side fills
+            // the screen, and there is no bar there to say where you are.
+            ModePill(
+                live = live,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(10.dp),
+            )
+
             if (noSound) {
                 Text(
                     text = "No sound came through.",
@@ -585,7 +603,7 @@ fun PlayerScreen(
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(start = 12.dp, bottom = if (landscape) 12.dp else 46.dp)
+                        .padding(start = 12.dp, bottom = 44.dp)
                         .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 )
@@ -650,7 +668,6 @@ fun PlayerScreen(
                         "Nothing recorded then."
                     },
                     captionIsWarning = playProblem != null || !recorded,
-                    canPlay = canPlay,
                     onDay = { next ->
                         // Another day is not now, so the stream steps aside for it.
                         if (next != LocalDate.now(zone).toString()) live = false
@@ -669,8 +686,30 @@ fun PlayerScreen(
                         chosen = moment
                         wantsPlay = true
                     },
-                    onPlay = ::play,
-                )
+                ) {
+                    // On the stream, the two minutes up to now in the viewer. On a
+                    // recording the picture already plays, so the corner keeps the
+                    // stretch instead, which is the thing a recording is for.
+                    if (live) {
+                        Button(onClick = ::play, enabled = canPlay) { Text("Play") }
+                    } else {
+                        SaveClipButton(
+                            name = saveName(),
+                            enabled = canPlay,
+                            fetch = { onProgress ->
+                                repository.clipFile(
+                                    source = repository.recordingClipSource(
+                                        watching,
+                                        clipStart,
+                                        clipEnd,
+                                    ),
+                                    key = clipKey(),
+                                    onProgress = onProgress,
+                                )
+                            },
+                        )
+                    }
+                }
 
                 barProblem != null -> Row(
                     modifier = Modifier

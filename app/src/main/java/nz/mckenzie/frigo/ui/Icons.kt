@@ -103,6 +103,14 @@ object FrigoIcons {
             path("M5.8 14.2h6", strokeWidth = 1.8f)
         }
     }
+
+    /** An arrow onto a shelf, for keeping a clip as a file. */
+    val Save: ImageVector by lazy {
+        vector("Save") {
+            path("M10.6 3.4h2.8v7.6h3.4L12 16.8l-4.8-5.8h3.4z")
+            path("M5 19.8h14", strokeWidth = 2.1f)
+        }
+    }
 }
 
 /** Filled unless a stroke is asked for, which is how the magnifying glass is drawn. */

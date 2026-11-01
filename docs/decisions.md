@@ -642,7 +642,7 @@ Checked on the emulator: the switch opens the stream once, an audio track goes
 active in the mixer, the caption reads "MJPEG · 720p · 5 fps · sound", the switch
 survives going into fullscreen, and turning it off logs the player's release.
 Mocked as a server without the path, the switch falls back on its own and says
-"No sound came through."
+"No sound came through." That caption has since gone from the picture.
 
 The sound sits behind the picture by however long go2rtc takes to fill its
 buffer, which is small but not nothing, and the two streams drift apart for as
@@ -1121,3 +1121,95 @@ and the first frame of a run showing the moment picked rather than the start of 
 file it fell in. For the camera: a tap on another camera part way through a run, with
 the clock burned into the picture carrying on unbroken across the change and the moment
 on the bar holding where it was rather than going back to where the run began.
+
+
+## What the picture is, said on the picture
+
+A recording and the stream can look alike on a phone: both are a camera pointed at the
+same thing. The bar was the only thing that said which, and on its side there is no bar.
+So a pill sits in the bottom left of the picture, **Live** in red and **Playback** in
+blue. Red because that is what says something is happening now, and blue because it is
+the colour of everything you can go back over.
+
+The dot brightens and dims rather than switching on and off. Hard blinking in the corner
+of a picture you are watching for ten minutes is tiring, and a slow pulse still says the
+phone is awake.
+
+Bottom left, because the top left is the way back to the stream and the top right is the
+speed. The `MJPEG · 720p · 5 fps` line that used to sit in that corner has gone. The menu
+is where you set those two numbers, and it was there for the times you wanted to know
+what you were asking for, not for every minute of watching. In the corner it was in the
+way of the pill.
+
+## The Play slot keeps the stretch instead of playing it
+
+Play opened the two minutes around the bar in the viewer, back when the picture only
+moved while you dragged the bar. Now the picture plays from wherever the bar stops, so on
+a recording Play opened the same two minutes the picture was already showing: a button
+that did nothing you could not do by waiting.
+
+It still does something on the stream. There, Play opens the last two minutes with a
+scrub bar, which is the one thing the live picture cannot do, and a viewer is what an
+event opens in anyway.
+
+So the slot keeps two jobs, one per mode: **Play** on the stream, **Save** on a
+recording. Save takes the two minutes the caption beside it names, taken from the same
+numbers that draw the caption, so the file and the words can never describe different
+stretches.
+
+The button is a pill with an arrow and the word rather than a round icon. A round icon
+beside a caption about a stretch of time reads as another way to play it.
+
+## Save asks first and fetches second
+
+The phone's own save screen opens, which is the Storage Access Framework's
+`CreateDocument("video/mp4")`, and you choose the folder. So the app asks for no storage
+permission, nothing appears in the gallery, and the file lands wherever you said,
+including a cloud folder the phone knows about. There is nothing to grant and nothing to
+explain in Settings.
+
+Nothing is fetched until a place is chosen. Backing out of the save screen costs a tap
+and no data, which matters more on a metered connection than on a home one.
+
+The name offered is the camera and the moment it starts, as
+`frigo-door_cam-2026-10-31-12.50.mp4`. Dashes and a dot rather than colons, which a file
+system will not have, and in an order that sorts by date and time in a folder listing.
+
+Save asks for the same clip under the same name as the viewer, so a stretch just watched
+is copied off the phone rather than downloaded a second time. A stretch you have not
+watched is fetched, which is what the progress is for. Frigate sends no length with a
+clip, so progress is bytes arrived and nothing else: a spinner, the word Saving, and the
+megabytes, the same shape as the viewer's own.
+
+A save that fails says so in the button rather than in the caption, for the same reason
+the caption is left alone: it is busy naming the stretch, and a message that replaces it
+takes the times away with it.
+
+Frigate cuts from the nearest keyframe before the moment asked for, so a saved file can
+begin up to a second early. In a file you keep, that is nothing to mind. The app already
+works around the same fault in the picture by asking for a moment inside the file's first
+second, which a saved file has no use for.
+
+## The stream menu belongs to the stream
+
+The menu sets the height and frame rate of the stream the app asks for. On a recording it
+changed nothing at all, and a menu that does nothing is a puzzle. It is gone while a
+recording is on screen. The speaker stays, because recordings have sound.
+
+## Return to Live says what it does
+
+The button over a recording carried a green dot and the word Live, which read as a
+statement about where you were rather than a way to go somewhere. The pill now makes that
+statement, and a second dot saying something slightly different is one too many. The dot
+went, and the words say what a tap does.
+
+## Checked on the emulator
+
+Against the mock: the Live pill under the stream with its dot dimming and brightening, no
+MJPEG line, the menu on the stream; a tap on the bar turning the picture into a playback
+with the Playback pill and no menu, Return to Live back to the stream, Save opening the
+phone's save screen in Downloads with the camera and the moment filled in, the button
+saying Saved and returning to Save, and the file on the phone playing for two minutes with
+the clock burned into it starting where the caption said. Over a gap the caption says
+nothing was recorded then and Save greys out. On its side, both pills show with the
+picture filling the screen.
