@@ -103,6 +103,13 @@ private val Rates = listOf(30, 15, 10, 5, 2)
 private const val MaxZoom = 5f
 
 /**
+ * The shape of a camera's picture, used to place what is drawn over the video.
+ * Frigate's cameras send 16:9, and the picture is fitted rather than cropped, so a
+ * frame of this shape sits exactly where the video is drawn.
+ */
+private const val PictureAspect = 16f / 9f
+
+/**
  * How a saved clip's moment is written into its name. Dashes and a dot rather than
  * colons, which a file system will not have, and in an order that sorts by date and
  * time in a folder listing.
@@ -525,30 +532,46 @@ fun PlayerScreen(
                             contentScale = ContentScale.Fit,
                             contentDescription = title,
                             modifier = Modifier.fillMaxSize(),
+                            // The full screen picture sits on the page, so it gets
+                            // no block behind it to stand out against.
+                            backdrop = false,
                         )
                     }
                 }
+            }
 
-                // The way back to the stream, on the picture you are looking at. It is
-                // an action rather than a signpost: the mode pill in the other corner
-                // already says where you are, and two dots saying different things is
-                // one too many.
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(10.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(Color.Black.copy(alpha = 0.55f))
-                        .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(50))
-                        .clickable(onClickLabel = "Go back to the stream") { watchLive() }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Return to Live",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelLarge,
-                    )
+            // What is drawn over the picture sits in a frame the shape of a
+            // camera's own, centred inside this box, so the mode pill lands on
+            // the video's corner rather than in the empty space below it: the
+            // picture is fitted, so a tall box leaves a band above and below.
+            Box(
+                modifier = Modifier
+                    .aspectRatio(PictureAspect)
+                    .align(Alignment.Center),
+            ) {
+                // The way back to the stream, on the picture you are looking at. It
+                // is an action rather than a signpost: the mode pill in the other
+                // corner already says where you are, and two dots saying different
+                // things is one too many. On the stream there is nowhere to go back
+                // to, so it is not there.
+                if (!live) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(10.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(Color.Black.copy(alpha = 0.55f))
+                            .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(50))
+                            .clickable(onClickLabel = "Go back to the stream") { watchLive() }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Return to Live",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
                 }
 
                 if (playFrom != null) {
@@ -563,29 +586,30 @@ fun PlayerScreen(
                             .padding(10.dp),
                     )
                 }
-            }
 
-            // What the picture is, said on the picture. A recording on its side fills
-            // the screen, and there is no bar there to say where you are.
-            ModePill(
-                live = live,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(10.dp),
-            )
-
-            if (noSound) {
-                Text(
-                    text = "No sound came through.",
-                    color = Color.White.copy(alpha = 0.6f),
-                    style = MaterialTheme.typography.labelSmall,
+                // What the picture is, said on the picture. A recording on its
+                // side fills the screen, and there is no bar there to say where
+                // you are.
+                ModePill(
+                    live = live,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(start = 12.dp, bottom = 44.dp)
-                        .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .padding(10.dp),
                 )
-            }
+
+                if (noSound) {
+                    Text(
+                        text = "No sound came through.",
+                        color = Color.White.copy(alpha = 0.6f),
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(start = 12.dp, bottom = 44.dp)
+                            .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+                }
 
             // On its side there is no bar, so the sound sits over the picture.
             if (landscape) {

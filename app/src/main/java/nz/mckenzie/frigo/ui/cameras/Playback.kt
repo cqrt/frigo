@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -220,7 +221,6 @@ internal fun TimelinePanel(
         modifier = modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
         Row(
             modifier = Modifier
@@ -237,6 +237,10 @@ internal fun TimelinePanel(
             }
         }
 
+        // The days are one thing to choose and the day's bar is another, so the gap
+        // between them is wider than the gaps inside the bar.
+        Spacer(Modifier.height(14.dp))
+
         DayStrip(
             dayStart = dayStart,
             spans = spans,
@@ -244,6 +248,8 @@ internal fun TimelinePanel(
             chosen = chosen,
             onPick = onPick,
         )
+
+        Spacer(Modifier.height(7.dp))
 
         ScrubBar(
             dayStart = dayStart,
@@ -254,6 +260,8 @@ internal fun TimelinePanel(
             onPick = onPick,
         )
 
+        Spacer(Modifier.height(7.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -261,7 +269,7 @@ internal fun TimelinePanel(
             Column(Modifier.weight(1f)) {
                 Text(
                     text = moment,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 if (caption != null) {
@@ -327,7 +335,9 @@ internal fun ModePill(live: Boolean, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(50))
-            .background(Color.Black.copy(alpha = 0.6f))
+            // Thin enough that the picture shows through: it sits on the video, and
+            // a solid pill there hides the corner the camera cares about.
+            .background(Color.Black.copy(alpha = 0.35f))
             .border(1.dp, colour.copy(alpha = 0.9f), RoundedCornerShape(50))
             .padding(start = 9.dp, end = 11.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -967,6 +977,11 @@ private object StillCache {
  * it: an old frame sitting under a new moment would be a lie about the time.
  * [enabled] on false does the same without asking, for a camera whose stretches
  * you already know it has nothing in.
+ *
+ * [backdrop] is the faint block that shows where a picture will appear. It belongs
+ * on a tile, where the block is the tile, and not on the full screen picture, where
+ * the picture is fitted and the block would stand out above and below it as a slab
+ * of nothing.
  */
 @Composable
 internal fun MomentStill(
@@ -979,6 +994,7 @@ internal fun MomentStill(
     enabled: Boolean = true,
     contentScale: ContentScale = ContentScale.Crop,
     contentDescription: String? = null,
+    backdrop: Boolean = true,
 ) {
     var frame by remember(camera) { mutableStateOf<ImageBitmap?>(null) }
     // The moment as it stands now. Held in a state so the loop below wakes when
@@ -1014,7 +1030,13 @@ internal fun MomentStill(
     Box(
         modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f)),
+            .background(
+                if (backdrop) {
+                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f)
+                } else {
+                    Color.Transparent
+                }
+            ),
     ) {
         frame?.let { picture ->
             Image(

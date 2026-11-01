@@ -1283,6 +1283,39 @@ The list goes to 2160p and 30 frames a second, because a camera that sends more 
 should not be capped by the app. Frigate cuts the picture down from what the camera sends,
 so asking for more than the camera has simply gives the camera's own picture.
 
+## The mode pill sits on the picture
+
+The pill was pinned to the bottom of the box the picture lives in, and the picture is
+fitted rather than stretched, so on a tall phone the box has a band above and below the
+video. The pill sat in the bottom band, a little under the picture, looking like a label
+for the page rather than a statement about what you are watching. Return to Live floated
+above the video the same way.
+
+Both now sit in a frame of the camera's own shape, 16:9, centred in that box, which is
+exactly where a fitted picture is drawn. The pill takes the bottom left corner, Return to
+Live the top left, and both are only there when they mean something: Return to Live is not
+on the stream, where there is nowhere to go back to.
+
+The pill's own black went from 60% to 35%, so the corner of the picture shows through it.
+It still has a coloured ring and white text, which is what carries it over a bright frame.
+
+## The picture gets no block behind it
+
+A still arriving had a faint block behind it to show where the picture would be. On the
+other cameras' tiles the block is the tile, so it stays. On the full screen picture the
+block filled the whole box rather than the picture, which left a slab of nothing above and
+below the video and made the mode pill look off centre. The full screen picture now sits
+on the page with nothing behind it, and a stretch with no recording shows the page and the
+line that says so.
+
+## The date is the size of the day buttons
+
+The line under the bar was set large, from when it was the only thing saying where you
+were. With the day buttons right above it and the same kind of information in both, two
+different sizes for one idea read as a mistake, so the date is now the same size as the
+buttons. The gap between those buttons and the bar also grew: choosing a day and reading
+the day's bar are two different things, and the space says so.
+
 ## Checked on the emulator
 
 Against the mock: the Live pill under the stream with its dot dimming and brightening, no
@@ -1297,6 +1330,8 @@ picture filling the screen.
 With Play gone: nothing in the bottom corner of the live screen, no line under the time
 there, and `Sun 1 Nov 19:24` under the bar on the stream and `Sun 1 Nov 13:55` with
 `13:55 to 13:57` under it once the bar has been dragged and Save is in the corner.
+
+With the pill on the picture: it sits in the video's bottom corner on the stream and over a recording, in portrait, on its side and in both themes, Return to Live in the top corner only over a recording, the date under the bar the size of the day buttons and a wider gap below them, and no block behind the picture over a stretch with nothing recorded.
 
 The stream menu, in both themes: two headings, the tick on 720p and 5, a tap on 1080p moving the tick and closing it, and the panel opening again with 1080p ticked.
 

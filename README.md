@@ -20,7 +20,7 @@ A camera opens with the day's bar under the picture. An hour fits across the
 screen, the hours Frigate kept are filled in, the gaps are left grey, and a spike
 runs along the bottom for everything it flagged: red for an alert, amber for a
 detection. Pick the day from the buttons along the top, then drag the bar. The
-hour slides past, a step every thirty seconds, and the picture follows it. The big
+hour slides past, a step every thirty seconds, and the picture follows it. The
 line under the bar says where you are, day and all: **Sun 1 Nov 18:34**.
 
 Let go and the recording plays from where the bar stopped, and the playhead walks
