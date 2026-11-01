@@ -107,8 +107,10 @@ cannot use MSE, so the closest equivalent is this JPEG stream: same TCP, same
 guarantee, and it needs no extra ports or router changes.
 
 The trade is bandwidth, since every frame is a whole picture. The player's menu
-sets the height and frame rate. That menu is only there while you're watching the
-stream, since it changes nothing about a recording.
+sets the height and frame rate, from 480p to 2160p and from 2 to 30 frames a
+second, and ticks what's on. That menu is only there while you're watching the
+stream, since it changes nothing about a recording. Frigate cuts the picture down
+from what the camera sends, so a taller choice than the camera has changes nothing.
 
 A speaker button in the player adds the camera's sound. Frigate's API has none in
 it, so the sound comes from go2rtc, the stream server inside Frigate, through one

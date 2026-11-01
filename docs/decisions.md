@@ -1268,6 +1268,21 @@ left as they were at night.
 Warm off-white and a green-grey were drawn as alternatives. The grey blue won because it
 is the night page's own colour taken up to daylight, so the two themes stay one app.
 
+## The stream menu says what is on
+
+The menu was seven identical lines, heights in a row and then rates in a row, with nothing
+to say which two the stream was using, and "15 frames a second" written out under "1080p"
+with no heading over either group. A menu you choose from should also be the place that
+tells you where you are.
+
+So it has two headings, Resolution and Frames per second, and the choice in use is tinted
+and ticked. The panel has rounded corners, a hairline border and a shadow, and it is built
+from the theme's own surfaces, so it follows Day and Night like everything else.
+
+The list goes to 2160p and 30 frames a second, because a camera that sends more than 1080p
+should not be capped by the app. Frigate cuts the picture down from what the camera sends,
+so asking for more than the camera has simply gives the camera's own picture.
+
 ## Checked on the emulator
 
 Against the mock: the Live pill under the stream with its dot dimming and brightening, no
@@ -1282,6 +1297,8 @@ picture filling the screen.
 With Play gone: nothing in the bottom corner of the live screen, no line under the time
 there, and `Sun 1 Nov 19:24` under the bar on the stream and `Sun 1 Nov 13:55` with
 `13:55 to 13:57` under it once the bar has been dragged and Save is in the corner.
+
+The stream menu, in both themes: two headings, the tick on 720p and 5, a tap on 1080p moving the tick and closing it, and the panel opening again with 1080p ticked.
 
 In Day, the home grid, Review, Explore, Settings and the camera screen all read on the grey-blue page, with no white left in it, and the kept hours a light wash rather than a block.
 

@@ -1,6 +1,7 @@
 package nz.mckenzie.frigo.ui.cameras
 
 import android.content.res.Configuration
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,15 +18,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -87,9 +91,13 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.floor
 
-/** The heights and rates offered in the player. Bigger means more data. */
-private val Heights = listOf(1080, 720, 480)
-private val Rates = listOf(15, 10, 5, 2)
+/**
+ * The heights and rates offered in the player, biggest first. Bigger means more
+ * data, so the top of each list is the camera's own picture at its own frame rate,
+ * and Frigate gives what the camera has rather than inventing the rest.
+ */
+private val Heights = listOf(2160, 1080, 720, 480)
+private val Rates = listOf(30, 15, 10, 5, 2)
 
 /** How far in a pinch can go. Past this the picture is just soft pixels. */
 private const val MaxZoom = 5f
@@ -423,20 +431,14 @@ fun PlayerScreen(
                         IconButton(onClick = { menuOpen = true }) {
                             Icon(Icons.Filled.MoreVert, contentDescription = "Stream quality")
                         }
-                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                            Heights.forEach { option ->
-                                DropdownMenuItem(
-                                    text = { Text("${option}p") },
-                                    onClick = { height = option; menuOpen = false },
-                                )
-                            }
-                            Rates.forEach { option ->
-                                DropdownMenuItem(
-                                    text = { Text("$option frames a second") },
-                                    onClick = { rate = option; menuOpen = false },
-                                )
-                            }
-                        }
+                        StreamMenu(
+                            expanded = menuOpen,
+                            height = height,
+                            rate = rate,
+                            onHeight = { height = it; menuOpen = false },
+                            onRate = { rate = it; menuOpen = false },
+                            onDismiss = { menuOpen = false },
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -710,6 +712,101 @@ fun PlayerScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * What the stream is set to: its size and its frame rate, in two groups, with the
+ * choice in use ticked. Opening the menu used to be seven identical lines with no
+ * way to tell which two were on.
+ */
+@Composable
+private fun StreamMenu(
+    expanded: Boolean,
+    height: Int,
+    rate: Int,
+    onHeight: (Int) -> Unit,
+    onRate: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(14.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 0.dp,
+        shadowElevation = 10.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+    ) {
+        Column(Modifier.width(228.dp).padding(vertical = 6.dp)) {
+            MenuHeading("Resolution")
+            Heights.forEach { option ->
+                MenuChoice(text = "${option}p", chosen = option == height) { onHeight(option) }
+            }
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
+            )
+            MenuHeading("Frames per second")
+            Rates.forEach { option ->
+                MenuChoice(text = "$option", chosen = option == rate) { onRate(option) }
+            }
+        }
+    }
+}
+
+/** The name over a group of choices in the stream menu. */
+@Composable
+private fun MenuHeading(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 6.dp, bottom = 4.dp),
+    )
+}
+
+/**
+ * One choice in the stream menu. The one in use is tinted and ticked, so the menu
+ * says what the stream is set to without being closed first.
+ */
+@Composable
+private fun MenuChoice(text: String, chosen: Boolean, onClick: () -> Unit) {
+    val tint = if (chosen) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 6.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (chosen) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                } else {
+                    Color.Transparent
+                }
+            )
+            .clickable(onClickLabel = text, onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = tint,
+            modifier = Modifier.weight(1f),
+        )
+        if (chosen) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(16.dp),
+            )
         }
     }
 }
