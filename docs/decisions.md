@@ -1413,10 +1413,16 @@ which is where the streams fell apart before.
 
 So the live picture is going to come from go2rtc instead, which holds the main streams
 already and hands them out without decoding: the camera's own 2560x1440 H.264 at 190 KB a
-second, about a second behind, with the sound included. The blocker is reach, not picture:
-the Home Assistant add-on publishes only Frigate's ports, so `/api/go2rtc/...` answers 404
-from outside and `/live/...` falls through to the web page. That needs a VPN on the phone or
-a go2rtc of its own behind the tunnel before any app work is worth doing.
+second, about a second behind, with the sound included.
+
+The way in is half built. The proxy already hands `/api/stream.aac` to go2rtc's own port for
+the sound, and go2rtc answers it without a Frigate login. Video needs one more location of
+the same kind, for `/api/stream.mp4`, at the same port. Frigate cannot be serving that path
+today: asked for it with an admin token, it answers "Access denied. A user with the admin
+role is required", which is what it says about a path it has no route for.
+
+The plan for it lives in the project's plans, not in this file, since this file records what
+was decided and measured.
 
 ## The bar keeps up with the clock
 
