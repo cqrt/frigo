@@ -1232,6 +1232,23 @@ drawn by the phone as the bar moves rather than read off the picture. The patter
 the phone's own language, so a phone set to another language reads its own day and month
 names.
 
+## The camera screen is painted, not black
+
+The camera screen was black whatever the theme: a video player's habit, and a page that
+stopped matching the rest of the app the moment you opened a camera. In Night it read as
+a hole beside the navy the other pages are made of, and in Day it stayed black while
+everything around it went light.
+
+It now takes the theme's own background and ink, in both the stream and a playback: the
+top bar, the day pills, the hour bar and its ticks, the strip of the whole day, the other
+camera's names, the line under the time and the Save button. The status bar's own icons
+follow, dark on the light page and light on the dark one.
+
+The pills that sit on the picture stay dark with white text, because they sit on a
+picture: a light pill would vanish against a bright frame, and which mode you are in is
+the one thing that has to read whatever the camera is looking at. The full screen clip
+viewer stays black for the same reason, and because it is a clip and nothing else.
+
 ## Checked on the emulator
 
 Against the mock: the Live pill under the stream with its dot dimming and brightening, no
@@ -1246,3 +1263,9 @@ picture filling the screen.
 With Play gone: nothing in the bottom corner of the live screen, no line under the time
 there, and `Sun 1 Nov 19:24` under the bar on the stream and `Sun 1 Nov 13:55` with
 `13:55 to 13:57` under it once the bar has been dragged and Save is in the corner.
+
+On the colours: both the stream and a playback opened in Day and in Night, and on its
+side in both, with the page, the top bar, the day pills, the bar, the built-in day strip,
+the other camera's names, the line under the time and Save all following the theme, the
+status bar icons dark in Day and light in Night, and the Live and Playback pills still
+dark on the picture either way.

@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -379,7 +380,10 @@ fun PlayerScreen(
         return "frigo-$watching-${at.format(SaveStamp)}.mp4"
     }
 
-    StatusBarIcons(darkIcons = false)
+    // The status bar's own icons sit on the page's background, so they follow it:
+    // light icons on the night colours, dark ones in the day.
+    val dayColours = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    StatusBarIcons(darkIcons = dayColours)
     // On its side, the picture gets the whole screen. No button: turning the
     // phone is the button.
     HideSystemBars(landscape)
@@ -394,7 +398,7 @@ fun PlayerScreen(
     Column(
         Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
@@ -436,10 +440,10 @@ fun PlayerScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Black,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White,
-                    actionIconContentColor = Color.White,
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground,
                 ),
             )
         }
@@ -465,13 +469,13 @@ fun PlayerScreen(
                     ) {
                         Text(
                             text = problem ?: "Connecting…",
-                            color = Color.White.copy(alpha = 0.85f),
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         if (problem != null) {
                             Text(
                                 text = "Retrying",
-                                color = Color.White.copy(alpha = 0.5f),
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
@@ -697,12 +701,12 @@ fun PlayerScreen(
                 ) {
                     Text(
                         text = barProblem.orEmpty(),
-                        color = Color.White.copy(alpha = 0.65f),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.weight(1f),
                     )
                     TextButton(onClick = { attempt++ }) {
-                        Text("Try again", color = Color.White)
+                        Text("Try again", color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }

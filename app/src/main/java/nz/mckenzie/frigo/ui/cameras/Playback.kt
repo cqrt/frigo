@@ -167,8 +167,6 @@ private val DetectionSpike = Color(0xFFE9A23B)
 private val LiveRed = Color(0xFFF05252)
 private val PlaybackBlue = Color(0xFF3B82F6)
 
-private val LabelStyle = TextStyle(fontSize = 10.sp, color = Color.White.copy(alpha = 0.55f))
-
 /** The heights inside the scrolling bar, top to bottom. */
 private val BarHeight = 58.dp
 private val StripHeight = 16.dp
@@ -263,7 +261,7 @@ internal fun TimelinePanel(
                 Text(
                     text = moment,
                     style = MaterialTheme.typography.titleLarge,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
                 if (caption != null) {
                     Text(
@@ -272,7 +270,7 @@ internal fun TimelinePanel(
                         color = if (captionIsWarning) {
                             AlertSpike
                         } else {
-                            Color.White.copy(alpha = 0.65f)
+                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f)
                         },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -288,15 +286,16 @@ internal fun TimelinePanel(
 @Composable
 private fun DayPill(label: String, selected: Boolean, onClick: () -> Unit) {
     val shape = RoundedCornerShape(50)
+    val ink = MaterialTheme.colorScheme.onBackground
     Text(
         text = label,
         style = MaterialTheme.typography.labelLarge,
-        color = if (selected) Color.White else Color.White.copy(alpha = 0.6f),
+        color = if (selected) ink else ink.copy(alpha = 0.6f),
         maxLines = 1,
         modifier = Modifier
             .clip(shape)
-            .background(if (selected) Color.White.copy(alpha = 0.2f) else Color.Transparent)
-            .border(1.dp, Color.White.copy(alpha = if (selected) 0f else 0.18f), shape)
+            .background(if (selected) ink.copy(alpha = 0.14f) else Color.Transparent)
+            .border(1.dp, ink.copy(alpha = if (selected) 0f else 0.18f), shape)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
     )
@@ -410,15 +409,16 @@ internal fun SaveClipButton(
     }
 
     val ready = enabled && !saving
+    val ink = MaterialTheme.colorScheme.onBackground
     val tone = when {
         failed -> LiveRed
-        ready -> Color.White.copy(alpha = 0.9f)
-        else -> Color.White.copy(alpha = 0.35f)
+        ready -> ink.copy(alpha = 0.9f)
+        else -> ink.copy(alpha = 0.35f)
     }
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(Color.White.copy(alpha = 0.06f))
+            .background(ink.copy(alpha = 0.06f))
             .border(1.dp, tone.copy(alpha = if (ready) 0.45f else 0.15f), RoundedCornerShape(50))
             .clickable(enabled = ready, onClickLabel = "Save this clip") {
                 saved = false
@@ -490,6 +490,7 @@ private fun DayStrip(
 ) {
     var width by remember { mutableStateOf(0f) }
     val pick by rememberUpdatedState(onPick)
+    val ink = MaterialTheme.colorScheme.onBackground
 
     fun at(x: Float) {
         if (width <= 0f) return
@@ -514,7 +515,7 @@ private fun DayStrip(
                 .coerceIn(0f, size.width)
 
         drawRoundRect(
-            color = Color.White.copy(alpha = 0.1f),
+            color = ink.copy(alpha = 0.1f),
             size = Size(size.width, size.height),
             cornerRadius = CornerRadius(4f, 4f),
         )
@@ -527,7 +528,7 @@ private fun DayStrip(
             val right = x(span.endTime)
             if (right > left) {
                 drawRect(
-                    color = Color.White.copy(alpha = 0.45f),
+                    color = ink.copy(alpha = 0.45f),
                     topLeft = Offset(left, bandTop),
                     size = Size(right - left, bandHeight),
                 )
@@ -549,13 +550,13 @@ private fun DayStrip(
         val to = x(chosen + SecondsAcross / 2)
         val window = (to - from).coerceAtLeast(3f)
         drawRoundRect(
-            color = Color.White.copy(alpha = 0.16f),
+            color = ink.copy(alpha = 0.16f),
             topLeft = Offset(from, 0f),
             size = Size(window, size.height),
             cornerRadius = CornerRadius(3f, 3f),
         )
         drawRoundRect(
-            color = Color.White.copy(alpha = 0.8f),
+            color = ink.copy(alpha = 0.8f),
             topLeft = Offset(from, 0f),
             size = Size(window, size.height),
             cornerRadius = CornerRadius(3f, 3f),
@@ -563,7 +564,7 @@ private fun DayStrip(
         )
         val head = x(chosen)
         drawLine(
-            color = Color.White,
+            color = ink,
             start = Offset(head, 0f),
             end = Offset(head, size.height),
             strokeWidth = 2f,
@@ -607,6 +608,10 @@ private fun ScrubBar(
     val scope = rememberCoroutineScope()
     val pick by rememberUpdatedState(onPick)
     val measurer = rememberTextMeasurer()
+    // The bar is drawn in the page's own ink, so the hours, the ticks and the
+    // stretches kept read the same in the night colours and in the day.
+    val ink = MaterialTheme.colorScheme.onBackground
+    val labelStyle = TextStyle(fontSize = 10.sp, color = ink.copy(alpha = 0.55f))
 
     // Pixels a second, and how wide the day is at that scale.
     val scale = if (width > 0f) (width / SecondsAcross).toFloat() else 0f
@@ -671,7 +676,7 @@ private fun ScrubBar(
             .fillMaxWidth()
             .height(BarHeight)
             .clip(RoundedCornerShape(10.dp))
-            .background(Color.White.copy(alpha = 0.08f))
+            .background(ink.copy(alpha = 0.08f))
             .onSizeChanged { width = it.width.toFloat() }
             // A finger on the bar stops it, before it has moved far enough to
             // count as a drag. Resting a hand on a bar that is still gliding is the
@@ -705,7 +710,7 @@ private fun ScrubBar(
                 val x = at(tick.toDouble())
                 val major = tick % 600L == 0L
                 drawLine(
-                    color = Color.White.copy(alpha = if (major) 0.2f else 0.08f),
+                    color = ink.copy(alpha = if (major) 0.2f else 0.08f),
                     start = Offset(x, 0f),
                     end = Offset(x, size.height),
                     strokeWidth = if (major) 1.5f else 1f,
@@ -715,7 +720,7 @@ private fun ScrubBar(
 
             var mark = (from / 600).toLong() * 600
             while (mark <= to) {
-                val laid = measurer.measure(clock(dayStart + mark, zone), LabelStyle)
+                val laid = measurer.measure(clock(dayStart + mark, zone), labelStyle)
                 drawText(
                     textLayoutResult = laid,
                     topLeft = Offset(at(mark.toDouble()) - laid.size.width / 2f, LabelTop.toPx()),
@@ -735,7 +740,7 @@ private fun ScrubBar(
                 val right = at(end)
                 if (right > left) {
                     drawRect(
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = ink.copy(alpha = 0.7f),
                         topLeft = Offset(left, bandTop),
                         size = Size(right - left, bandBottom - bandTop),
                     )
@@ -767,13 +772,13 @@ private fun ScrubBar(
         Canvas(Modifier.fillMaxSize()) {
             val x = size.width / 2f
             drawLine(
-                color = Color.White,
+                color = ink,
                 start = Offset(x, 0f),
                 end = Offset(x, size.height),
                 strokeWidth = 2.dp.toPx(),
             )
             drawCircle(
-                color = Color.White,
+                color = ink,
                 radius = 3.dp.toPx(),
                 center = Offset(x, 3.dp.toPx()),
             )
@@ -862,7 +867,7 @@ private fun CameraStrip(
                 Text(
                     text = other.title,
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
@@ -902,7 +907,7 @@ private fun LiveStill(
     Box(
         modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.White.copy(alpha = 0.06f)),
+            .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f)),
     ) {
         frame?.let { picture ->
             Image(
@@ -1005,7 +1010,7 @@ internal fun MomentStill(
     Box(
         modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.White.copy(alpha = 0.06f)),
+            .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f)),
     ) {
         frame?.let { picture ->
             Image(
