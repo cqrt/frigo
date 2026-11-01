@@ -1373,6 +1373,35 @@ are joined by their id, because one that is already on the bar can grow as it go
 
 The playhead follows now while the stream is up, so the bar shows what is happening.
 
+## The app updates itself from the release page
+
+There is no store listing, so a new version is an APK on the GitHub release page and
+nothing was going to tell you one existed. Settings now asks GitHub for the newest release
+each time it opens, and offers to fetch it.
+
+The check is on opening Settings rather than at launch, which was a choice: a launch check
+would want a notification or a prompt on a screen you opened to look at a camera, and the
+one place you go when you want to change something is Settings. A check also costs nothing
+until you look.
+
+GitHub's unauthenticated allowance is 60 asks an hour per address, and a tab switch would
+otherwise be another ask, so an answer stands for a minute. The button that says Check
+again always asks, because it is you asking.
+
+The APK is downloaded into the app's cache, beside the real name and renamed at the end, so
+a download that stops half way cannot be mistaken for a whole one. A file already there is
+kept rather than fetched again. It is handed to Android's installer through a file
+provider, and the installer copies what it needs, so a cleared cache cannot break an
+install that has already started.
+
+Android keeps the switch that allows installing apps from a source, and no app can turn it
+on itself. Tapping Install with it off opens that screen and says what to do; the note goes
+away when you come back with the switch on.
+
+Versions are compared as numbers rather than as text, so 0.7.100 counts as later than
+0.7.99 instead of earlier. The release workflow derives the version code the same way, so
+the phone agrees with the app about which version is newer.
+
 ## Checked on the emulator
 
 Against the mock: the Live pill under the stream with its dot dimming and brightening, no
@@ -1401,6 +1430,8 @@ With a camera that stops: the mock's Quiet cam reports no frames, and its pill r
 With the choice kept: North cam on 1080p and 15 and Door cam on 720p and 5, both still ticked that way after `am force-stop` and a fresh launch, and each camera opened at its own.
 
 With the bar keeping up: on the stream, screenshots a hundred seconds apart with the playhead on now, the filled hours reaching the playhead both times rather than stopping where the camera was opened, the day labels shifting with it, and the mock set to flag a moment every twenty seconds putting new spikes on the bar as they go by.
+
+With updates: Settings opened on a build older than the newest release showing it as out, Download counting up to 100%, then Install opening Android's screen for allowing installs from Frigo, then the installer's own "Do you want to update this app?", with the fetched file the same size byte for byte as the one on the release page. On a build at the newest version it says so, with Check again beside it. With the airplane mode on, Check again says GitHub couldn't be reached, and turning the network back on and tapping it again settles the page. Opening Settings a second time offered the file already downloaded rather than fetching it again.
 
 On the colours: both the stream and a playback opened in Day and in Night, and on its
 side in both, with the page, the top bar, the day pills, the bar, the built-in day strip,

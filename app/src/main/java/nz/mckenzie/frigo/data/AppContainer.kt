@@ -32,4 +32,7 @@ class AppContainer(context: Context) {
     private val api = FrigateApi(requestClient, streamClient, clipClient)
 
     val repository = FrigoRepository(api, ServerPrefs(context), context.cacheDir)
+
+    /** Asks GitHub for a newer Frigo, and fetches it. */
+    val updater = Updater(requestClient, context.cacheDir)
 }

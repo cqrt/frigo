@@ -136,6 +136,7 @@ private fun MainScaffold(
             composable("settings") {
                 SettingsScreen(
                     repository = container.repository,
+                    updater = container.updater,
                     baseUrl = server.baseUrl,
                     username = server.username,
                     modifier = Modifier.padding(padding),

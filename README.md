@@ -80,7 +80,8 @@ two switches: one for notifications, and one that plays the home page tiles live
 You pick the cameras and objects that buzz. There's a link to the phone's battery
 settings, because that's where you stop Android shutting Frigo down. Under
 Appearance you choose the colours: System follows the phone, Day stays light, and
-Night stays dark.
+Night stays dark. Under Updates it says which version you're on, and whether
+there's a newer one to install.
 
 ## Signing in
 
@@ -198,6 +199,26 @@ A review's picture is the first thing it saw. Frigate keeps a separate thumbnail
 for the review, but it sits behind the web server rather than the API, so the app
 takes the event's picture instead, which is the same one.
 
+## Updating
+
+Frigo isn't in a store. Each release is an APK on the GitHub release page, and the
+app fetches the next one itself.
+
+Open Settings and the Updates section asks GitHub what the newest release is. If
+there's a newer one it says so and offers **Download**, then **Install** once the
+file has arrived. Android asks once whether Frigo may install an app; turn on Allow
+from this source and the installer opens. From there it's the same install screen
+as any APK. Your server address, sign-in and settings stay where they are, because
+an update replaces the app and not its data.
+
+The APK is the same file as on the release page, so nothing is trusted that you
+couldn't have downloaded and checked yourself. A check happens when you open
+Settings and not in the background, and GitHub is asked at most once a minute, so
+flicking between tabs doesn't spend the hourly allowance GitHub gives an
+unauthenticated caller.
+
+**What's new** opens the release page in a browser, which is where the notes are.
+
 ## Building it
 
 You need JDK 17 to 23, the Android SDK with platform 36, and nothing else.
@@ -240,6 +261,7 @@ is ever committed. Backup: there's a copy of the key and its password at
 - `data/FrigateApi.kt` - the Frigate endpoints this app uses, written against OkHttp.
 - `data/FrigoRepository.kt` - tokens, renewal, and the calls the screens make.
 - `data/MjpegReader.kt` - pulls JPEG frames out of the live stream.
+- `data/Updates.kt` - asks GitHub for the newest release, fetches its APK, and hands it to Android's installer.
 - `alerts/` - the service that holds the message feed and the notifications it posts.
 - `ui/` - one folder per screen, Compose throughout.
 - `ui/components/ClipViewer.kt` - the full screen clip player that an event or a review opens.
