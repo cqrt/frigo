@@ -115,14 +115,17 @@ cannot use MSE, so the closest equivalent is this JPEG stream: same TCP, same
 guarantee, and it needs no extra ports or router changes.
 
 The trade is bandwidth, since every frame is a whole picture. The player's menu
-sets the height and frame rate, and ticks what's on. It only offers what the
-camera itself sends. Your four cameras send 640x360, 640x360, 1280x960 and
-1280x720, so a menu that offered 2160p would be offering a picture the server
-makes up: Frigate scales each frame up to whatever is asked for and sends it as
-often as asked, which is why one camera set to 2160p at 30 frames a second slows
-every other camera down. Each camera keeps its own choice, so a camera you watch
-closely and one you glance at are set separately, and both keep their setting
-after the app is closed. That menu is only there while you're watching the
+sets the height and frame rate, and ticks what's on. It only offers what the live
+picture has, and the live picture is not the sharp one. Frigate records the
+camera's main stream at 2K, but the frame it keeps for live view is the camera's
+second, lower quality stream: 640x360 on the two outdoor cameras, 1280x960 on the
+door, 1280x720 on the printer. So a menu offering 2160p offers a picture the
+server makes up, since Frigate scales each frame up to whatever is asked for and
+sends it as often as asked. That is what made one camera at 2160p and 30 frames a
+second slow every other camera down. Playback plays the recordings, so it has the
+2K detail the live view doesn't. Each camera keeps its own choice, so a camera you
+watch closely and one you glance at are set separately, and both keep their
+setting after the app is closed. That menu is only there while you're watching the
 stream, since it changes nothing about a recording.
 
 A speaker button in the player adds the camera's sound. Frigate's API has none in

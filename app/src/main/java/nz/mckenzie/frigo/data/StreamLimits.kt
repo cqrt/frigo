@@ -56,15 +56,20 @@ fun rateWithin(wanted: Int, limits: StreamLimits): Int {
     return wanted.coerceAtMost(top)
 }
 
-/** The sizes the menu offers this camera: everything it has, and nothing it hasn't. */
-fun heightsFor(limits: StreamLimits): List<Int> =
-    (OfferedHeights.filter { it <= limits.height } + limits.height)
+/**
+ * The sizes the menu offers this camera: everything it has, and nothing it hasn't. A size
+ * it was last left at is included even when the camera has since grown past it, because
+ * otherwise a camera that gained a bigger picture would quietly stay on the old size with
+ * nothing ticked to show it.
+ */
+fun heightsFor(limits: StreamLimits, current: Int? = null): List<Int> =
+    (OfferedHeights.filter { it <= limits.height } + limits.height + listOfNotNull(current))
         .distinct()
         .sortedDescending()
 
-/** The rates the menu offers this camera. */
-fun ratesFor(limits: StreamLimits): List<Int> =
-    (OfferedRates.filter { it <= limits.rate } + limits.rate)
+/** The rates the menu offers this camera, on the same terms as [heightsFor]. */
+fun ratesFor(limits: StreamLimits, current: Int? = null): List<Int> =
+    (OfferedRates.filter { it <= limits.rate } + limits.rate + listOfNotNull(current))
         .distinct()
         .sortedDescending()
 

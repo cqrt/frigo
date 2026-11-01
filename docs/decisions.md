@@ -1357,6 +1357,12 @@ The stream is not opened until the saved choice has been read. Otherwise a camer
 start at the default and be replaced a moment later by the one you actually asked for,
 which is two connections where one will do.
 
+A size the camera was left at stays in the menu even after the camera grows past it. It was
+left out, so a camera whose picture got bigger kept opening at the old small size with
+nothing ticked in the menu, and there was no way back up. That happened for real when South
+cam's detect stream was moved to the main stream: the menu read 1080p, 720p and 480p, none
+of them ticked, while the picture was still 360p.
+
 ## The menu offers what the camera has, and no more
 
 The menu offered 480p to 2160p and 2 to 30 frames a second whatever camera it was on, and
@@ -1383,6 +1389,20 @@ request rather than two.
 The stream effect is keyed on the choice itself rather than on the two numbers inside it.
 Keyed on the numbers, a camera whose saved choice happened to equal the defaults it opens
 at, 720p at five frames a second, never opened its stream and sat on Connecting.
+
+## The live picture is the detect stream's picture
+
+Frigate keeps one frame per camera, and it keeps it at the size of the stream it decodes
+for detection, the one with the `detect` role. The MJPEG endpoint hands that frame out,
+scaled to whatever height is asked for, and there is no parameter that picks another
+source. So the app's live picture is the detect picture whoever asks, and the app has no
+say in it. On this server that means North cam and South cam live at 640x360, Door cam at
+1280x960 and Printer cam at 1280x720.
+
+The two Tapo C320WS cameras fix their second stream at 640x360 and give no setting for it,
+so nothing on the camera side raises those two. The only lever on the server side is
+pointing the `detect` role at the main stream, which puts 2K frames through detection and
+is the kind of cost the limits exist to keep the app from adding by accident.
 
 ## The bar keeps up with the clock
 

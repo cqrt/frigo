@@ -72,6 +72,23 @@ class StreamLimitsTest {
     }
 
     @Test
+    fun aSizeFromBeforeTheCameraChangedStillShowsAPlace() {
+        // A camera left on 360 and later given a bigger picture: the old size is still
+        // what it opens at, so the menu has to show it and tick it. Without this it was
+        // invisible and could not be moved off.
+        val camera = StreamLimits(height = 1080, rate = 5)
+        assertEquals(listOf(1080, 720, 480, 360), heightsFor(camera, current = 360))
+        assertEquals(listOf(5, 2), ratesFor(camera, current = 5))
+    }
+
+    @Test
+    fun theCurrentSizeIsNotRepeated() {
+        val camera = StreamLimits(height = 1080, rate = 15)
+        assertEquals(listOf(1080, 720, 480), heightsFor(camera, current = 720))
+        assertEquals(listOf(15, 10, 5, 2), ratesFor(camera, current = 10))
+    }
+
+    @Test
     fun aCameraThatSaysNoSensibleRateStillOpens() {
         // Frigate can read a rate of zero on a camera that has just been plugged in,
         // and a stream asked for zero frames is a stream of nothing.
