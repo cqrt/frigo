@@ -68,8 +68,18 @@ CAMERAS = {
     "south_cam": {"enabled": True, "friendly_name": "South cam"},
     "door_cam": {"enabled": True, "friendly_name": "Door cam"},
     "3d_printer": {"enabled": True},
+    "quiet_cam": {"enabled": True, "friendly_name": "Quiet cam"},
     "offline_cam": {"enabled": False},
 }
+
+# Cameras with nothing arriving. Frigate has no flag that says a camera is offline:
+# it counts the frames each one produces, and one that has stopped produces none, so
+# this is what its stats say about it. The stream still hands back the last frame it
+# sent, which is exactly why the app has to ask.
+SILENT = {"quiet_cam"}
+
+# When this mock started, so its uptime reads like a server that has been up a while.
+STARTED = time.time()
 
 # Shaped like a real JWT: three dot-separated parts. Restart with MOCK_TOKEN=...
 # to make the running app's saved token stop working, which is how the session
@@ -216,6 +226,9 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/profile":
             return self.send_json({"username": "test", "role": "admin", "allowed_cameras": list(CAMERAS)})
+
+        if path == "/api/stats":
+            return self.send_json(stats())
 
         if path == "/api/events":
             return self.send_json(events(urlparse(self.path).query))
@@ -519,6 +532,27 @@ def listed(query, name):
     """A comma-separated filter. Frigate keeps one value, so repeats don't add up."""
     value = (query.get(name) or [""])[0]
     return [part for part in (piece.strip() for piece in value.split(",")) if part]
+
+
+def stats():
+    """What /api/stats says, as far as the app reads it: how long the server has been
+    up and how many frames a second each camera is producing."""
+    return {
+        "service": {"version": "0.18.2-mock", "uptime": time.time() - STARTED},
+        "cameras": {
+            name: {
+                "camera_fps": 0.0 if name in SILENT else 5.0,
+                "process_fps": 0.0 if name in SILENT else 5.0,
+                "detection_fps": 0.0 if name in SILENT else 1.2,
+                "skipped_fps": 0.0,
+                "detection_enabled": True,
+                "audio_dBFS": -45.0,
+                "audio_rms": 0.001,
+            }
+            for name, camera in CAMERAS.items()
+            if camera["enabled"]
+        },
+    }
 
 
 def events(raw_query):

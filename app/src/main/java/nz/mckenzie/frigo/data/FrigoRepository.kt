@@ -261,6 +261,28 @@ class FrigoRepository(
         authorized { baseUrl, token -> api.latestFrame(baseUrl, token, camera, height) }
     }.getOrNull()
 
+    /**
+     * Whether a camera is sending frames at all.
+     *
+     * Frigate counts the frames arriving from each camera over the last few seconds,
+     * so a camera whose picture has stopped counts zero. The stream goes on handing
+     * back the last frame it sent, which is why this is asked separately: a stale
+     * picture on screen looks exactly like a live one.
+     *
+     * Null means no answer either way, which is what the screens show as nothing
+     * unusual: the server has only just started, it has no such camera, or the call
+     * failed. Calling a camera offline on a guess is worse than saying nothing.
+     */
+    suspend fun cameraSending(camera: String): Boolean? = runCatching {
+        authorized { baseUrl, token ->
+            val stats = api.stats(baseUrl, token)
+            // For the first couple of minutes Frigate has not counted anything yet,
+            // and every camera on a fresh server would read as stopped.
+            val warming = stats.service.uptime?.let { it < WarmUpSeconds } ?: false
+            if (warming) null else stats.cameras[camera]?.let { it.cameraFps > 0.0 }
+        }
+    }.getOrNull()
+
     suspend fun thumbnail(eventId: String): ByteArray? = runCatching {
         authorized { baseUrl, token -> api.eventThumbnail(baseUrl, token, eventId) }
     }.getOrNull()
@@ -480,6 +502,9 @@ class FrigoRepository(
 
         /** How much of the phone the downloaded clips may take: 600 MB. */
         private const val ClipsBytes = 600L * 1024 * 1024
+
+        /** Seconds after a server starts during which its frame counts mean nothing. */
+        private const val WarmUpSeconds = 120.0
 
         /**
          * Takes what people actually type - `frigate.example.com`, a full URL, or

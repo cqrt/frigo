@@ -169,6 +169,12 @@ private val DetectionSpike = Color(0xFFE9A23B)
 private val LiveRed = Color(0xFFF05252)
 private val PlaybackBlue = Color(0xFF3B82F6)
 
+/**
+ * Neither live nor a recording: a camera that is not sending. Grey, because it is
+ * the absence of a colour rather than a third thing to learn.
+ */
+private val OfflineGrey = Color(0xFF9AA6B4)
+
 /** The heights inside the scrolling bar, top to bottom. */
 private val BarHeight = 58.dp
 private val StripHeight = 16.dp
@@ -318,10 +324,23 @@ private fun DayPill(label: String, selected: Boolean, onClick: () -> Unit) {
  *
  * On the picture rather than under it, because a recording on its side fills the
  * screen and there is no bar there to say which you are looking at.
+ *
+ * [offline] is a camera that has stopped sending while the stream is up. What is on
+ * screen is then the last frame it sent, which looks like any other frame, so the
+ * pill says so instead of saying Live. Its dot holds still: nothing is arriving to
+ * pulse about.
  */
 @Composable
-internal fun ModePill(live: Boolean, modifier: Modifier = Modifier) {
-    val colour = if (live) LiveRed else PlaybackBlue
+internal fun ModePill(
+    live: Boolean,
+    modifier: Modifier = Modifier,
+    offline: Boolean = false,
+) {
+    val colour = when {
+        offline -> OfflineGrey
+        live -> LiveRed
+        else -> PlaybackBlue
+    }
     val pulse = rememberInfiniteTransition(label = "mode")
     val glow by pulse.animateFloat(
         initialValue = 1f,
@@ -345,11 +364,15 @@ internal fun ModePill(live: Boolean, modifier: Modifier = Modifier) {
         Box(
             Modifier
                 .size(7.dp)
-                .alpha(glow)
+                .alpha(if (offline) 1f else glow)
                 .background(colour, CircleShape),
         )
         Text(
-            text = if (live) "Live" else "Playback",
+            text = when {
+                offline -> "Offline"
+                live -> "Live"
+                else -> "Playback"
+            },
             color = Color.White,
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.padding(start = 6.dp),

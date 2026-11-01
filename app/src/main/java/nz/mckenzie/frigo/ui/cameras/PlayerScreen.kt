@@ -110,6 +110,16 @@ private const val MaxZoom = 5f
 private const val PictureAspect = 16f / 9f
 
 /**
+ * How often the server is asked whether this camera is still sending. Frigate counts
+ * frames per second, so a second apart would flicker on any camera that drops a
+ * frame; a few seconds apart is quick enough to notice and rare enough to be free.
+ */
+private const val StatusEveryMillis = 8_000L
+
+/** Readings in a row with nothing arriving before the picture is called offline. */
+private const val SilentReadings = 2
+
+/**
  * How a saved clip's moment is written into its name. Dashes and a dot rather than
  * colons, which a file system will not have, and in an order that sorts by date and
  * time in a folder listing.
@@ -151,6 +161,9 @@ fun PlayerScreen(
     var menuOpen by remember { mutableStateOf(false) }
     var sound by rememberSaveable(watching) { mutableStateOf(false) }
     var noSound by rememberSaveable(watching) { mutableStateOf(false) }
+    // Whether the camera has stopped sending. The stream goes on handing back the
+    // last frame it sent, so the picture itself never says so.
+    var silent by remember(watching) { mutableStateOf(false) }
 
     // The day on the bar, where along it the marker is, and what Frigate flagged
     // on that day. Live means the picture is the stream and the marker sits at
@@ -265,6 +278,33 @@ fun PlayerScreen(
                 }
                 connecting = true
                 delay(2_000)
+            }
+        }
+    }
+
+    // A camera that has gone quiet looks exactly like one that is working: the
+    // stream keeps handing over the last frame it sent. Frigate counts the frames
+    // each camera produces, so that count is asked every few seconds while the
+    // stream is up. Two readings in a row, because a camera can miss a second of
+    // frames and carry on as if nothing happened.
+    LaunchedEffect(watching, streaming) {
+        silent = false
+        if (!streaming) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            var quiet = 0
+            while (isActive) {
+                when (repository.cameraSending(watching)) {
+                    true -> {
+                        quiet = 0
+                        silent = false
+                    }
+
+                    false -> if (++quiet >= SilentReadings) silent = true
+                    // No answer is about the server rather than the camera, so the
+                    // pill is left saying what it said before.
+                    null -> Unit
+                }
+                delay(StatusEveryMillis)
             }
         }
     }
@@ -540,8 +580,8 @@ fun PlayerScreen(
                 }
             }
 
-            // What is drawn over the picture sits in a frame the shape of a
-            // camera's own, centred inside this box, so the mode pill lands on
+            // The mode pill is the only thing on the picture. It sits in a frame
+            // the shape of a camera's own, centred inside this box, so it lands on
             // the video's corner rather than in the empty space below it: the
             // picture is fitted, so a tall box leaves a band above and below.
             Box(
@@ -549,67 +589,68 @@ fun PlayerScreen(
                     .aspectRatio(PictureAspect)
                     .align(Alignment.Center),
             ) {
-                // The way back to the stream, on the picture you are looking at. It
-                // is an action rather than a signpost: the mode pill in the other
-                // corner already says where you are, and two dots saying different
-                // things is one too many. On the stream there is nowhere to go back
-                // to, so it is not there.
-                if (!live) {
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(10.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(Color.Black.copy(alpha = 0.55f))
-                            .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(50))
-                            .clickable(onClickLabel = "Go back to the stream") { watchLive() }
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "Return to Live",
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                    }
-                }
-
-                if (playFrom != null) {
-                    SpeedButton(
-                        speed = speed,
-                        onClick = {
-                            val at = PlaySpeeds.indexOf(speed)
-                            speed = PlaySpeeds[(at + 1) % PlaySpeeds.size]
-                        },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(10.dp),
-                    )
-                }
-
                 // What the picture is, said on the picture. A recording on its
                 // side fills the screen, and there is no bar there to say where
                 // you are.
                 ModePill(
                     live = live,
+                    offline = silent,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .padding(10.dp),
                 )
+            }
 
-                if (noSound) {
+            // The way back to the stream sits on the page beside the picture rather
+            // than on it. It is an action rather than a signpost: the mode pill
+            // already says where you are, and two dots saying different things is
+            // one too many. On the stream there is nowhere to go back to, so it is
+            // not there.
+            if (!live) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(10.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(50))
+                        .clickable(onClickLabel = "Go back to the stream") { watchLive() }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
-                        text = "No sound came through.",
-                        color = Color.White.copy(alpha = 0.6f),
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(start = 12.dp, bottom = 44.dp)
-                            .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        text = "Return to Live",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge,
                     )
                 }
-                }
+            }
+
+            if (playFrom != null) {
+                SpeedButton(
+                    speed = speed,
+                    onClick = {
+                        val at = PlaySpeeds.indexOf(speed)
+                        speed = PlaySpeeds[(at + 1) % PlaySpeeds.size]
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(10.dp),
+                )
+            }
+
+            if (noSound) {
+                Text(
+                    text = "No sound came through.",
+                    color = Color.White.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 12.dp, bottom = 44.dp)
+                        .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
 
             // On its side there is no bar, so the sound sits over the picture.
             if (landscape) {

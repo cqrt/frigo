@@ -32,7 +32,9 @@ on today and on now, and takes you back to the stream.
 
 The corner of the picture says which you're looking at: **Live** with a red dot, or
 **Playback** with a blue one. The dot brightens and dims, slowly, so it doesn't
-nag. On its side there's no bar, and the pill is what tells you where you are.
+nag. On its side there's no bar, and the pill is what tells you where you are. When
+a camera stops sending, the pill turns grey and reads **Offline**: what's on the
+picture is the last frame it sent, and it would otherwise pass for a live one.
 
 The thin strip above the bar is the whole day. Tap it to go anywhere in it, which
 is quicker than scrolling an hour at a time.

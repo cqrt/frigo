@@ -89,6 +89,28 @@ data class Camera(
 )
 
 /**
+ * The part of `/api/stats` this app reads. Frigate counts the frames each camera
+ * has produced over the last few seconds, so a camera with nothing arriving counts
+ * zero, which is how it says a camera has stopped.
+ */
+@Serializable
+data class FrigateStats(
+    val cameras: Map<String, CameraStats> = emptyMap(),
+    val service: ServiceStats = ServiceStats(),
+)
+
+@Serializable
+data class CameraStats(
+    @SerialName("camera_fps") val cameraFps: Double = 0.0,
+)
+
+/** How long the server has been up, in seconds. Absent from a server that doesn't say. */
+@Serializable
+data class ServiceStats(
+    val uptime: Double? = null,
+)
+
+/**
  * A day a camera kept recordings for, and the hours in it that have some. Frigate
  * reports the hours in the timezone it was asked about, so the day is a reading of
  * the server's clock rather than a moment.

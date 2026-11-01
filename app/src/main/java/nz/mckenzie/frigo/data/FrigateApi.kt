@@ -324,6 +324,20 @@ class FrigateApi(
     }
 
     /**
+     * What every camera is doing, per second. Frigate counts the frames a camera has
+     * sent rather than keeping a flag that says a camera is offline, so a camera
+     * that has stopped reads as nothing arriving here.
+     */
+    fun stats(baseUrl: String, token: String): FrigateStats {
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/stats"))
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return json.decodeFromString(FrigateStats.serializer(), request.okBody())
+    }
+
+    /**
      * Which days this camera kept recordings for, newest first, and which hours of
      * each have something in them.
      *

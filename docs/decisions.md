@@ -1316,6 +1316,35 @@ different sizes for one idea read as a mistake, so the date is now the same size
 buttons. The gap between those buttons and the bar also grew: choosing a day and reading
 the day's bar are two different things, and the space says so.
 
+## Only the pill is on the picture
+
+The mode pill moved onto the video's bottom corner, and Return to Live and the speed
+button went with it. They don't belong there. The pill says what you are watching, which
+is a fact about the picture itself; the two buttons are things to do, and they were
+sitting over the part of the frame the camera is pointed at. They are back on the page,
+in the top corners of the picture's area, where they were before.
+
+## A camera that stops is called offline
+
+Frigate keeps no flag that says a camera is offline. It counts the frames each camera
+produces, so a camera that has stopped produces none, and its stream carries on handing
+back the last frame it sent. That picture looks exactly like a live one, and it goes on
+looking like one for as long as you watch.
+
+So the app asks `/api/stats` every eight seconds while the stream is up and reads the
+frame count for the camera in front of you. Two readings in a row with nothing arriving
+turns the pill grey and it says Offline. The last frame stays where it is, because that
+is still the last thing the camera saw. One reading alone is not enough: a camera can
+drop a second of frames and carry on.
+
+Nothing is said for the first two minutes after the server starts, when its counts mean
+nothing yet. Nothing is said when the stats call itself fails either. That is about the
+server rather than the camera, and calling a working camera offline on a guess is worse
+than saying nothing.
+
+The home page tiles are left alone: a tile is a still taken a moment ago anyway, so an
+offline camera there is a still that happens to be old.
+
 ## Checked on the emulator
 
 Against the mock: the Live pill under the stream with its dot dimming and brightening, no
@@ -1336,6 +1365,10 @@ With the pill on the picture: it sits in the video's bottom corner on the stream
 The stream menu, in both themes: two headings, the tick on 720p and 5, a tap on 1080p moving the tick and closing it, and the panel opening again with 1080p ticked.
 
 In Day, the home grid, Review, Explore, Settings and the camera screen all read on the grey-blue page, with no white left in it, and the kept hours a light wash rather than a block.
+
+With the two buttons off the picture: Return to Live back at the top left of the page and the speed button at the top right, both clear of the video, with only the mode pill on the picture.
+
+With a camera that stops: the mock's Quiet cam reports no frames, and its pill reads Offline in grey with the dot holding still while the last frame it sent stays on the picture, in portrait and on its side, while a camera that is sending keeps its red Live pill.
 
 On the colours: both the stream and a playback opened in Day and in Night, and on its
 side in both, with the page, the top bar, the day pills, the bar, the built-in day strip,

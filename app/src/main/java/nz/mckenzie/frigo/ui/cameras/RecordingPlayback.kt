@@ -354,8 +354,8 @@ internal fun pieceFrom(
 }
 
 /**
- * The speed button, on the picture while it plays. One tap cycles through the
- * speeds and starts again at normal.
+ * The speed button, in the corner while a recording plays. One tap cycles through
+ * the speeds and starts again at normal.
  */
 @Composable
 internal fun SpeedButton(speed: Float, onClick: () -> Unit, modifier: Modifier = Modifier) {

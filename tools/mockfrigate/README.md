@@ -14,11 +14,15 @@ Then point the app at it:
 Sign in as `test` with the password `test`. Any other password is refused, on
 purpose, so the error message can be tried too.
 
-It serves five cameras, one of them disabled, three events, thumbnails, snapshots,
+It serves six cameras, one of them disabled, three events, thumbnails, snapshots,
 an endless MJPEG stream that cycles three frames, and a four second clip for two
 of the three events. The third event has no clip, so the still-only path is
 reachable too. The clip is a test pattern, made with ffmpeg, so a clip that plays
 is obviously playing.
+
+One of the five, Quiet cam, reports no frames in `/api/stats` while its stream goes
+on handing back a picture. That's a camera that has stopped sending, as a real
+server reports one, and it's what the app's grey Offline pill is for.
 
 `/api/labels` answers with the objects the app can tick in Settings. `/api/review`
 answers with three alerts and three detections, newest first, and a clip for each.
