@@ -91,6 +91,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.abs
+import kotlin.math.floor
 
 /** The heights and rates offered in the player. Bigger means more data. */
 private val Heights = listOf(1080, 720, 480)
@@ -154,6 +155,11 @@ fun PlayerScreen(
     // rather than jumping to that camera's latest recording.
     var keepingMoment by remember { mutableStateOf(false) }
     var keptDay by remember { mutableStateOf<String?>(null) }
+    // Set by picking another camera while a recording is playing: the moment it had
+    // reached, and the day it was on, so the run carries on from there on the camera
+    // picked instead of going back to where it started.
+    var resumeAt by remember { mutableStateOf<Double?>(null) }
+    var resumeDay by remember { mutableStateOf<String?>(null) }
     // Playback: the bar comes to rest and the recording from that moment plays in
     // the picture. [playFrom] is where the run started, [played] is where the
     // picture has got to, and the bar shows the one that is live.
@@ -166,6 +172,12 @@ fun PlayerScreen(
     var shownFrom by remember(watching) { mutableStateOf<Double?>(null) }
     var speed by rememberSaveable { mutableFloatStateOf(1f) }
     val showing = if (playFrom != null) played else chosen
+    // The other cameras' tiles follow the picture while a run plays, in whole
+    // minutes. Each tile is a still Frigate cuts when it is asked for, so a moment
+    // moving four times a second would be asked for far more often than it is
+    // worth; a minute apart keeps the tiles within a minute of the picture for one
+    // still a minute from each of them.
+    val tileMoment = if (playFrom != null) floor(played / 60.0) * 60.0 else chosen
 
     val landscape =
         LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -273,12 +285,30 @@ fun PlayerScreen(
         spikes = foundSpikes
         // A camera you tapped into keeps the moment you were looking at, as long
         // as it has that day at all.
-        chosen = if (keepingMoment && day == keptDay) {
-            chosen
-        } else {
-            lastRecorded(found, start)
+        val kept = keepingMoment && day == keptDay
+        chosen = if (kept) chosen else lastRecorded(found, start)
+        if (!kept) {
+            // Not the moment you were on, so not the run that was on it either.
+            playFrom = null
+            playProblem = null
         }
         keepingMoment = false
+        // A run that was playing when a camera was picked carries on here, from the
+        // moment the picture had reached. It waits for this camera's stretches
+        // because those are what its pieces are cut from, and a stretch it has
+        // nothing in is a still rather than a run that dies at once.
+        val carry = resumeAt
+        val carryDay = resumeDay
+        if (carry != null) {
+            resumeAt = null
+            resumeDay = null
+            if (kept && day == carryDay &&
+                found.any { carry >= it.startTime && carry < it.endTime }
+            ) {
+                played = carry
+                playFrom = carry
+            }
+        }
         barReady = true
     }
 
@@ -600,8 +630,16 @@ fun PlayerScreen(
                 OtherCameras(
                     repository = repository,
                     cameras = cameras.filter { it.name != watching },
-                    moment = chosen,
+                    moment = tileMoment,
                     onPick = { name ->
+                        // A run that is playing carries on from where the picture
+                        // has got to, not from where it started. The moment comes
+                        // over on the bar, and with it the run, once this camera's
+                        // stretches are here.
+                        val at = if (playFrom != null) played else resumeAt
+                        if (at != null) chosen = at
+                        resumeAt = at
+                        resumeDay = day
                         keepingMoment = true
                         keptDay = day
                         watching = name

@@ -33,7 +33,8 @@ is quicker than scrolling an hour at a time.
 
 The other cameras sit underneath at the same moment, each with its name. Tap one
 and it comes up in the picture at the same moment, so you can follow something
-from camera to camera. Play fetches the two minutes from there and opens it in the
+from camera to camera. If the recording is playing, it plays on there from where the
+picture had reached. Play fetches the two minutes from there and opens it in the
 same viewer an event opens in, starting fifteen seconds before the moment you
 picked so you see what led up to it. Over a gap, Play greys out, the picture goes
 blank, and the line underneath says nothing was recorded then. On its side the

@@ -1092,6 +1092,15 @@ The moment readout still only goes on within a run, because a reading four times
 second can come back a sample short across a join. That was a separate fault, though,
 and fixing only the readout is what left the picture stepping back.
 
+Tapping another camera while a run is playing carries the run on there, from the moment
+the picture had reached. It used to come up on the moment the run had started at, held
+still, which read as the timeline going back several minutes. The run on the new camera
+starts once that camera's stretches have arrived, because those are the files its pieces
+are cut from; until then the moment is on the bar with a still under it. The other
+cameras' tiles follow the picture as it plays, in whole minutes: each tile is a still the
+server cuts when it is asked, and the moment four times a second would be asked for far
+more often than one a minute is worth.
+
 The clips are the biggest thing the app keeps, so the folder is trimmed to 600 MB,
 oldest first, on top of yesterday's going altogether.
 
@@ -1102,4 +1111,6 @@ stretch and carrying on at the next one two hours later, and Live stopping the p
 and returning to the stream. For the join: a run at normal speed and a run at eight
 times each crossing five joins with the clock burned into the picture never going back,
 and the first frame of a run showing the moment picked rather than the start of the
-file it fell in.
+file it fell in. For the camera: a tap on another camera part way through a run, with
+the clock burned into the picture carrying on unbroken across the change and the moment
+on the bar holding where it was rather than going back to where the run began.

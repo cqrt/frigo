@@ -573,9 +573,10 @@ private fun ScrubBar(
  * The other cameras at the moment on the bar, side by side under the picture, so
  * you can see which one caught what you are looking for. Tapping one brings it up
  * in the picture at the same moment, which is quicker than going back to the grid.
- *
- * A camera with nothing recorded then comes back empty and shows as a blank tile,
- * which is worth knowing in itself.
+ * While a recording plays the moment follows the picture, and so does the run when
+ * you tap. Each picture is still of that camera's own recording, so a camera with
+ * nothing recorded then comes back empty and shows as a blank tile, which is worth
+ * knowing in itself.
  */
 @Composable
 internal fun OtherCameras(
