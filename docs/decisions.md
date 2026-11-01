@@ -1345,6 +1345,34 @@ than saying nothing.
 The home page tiles are left alone: a tile is a still taken a moment ago anyway, so an
 offline camera there is a still that happens to be old.
 
+## Each camera keeps its own size and rate
+
+The menu used to set the stream's height and frame rate for the session and forget it.
+The choice is now written to the phone as each camera picks it, in the same place the
+server and theme live, and read back when that camera opens. It is kept per camera
+because a camera watched closely and one glanced at are not the same thing to spend
+data on, and it is kept at all because a menu that forgets is a menu you set every day.
+
+The stream is not opened until the saved choice has been read. Otherwise a camera would
+start at the default and be replaced a moment later by the one you actually asked for,
+which is two connections where one will do.
+
+## The bar keeps up with the clock
+
+While you watch the stream the day goes on being written: Frigate closes a recording file
+every ten seconds and flags what it sees as it sees it. The bar was drawn once when the
+camera opened and never asked again, so the filled hours stopped at that moment and the
+spikes with them, with a growing grey gap between them and the playhead.
+
+The stretches and the flags are now asked for again every twenty seconds, over the last
+ten minutes, and joined onto what the bar already has. Only the tail is asked for: a day
+of ten second files is thousands of rows, and fetching all of them again every twenty
+seconds to learn about the last one is a large answer for very little. Stretches are
+joined by their start, so a fresh answer replaces what the bar had at that moment; flags
+are joined by their id, because one that is already on the bar can grow as it goes on.
+
+The playhead follows now while the stream is up, so the bar shows what is happening.
+
 ## Checked on the emulator
 
 Against the mock: the Live pill under the stream with its dot dimming and brightening, no
@@ -1369,6 +1397,10 @@ In Day, the home grid, Review, Explore, Settings and the camera screen all read 
 With the two buttons off the picture: Return to Live back at the top left of the page and the speed button at the top right, both clear of the video, with only the mode pill on the picture.
 
 With a camera that stops: the mock's Quiet cam reports no frames, and its pill reads Offline in grey with the dot holding still while the last frame it sent stays on the picture, in portrait and on its side, while a camera that is sending keeps its red Live pill.
+
+With the choice kept: North cam on 1080p and 15 and Door cam on 720p and 5, both still ticked that way after `am force-stop` and a fresh launch, and each camera opened at its own.
+
+With the bar keeping up: on the stream, screenshots a hundred seconds apart with the playhead on now, the filled hours reaching the playhead both times rather than stopping where the camera was opened, the day labels shifting with it, and the mock set to flag a moment every twenty seconds putting new spikes on the bar as they go by.
 
 On the colours: both the stream and a playback opened in Day and in Night, and on its
 side in both, with the page, the top bar, the day pills, the bar, the built-in day strip,

@@ -103,6 +103,23 @@ private val Rates = listOf(30, 15, 10, 5, 2)
 private const val MaxZoom = 5f
 
 /**
+ * The size and rate a camera opens at the first time it is watched. After that the
+ * ones it was last left at are used instead.
+ */
+private const val DefaultStreamHeight = 720
+private const val DefaultStreamRate = 5
+
+/**
+ * How often the bar's stretches and spikes are asked for again while the stream is
+ * up, and how far back from now that answer goes. Frigate writes a recording file
+ * every ten seconds, so a few minutes of overlap is enough to stitch onto the day,
+ * where asking for the whole day again every few seconds is a large answer for the
+ * handful of seconds at the end that actually changed.
+ */
+private const val BarRefreshMillis = 20_000L
+private const val BarRefreshSpan = 600.0
+
+/**
  * The shape of a camera's picture, used to place what is drawn over the video.
  * Frigate's cameras send 16:9, and the picture is fitted rather than cropped, so a
  * frame of this shape sits exactly where the video is drawn.
@@ -156,8 +173,13 @@ fun PlayerScreen(
     var frame by remember(watching) { mutableStateOf<ImageBitmap?>(null) }
     var problem by remember(watching) { mutableStateOf<String?>(null) }
     var connecting by remember(watching) { mutableStateOf(true) }
-    var height by rememberSaveable(watching) { mutableIntStateOf(720) }
-    var rate by rememberSaveable(watching) { mutableIntStateOf(5) }
+    // The size and frame rate the stream is asked for, and null until the ones this
+    // camera was last left at have been read. Nothing is asked for before then, so
+    // opening a camera does not start one stream and replace it with another a moment
+    // later.
+    var choice by remember(watching) { mutableStateOf<Pair<Int, Int>?>(null) }
+    val height = choice?.first ?: DefaultStreamHeight
+    val rate = choice?.second ?: DefaultStreamRate
     var menuOpen by remember { mutableStateOf(false) }
     var sound by rememberSaveable(watching) { mutableStateOf(false) }
     var noSound by rememberSaveable(watching) { mutableStateOf(false) }
@@ -249,9 +271,24 @@ fun PlayerScreen(
         watching = name
     }
 
+    // What this camera was last watched at. Until it has been read nothing is asked
+    // for, so the first stream opened is the one you asked for last time rather than
+    // a default that is replaced a moment later.
+    LaunchedEffect(watching) {
+        choice = repository.streamChoice(watching)
+            ?: (DefaultStreamHeight to DefaultStreamRate)
+    }
+
+    // Saved as it is picked, so a size chosen once is the size you come back to, and
+    // the one the app opens at tomorrow.
+    LaunchedEffect(watching, height, rate, choice) {
+        if (choice == null) return@LaunchedEffect
+        repository.setStreamChoice(watching, height, rate)
+    }
+
     LaunchedEffect(watching, height, rate, streaming) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            if (!streaming) return@repeatOnLifecycle
+            if (!streaming || choice == null) return@repeatOnLifecycle
             connecting = true
             problem = null
             while (isActive) {
@@ -372,6 +409,49 @@ fun PlayerScreen(
         barReady = true
     }
 
+    // The day goes on being written while you watch it: Frigate closes a recording
+    // file every ten seconds, and flags what it sees as it sees it. The stretches and
+    // the spikes are asked for again over the last few minutes and stitched onto what
+    // the bar already has, so the kept hours and the marks along them creep along with
+    // the clock instead of freezing at the moment the camera was opened.
+    //
+    // Only the tail is asked for. A day of ten second files is thousands of rows, and
+    // asking for all of them every twenty seconds to learn about the last one is a lot
+    // of answer for very little.
+    LaunchedEffect(watching, day, live) {
+        if (!live) return@LaunchedEffect
+        val chosenDay = day ?: return@LaunchedEffect
+        val end = startOfDay(chosenDay, zone) + SecondsInADay
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (isActive) {
+                delay(BarRefreshMillis)
+                val now = Instant.now().epochSecond.toDouble()
+                val from = now - BarRefreshSpan
+                val until = minOf(now + 60.0, end)
+                val later = runCatching { repository.recordingSpans(watching, from, until) }
+                    .getOrNull()
+                val marks = runCatching { repository.reviewSpikes(watching, from, until) }
+                    .getOrNull()
+                if (later != null) {
+                    // Anything that started before the window is already on the bar;
+                    // everything from there on comes from this answer, which is the
+                    // newer of the two.
+                    spans = (spans.filter { it.startTime < from } + later)
+                        .associateBy { it.startTime }
+                        .values
+                        .sortedBy { it.startTime }
+                }
+                if (marks != null) {
+                    // A flag is merged by its id rather than by its moment, because
+                    // one that was already on the bar can grow as it goes on.
+                    val fresh = marks.map { it.id }.toSet()
+                    spikes = (spikes.filter { it.id !in fresh } + marks)
+                        .sortedBy { it.startTime }
+                }
+            }
+        }
+    }
+
     // While the picture is live the playhead belongs at now, so the bar says where
     // in the day you are and Play starts from here. Half minutes, the same step the
     // bar moves in.
@@ -482,8 +562,8 @@ fun PlayerScreen(
                             expanded = menuOpen,
                             height = height,
                             rate = rate,
-                            onHeight = { height = it; menuOpen = false },
-                            onRate = { rate = it; menuOpen = false },
+                            onHeight = { height -> choice = height to rate; menuOpen = false },
+                            onRate = { rate -> choice = height to rate; menuOpen = false },
                             onDismiss = { menuOpen = false },
                         )
                     }

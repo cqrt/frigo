@@ -63,6 +63,12 @@ FFMPEG = os.environ.get("MOCK_FFMPEG")
 SEGMENT_SECONDS = 10.0
 SEGMENT_SKEW = 0.37
 
+# How often the mock flags a moment, on fixed slots of the clock, so the same moment
+# comes back with the same id however it is asked about and a later ask has the slots
+# that have gone by since. Ten minutes apart by default; set MOCK_REVIEW_EVERY to
+# something short to watch the bar fill in as the clock moves.
+REVIEW_EVERY = float(os.environ.get("MOCK_REVIEW_EVERY", "600"))
+
 CAMERAS = {
     "north_cam": {"enabled": True, "friendly_name": "North cam"},
     "south_cam": {"enabled": True, "friendly_name": "South cam"},
@@ -283,31 +289,13 @@ class Handler(BaseHTTPRequestHandler):
 
         if path.endswith("/recordings") and not path.endswith("/summary"):
             # The stretches recorded between two moments, in the ten second rows
-            # Frigate keeps them in. Three stretches with a couple of hours
-            # missing between them, the way a camera that only records on motion
-            # looks, so the timeline has gaps to draw round.
+            # Frigate keeps them in, for the hours the summary above says it has
+            # footage for. Worked out from the clock, so a bar asked for a moment
+            # later has the one more file that arrived by then.
             query = parse_qs(urlparse(self.path).query)
             after = float((query.get("after") or ["0"])[0])
             before = float((query.get("before") or [str(after + 86400)])[0])
-            hour = (before - after) / 24
-            stretches = [(0, 9), (11, 15), (17, 22)]
-            rows = []
-            for start, end in stretches:
-                began = after + start * hour
-                ended = after + end * hour
-                at = began + SEGMENT_SKEW
-                while at < ended:
-                    rows.append(
-                        {
-                            "id": f"r{len(rows)}",
-                            "start_time": round(at, 3),
-                            "end_time": round(min(at + SEGMENT_SECONDS, ended), 3),
-                            "duration": round(min(at + SEGMENT_SECONDS, ended) - at, 3),
-                            "path": f"/media/r{len(rows)}.mp4",
-                        }
-                    )
-                    at += SEGMENT_SECONDS
-            return self.send_json(rows)
+            return self.send_json(segments(after, before))
 
         if "/recordings/" in path and path.endswith("/snapshot.jpg"):
             # A frame cut from the recording at that moment.
@@ -606,11 +594,12 @@ def reviews(severity, reviewed=None, cameras=None, after=None, before=None):
     `reviewed` is what the app asks for: "0" for the ones still to watch, "1"
     for the ones watched, and None for both, which is what Frigate does.
 
-    With no `severity` this answers a spread across the window asked for, which
-    is the timeline's question. A window is a day wide, so a handful of fixed
-    ones near now would leave the bar almost empty and say nothing about the
-    two colours. The spread is worked out from the window, so asking twice
-    gives the same spikes in the same places.
+    With no `severity` this answers every moment flagged in the window asked for,
+    which is the timeline's question. They sit on fixed slots of the clock rather
+    than on places in the window, so asking twice gives the same moments in the
+    same places, and asking a minute later has the one that has just been flagged.
+    A window a day wide then has a spike every ten minutes, which is what the bar
+    is for.
     """
     if severity is None:
         return spread(after, before, cameras)
@@ -668,33 +657,72 @@ def reviews(severity, reviewed=None, cameras=None, after=None, before=None):
     return answer
 
 
+def segments(after, before):
+    """The ten second rows Frigate keeps a camera's recordings in, between two
+    moments, for the hours the summary says it has footage for. Nothing after now:
+    a camera cannot have recorded a file that has not been closed yet."""
+    rows = []
+    now = time.time()
+    at = math.floor(after / SEGMENT_SECONDS) * SEGMENT_SECONDS + SEGMENT_SKEW
+    while at < min(before, now):
+        when = datetime.datetime.fromtimestamp(at)
+        if when.hour in recorded_hours(when.date()):
+            rows.append(
+                {
+                    "id": f"r{int(at)}",
+                    "start_time": round(at, 3),
+                    "end_time": round(at + SEGMENT_SECONDS, 3),
+                    "duration": SEGMENT_SECONDS,
+                    "path": f"/media/r{int(at)}.mp4",
+                }
+            )
+        at += SEGMENT_SECONDS
+    return rows
+
+
+def recorded_hours(day):
+    """The hours of a day this camera has footage for, the way the summary says: three
+    days back, with a couple of hours missing today and a night missing yesterday."""
+    back = (datetime.date.today() - day).days
+    return {
+        hour
+        for hour in range(24)
+        if not (back == 0 and hour in (3, 4)) and not (back == 1 and hour < 6)
+    }
+
+
 def spread(after, before, cameras):
-    """A day's worth of reviews across a window, so the bar has spikes to draw."""
+    """The moments flagged across a window, on fixed slots of the clock: the same
+    moment is flagged the same however it is asked about, and a later ask has the
+    slots that have gone by since."""
     if after is None or before is None or before <= after:
         return []
 
-    step = (before - after) / 90
+    # Nothing after now, for the same reason the recordings stop there: a moment
+    # that has not happened cannot have been flagged.
+    first = math.ceil(after / REVIEW_EVERY)
+    last = math.ceil(min(before, time.time()) / REVIEW_EVERY)
     answer = []
-    for index in range(90):
-        started = after + (index + 0.5) * step
+    for slot in range(first, last):
+        started = slot * REVIEW_EVERY
         # One in seven is an alert, the rest detections, so both colours show. The
         # camera changes on five and the kind on seven, so every camera gets both.
-        severity = "alert" if index % 7 == 3 else "detection"
-        camera = list(CAMERAS)[index % len(CAMERAS)]
+        severity = "alert" if slot % 7 == 3 else "detection"
+        camera = list(CAMERAS)[slot % len(CAMERAS)]
         if cameras and camera not in cameras:
             continue
         answer.append(
             {
-                "id": f"spread-{int(started)}-{severity}",
+                "id": f"spread-{slot}-{severity}",
                 "camera": camera,
                 "start_time": started,
-                "end_time": started + step * (2 if severity == "alert" else 0.7),
+                "end_time": started + (30 if severity == "alert" else 10),
                 "severity": severity,
-                "has_been_reviewed": index % 4 == 0,
-                "thumb_path": f"/clips/{camera}/spread-{index}.webp",
+                "has_been_reviewed": slot % 4 == 0,
+                "thumb_path": f"/clips/{camera}/spread-{slot}.webp",
                 "data": {
                     "audio": [],
-                    "detections": [f"{started:.6f}-spread{index}"],
+                    "detections": [f"{started:.6f}-spread{slot}"],
                     "objects": ["person"],
                     "sub_labels": [],
                     "significant_motion_areas": [],

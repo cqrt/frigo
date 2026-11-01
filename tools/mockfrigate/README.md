@@ -34,6 +34,18 @@ Tick `person` only and the car never buzzes; untick the door camera and the pers
 never does. It answers pings and closes when the app closes, which is what a real
 server does when it goes away.
 
+The recordings and the reviews follow the clock. Recordings are ten second files
+worked out from the moment asked for, up to now and no further, which is how the
+app's bar keeps up as it watches. Reviews sit on fixed slots of the clock rather
+than on places in the window, so asking twice gives the same moments in the same
+places and asking a minute later has the ones that have gone by since. They are
+ten minutes apart, which fills a day's bar; set `MOCK_REVIEW_EVERY` to something
+short to watch the spikes arrive while you watch:
+
+```
+MOCK_REVIEW_EVERY=20 python tools/mockfrigate/mock.py
+```
+
 Sign-in behaves like Frigate 0.18: a JSON body of `user` and `password`, and the
 session as a JWT in a `Set-Cookie` header. Send it a form body and it answers
 with the same 422 a real server gives, which is the point of the exercise.
@@ -94,7 +106,9 @@ somewhere past the first second of a file.
 `/api/<camera>/recordings` then answers the way the real endpoint does, a row for every
 ten second file, starting a third of a second past the whole second, because a camera's
 files start on its own frames rather than on the clock. That offset is the point: a
-request for a moment by the whole second lands inside a file, not on its edge.
+request for a moment by the whole second lands inside a file, not on its edge. Rows stop
+at now, for the hours `/recordings/summary` says it has footage for, so three days back
+with a couple of hours missing to leave gaps.
 
 A clip request is cut the way Frigate cuts one. The moment is turned into a whole
 number of seconds into the file holding it, and the cut begins at the keyframe at or

@@ -120,6 +120,27 @@ class ServerPrefs(private val context: Context) {
     }
 
     /**
+     * The picture size and frame rate each camera was last watched at, as camera to
+     * (height, rate). Kept per camera, because a camera you watch closely and one you
+     * glance at are not the same thing to spend data on.
+     */
+    suspend fun readStreamChoice(camera: String): Pair<Int, Int>? {
+        val entry = context.dataStore.data.first()[Keys.streamChoices]?.firstOrNull {
+            it.startsWith("$camera=")
+        } ?: return null
+        val parts = entry.substringAfter('=').split('x')
+        val height = parts.getOrNull(0)?.toIntOrNull() ?: return null
+        val rate = parts.getOrNull(1)?.toIntOrNull() ?: return null
+        return height to rate
+    }
+
+    suspend fun writeStreamChoice(camera: String, height: Int, rate: Int) {
+        context.dataStore.edit { prefs ->
+            val kept = prefs[Keys.streamChoices].orEmpty().filterNot { it.startsWith("$camera=") }
+            prefs[Keys.streamChoices] = (kept + "$camera=${height}x$rate").toSet()        }
+    }
+
+    /**
      * Signing out drops the server and the token. The alert choices stay, so
      * signing back in to the same server does not mean ticking everything again.
      */
@@ -142,5 +163,6 @@ class ServerPrefs(private val context: Context) {
         val cameraLayout = intPreferencesKey("camera_layout")
         val liveTiles = booleanPreferencesKey("live_tiles")
         val theme = intPreferencesKey("theme")
+        val streamChoices = stringSetPreferencesKey("stream_choices")
     }
 }

@@ -257,6 +257,15 @@ class FrigoRepository(
 
     suspend fun setTheme(mode: Int) = prefs.writeTheme(mode)
 
+    /**
+     * The picture size and frame rate this camera was last watched at, or null the
+     * first time it is opened.
+     */
+    suspend fun streamChoice(camera: String): Pair<Int, Int>? = prefs.readStreamChoice(camera)
+
+    suspend fun setStreamChoice(camera: String, height: Int, rate: Int) =
+        prefs.writeStreamChoice(camera, height, rate)
+
     suspend fun latestFrame(camera: String, height: Int = 360): ByteArray? = runCatching {
         authorized { baseUrl, token -> api.latestFrame(baseUrl, token, camera, height) }
     }.getOrNull()

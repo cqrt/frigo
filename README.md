@@ -23,6 +23,11 @@ detection. Pick the day from the buttons along the top, then drag the bar. The
 hour slides past, a step every thirty seconds, and the picture follows it. The
 line under the bar says where you are, day and all: **Sun 1 Nov 18:34**.
 
+While you watch the stream the bar keeps up with the clock, so the filled hours
+and the spikes run on to the moment you're at. They're fetched again every
+twenty seconds for the last few minutes and joined onto what the bar already
+has, rather than asking for the whole day again.
+
 Let go and the recording plays from where the bar stopped, and the playhead walks
 along as it plays. The button in the corner cycles the speed: 1, 2, 4, 8 and 16
 times. When the run reaches a stretch with nothing recorded, it carries on at the
@@ -110,7 +115,9 @@ guarantee, and it needs no extra ports or router changes.
 
 The trade is bandwidth, since every frame is a whole picture. The player's menu
 sets the height and frame rate, from 480p to 2160p and from 2 to 30 frames a
-second, and ticks what's on. That menu is only there while you're watching the
+second, and ticks what's on. Each camera keeps its own choice, so a camera you
+watch closely and one you glance at are set separately, and both keep their
+setting after the app is closed. That menu is only there while you're watching the
 stream, since it changes nothing about a recording. Frigate cuts the picture down
 from what the camera sends, so a taller choice than the camera has changes nothing.
 
