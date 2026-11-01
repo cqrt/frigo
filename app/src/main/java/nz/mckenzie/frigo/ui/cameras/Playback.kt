@@ -120,6 +120,13 @@ private const val MainStillGap = 120L
 private const val OtherStillGap = 400L
 
 /**
+ * How often a small tile of a camera you are not watching is redrawn while you
+ * watch the stream. Once every couple of seconds is enough to see someone walk in,
+ * and cheap enough that three of them are nothing beside the stream itself.
+ */
+private const val LiveStillMillis = 2_000L
+
+/**
  * Red for an alert, amber for a detection. The camera screen is black whatever
  * the theme is set to, so these are picked to sit on black rather than taken
  * from the palette.
@@ -586,6 +593,55 @@ internal fun OtherCameras(
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    CameraStrip(cameras = cameras, onPick = onPick, modifier = modifier) { other ->
+        MomentStill(
+            repository = repository,
+            camera = other.name,
+            moment = moment,
+            height = 360,
+            minGapMillis = OtherStillGap,
+            contentDescription = other.title,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f),
+        )
+    }
+}
+
+/**
+ * The other cameras under the picture while you are watching the stream, as they
+ * look now. Tapping one brings it up in the picture, live still.
+ *
+ * A still redrawn every couple of seconds rather than another stream running beside
+ * this one: the stream you are watching is most of what the connection carries
+ * already, and a picture that changes that often is enough to see someone walk in.
+ */
+@Composable
+internal fun LiveCameras(
+    repository: FrigoRepository,
+    cameras: List<Camera>,
+    onPick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    CameraStrip(cameras = cameras, onPick = onPick, modifier = modifier) { other ->
+        LiveStill(
+            repository = repository,
+            camera = other.name,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f),
+        )
+    }
+}
+
+/** A tile per camera, the picture asking for its own, with the camera's name under it. */
+@Composable
+private fun CameraStrip(
+    cameras: List<Camera>,
+    onPick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    picture: @Composable (Camera) -> Unit,
+) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -597,17 +653,7 @@ internal fun OtherCameras(
                     .clip(RoundedCornerShape(8.dp))
                     .clickable(onClickLabel = "Show ${other.title}") { onPick(other.name) },
             ) {
-                MomentStill(
-                    repository = repository,
-                    camera = other.name,
-                    moment = moment,
-                    height = 360,
-                    minGapMillis = OtherStillGap,
-                    contentDescription = other.title,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f),
-                )
+                picture(other)
                 Text(
                     text = other.title,
                     style = MaterialTheme.typography.labelSmall,
@@ -620,6 +666,46 @@ internal fun OtherCameras(
                         .padding(top = 2.dp),
                 )
             }
+        }
+    }
+}
+
+/**
+ * A camera as it looks now, redrawn every couple of seconds off the still the
+ * server keeps of it. A picture that does not arrive leaves the last one up, so a
+ * slow answer does not blank the tile and fill it again.
+ */
+@Composable
+private fun LiveStill(
+    repository: FrigoRepository,
+    camera: String,
+    modifier: Modifier = Modifier,
+) {
+    var frame by remember(camera) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(camera) {
+        while (true) {
+            val started = System.nanoTime()
+            val bytes = runCatching { repository.latestFrame(camera, 360) }.getOrNull()
+            if (bytes != null) {
+                val picture = withContext(Dispatchers.Default) { bytes.toImageBitmapOrNull() }
+                if (picture != null) frame = picture
+            }
+            val spent = (System.nanoTime() - started) / 1_000_000
+            if (spent < LiveStillMillis) delay(LiveStillMillis - spent)
+        }
+    }
+    Box(
+        modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.White.copy(alpha = 0.06f)),
+    ) {
+        frame?.let { picture ->
+            Image(
+                bitmap = picture,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }

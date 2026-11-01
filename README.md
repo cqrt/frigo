@@ -9,8 +9,9 @@ already run, so there is nothing to install on the server side.
 changes how they're laid out: two to a row, one to a line, or one picture filling
 the width with its name on it. Pull the list down and every camera fetches a
 fresh picture. Tap one and it opens as a live view. Pinch to zoom in, drag to
-move around, and double tap to go back to the whole picture. Swipe left or right
-to move to the next camera without going back to the grid.
+move around, and double tap to go back to the whole picture. The other cameras sit
+underneath, a fresh picture of each; tap one to bring it up without going back to
+the grid.
 
 Turn the phone on its side and the picture gets the whole screen, with no bars
 around it. Turn it back and the bar comes with it. There's no button for it.

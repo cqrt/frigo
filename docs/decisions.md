@@ -720,26 +720,30 @@ with a camera view you want lit.
 ## A sideways swipe moves to the next camera
 
 Standing in one camera and wanting the next meant going back to the grid first.
-Now a swipe left or right in the player moves on, in the same order the grid
-shows, and the last camera leads round to the first so a swipe is never a dead
-end.
+So a swipe left or right in the player moved on, in the same order the grid shows,
+and the last camera led round to the first so a swipe was never a dead end.
 
 The player already has a pinch to zoom and a drag to move around the picture, and
-a sideways drag is exactly what you do while zoomed in. So the swipe keeps out of
-the way when the picture is zoomed: the zoom state is lifted out of the picture
-and handed back to the screen, and the swipe only listens while it is 1x. It also
-only takes the events once a drag is clearly sideways and longer than the touch
-slop, so taps and double taps reach the picture as before.
+a sideways drag is exactly what you do while zoomed in, so the swipe kept out of
+the way when the picture was zoomed and only took the events once a drag was
+clearly sideways and longer than the touch slop.
 
-Swiping changes which camera the screen is showing rather than navigating to a new
-screen, so Back still lands on the grid you came from, and each camera keeps its
-own zoom and its own sound switch. The sound goes off with the camera, because the
-next one may have none and a switch that says on while nothing plays is a lie.
+**It has gone.** The other cameras now sit under the picture, a fresh still of each,
+on the live view the same as on a recording. A tap does the job the swipe did, and
+does it better: you can see which camera you are going to before you go, you can
+skip two at once, and on a recording you take the moment you are watching with you
+rather than being dropped into the stream. One gesture on both screens also stops
+the two from meaning different things, which the swipe did: a swipe went to the
+stream, and a tap on a tile stayed on the recording.
 
-Checked on the emulator against the mock: swipe left goes 3d printer, door, north,
-south and round again; swipe right goes back; the same in landscape, with the bars
-hidden. Sound was on for 3d printer when a swipe opened door cam, and the speaker
-went off with it.
+A still rather than a small stream per camera: the stream you are watching is most
+of what the connection carries, three more would have to share the rest, and a
+picture that changes every couple of seconds is enough to see someone walk in.
+
+Picking a camera still changes what the screen is showing rather than navigating, so
+Back lands on the grid you came from, and each camera keeps its own zoom and its own
+sound switch. The sound goes off with the camera, because the next one may have none
+and a switch that says on while nothing plays is a lie.
 
 ## A day's recordings as a bar you drag along
 
@@ -865,9 +869,10 @@ The request sends whole seconds. A double put straight into a URL comes out as
 
 Tapping one of the other cameras under the picture brings it up in the picture at
 the same moment, so you can follow a person from the drive to the door without
-going back to the grid and hunting for the time again. A swipe still means browsing
-live, so it goes back to the stream on the next camera; the two gestures do
-different things because that is what they are for.
+going back to the grid and hunting for the time again. It is the only way to change
+camera now: the sideways swipe that used to sit on the picture went with the arrival
+of the tiles, so a tap means the same thing whether the picture is the stream or a
+recording.
 
 This needed the day, the marker and the live flag to stop being keyed on the
 camera. Keyed, they were thrown away the moment the camera changed and came back at
@@ -882,10 +887,12 @@ before its start.
 Checked on the emulator against the mock: the bar under the live picture with Today
 on it, red and amber spikes, a drag that moved the marker and the picture together,
 Live taking the picture back to the stream, the strip appearing with three named
-cameras, a tap on one moving the main picture to that camera at the same moment, a
-swipe going back to live, another day's spikes loading on its chip, Play opening the
-clip of the stretch, the phone on its side showing the stream with no bar, and
-nought requests over ten idle seconds.
+cameras, a tap on one moving the main picture to that camera at the same moment,
+another day's spikes loading on its chip, Play opening the clip of the stretch, the
+phone on its side showing the stream with no bar, and nought requests over ten idle
+seconds. The row is checked again on the live view: three named cameras under the
+stream, a tap moving the picture to that camera and leaving it live, and no swipe
+left on the picture.
 
 
 ## The bar scrolls an hour at a time
