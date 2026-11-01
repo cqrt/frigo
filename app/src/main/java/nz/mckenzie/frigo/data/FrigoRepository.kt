@@ -380,11 +380,22 @@ class FrigoRepository(
         }
     }
 
-    /** Yesterday's clips are not worth the room. */
+    /**
+     * Clips are the biggest thing the app keeps. Yesterday's go, because nothing
+     * older can be played from the screen, and past a limit the oldest of today's
+     * go too: a run through an hour at 16× fetches thirty of them.
+     */
     private fun forgetOldClips() {
+        val files = clipDir.listFiles()?.filter { it.isFile } ?: return
         val yesterday = System.currentTimeMillis() - 24L * 60 * 60 * 1000
-        clipDir.listFiles()?.forEach { file ->
-            if (file.lastModified() < yesterday) file.delete()
+        files.filter { it.lastModified() < yesterday }.forEach { it.delete() }
+
+        var room = files.filter { it.exists() }.sumOf { it.length() }
+        files.filter { it.exists() }.sortedBy { it.lastModified() }.forEach { file ->
+            if (room > ClipsBytes) {
+                room -= file.length()
+                file.delete()
+            }
         }
     }
 
@@ -460,6 +471,9 @@ class FrigoRepository(
     companion object {
         /** Clips are named after the review or event they belong to. */
         private val NOT_IN_A_FILENAME = Regex("[^A-Za-z0-9._-]")
+
+        /** How much of the phone the downloaded clips may take: 600 MB. */
+        private const val ClipsBytes = 600L * 1024 * 1024
 
         /**
          * Takes what people actually type - `frigate.example.com`, a full URL, or

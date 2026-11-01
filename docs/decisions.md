@@ -1015,3 +1015,51 @@ with a finger landing put down at thirteen oh one and holding there through two
 seconds of waiting, a slow drag and release staying where it was let go, four ten
 point nudges back moving a minute and no more, the strip still jumping the bar to the
 moment tapped, and Live still putting the playhead back at now.
+
+## The bar comes to rest and the recording plays
+
+Letting go of the bar starts the recording from where it stopped, rather than showing
+a still until Play is pressed. The still is still what you see while a piece is on its
+way, and touching the bar again goes back to it.
+
+Playback is downloaded pieces, not a stream. Frigate cuts a recording with ffmpeg
+while it sends it, with no length and no support for ranges, so a player reading it
+directly gives up after ten seconds of dribs. The app fetches a piece to a file first,
+which is the same route an event's clip already takes, and hands the player the file.
+Seeking inside a piece is free then, and the next piece is asked for while the current
+one plays, so a join passes without a stop.
+
+A piece is two minutes. Longer and the first frame waits on a longer cut, which on
+this server is anywhere from a fifth of a second to three; shorter and the joins come
+round often enough to be seen. One piece is kept in hand, not a pile: the next is only
+asked for once the player has started the one before, so nothing downloads an
+afternoon that no finger ever reaches.
+
+An empty stretch is hopped rather than played as black. The next piece starts wherever
+recording starts again, and the playhead jumps with it. An hour of a camera that
+records on motion is mostly gaps, and stopping at every one would make the run useless.
+
+The sound is off. A recording at sixteen times is either a chirp or silence, and the
+live sound is a different stream with no business here.
+
+Playback starts only for a moment you moved to. Opening a camera, picking a day or
+coming back to it leaves the still up, and there is a wait of under half a second
+after the bar is still before anything is fetched, so a drag on its way somewhere does
+not start a download it will not use.
+
+Two things went wrong on the way there. At sixteen times, the player can reach the end
+of its list before the next piece has arrived, and a player left at the end of its
+list does not pick up again when an item is added: it sat there while the screen
+showed a moment that never moved. It is now moved on to the piece it has not played.
+And a run that ran out of list was reporting the end of the last piece as its end
+rather than the last moment actually shown, which put the bar back on a moment you had
+already passed.
+
+The clips are the biggest thing the app keeps, so the folder is trimmed to 600 MB,
+oldest first, on top of yesterday's going altogether.
+
+Checked on the emulator: a drag and release starting the picture a moment later with
+the still up until the first frame, the playhead walking along the bar, the speed
+button stepping one, two, four, eight, sixteen, a run crossing the end of a recorded
+stretch and carrying on at the next one two hours later, and Live stopping the picture
+and returning to the stream.

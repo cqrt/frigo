@@ -154,6 +154,18 @@ fun PlayerScreen(
     // rather than jumping to that camera's latest recording.
     var keepingMoment by remember { mutableStateOf(false) }
     var keptDay by remember { mutableStateOf<String?>(null) }
+    // Playback: the bar comes to rest and the recording from that moment plays in
+    // the picture. [playFrom] is where the run started, [played] is where the
+    // picture has got to, and the bar shows the one that is live.
+    var playFrom by remember(watching) { mutableStateOf<Double?>(null) }
+    var played by remember(watching) { mutableDoubleStateOf(0.0) }
+    var wantsPlay by remember(watching) { mutableStateOf(false) }
+    var playProblem by remember(watching) { mutableStateOf<String?>(null) }
+    // The run whose first frame has been drawn, so the still that stands in for
+    // the player can go away at that moment rather than before it.
+    var shownFrom by remember(watching) { mutableStateOf<Double?>(null) }
+    var speed by rememberSaveable { mutableFloatStateOf(1f) }
+    val showing = if (playFrom != null) played else chosen
 
     val landscape =
         LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -272,16 +284,41 @@ fun PlayerScreen(
     val now = Instant.now().epochSecond.toDouble()
     // A moment after now has no recording behind it yet, however the day's
     // stretches line up, so it counts as a gap like any other.
-    val recorded = live || (chosen <= now && spans.any { chosen >= it.startTime && chosen <= it.endTime })
+    val recorded =
+        live || (showing <= now && spans.any { showing >= it.startTime && showing <= it.endTime })
     // The clip Play fetches, and the stretch the line under the time describes, so
     // the two never disagree. Live has nothing after the marker, so there it is the
     // two minutes up to now: what just happened, rather than what did not.
-    val clipStart = (if (live) chosen - ClipSeconds else chosen - LeadInSeconds)
+    val clipStart = (if (live) showing - ClipSeconds else showing - LeadInSeconds)
         .coerceAtLeast(dayStart)
     val clipEnd = (clipStart + ClipSeconds)
         .coerceAtMost(dayStart + SecondsInADay)
         .coerceAtMost(now)
     val canPlay = day != null && recorded && clipEnd > clipStart + 1
+
+    // The bar has come to rest on a moment you moved it to, so the recording from
+    // there plays. Waiting for the bar to be still is what keeps a drag on its way
+    // somewhere from starting a download it will not use, and only a moment you
+    // moved to counts: opening a camera does not start playing by itself.
+    LaunchedEffect(chosen, wantsPlay, live, recorded) {
+        if (!wantsPlay || live || !recorded) return@LaunchedEffect
+        delay(SettleMillis)
+        if (!live && recorded) {
+            played = chosen
+            playFrom = chosen
+            playProblem = null
+            wantsPlay = false
+        }
+    }
+
+    // Live is the stream, and the stream has nothing to do with playback.
+    LaunchedEffect(live) {
+        if (live) {
+            playFrom = null
+            wantsPlay = false
+            playProblem = null
+        }
+    }
 
     fun play() {
         if (!canPlay) return
@@ -420,21 +457,52 @@ fun PlayerScreen(
                 }
             } else {
                 // The recording at the moment on the bar, filling the picture
-                // frame whole rather than cropped.
+                // frame whole rather than cropped. While it plays, the still of
+                // where the run started covers the player until the first frame
+                // is drawn, so the picture is never black while a piece is on its
+                // way.
+                val run = playFrom
                 SwipeForNextCamera(
                     enabled = cameras.size > 1,
                     onSwipe = ::step,
                 ) {
-                    MomentStill(
-                        repository = repository,
-                        camera = watching,
-                        moment = chosen,
-                        height = ScrubLines,
-                        enabled = recorded,
-                        contentScale = ContentScale.Fit,
-                        contentDescription = title,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    Box(Modifier.fillMaxSize()) {
+                        if (run != null) {
+                            RecordingRun(
+                                repository = repository,
+                                camera = watching,
+                                from = run,
+                                spans = spans,
+                                until = minOf(dayStart + SecondsInADay, now),
+                                speed = speed,
+                                onPosition = { played = it },
+                                onEnd = { last ->
+                                    chosen = last
+                                    played = last
+                                    playFrom = null
+                                },
+                                onProblem = { reason ->
+                                    playProblem = reason
+                                    playFrom = null
+                                },
+                                onFirstFrame = { shownFrom = run },
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+
+                        if (run == null || shownFrom != run) {
+                            MomentStill(
+                                repository = repository,
+                                camera = watching,
+                                moment = run ?: chosen,
+                                height = ScrubLines,
+                                enabled = recorded,
+                                contentScale = ContentScale.Fit,
+                                contentDescription = title,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    }
                 }
 
                 // The way back to the stream, on the picture you are looking at.
@@ -459,6 +527,19 @@ fun PlayerScreen(
                         color = Color.White,
                         style = MaterialTheme.typography.labelLarge,
                         modifier = Modifier.padding(start = 6.dp),
+                    )
+                }
+
+                if (playFrom != null) {
+                    SpeedButton(
+                        speed = speed,
+                        onClick = {
+                            val at = PlaySpeeds.indexOf(speed)
+                            speed = PlaySpeeds[(at + 1) % PlaySpeeds.size]
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(10.dp),
                     )
                 }
             }
@@ -520,23 +601,32 @@ fun PlayerScreen(
                     zone = zone,
                     spans = spans,
                     spikes = spikes,
-                    chosen = chosen,
-                    moment = clock(chosen, zone),
-                    caption = if (recorded) {
+                    chosen = showing,
+                    moment = clock(showing, zone),
+                    caption = playProblem ?: if (recorded) {
                         "${clock(clipStart, zone)} to ${clock(clipEnd, zone)}"
                     } else {
                         "Nothing recorded then."
                     },
-                    captionIsWarning = !recorded,
+                    captionIsWarning = playProblem != null || !recorded,
                     canPlay = canPlay,
                     onDay = { next ->
                         // Another day is not now, so the stream steps aside for it.
                         if (next != LocalDate.now(zone).toString()) live = false
+                        playFrom = null
+                        wantsPlay = false
+                        playProblem = null
                         day = next
                     },
                     onPick = { moment ->
+                        // Touching the bar stops the picture and moves it, and the
+                        // recording from where you leave it plays once it is still.
                         live = false
+                        playFrom = null
+                        playProblem = null
+                        played = moment
                         chosen = moment
+                        wantsPlay = true
                     },
                     onPlay = ::play,
                 )

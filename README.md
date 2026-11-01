@@ -19,9 +19,13 @@ A camera opens with the day's bar under the picture. An hour fits across the
 screen, the hours Frigate kept are filled in, the gaps are left grey, and a spike
 runs along the bottom for everything it flagged: red for an alert, amber for a
 detection. Pick the day from the buttons along the top, then drag the bar. The
-hour slides past, a step every thirty seconds, and the picture follows it, so a
-drag through a quiet afternoon plays back like a film sped up. Live on the picture
-takes you back to the stream.
+hour slides past, a step every thirty seconds, and the picture follows it.
+
+Let go and the recording plays from where the bar stopped, and the playhead walks
+along as it plays. The button in the corner cycles the speed: 1, 2, 4, 8 and 16
+times. When the run reaches a stretch with nothing recorded, it carries on at the
+next stretch. Touch the bar and the picture stops and goes back to the still. Live
+on the picture takes you back to the stream.
 
 The thin strip above the bar is the whole day. Tap it to go anywhere in it, which
 is quicker than scrolling an hour at a time.
@@ -142,8 +146,9 @@ the event keeps its still and its clip is gone.
 The app fetches the whole clip first, showing how much has arrived, then plays it
 from the phone. A clip sent straight into the player stalls on a slow connection,
 and the player gives up on it after ten seconds without progress. Fetched first, it
-starts at once and you can scrub through it. A clip you've watched is kept for a
-day, so watching it again costs nothing.
+starts at once and you can scrub through it. A clip you've watched is kept, so
+watching it again costs nothing. The folder is trimmed to 600 MB when it grows past
+that, oldest first.
 
 Some clips arrive from Frigate saying the wrong thing about their own timing. A
 player reads that as a wait of hours and sits on the first frame. The app corrects
