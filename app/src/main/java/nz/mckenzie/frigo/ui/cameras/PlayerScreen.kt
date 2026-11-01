@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -75,8 +74,6 @@ import nz.mckenzie.frigo.data.RecordingDay
 import nz.mckenzie.frigo.data.RecordingSpan
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.FrigoIcons
-import nz.mckenzie.frigo.ui.components.ClipSubject
-import nz.mckenzie.frigo.ui.components.ClipViewer
 import nz.mckenzie.frigo.ui.components.HideSystemBars
 import nz.mckenzie.frigo.ui.components.LiveSound
 import nz.mckenzie.frigo.ui.components.StatusBarIcons
@@ -152,7 +149,6 @@ fun PlayerScreen(
     var barReady by remember { mutableStateOf(false) }
     var barProblem by remember { mutableStateOf<String?>(null) }
     var attempt by remember { mutableIntStateOf(0) }
-    var subject by remember { mutableStateOf<ClipSubject?>(null) }
     // Set by tapping another camera's picture. The moment on the bar stays where
     // it is, so the same stretch of time is in front of you on the new camera,
     // rather than jumping to that camera's latest recording.
@@ -381,30 +377,6 @@ fun PlayerScreen(
     fun saveName(): String {
         val at = LocalDateTime.ofInstant(Instant.ofEpochSecond(clipStart.toLong()), zone)
         return "frigo-$watching-${at.format(SaveStamp)}.mp4"
-    }
-
-    fun play() {
-        if (!canPlay) return
-        val key = clipKey()
-        subject = ClipSubject(
-            title = title,
-            subtitle = "${clock(clipStart, zone)} to ${clock(clipEnd, zone)}",
-            clip = { onProgress ->
-                repository.clipFile(
-                    source = repository.recordingClipSource(watching, clipStart, clipEnd),
-                    key = key,
-                    onProgress = onProgress,
-                )
-            },
-            stillKey = key,
-            still = { repository.recordingStill(watching, clipStart) },
-            note = "Frigate has no recording of that stretch.",
-        )
-    }
-
-    val watched = subject
-    if (watched != null) {
-        ClipViewer(subject = watched, onDismiss = { subject = null })
     }
 
     StatusBarIcons(darkIcons = false)
@@ -661,11 +633,18 @@ fun PlayerScreen(
                     spans = spans,
                     spikes = spikes,
                     chosen = showing,
-                    moment = clock(showing, zone),
-                    caption = playProblem ?: if (recorded) {
-                        "${clock(clipStart, zone)} to ${clock(clipEnd, zone)}"
+                    moment = stamp(showing, zone),
+                    // On the stream the line would name the two minutes up to now,
+                    // which now lead nowhere, so it is only there on a recording,
+                    // where it says what Save will write.
+                    caption = if (live) {
+                        null
                     } else {
-                        "Nothing recorded then."
+                        playProblem ?: if (recorded) {
+                            "${clock(clipStart, zone)} to ${clock(clipEnd, zone)}"
+                        } else {
+                            "Nothing recorded then."
+                        }
                     },
                     captionIsWarning = playProblem != null || !recorded,
                     onDay = { next ->
@@ -687,12 +666,11 @@ fun PlayerScreen(
                         wantsPlay = true
                     },
                 ) {
-                    // On the stream, the two minutes up to now in the viewer. On a
-                    // recording the picture already plays, so the corner keeps the
+                    // Nothing in the corner on the stream: the two minutes up to now
+                    // were what Play opened, and dragging the bar now plays a
+                    // recording where it stands. On a recording the corner keeps the
                     // stretch instead, which is the thing a recording is for.
-                    if (live) {
-                        Button(onClick = ::play, enabled = canPlay) { Text("Play") }
-                    } else {
+                    if (!live) {
                         SaveClipButton(
                             name = saveName(),
                             enabled = canPlay,

@@ -188,12 +188,16 @@ internal typealias ClipFetch = suspend (onProgress: (Long) -> Unit) -> File
 /**
  * The day's bar under the picture, and what sits around it: the days to choose
  * from, a strip of the whole day to jump with, the hour you are looking at, and
- * whatever the corner holds: Play on the stream, Save on a recording.
+ * whatever the corner holds: nothing on the stream, Save on a recording.
  *
- * Frigate cuts a clip out of the recordings when it is asked for one. On the stream
- * the corner plays the two minutes up to now in the same viewer an event opens in.
- * The playhead can sit where nothing was recorded, and [canPlay] is false there
- * rather than playing two minutes of black.
+ * The big readout carries the day as well as the time, so dragging the bar tells
+ * you when you are without reading the timestamp burned into the picture.
+ *
+ * Frigate cuts a clip out of the recordings when it is asked for one. [caption] is
+ * what the recording of that stretch amounts to, and with it Save; there is none on
+ * the stream, where the two minutes up to now lead nowhere. The playhead can sit
+ * where nothing was recorded, and [canPlay] is false there rather than saving two
+ * minutes of black.
  */
 @Composable
 internal fun TimelinePanel(
@@ -204,8 +208,8 @@ internal fun TimelinePanel(
     spikes: List<FrigateReview>,
     chosen: Double,
     moment: String,
-    caption: String,
-    captionIsWarning: Boolean,
+    caption: String? = null,
+    captionIsWarning: Boolean = false,
     onDay: (String) -> Unit,
     onPick: (Double) -> Unit,
     modifier: Modifier = Modifier,
@@ -261,13 +265,19 @@ internal fun TimelinePanel(
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
                 )
-                Text(
-                    text = caption,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (captionIsWarning) AlertSpike else Color.White.copy(alpha = 0.65f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (caption != null) {
+                    Text(
+                        text = caption,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (captionIsWarning) {
+                            AlertSpike
+                        } else {
+                            Color.White.copy(alpha = 0.65f)
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             action()
         }
@@ -1018,6 +1028,16 @@ internal fun startOfDay(day: String, zone: ZoneId): Double =
 /** "09:41", where the phone is. */
 internal fun clock(moment: Double, zone: ZoneId): String =
     Instant.ofEpochSecond(moment.toLong()).atZone(zone).format(TimeOfDay)
+
+/**
+ * "Sun 1 Nov 09:41", where the phone is. The big readout above the bar, so the day
+ * is there while you drag across one and the burned-in timestamp in the picture is
+ * not the only thing telling you when you are.
+ */
+internal fun stamp(moment: Double, zone: ZoneId): String =
+    Instant.ofEpochSecond(moment.toLong()).atZone(zone).let { at ->
+        "${DayAndMonth.format(at)} ${TimeOfDay.format(at)}"
+    }
 
 /**
  * The last moment a camera recorded on a day, which is where the playhead starts:

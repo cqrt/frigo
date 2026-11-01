@@ -1203,6 +1203,35 @@ statement about where you were rather than a way to go somewhere. The pill now m
 statement, and a second dot saying something slightly different is one too many. The dot
 went, and the words say what a tap does.
 
+## The stream has nothing left to play
+
+Play on the stream opened the two minutes up to now in the viewer, which was the only way
+to scrub through a stretch back when the picture only moved while you dragged the bar.
+Now the picture plays from wherever the bar stops, so the button was a second way to do
+the one thing the screen already does. It has gone.
+
+The viewer keeps its job. An event and a review open in it, and neither has a bar of its
+own to scrub along.
+
+The line under the time went with it on the stream. There it named the two minutes up to
+now, the same pair Play would have opened, so with Play gone it named a window that leads
+nowhere. On a recording the line stays, because Save writes exactly what it names.
+
+That leaves the live screen with the day's bar, the other cameras and the big time, and
+nothing in the bottom corner at all.
+
+## The big readout carries the day
+
+Dragging the bar across a day only told you the time, and the only other clock on screen
+was the one the camera burns into its own picture: small, in a corner the camera chose,
+and missing altogether on a camera whose overlay is turned off. It is also a picture of a
+moment, so it lags the bar while a still is on its way.
+
+So the readout under the bar now reads the day as well as the time, `Sun 1 Nov 18:34`,
+drawn by the phone as the bar moves rather than read off the picture. The pattern follows
+the phone's own language, so a phone set to another language reads its own day and month
+names.
+
 ## Checked on the emulator
 
 Against the mock: the Live pill under the stream with its dot dimming and brightening, no
@@ -1213,3 +1242,7 @@ saying Saved and returning to Save, and the file on the phone playing for two mi
 the clock burned into it starting where the caption said. Over a gap the caption says
 nothing was recorded then and Save greys out. On its side, both pills show with the
 picture filling the screen.
+
+With Play gone: nothing in the bottom corner of the live screen, no line under the time
+there, and `Sun 1 Nov 19:24` under the bar on the stream and `Sun 1 Nov 13:55` with
+`13:55 to 13:57` under it once the bar has been dragged and Save is in the corner.

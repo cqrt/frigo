@@ -20,7 +20,8 @@ A camera opens with the day's bar under the picture. An hour fits across the
 screen, the hours Frigate kept are filled in, the gaps are left grey, and a spike
 runs along the bottom for everything it flagged: red for an alert, amber for a
 detection. Pick the day from the buttons along the top, then drag the bar. The
-hour slides past, a step every thirty seconds, and the picture follows it.
+hour slides past, a step every thirty seconds, and the picture follows it. The big
+line under the bar says where you are, day and all: **Sun 1 Nov 18:34**.
 
 Let go and the recording plays from where the bar stopped, and the playhead walks
 along as it plays. The button in the corner cycles the speed: 1, 2, 4, 8 and 16
@@ -43,12 +44,10 @@ picture had reached. Over a gap, the picture goes blank and the line underneath
 says nothing was recorded then. On its side the timeline goes and the picture fills
 the screen.
 
-The button in the bottom corner changes with the mode. On the stream it's **Play**,
-which opens the last two minutes in the viewer, with a scrub bar. On a recording
-it's **Save**, which keeps the stretch the line underneath names as a file on your
-phone. It asks where to put it first and fetches nothing until you've chosen, then
-shows how much has arrived. Nothing lands in your photos and there's no permission
-to grant.
+On a recording, **Save** in the bottom corner keeps the stretch the line under the
+time names as a file on your phone. It asks where to put it first and fetches
+nothing until you've chosen, then shows how much has arrived. Nothing lands in your
+photos and there's no permission to grant.
 
 **Review.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review
