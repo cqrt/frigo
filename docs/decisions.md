@@ -1404,6 +1404,20 @@ so nothing on the camera side raises those two. The only lever on the server sid
 pointing the `detect` role at the main stream, which puts 2K frames through detection and
 is the kind of cost the limits exist to keep the app from adding by accident.
 
+That lever was measured rather than argued. South cam's detect role was moved to its main
+stream for ten minutes and then put back. The whole box went from 29% to 52%, South cam's
+detect process from 3.7% to 26.6% and its decoder from 1.2% to 10.1%, the detector ran 3.6
+to 16.4 times a second because a sharp frame has more motion in it, and the phone's picture
+at 1080 cost 2.8 MB/s. Doing the same to North cam would put the box near three quarters,
+which is where the streams fell apart before.
+
+So the live picture is going to come from go2rtc instead, which holds the main streams
+already and hands them out without decoding: the camera's own 2560x1440 H.264 at 190 KB a
+second, about a second behind, with the sound included. The blocker is reach, not picture:
+the Home Assistant add-on publishes only Frigate's ports, so `/api/go2rtc/...` answers 404
+from outside and `/live/...` falls through to the web page. That needs a VPN on the phone or
+a go2rtc of its own behind the tunnel before any app work is worth doing.
+
 ## The bar keeps up with the clock
 
 While you watch the stream the day goes on being written: Frigate closes a recording file

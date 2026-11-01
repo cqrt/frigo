@@ -136,9 +136,12 @@ Zooming scales the picture the phone already has, so the stream keeps asking for
 the same frames. Zoomed right in, a 640x360 camera looks soft, and there's no
 size above its own that puts more detail in it.
 
-WebRTC through go2rtc is planned as an option for low latency. It needs port 8555
-forwarded to your Frigate machine, both TCP and UDP. Without that forward, WebRTC
-connects and then shows nothing, which is why it is not the default.
+Your cameras also send a bigger stream, and that's the one Frigate records. Watching it
+live means asking go2rtc, the stream server inside Frigate, rather than Frigate's stream of
+stills. That's about a second behind instead of four, and a fifteenth of the data, because
+H.264 sends only what changed between frames. The catch is getting a phone to go2rtc, which
+the Frigate add-on doesn't publish, so it's a job for a later version rather than a patch
+([decisions](docs/decisions.md)).
 
 ## How alerts reach your phone
 
