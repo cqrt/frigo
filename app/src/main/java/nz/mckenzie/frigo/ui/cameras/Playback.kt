@@ -62,6 +62,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -612,6 +613,9 @@ private fun ScrubBar(
     // stretches kept read the same in the night colours and in the day.
     val ink = MaterialTheme.colorScheme.onBackground
     val labelStyle = TextStyle(fontSize = 10.sp, color = ink.copy(alpha = 0.55f))
+    // The kept hours are a wash of the page's ink. On the light page the same wash
+    // as the night one reads as a solid block, so it goes lighter there.
+    val keptWash = if (ink.luminance() > 0.5f) 0.7f else 0.45f
 
     // Pixels a second, and how wide the day is at that scale.
     val scale = if (width > 0f) (width / SecondsAcross).toFloat() else 0f
@@ -740,7 +744,7 @@ private fun ScrubBar(
                 val right = at(end)
                 if (right > left) {
                     drawRect(
-                        color = ink.copy(alpha = 0.7f),
+                        color = ink.copy(alpha = keptWash),
                         topLeft = Offset(left, bandTop),
                         size = Size(right - left, bandBottom - bandTop),
                     )

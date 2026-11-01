@@ -1249,6 +1249,25 @@ picture: a light pill would vanish against a bright frame, and which mode you ar
 the one thing that has to read whatever the camera is looking at. The full screen clip
 viewer stays black for the same reason, and because it is a clip and nothing else.
 
+## Day is a grey blue, not white
+
+The day theme was white with a hint of blue in it, which made the brightest thing on the
+screen the page behind everything else. Outdoors in daylight that reads as a glare rather
+than a surface, and the night theme had already shown that Frigo's colours are a grey
+blue; the day side just went too far the other way.
+
+The day page is now `#E5EAF1`, a light grey blue, with the ink a near-black blue at
+`#19222E`. Cards and tiles lift out of the page rather than sink into it, a shade lighter,
+which is how the Material colours were already arranged. The accent stays the app's own
+blue, darkened to `#1E5C99` so a link still reads on a page that is no longer white.
+
+The wash over the hours Frigate kept needed a value of its own. A light band on the night
+page reads as a solid block on a light one, so the kept hours are drawn lighter in Day and
+left as they were at night.
+
+Warm off-white and a green-grey were drawn as alternatives. The grey blue won because it
+is the night page's own colour taken up to daylight, so the two themes stay one app.
+
 ## Checked on the emulator
 
 Against the mock: the Live pill under the stream with its dot dimming and brightening, no
@@ -1263,6 +1282,8 @@ picture filling the screen.
 With Play gone: nothing in the bottom corner of the live screen, no line under the time
 there, and `Sun 1 Nov 19:24` under the bar on the stream and `Sun 1 Nov 13:55` with
 `13:55 to 13:57` under it once the bar has been dragged and Save is in the corner.
+
+In Day, the home grid, Review, Explore, Settings and the camera screen all read on the grey-blue page, with no white left in it, and the kept hours a light wash rather than a block.
 
 On the colours: both the stream and a playback opened in Day and in Night, and on its
 side in both, with the page, the top bar, the day pills, the bar, the built-in day strip,
