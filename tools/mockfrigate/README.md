@@ -96,7 +96,9 @@ A clip request is cut the way Frigate cuts one. The moment is turned into a whol
 number of seconds into the file holding it, and the cut begins at the keyframe at or
 before there, so a clip asked for from the middle of a file comes back early, with a
 second of picture the clip before it already showed. Watch the joins with that on and
-you're watching what the phone does against the real server.
+you're watching what the phone does against the real server. The cut is re-encoded to
+land exactly there, because a copy would snap back to the recording's own keyframes a
+second time and put a repeat at every join however the app asked.
 
 The recording this was made against is 480 by 270 at 12 frames a second, with a
 counter burned in, so a picture that plays is obviously playing and a picture that

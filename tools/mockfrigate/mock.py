@@ -309,6 +309,11 @@ class Handler(BaseHTTPRequestHandler):
             # cut begins exactly at the segment, which is what the app does; ask
             # for anything later and it begins up to a keyframe early, which is
             # what puts a second of picture twice at the join between two pieces.
+            #
+            # The cut is re-encoded rather than copied, because a copy would snap to
+            # the recording's own keyframes a second time and put a repeat at the
+            # join however the app asked. A segment on a real server begins with a
+            # keyframe, so landing exactly on [began] is what one looks like.
             if RECORDING and FFMPEG:
                 try:
                     start = float(path.split("/start/")[1].split("/")[0])
@@ -329,7 +334,9 @@ class Handler(BaseHTTPRequestHandler):
                     subprocess.run(
                         [
                             FFMPEG, "-y", "-ss", f"{began:.3f}", "-t", f"{length:.3f}",
-                            "-i", RECORDING, "-c", "copy", "-movflags", "+faststart", cut,
+                            "-i", RECORDING, "-an", "-c:v", "libx264", "-preset", "veryfast",
+                            "-crf", "20", "-pix_fmt", "yuv420p", "-g", "17", "-keyint_min",
+                            "17", "-sc_threshold", "0", "-movflags", "+faststart", cut,
                         ],
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL,
