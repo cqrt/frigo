@@ -77,6 +77,7 @@ internal fun RecordingRun(
     spans: List<RecordingSpan>,
     until: Double,
     speed: Float,
+    withSound: Boolean,
     onPosition: (Double) -> Unit,
     onEnd: (Double) -> Unit,
     onProblem: (String) -> Unit,
@@ -98,9 +99,8 @@ internal fun RecordingRun(
 
     val player = remember(camera, from) {
         ExoPlayer.Builder(context).build().apply {
-            // A sped up recording has nothing worth hearing in it, and the live
-            // sound is a separate stream that has no business here.
-            volume = 0f
+            // The speaker on the screen decides whether a recording is heard.
+            volume = if (withSound) 1f else 0f
             playWhenReady = true
         }
     }
@@ -120,6 +120,10 @@ internal fun RecordingRun(
 
     LaunchedEffect(player, speed) {
         player.playbackParameters = PlaybackParameters(speed)
+    }
+
+    LaunchedEffect(player, withSound) {
+        player.volume = if (withSound) 1f else 0f
     }
 
     // Watching is no reason to play on in the background.
@@ -217,7 +221,11 @@ internal fun RecordingRun(
             val piece = pieces.getOrNull(player.currentMediaItemIndex)
             if (piece != null) {
                 val at = piece.startTime + player.currentPosition / 1000.0
-                val now = at.coerceAtMost(piece.endTime)
+                // A join between two pieces can read a moment early for one
+                // sample, and a second hand going back looks like a fault. Within
+                // a run the picture only ever goes on, so the last moment shown
+                // holds until the next one is past it.
+                val now = at.coerceAtMost(piece.endTime).coerceAtLeast(playedTo.doubleValue)
                 playedTo.doubleValue = now
                 sayPosition(now)
             }

@@ -178,6 +178,19 @@ fun PlayerScreen(
         runCatching { repository.cameras() }.onSuccess { cameras = it }
     }
 
+    // Live is now, so the day the stream belongs to comes back with it: the bar
+    // reads today's clock rather than the afternoon you were looking through,
+    // and whatever was playing stops.
+    fun watchLive() {
+        day = LocalDate.now(zone).toString()
+        chosen = quantise(Instant.now().epochSecond.toDouble())
+        played = chosen
+        playFrom = null
+        wantsPlay = false
+        playProblem = null
+        live = true
+    }
+
     // The last camera leads round to the first, so a swipe is never a dead end.
     fun step(by: Int) {
         val names = cameras.map { it.name }
@@ -186,7 +199,7 @@ fun PlayerScreen(
         // A swipe is browsing live, so it goes back to the stream rather than
         // leaving you on another camera's still.
         keepingMoment = false
-        live = true
+        watchLive()
         watching = names[(at + by + names.size) % names.size]
         zoomed = false
     }
@@ -349,7 +362,9 @@ fun PlayerScreen(
     // phone is the button.
     HideSystemBars(landscape)
 
-    LiveSound(repository = repository, camera = watching, playing = sound) {
+    // The sound follows the speaker, so it comes from the stream while you are
+    // watching the stream and from the recording while you are watching one.
+    LiveSound(repository = repository, camera = watching, playing = sound && live) {
         sound = false
         noSound = true
     }
@@ -475,6 +490,7 @@ fun PlayerScreen(
                                 spans = spans,
                                 until = minOf(dayStart + SecondsInADay, now),
                                 speed = speed,
+                                withSound = sound,
                                 onPosition = { played = it },
                                 onEnd = { last ->
                                     chosen = last
@@ -513,7 +529,7 @@ fun PlayerScreen(
                         .clip(RoundedCornerShape(50))
                         .background(Color.Black.copy(alpha = 0.55f))
                         .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(50))
-                        .clickable { live = true }
+                        .clickable { watchLive() }
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
