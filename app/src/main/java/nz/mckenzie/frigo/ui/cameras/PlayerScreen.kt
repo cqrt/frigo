@@ -77,7 +77,11 @@ import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.MjpegReader
 import nz.mckenzie.frigo.data.RecordingDay
 import nz.mckenzie.frigo.data.RecordingSpan
+import nz.mckenzie.frigo.data.StreamLimits
+import nz.mckenzie.frigo.data.fittingChoice
+import nz.mckenzie.frigo.data.heightsFor
 import nz.mckenzie.frigo.data.prettyCameraName
+import nz.mckenzie.frigo.data.ratesFor
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.components.HideSystemBars
 import nz.mckenzie.frigo.ui.components.LiveSound
@@ -92,19 +96,17 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.floor
 
 /**
- * The heights and rates offered in the player, biggest first. Bigger means more
- * data, so the top of each list is the camera's own picture at its own frame rate,
- * and Frigate gives what the camera has rather than inventing the rest.
+ * The heights and rates the player offers, biggest first. What it actually shows is
+ * these narrowed to the camera's own picture and frame rate, so nothing is offered
+ * that the server would have to invent.
  */
-private val Heights = listOf(2160, 1080, 720, 480)
-private val Rates = listOf(30, 15, 10, 5, 2)
 
 /** How far in a pinch can go. Past this the picture is just soft pixels. */
 private const val MaxZoom = 5f
 
 /**
- * The size and rate a camera opens at the first time it is watched. After that the
- * ones it was last left at are used instead.
+ * The size and rate a camera opens at the first time it is watched, when it has both.
+ * After that the ones it was last left at are used instead.
  */
 private const val DefaultStreamHeight = 720
 private const val DefaultStreamRate = 5
@@ -174,10 +176,11 @@ fun PlayerScreen(
     var problem by remember(watching) { mutableStateOf<String?>(null) }
     var connecting by remember(watching) { mutableStateOf(true) }
     // The size and frame rate the stream is asked for, and null until the ones this
-    // camera was last left at have been read. Nothing is asked for before then, so
-    // opening a camera does not start one stream and replace it with another a moment
-    // later.
+    // camera was last left at have been read and brought inside what the camera has.
+    // Nothing is asked for before then, so opening a camera does not start one stream
+    // and replace it with another a moment later.
     var choice by remember(watching) { mutableStateOf<Pair<Int, Int>?>(null) }
+    var limits by remember(watching) { mutableStateOf(StreamLimits.Unknown) }
     val height = choice?.first ?: DefaultStreamHeight
     val rate = choice?.second ?: DefaultStreamRate
     var menuOpen by remember { mutableStateOf(false) }
@@ -271,12 +274,15 @@ fun PlayerScreen(
         watching = name
     }
 
-    // What this camera was last watched at. Until it has been read nothing is asked
-    // for, so the first stream opened is the one you asked for last time rather than
-    // a default that is replaced a moment later.
+    // What this camera was last watched at, brought inside the size and rate it can
+    // actually give. Until that has been read nothing is asked for, so the first
+    // stream opened is the one you asked for last time rather than a default that is
+    // replaced a moment later.
     LaunchedEffect(watching) {
-        choice = repository.streamChoice(watching)
-            ?: (DefaultStreamHeight to DefaultStreamRate)
+        val caps = withContext(Dispatchers.IO) { repository.streamLimits(watching) }
+        limits = caps
+        val saved = repository.streamChoice(watching)
+        choice = fittingChoice(saved, caps)
     }
 
     // Saved as it is picked, so a size chosen once is the size you come back to, and
@@ -286,9 +292,16 @@ fun PlayerScreen(
         repository.setStreamChoice(watching, height, rate)
     }
 
-    LaunchedEffect(watching, height, rate, streaming) {
+    // The stream follows the choice itself rather than the two numbers inside it, so
+    // reading the choice out is what starts the stream. Keyed on them instead, a
+    // camera whose choice happened to be 720p at five frames a second -- the same two
+    // numbers it opens at while the choice is not yet known -- would never open at all.
+    LaunchedEffect(watching, choice, streaming) {
+        val wanted = choice
+        if (!streaming || wanted == null) return@LaunchedEffect
+        val height = wanted.first
+        val rate = wanted.second
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            if (!streaming || choice == null) return@repeatOnLifecycle
             connecting = true
             problem = null
             while (isActive) {
@@ -562,6 +575,8 @@ fun PlayerScreen(
                             expanded = menuOpen,
                             height = height,
                             rate = rate,
+                            heights = heightsFor(limits),
+                            rates = ratesFor(limits),
                             onHeight = { height -> choice = height to rate; menuOpen = false },
                             onRate = { rate -> choice = height to rate; menuOpen = false },
                             onDismiss = { menuOpen = false },
@@ -863,14 +878,17 @@ fun PlayerScreen(
 
 /**
  * What the stream is set to: its size and its frame rate, in two groups, with the
- * choice in use ticked. Opening the menu used to be seven identical lines with no
- * way to tell which two were on.
+ * choice in use ticked. Only what the camera actually has is offered: asking for more
+ * is asking the server to invent pixels and frames, which costs it more than the
+ * picture is worth and slows every camera down with it.
  */
 @Composable
 private fun StreamMenu(
     expanded: Boolean,
     height: Int,
     rate: Int,
+    heights: List<Int>,
+    rates: List<Int>,
     onHeight: (Int) -> Unit,
     onRate: (Int) -> Unit,
     onDismiss: () -> Unit,
@@ -886,7 +904,7 @@ private fun StreamMenu(
     ) {
         Column(Modifier.width(228.dp).padding(vertical = 6.dp)) {
             MenuHeading("Resolution")
-            Heights.forEach { option ->
+            heights.forEach { option ->
                 MenuChoice(text = "${option}p", chosen = option == height) { onHeight(option) }
             }
             HorizontalDivider(
@@ -894,7 +912,7 @@ private fun StreamMenu(
                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
             )
             MenuHeading("Frames per second")
-            Rates.forEach { option ->
+            rates.forEach { option ->
                 MenuChoice(text = "$option", chosen = option == rate) { onRate(option) }
             }
         }

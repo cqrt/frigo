@@ -2,6 +2,8 @@ package nz.mckenzie.frigo.data
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,6 +67,10 @@ class FrigoRepository(
 
     private val mutex = Mutex()
     @Volatile private var stored: ServerPrefs.Stored? = null
+
+    /** The last answer on what each camera can give, and on what they are all doing. */
+    private val limits = mutableMapOf<String, Pair<Long, StreamLimits>>()
+    private var statsAt: Pair<Long, FrigateStats>? = null
 
     private val _gate = MutableStateFlow<Gate>(Gate.Loading)
     val gate: StateFlow<Gate> = _gate.asStateFlow()
@@ -271,6 +277,68 @@ class FrigoRepository(
     }.getOrNull()
 
     /**
+     * What this camera can actually give: the size of the picture it sends, and the
+     * frames a second it sends them at.
+     *
+     * A saved choice is only worth honouring inside these. Asking for more is what
+     * makes the server scale frames up and the phone fall behind, and the bill is paid
+     * by every camera on the box.
+     *
+     * The answer is kept for a while, because opening a camera should not cost two
+     * round trips, and a camera does not change size between one tap and the next.
+     */
+    suspend fun streamLimits(camera: String): StreamLimits {
+        val now = System.currentTimeMillis()
+        limits[camera]?.let { (at, found) ->
+            if (now - at < LimitsStandMillis) return found
+        }
+
+        // Both answers are wanted and neither needs the other, so they are asked for
+        // at the same time rather than one after the other.
+        val (picture, sending) = coroutineScope {
+            val height = async { nativeHeight(camera) }
+            val stats = async { stats() }
+            height.await() to stats.await()
+        }
+
+        val found = StreamLimits(
+            height = (picture ?: StreamLimits.MostHeight)
+                .coerceAtMost(StreamLimits.MostHeight),
+            rate = (sending?.cameras?.get(camera)?.settingRate ?: StreamLimits.MostRate)
+                .coerceIn(StreamLimits.LeastRate, StreamLimits.MostRate),
+        )
+        limits[camera] = now to found
+        return found
+    }
+
+    /**
+     * The height of the picture the camera itself sends, or null when it cannot be
+     * asked. The picture is read for its header alone, so this costs one small
+     * response rather than a bitmap.
+     */
+    private suspend fun nativeHeight(camera: String): Int? = runCatching {
+        val frame = authorized { baseUrl, token ->
+            api.latestFrame(baseUrl, token, camera, height = null)
+        }
+        MjpegReader.sizeOf(frame).takeIf { it > 0 }
+    }.getOrNull()
+
+    /**
+     * The server's own census of every camera, kept for a few seconds. The live screen
+     * asks it whether its camera is still sending, and asks it again for the rate the
+     * camera sends at, which is one answer worth having once rather than twice.
+     */
+    private suspend fun stats(): FrigateStats? {
+        val now = System.currentTimeMillis()
+        statsAt?.let { (at, found) -> if (now - at < StatsStandMillis) return found }
+        val found = runCatching {
+            authorized { baseUrl, token -> api.stats(baseUrl, token) }
+        }.getOrNull()
+        if (found != null) statsAt = now to found
+        return found
+    }
+
+    /**
      * Whether a camera is sending frames at all.
      *
      * Frigate counts the frames arriving from each camera over the last few seconds,
@@ -282,15 +350,13 @@ class FrigoRepository(
      * unusual: the server has only just started, it has no such camera, or the call
      * failed. Calling a camera offline on a guess is worse than saying nothing.
      */
-    suspend fun cameraSending(camera: String): Boolean? = runCatching {
-        authorized { baseUrl, token ->
-            val stats = api.stats(baseUrl, token)
-            // For the first couple of minutes Frigate has not counted anything yet,
-            // and every camera on a fresh server would read as stopped.
-            val warming = stats.service.uptime?.let { it < WarmUpSeconds } ?: false
-            if (warming) null else stats.cameras[camera]?.let { it.cameraFps > 0.0 }
-        }
-    }.getOrNull()
+    suspend fun cameraSending(camera: String): Boolean? {
+        val answer = stats() ?: return null
+        // For the first couple of minutes Frigate has not counted anything yet, and
+        // every camera on a fresh server would read as stopped.
+        if (answer.service.uptime?.let { it < WarmUpSeconds } == true) return null
+        return answer.cameras[camera]?.let { it.cameraFps > 0.0 }
+    }
 
     suspend fun thumbnail(eventId: String): ByteArray? = runCatching {
         authorized { baseUrl, token -> api.eventThumbnail(baseUrl, token, eventId) }
@@ -514,6 +580,16 @@ class FrigoRepository(
 
         /** Seconds after a server starts during which its frame counts mean nothing. */
         private const val WarmUpSeconds = 120.0
+
+        /**
+         * How long an answer about a camera's own size and rate stands. Long, because
+         * a camera is not swapped between one tap and the next, and asking again on
+         * every camera change would put two requests in front of the picture.
+         */
+        private const val LimitsStandMillis = 30L * 60 * 1000
+
+        /** How long the server's census stands. Two calls in a row share one answer. */
+        private const val StatsStandMillis = 15_000L
 
         /**
          * Takes what people actually type - `frigate.example.com`, a full URL, or

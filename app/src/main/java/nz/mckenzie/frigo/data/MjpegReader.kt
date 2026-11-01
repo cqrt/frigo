@@ -54,5 +54,16 @@ class MjpegReader(input: InputStream) {
 
         fun decode(frame: ByteArray): Bitmap? =
             BitmapFactory.decodeByteArray(frame, 0, frame.size)
+
+        /**
+         * The picture's size in pixels, read out of the JPEG's own header rather than
+         * by decoding it: this is how the app learns what a camera actually sends,
+         * without spending a bitmap to find out.
+         */
+        fun sizeOf(frame: ByteArray): Int {
+            val header = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(frame, 0, frame.size, header)
+            return header.outHeight
+        }
     }
 }

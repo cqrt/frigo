@@ -1357,6 +1357,33 @@ The stream is not opened until the saved choice has been read. Otherwise a camer
 start at the default and be replaced a moment later by the one you actually asked for,
 which is two connections where one will do.
 
+## The menu offers what the camera has, and no more
+
+The menu offered 480p to 2160p and 2 to 30 frames a second whatever camera it was on, and
+Frigate answers any of it. Asked for more than the camera sends, it scales each frame up
+and sends it as often as asked. Nothing in the picture is new.
+
+Measured on this server: North cam sends 640x360, and `/api/<camera>/latest.jpg?height=2160`
+answers with a 3840x2160 picture. The stream at 2160p and 30 frames a second then delivered
+11.4 frames a second of 402 KB frames, about 4.6 MB/s, and every other camera on the box
+stalled while it did, because the machine was spending itself making pixels that came from
+a 640 wide camera. The same camera at 360p and 5 frames a second delivered 4.7 frames a
+second of 38 KB frames: a tenth of the data and a picture with the same detail in it.
+
+So the app now asks the camera how big its picture is, by reading the height out of the
+header of one still rather than decoding it, and asks `/api/stats` for the rate the camera
+is set to send at (`expected_fps`, falling back to `camera_fps`). Those two numbers are
+what the menu offers, and a saved choice outside them is brought inside before the stream
+opens. A camera that cannot be asked opens at 1080p at most, which is about a phone screen
+tall; 4K is four times the data for a picture shown at the same size. Both answers are
+kept for thirty minutes per camera, and the stats answer is shared with the offline check
+that asks the same endpoint every eight seconds, so opening a camera costs one small
+request rather than two.
+
+The stream effect is keyed on the choice itself rather than on the two numbers inside it.
+Keyed on the numbers, a camera whose saved choice happened to equal the defaults it opens
+at, 720p at five frames a second, never opened its stream and sat on Connecting.
+
 ## The bar keeps up with the clock
 
 While you watch the stream the day goes on being written: Frigate closes a recording file
@@ -1438,3 +1465,11 @@ side in both, with the page, the top bar, the day pills, the bar, the built-in d
 the other camera's names, the line under the time and Save all following the theme, the
 status bar icons dark in Day and light in Night, and the Live and Playback pills still
 dark on the picture either way.
+
+With the menu inside the camera's limits: against the real server, North cam opened at
+360p and 5 frames a second, having been saved at 720p by an older build, and its menu
+offered 360p alone and 5 and 2 alone. The OSD clock in the picture went from 10:42:15 to
+10:45:18 over three minutes of wall clock, which is the server's own four second buffer
+and no drift on top of it, and the frame gaps sat at about 200 ms with 422 ms the worst,
+over one stream opened and kept for four and a half minutes. Switching North cam to
+Printer cam to North cam to South cam to Printer cam opened each in 510 to 720 ms.

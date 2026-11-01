@@ -24,6 +24,12 @@ One of the five, Quiet cam, reports no frames in `/api/stats` while its stream g
 on handing back a picture. That's a camera that has stopped sending, as a real
 server reports one, and it's what the app's grey Offline pill is for.
 
+Its cameras say they send 800x450 at five frames a second, and its stills ignore
+`height`, so the player opens on what the real app would open on against them: a
+720p stream, with 720p and 480p in the menu and 5 and 2 frames a second. The real
+server scales a still up to whatever `height` it is given, which is why the app
+reads a still's own size instead of asking for a bigger one.
+
 `/api/labels` answers with the objects the app can tick in Settings. `/api/review`
 answers with three alerts and three detections, newest first, and a clip for each.
 It filters on `severity` the way the real endpoint does. `/ws` is a

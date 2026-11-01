@@ -2,6 +2,7 @@ package nz.mckenzie.frigo.data
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.math.roundToInt
 
 /**
  * Only the pieces of /api/config this app reads. Everything else in the file is
@@ -102,7 +103,16 @@ data class FrigateStats(
 @Serializable
 data class CameraStats(
     @SerialName("camera_fps") val cameraFps: Double = 0.0,
-)
+    /**
+     * The rate the camera is set to send at, which does not dip the way a single
+     * second's count does. Absent from a server that doesn't say.
+     */
+    @SerialName("expected_fps") val expectedFps: Double? = null,
+) {
+    /** The rate this camera sends at, as a whole number, preferring the one set for it. */
+    val settingRate: Int
+        get() = (expectedFps?.takeIf { it > 0 } ?: cameraFps).roundToInt()
+}
 
 /** How long the server has been up, in seconds. Absent from a server that doesn't say. */
 @Serializable

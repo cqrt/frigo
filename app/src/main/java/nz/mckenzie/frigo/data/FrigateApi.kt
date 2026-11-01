@@ -300,10 +300,20 @@ class FrigateApi(
      * way here, such as Cloudflare, caches a `.jpg` under its address, and would
      * otherwise hand back the first picture it ever saw.
      */
-    fun latestFrame(baseUrl: String, token: String, camera: String, height: Int): ByteArray {
+    /**
+     * One picture of the camera, as the camera sends it when [height] is null, or
+     * scaled to that height when it is not. Frigate scales up as readily as down, so
+     * a height above the camera's own makes a bigger picture than the camera has.
+     */
+    fun latestFrame(
+        baseUrl: String,
+        token: String,
+        camera: String,
+        height: Int?,
+    ): ByteArray {
         val target = url(baseUrl, "/api/$camera/latest.jpg").newBuilder()
-            .addQueryParameter("height", height.toString())
             .addQueryParameter("t", System.currentTimeMillis().toString())
+            .apply { height?.let { addQueryParameter("height", it.toString()) } }
             .build()
         return Request.Builder()
             .url(target)

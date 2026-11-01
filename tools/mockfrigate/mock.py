@@ -531,6 +531,9 @@ def stats():
             name: {
                 "camera_fps": 0.0 if name in SILENT else 5.0,
                 "process_fps": 0.0 if name in SILENT else 5.0,
+                # The rate the camera is set to send at. The app offers nothing faster,
+                # so the mock's five is what its menu shows.
+                "expected_fps": 5,
                 "detection_fps": 0.0 if name in SILENT else 1.2,
                 "skipped_fps": 0.0,
                 "detection_enabled": True,

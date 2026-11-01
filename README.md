@@ -115,19 +115,23 @@ cannot use MSE, so the closest equivalent is this JPEG stream: same TCP, same
 guarantee, and it needs no extra ports or router changes.
 
 The trade is bandwidth, since every frame is a whole picture. The player's menu
-sets the height and frame rate, from 480p to 2160p and from 2 to 30 frames a
-second, and ticks what's on. Each camera keeps its own choice, so a camera you
-watch closely and one you glance at are set separately, and both keep their
-setting after the app is closed. That menu is only there while you're watching the
-stream, since it changes nothing about a recording. Frigate cuts the picture down
-from what the camera sends, so a taller choice than the camera has changes nothing.
+sets the height and frame rate, and ticks what's on. It only offers what the
+camera itself sends. Your four cameras send 640x360, 640x360, 1280x960 and
+1280x720, so a menu that offered 2160p would be offering a picture the server
+makes up: Frigate scales each frame up to whatever is asked for and sends it as
+often as asked, which is why one camera set to 2160p at 30 frames a second slows
+every other camera down. Each camera keeps its own choice, so a camera you watch
+closely and one you glance at are set separately, and both keep their setting
+after the app is closed. That menu is only there while you're watching the
+stream, since it changes nothing about a recording.
 
 A speaker button in the player adds the camera's sound. Frigate's API has none in
 it, so the sound comes from go2rtc, the stream server inside Frigate, through one
 more path on your proxy ([setup](docs/sound.md)).
 
 Zooming scales the picture the phone already has, so the stream keeps asking for
-the same frames. At 720p and 5x it is soft, which is why the menu offers 1080p.
+the same frames. Zoomed right in, a 640x360 camera looks soft, and there's no
+size above its own that puts more detail in it.
 
 WebRTC through go2rtc is planned as an option for low latency. It needs port 8555
 forwarded to your Frigate machine, both TCP and UDP. Without that forward, WebRTC
