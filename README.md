@@ -24,8 +24,9 @@ hour slides past, a step every thirty seconds, and the picture follows it.
 Let go and the recording plays from where the bar stopped, and the playhead walks
 along as it plays. The button in the corner cycles the speed: 1, 2, 4, 8 and 16
 times. When the run reaches a stretch with nothing recorded, it carries on at the
-next stretch. Touch the bar and the picture stops and goes back to the still. Live
-on the picture takes you back to the stream.
+next stretch. Touch the bar and the picture stops and goes back to the still. The
+speaker in the corner turns the sound on and off. Live puts the bar back on today and
+on now, and takes you back to the stream.
 
 The thin strip above the bar is the whole day. Tap it to go anywhere in it, which
 is quicker than scrolling an hour at a time.

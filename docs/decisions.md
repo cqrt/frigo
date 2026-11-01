@@ -1039,8 +1039,15 @@ An empty stretch is hopped rather than played as black. The next piece starts wh
 recording starts again, and the playhead jumps with it. An hour of a camera that
 records on motion is mostly gaps, and stopping at every one would make the run useless.
 
-The sound is off. A recording at sixteen times is either a chirp or silence, and the
-live sound is a different stream with no business here.
+The sound follows the speaker on the screen. On, and a recording is heard; off, and it
+is silent, the same button that turns the live sound on and off. The stream's sound
+and a recording's sound never run together: the stream is only asked for sound while
+the stream is what you are watching. At sixteen times the sound is a chirp, which is
+what the speaker is for.
+
+Live puts the bar back on today and on now. Before, pressing Live over yesterday
+left the bar sitting on yesterday while the picture showed the stream, which read as
+the timeline being stuck.
 
 Playback starts only for a moment you moved to. Opening a camera, picking a day or
 coming back to it leaves the still up, and there is a wait of under half a second
@@ -1054,6 +1061,13 @@ showed a moment that never moved. It is now moved on to the piece it has not pla
 And a run that ran out of list was reporting the end of the last piece as its end
 rather than the last moment actually shown, which put the bar back on a moment you had
 already passed.
+
+A third came from the join itself. The moment is read four times a second as the
+piece's start plus the player's position in it, and across a join that reading can
+come back a second short for one sample. The bar going 11, 12, 11, 12 is exactly what
+that looks like, so within a run the moment only ever goes on: a short reading waits
+until the next one passes it. The picture itself does not step back, only the number
+did.
 
 The clips are the biggest thing the app keeps, so the folder is trimmed to 600 MB,
 oldest first, on top of yesterday's going altogether.
