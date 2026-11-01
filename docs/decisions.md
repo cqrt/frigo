@@ -1029,11 +1029,18 @@ which is the same route an event's clip already takes, and hands the player the 
 Seeking inside a piece is free then, and the next piece is asked for while the current
 one plays, so a join passes without a stop.
 
-A piece is two minutes. Longer and the first frame waits on a longer cut, which on
-this server is anywhere from a fifth of a second to three; shorter and the joins come
-round often enough to be seen. One piece is kept in hand, not a pile: the next is only
-asked for once the player has started the one before, so nothing downloads an
-afternoon that no finger ever reaches.
+A piece is two minutes of what is left of a stretch. Frigate lists its recordings as
+the ten second files they are, one touching the next while a camera records, so a
+piece is a dozen of them, taken as one stretch where they touch and ended by a gap.
+That is also why a request every ten seconds would not do: each piece is a request,
+and at eight or sixteen times a piece that short cannot be cut and fetched fast enough,
+which shows as a picture that stops and waits at every join. One piece is kept in hand,
+not a pile: the next is only asked for once the player has started the one before, so
+nothing downloads an afternoon that no finger ever reaches.
+
+Both ends of a piece sit on the edges of those files. The end, so a piece stops where
+a file stops; the start, so the next piece begins on a file's first frame and the
+player can play it without seeking into the middle of a file to find where to begin.
 
 An empty stretch is hopped rather than played as black. The next piece starts wherever
 recording starts again, and the playhead jumps with it. An hour of a camera that
@@ -1062,12 +1069,28 @@ And a run that ran out of list was reporting the end of the last piece as its en
 rather than the last moment actually shown, which put the bar back on a moment you had
 already passed.
 
-A third came from the join itself. The moment is read four times a second as the
-piece's start plus the player's position in it, and across a join that reading can
-come back a second short for one sample. The bar going 11, 12, 11, 12 is exactly what
-that looks like, so within a run the moment only ever goes on: a short reading waits
-until the next one passes it. The picture itself does not step back, only the number
-did.
+A third came from the join itself, and it was not only the number. Frigate does not
+ask ffmpeg to seek to the moment it was given. It writes a list of the files it
+recorded over the stretch and puts `inpoint` on the first, in whole seconds, and ffmpeg
+begins the copy at the keyframe at or before that inpoint. A cut asked for from
+anywhere past the first second of a file therefore comes back up to a keyframe early,
+and that is a moment the piece before has just played: the picture and the clock burned
+into it both go back a second at every join. Measured on a recording whose keyframes
+are 1.42 s apart, `inpoint 4` came back 1.17 s early and `inpoint 9` about 1.4 s.
+
+The app now asks for a moment inside the first second of the file a piece starts in, so
+the inpoint is zero and the cut begins on that file's first frame. The player is then
+given the piece rather than the whole cut: it begins at the piece's own moment inside
+that file and stops at the piece's end, so the second and a half that was asked for
+past the end is never played either.
+
+The moment is sent to the millisecond for the same reason. Rounding it down to a whole
+second pushed the start below the edge of the file the piece began at, and the cut then
+began with the file before it.
+
+The moment readout still only goes on within a run, because a reading four times a
+second can come back a sample short across a join. That was a separate fault, though,
+and fixing only the readout is what left the picture stepping back.
 
 The clips are the biggest thing the app keeps, so the folder is trimmed to 600 MB,
 oldest first, on top of yesterday's going altogether.
@@ -1076,4 +1099,7 @@ Checked on the emulator: a drag and release starting the picture a moment later 
 the still up until the first frame, the playhead walking along the bar, the speed
 button stepping one, two, four, eight, sixteen, a run crossing the end of a recorded
 stretch and carrying on at the next one two hours later, and Live stopping the picture
-and returning to the stream.
+and returning to the stream. For the join: a run at normal speed and a run at eight
+times each crossing five joins with the clock burned into the picture never going back,
+and the first frame of a run showing the moment picked rather than the start of the
+file it fell in.

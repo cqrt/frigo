@@ -24,11 +24,14 @@ import datetime
 import hashlib
 import itertools
 import json
+import math
 import os
 import select
 import socket
 import struct
+import subprocess
 import sys
+import tempfile
 import time
 import zoneinfo
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -42,6 +45,23 @@ FRAMES = [open(os.path.join(HERE, f"frame{i}.jpg"), "rb").read() for i in range(
 STILL = itertools.count()
 # A test pattern, so a clip that plays is obviously playing.
 CLIP = open(os.path.join(HERE, "clip.mp4"), "rb").read()
+# A long recording to cut clips from the way Frigate cuts them, and to hang the
+# day's stretches of recording off in ten second rows, as its database does. Set
+# MOCK_RECORDING to a file to have every clip cut from it, so the joins between
+# one clip and the next can be looked at as they would be on the real server.
+# MOCK_KEYFRAME is how often that recording has a keyframe; a clip cut from it
+# starts at the keyframe at or before the moment asked for, which is what puts a
+# second of picture twice at the join between two clips.
+RECORDING = os.environ.get("MOCK_RECORDING")
+RECORDING_SECONDS = float(os.environ.get("MOCK_RECORDING_SECONDS", "1200"))
+KEYFRAME_SECONDS = float(os.environ.get("MOCK_KEYFRAME", "1.0"))
+FFMPEG = os.environ.get("MOCK_FFMPEG")
+
+# The rows Frigate's database keeps a stretch of recording in. Its segments are
+# ten seconds long and start where the camera's own keyframes do, which is not on
+# a whole second, so asking for a moment by the second lands inside one.
+SEGMENT_SECONDS = 10.0
+SEGMENT_SKEW = 0.37
 
 CAMERAS = {
     "north_cam": {"enabled": True, "friendly_name": "North cam"},
@@ -249,34 +269,75 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(days)
 
         if path.endswith("/recordings") and not path.endswith("/summary"):
-            # The stretches recorded between two moments. Three stretches with a
-            # couple of hours missing between them, the way a camera that only
-            # records on motion looks, so the timeline has gaps to draw round.
+            # The stretches recorded between two moments, in the ten second rows
+            # Frigate keeps them in. Three stretches with a couple of hours
+            # missing between them, the way a camera that only records on motion
+            # looks, so the timeline has gaps to draw round.
             query = parse_qs(urlparse(self.path).query)
             after = float((query.get("after") or ["0"])[0])
             before = float((query.get("before") or [str(after + 86400)])[0])
             hour = (before - after) / 24
             stretches = [(0, 9), (11, 15), (17, 22)]
-            return self.send_json(
-                [
-                    {
-                        "id": f"s{index}",
-                        "start_time": after + start * hour,
-                        "end_time": after + end * hour,
-                        "duration": (end - start) * hour,
-                        "path": f"/media/{index}.mp4",
-                    }
-                    for index, (start, end) in enumerate(stretches)
-                ]
-            )
+            rows = []
+            for start, end in stretches:
+                began = after + start * hour
+                ended = after + end * hour
+                at = began + SEGMENT_SKEW
+                while at < ended:
+                    rows.append(
+                        {
+                            "id": f"r{len(rows)}",
+                            "start_time": round(at, 3),
+                            "end_time": round(min(at + SEGMENT_SECONDS, ended), 3),
+                            "duration": round(min(at + SEGMENT_SECONDS, ended) - at, 3),
+                            "path": f"/media/r{len(rows)}.mp4",
+                        }
+                    )
+                    at += SEGMENT_SECONDS
+            return self.send_json(rows)
 
         if "/recordings/" in path and path.endswith("/snapshot.jpg"):
             # A frame cut from the recording at that moment.
             return self.send_bytes(FRAMES[next(STILL) % len(FRAMES)], "image/jpeg")
 
         if "/start/" in path and path.endswith("/clip.mp4"):
-            # A stretch of recording, cut by ffmpeg on a real server. Here it is
-            # the one test clip.
+            # A stretch of recording, cut by ffmpeg on a real server. With
+            # MOCK_RECORDING it is cut the way Frigate cuts one: the moment asked
+            # for is turned into a whole number of seconds into the segment of
+            # recording holding it, and the cut begins at the keyframe at or
+            # before there. Ask for a moment in the segment's first second and the
+            # cut begins exactly at the segment, which is what the app does; ask
+            # for anything later and it begins up to a keyframe early, which is
+            # what puts a second of picture twice at the join between two pieces.
+            if RECORDING and FFMPEG:
+                try:
+                    start = float(path.split("/start/")[1].split("/")[0])
+                    end = float(path.split("/end/")[1].split("/")[0])
+                except (IndexError, ValueError):
+                    start, end = 0.0, 0.0
+                if end > start:
+                    at = start % RECORDING_SECONDS
+                    rows = at - SEGMENT_SKEW
+                    row = math.floor(rows / SEGMENT_SECONDS) * SEGMENT_SECONDS + SEGMENT_SKEW
+                    into = int(at - row)
+                    began = row if into == 0 else math.floor((row + into) / KEYFRAME_SECONDS) * KEYFRAME_SECONDS
+                    length = min(end - start + (at - began), RECORDING_SECONDS - began)
+                    cut = os.path.join(
+                        tempfile.gettempdir(),
+                        f"clip-{int(start * 1000)}-{int(end * 1000)}.mp4",
+                    )
+                    subprocess.run(
+                        [
+                            FFMPEG, "-y", "-ss", f"{began:.3f}", "-t", f"{length:.3f}",
+                            "-i", RECORDING, "-c", "copy", "-movflags", "+faststart", cut,
+                        ],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        check=False,
+                    )
+                    if os.path.exists(cut):
+                        with open(cut, "rb") as body:
+                            return self.send_bytes(body.read(), "video/mp4")
             return self.send_bytes(CLIP, "video/mp4")
 
         if path.endswith("/latest.jpg"):

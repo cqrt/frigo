@@ -13,6 +13,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Response
 import java.io.File
 import java.io.IOException
+import java.util.Locale
 
 /** What the app is showing: a spinner, the login form, or your cameras. */
 sealed interface Gate {
@@ -308,16 +309,21 @@ class FrigoRepository(
 
     /**
      * A stretch of a camera's recordings, cut by Frigate as it sends it. The
-     * moments are epoch seconds, which is what its own timeline works in.
+     * moments are epoch seconds, which is what its own timeline works in, and they
+     * are sent to the millisecond: which frame a cut begins on turns on a fraction
+     * of a second.
      */
     fun recordingClipSource(camera: String, start: Double, end: Double): ClipSource {
         val current = stored ?: throw FrigateException(401, "Not signed in")
         val token = current.token ?: throw FrigateException(401, "Not signed in")
         return ClipSource(
-            url = "${current.baseUrl}/api/$camera/start/${start.toLong()}/end/${end.toLong()}/clip.mp4",
+            url = "${current.baseUrl}/api/$camera/start/${moment(start)}/end/${moment(end)}/clip.mp4",
             token = token,
         )
     }
+
+    /** A moment written the way a URL is read: digits, then a dot. */
+    private fun moment(seconds: Double): String = String.format(Locale.ROOT, "%.3f", seconds)
 
     /** Which days this camera kept recordings for. */
     suspend fun recordingDays(camera: String, timezone: String): List<RecordingDay> =

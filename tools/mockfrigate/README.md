@@ -69,3 +69,35 @@ path set up behaves, and the app's "No sound came through." can be seen.
 `frame0.jpg` to `frame2.jpg` are generated, not photographed. To make new ones on
 Windows, see `make_frames.ps1`. They only need to be valid JPEGs of different
 sizes, so any replacement will do.
+
+## Clips cut from a recording
+
+Frigate keeps a camera's recordings as ten second files, and cuts a clip out of them
+when it's asked. Point the mock at a long recording and it does the same:
+
+```
+MOCK_RECORDING=/path/to/recording.mp4 \
+MOCK_KEYFRAME=1.42 \
+MOCK_FFMPEG=/path/to/ffmpeg \
+python tools/mockfrigate/mock.py
+```
+
+`MOCK_RECORDING_SECONDS` is how long that recording is, for wrapping a moment round
+to a place in it; it's 1200 unless you say otherwise. `MOCK_KEYFRAME` is how far apart
+its keyframes are, which decides how far a cut overshoots when it's asked for from
+somewhere past the first second of a file.
+
+`/api/<camera>/recordings` then answers the way the real endpoint does, a row for every
+ten second file, starting a third of a second past the whole second, because a camera's
+files start on its own frames rather than on the clock. That offset is the point: a
+request for a moment by the whole second lands inside a file, not on its edge.
+
+A clip request is cut the way Frigate cuts one. The moment is turned into a whole
+number of seconds into the file holding it, and the cut begins at the keyframe at or
+before there, so a clip asked for from the middle of a file comes back early, with a
+second of picture the clip before it already showed. Watch the joins with that on and
+you're watching what the phone does against the real server.
+
+The recording this was made against is 480 by 270 at 12 frames a second, with a
+counter burned in, so a picture that plays is obviously playing and a picture that
+goes back is obviously going back.

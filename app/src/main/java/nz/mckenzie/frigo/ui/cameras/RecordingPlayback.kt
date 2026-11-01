@@ -36,6 +36,7 @@ import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.RecordingSpan
 import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.roundToLong
 
 /** The speeds the playback button steps through, in order. */
 internal val PlaySpeeds = listOf(1f, 2f, 4f, 8f, 16f)
@@ -54,6 +55,69 @@ internal const val SettleMillis = 450L
  * frame does not wait on a long cut.
  */
 private const val ChunkSeconds = 120.0
+
+/**
+ * How far into a stretch of recording to ask Frigate to start a cut. It has to be
+ * past the moment the stretch began, so the stretch before is not what gets cut,
+ * and less than a second in, for the reason [askFrom] gives.
+ */
+private const val RowNudge = 0.05
+
+/**
+ * How much recording to ask for past the end of a piece. Frigate cuts to the second
+ * and drops the rest, so a piece asked for exactly would come back up to a second
+ * short and the picture would sit still before the next one started.
+ */
+private const val TailSeconds = 1.5
+
+/**
+ * How close two stretches of recording have to be to count as one. The files a
+ * camera records one after another are listed as ending and beginning on the same
+ * moment, give or take how the times were rounded.
+ */
+private const val JoinSeconds = 1.0
+
+/**
+ * Where to ask Frigate to start a cut, so that the cut lands exactly on the stretch
+ * of recording the piece starts in.
+ *
+ * Frigate begins a cut at the keyframe at or before the moment it was given. That
+ * moment is the beginning of the stretch plus a whole number of seconds it drops,
+ * and the keyframe it lands on is the one at or before there. Ask for a moment in
+ * the stretch's first second and the keyframe is the stretch's own first frame, so
+ * the cut starts exactly there. Ask for anything later and it starts at the
+ * keyframe before, which is a moment the piece before it already played: the
+ * picture and the clock on it go back a second at every join.
+ *
+ * [before] is where the stretch before this one ends, kept clear of because a
+ * stretch that is recorded as ending a shade over its boundary would otherwise be
+ * the one cut from.
+ */
+private fun askFrom(rowStart: Double, before: Double?): Double {
+    val cleared = if (before == null) rowStart else maxOf(rowStart, before) + RowNudge
+    return cleared.coerceAtMost(rowStart + 0.9)
+}
+
+/**
+ * The piece as something to play: what is played of the file begins where the piece
+ * begins and stops where the piece ends, whatever Frigate cut either side of it.
+ *
+ * [rowStart] is where the stretch of recording the cut was taken from begins, which
+ * is where the file's own first frame is. A piece that begins at a stretch's start
+ * needs no start of its own, and asking for none is asking the player not to seek
+ * into the file to find it.
+ */
+private fun itemFor(file: File, piece: RecordingSpan, rowStart: Double): MediaItem {
+    val into = ((piece.startTime - rowStart) * 1000.0).roundToLong().coerceAtLeast(0L)
+    val length = ((piece.endTime - piece.startTime) * 1000.0).roundToLong().coerceAtLeast(1L)
+    val clipping = MediaItem.ClippingConfiguration.Builder()
+        .setEndPositionMs(into + length)
+    if (into > 0) clipping.setStartPositionMs(into)
+    return MediaItem.Builder()
+        .setUri(Uri.fromFile(file))
+        .setClippingConfiguration(clipping.build())
+        .build()
+}
 
 /**
  * The recording at that moment, playing, in the picture where the still was.
@@ -163,12 +227,17 @@ internal fun RecordingRun(
 
             val piece = pieceFrom(next, spans, until) ?: break
 
+            // The stretch of recording the piece starts in, and the one before it,
+            // which is what the cut has to be kept clear of.
+            val row = spans.lastOrNull { it.startTime <= piece.startTime } ?: piece
+            val before = spans.lastOrNull { it.endTime <= row.startTime }?.endTime
+            val from = askFrom(row.startTime, before)
+            val to = piece.endTime + TailSeconds
+
             val file = try {
                 repository.clipFile(
-                    source = repository.recordingClipSource(camera, piece.startTime, piece.endTime),
-                    // The same key Play uses, so a stretch you watched from the
-                    // button is already on the phone.
-                    key = "$camera-${piece.startTime.toLong()}-${piece.endTime.toLong()}",
+                    source = repository.recordingClipSource(camera, from, to),
+                    key = "$camera-${(from * 1000).roundToLong()}-${(to * 1000).roundToLong()}",
                     onProgress = {},
                 )
             } catch (stop: CancellationException) {
@@ -183,7 +252,7 @@ internal fun RecordingRun(
 
             pieces.add(piece)
             reached = piece.endTime
-            player.addMediaItem(MediaItem.fromUri(Uri.fromFile(file)))
+            player.addMediaItem(itemFor(file, piece, row.startTime))
             when (player.playbackState) {
                 // Ended before the piece got here, which a fast speed makes
                 // ordinary: the piece is next, so the player moves on to it.
@@ -251,17 +320,35 @@ internal fun RecordingRun(
  * The piece of recording to play from a moment: the stretch the moment is in, or
  * the next one when it fell in a gap, cut to [ChunkSeconds] and stopping at the end
  * of that stretch and at [until].
+ *
+ * The stretches Frigate lists are the ten second files it records into, one touching
+ * the next while a camera keeps recording. Two things follow from that. One piece is
+ * worth many of them, because every piece is a request to the server and a request
+ * every ten seconds cannot be cut and fetched fast enough to keep the picture moving
+ * at speed. And a piece ends where one of those files ends, so the next piece begins
+ * exactly there and every cut can be asked to start on a file's first frame rather
+ * than in the middle of one, which is what a player has to seek into.
  */
 internal fun pieceFrom(
     moment: Double,
     spans: List<RecordingSpan>,
     until: Double,
 ): RecordingSpan? {
-    val span = spans.firstOrNull { moment >= it.startTime && moment < it.endTime }
+    val first = spans.firstOrNull { moment >= it.startTime && moment < it.endTime }
         ?: spans.firstOrNull { it.startTime > moment }
         ?: return null
-    val start = maxOf(moment, span.startTime)
-    val end = minOf(span.endTime, until, start + ChunkSeconds)
+    val start = maxOf(moment, first.startTime)
+    val most = minOf(start + ChunkSeconds, until)
+    var end = minOf(first.endTime, most)
+    var index = spans.indexOf(first)
+    while (end < most) {
+        val next = spans.getOrNull(index + 1) ?: break
+        // A gap ends the stretch, and so does the piece being long enough.
+        if (next.startTime > end + JoinSeconds) break
+        if (next.endTime > most) break
+        end = maxOf(end, next.endTime)
+        index++
+    }
     if (end <= start) return null
     return RecordingSpan(startTime = start, endTime = end)
 }
