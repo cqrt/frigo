@@ -8,6 +8,13 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.9.5
+
+- Review says how many alerts and how many detections are left.
+- One button marks everything on the tab as reviewed, without playing any of it.
+- If that was too much, put them back.
+- All time goes back through everything again, not just the last day.
+
 ## 0.9.4
 
 - A recording plays from where you leave the bar again.

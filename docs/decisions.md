@@ -1868,3 +1868,39 @@ there, and it carries on at 1×: the clock burned into the picture reads 02:22:3
 picture can be held together, and the picture is not behind the bar by more than the minute it cannot
 show.
 
+
+## The count comes from the summary, and the list has to reach as far back
+
+Review now says what is left, and one button clears it. Three things about the server had to be
+settled first.
+
+`/api/review/summary` answers a day at a time: `total_alert`, `reviewed_alert`, `total_detection`,
+`reviewed_detection`, one entry per day plus `last24Hours`, which is not a day and is dropped. What is
+left of a day is total minus reviewed. The period on screen decides which days are added up: one day,
+yesterday, the day you picked, or all of them. It is asked with `timezone`, the phone's own, because
+without it the server cuts days somewhere else and the numbers do not match the day buttons.
+
+The two halves are counted separately, and only the summary can do that in one call. The tab on screen
+is asked with its labels and its camera, so its number matches its list. The other tab is asked with
+the camera alone, because its labels are its own. With no labels chosen the two answers are the same,
+so one call serves both.
+
+Then the numbers did not match the lists, and that turned out to be a bug of mine. The review list had
+`after=0` sent for all time, on the reading that zero is the beginning. It is not: the endpoint treats
+a falsy `after` as not given and falls back to the last day, so "All time" was only ever the last
+twenty-four hours, and `Load older` could not reach past it either. The summary said 1,471 alerts were
+left and the list showed fifteen. Sending one, the first second of 1970, lists all 1,471. A day's
+alerts, and the count beside them, now agree.
+
+Clearing happens in two requests' worth of work, however many reviews there are. The ids are collected
+first, walking the same filters the list uses, two hundred at a time; then the whole set goes to
+`/api/reviews/viewed` once. On this server that is eight small calls and 0.06 s each. The walk stops at
+two thousand, which is more than a phone should ever clear in one tap.
+
+There is no confirmation dialog. The list empties, the number goes, and `Put them back` sits in the
+empty state with the ids that were cleared, so the mistake is one tap to undo. A dialog before every
+clear would be noise on the days when clearing a morning's alerts is the whole point.
+
+Checked on the emulator against the real server: 15 alerts for today, `Mark all as reviewed`, the two
+numbers falling to nothing, `No alerts left to review.`, and `Put them back` returning all fifteen. The
+four detections marked while testing were put back on the server afterwards.

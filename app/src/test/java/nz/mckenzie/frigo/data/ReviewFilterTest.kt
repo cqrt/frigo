@@ -75,7 +75,7 @@ class ReviewFilterTest {
         assertEquals(
             listOf(
                 "limit" to "30",
-                "after" to "0",
+                "after" to "1",
                 "before" to "1793491200",
                 "cameras" to "north_cam,door_cam",
                 "labels" to "person,car",
@@ -100,7 +100,7 @@ class ReviewFilterTest {
         assertEquals(
             listOf(
                 "limit" to "30",
-                "after" to "0",
+                "after" to "1",
                 "severity" to "detection",
                 "reviewed" to "0",
             ),

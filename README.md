@@ -59,9 +59,11 @@ photos and there's no permission to grant.
 **Review.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review
 rather than twenty events. Tap one to watch the clip of that time. Alerts and
-detections are separate halves of the list. Watch past halfway and the review
-counts as watched, here and on the web page, so it leaves the list. Show reviewed
-brings the watched ones back. Pull the list down for what has happened since. The
+detections are separate halves of the list, and each half says how many are left.
+Watch past halfway and the review counts as watched, here and on the web page, so
+it leaves the list. Show reviewed brings the watched ones back. When you've seen
+enough of a day, Mark all as reviewed clears the rest without playing any of it,
+and Put them back undoes that. Pull the list down for what has happened since. The
 tune icon in the corner opens Alerts and detections, where you choose the objects
 behind each.
 
@@ -206,6 +208,11 @@ The chips above the list narrow it. The first names a camera, or all of them.
 Labels picks what was seen, and the day chip covers all time, today, yesterday, or
 a single day from the calendar. Show reviewed sits beside them. Clear puts the
 narrowing back, and Load older keeps it.
+
+The number beside each half is what's left to look at over the days the day chip
+covers, so it moves when you change the day or the camera. Nothing is shown when
+there's nothing left. Mark all as reviewed sits under the list, and what it
+cleared can go back from the empty list it leaves.
 
 The labels offered are the ones turned on for the tab: the alert labels on Alerts,
 the detection labels on Detections. A detection list left empty means every other

@@ -259,7 +259,25 @@ class FrigoRepository(
      * web page drops it from its list too.
      */
     suspend fun markReviewReviewed(reviewId: String) {
-        authorized { baseUrl, token -> api.markReviewed(baseUrl, token, reviewId) }
+        authorized { baseUrl, token ->
+            api.markReviews(baseUrl, token, listOf(reviewId), reviewed = true)
+        }
+    }
+
+    /** Says a set of reviews has been watched, or puts them back. */
+    suspend fun markReviews(ids: List<String>, reviewed: Boolean) {
+        authorized { baseUrl, token -> api.markReviews(baseUrl, token, ids, reviewed) }
+    }
+
+    /**
+     * What each day held and how much of it has been watched, narrowed the way
+     * the list is: the camera you picked, and the labels this tab is set to.
+     */
+    suspend fun reviewDayCounts(
+        cameras: List<String> = emptyList(),
+        labels: List<String> = emptyList(),
+    ): List<ReviewDayCount> = authorized { baseUrl, token ->
+        api.reviewDayCounts(baseUrl, token, cameras, labels)
     }
 
     /**

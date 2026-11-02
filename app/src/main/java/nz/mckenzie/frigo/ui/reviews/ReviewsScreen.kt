@@ -40,7 +40,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -98,7 +101,20 @@ fun ReviewsScreen(
                     onClick = { viewModel.show(kind) },
                     shape = SegmentedButtonDefaults.itemShape(index, ReviewKind.entries.size),
                 ) {
-                    Text(kind.label)
+                    val left = state.left(kind)
+                    Text(
+                        buildAnnotatedString {
+                            append(kind.label)
+                            // How much of this half is left. Nothing is said when
+                            // there's nothing left, so a cleared tab reads as
+                            // plain words again.
+                            if (left != null && left > 0) {
+                                withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                                    append("  $left")
+                                }
+                            }
+                        },
+                    )
                 }
             }
         }
@@ -182,20 +198,16 @@ fun ReviewsScreen(
                 ) {
                     Text(
                         text = when {
+                            // A list you just cleared says so, even when a period
+                            // or a label narrows it: "nothing for these filters"
+                            // would read like something went wrong.
+                            state.justRead.isNotEmpty() -> state.kind.emptyLeft()
+
                             state.narrowed -> "Nothing for these filters."
 
-                            state.showReviewed -> if (state.kind == ReviewKind.Alerts) {
-                                "No alerts yet. Frigate makes one when something you care " +
-                                    "about is seen in a zone with alerts on."
-                            } else {
-                                "No detections yet."
-                            }
+                            state.showReviewed -> state.kind.emptyAll()
 
-                            else -> if (state.kind == ReviewKind.Alerts) {
-                                "No alerts left to review."
-                            } else {
-                                "No detections left to review."
-                            }
+                            else -> state.kind.emptyLeft()
                         },
                         style = MaterialTheme.typography.bodyLarge,
                     )
@@ -208,6 +220,14 @@ fun ReviewsScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                    if (state.justRead.isNotEmpty()) {
+                        TextButton(
+                            onClick = viewModel::undoMarkAll,
+                            enabled = !state.marking,
+                        ) {
+                            Text("Put them back")
+                        }
                     }
                 }
 
@@ -222,6 +242,28 @@ fun ReviewsScreen(
                             review = review,
                             onClick = { opened = review },
                         )
+                    }
+                    if (!state.showReviewed) {
+                        item("mark") {
+                            Box(
+                                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                if (state.marking) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    ) {
+                                        CircularProgressIndicator(Modifier.size(18.dp))
+                                        Text("Marking them as reviewed", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                } else {
+                                    TextButton(onClick = viewModel::markAllRead) {
+                                        Text("Mark all as reviewed")
+                                    }
+                                }
+                            }
+                        }
                     }
                     if (state.hasMore) {
                         item("more") {

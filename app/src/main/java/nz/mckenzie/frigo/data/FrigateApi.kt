@@ -1,6 +1,7 @@
 package nz.mckenzie.frigo.data
 
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -18,6 +19,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.io.File
 import java.net.SocketTimeoutException
+import java.time.ZoneId
 import java.util.concurrent.CancellationException
 
 /**
@@ -227,18 +229,58 @@ class FrigateApi(
     }
 
     /**
-     * Tells Frigate a review has been watched, which is what takes it out of the
-     * list for everyone, the web page included.
+     * Tells Frigate a set of reviews has been watched, which is what takes them
+     * out of the list for everyone, the web page included. The same call with
+     * `false` puts them back.
+     *
+     * The whole set goes in one request. The server takes a list of ids and
+     * answers with nothing, so a hundred reviews cost one trip rather than a
+     * hundred.
      */
-    fun markReviewed(baseUrl: String, token: String, reviewId: String) {
-        val body = """{"ids":["$reviewId"],"reviewed":true}"""
-            .toRequestBody("application/json".toMediaType())
+    fun markReviews(baseUrl: String, token: String, ids: List<String>, reviewed: Boolean) {
+        val body = buildJsonObject {
+            put("ids", JsonArray(ids.map { JsonPrimitive(it) }))
+            put("reviewed", reviewed)
+        }.toString().toRequestBody(JSON)
         val request = Request.Builder()
             .url(url(baseUrl, "/api/reviews/viewed"))
             .header("Authorization", "Bearer $token")
             .post(body)
             .build()
         request.okBody()
+    }
+
+    /**
+     * How many reviews each day held, and how many of them have been watched,
+     * narrowed the way the list is. `last24Hours` is the one entry that isn't a
+     * day, so it is left out rather than counted twice.
+     *
+     * Days are cut on the phone's own clock. Asked for with no timezone, the
+     * server would cut them somewhere else and the numbers wouldn't match the day
+     * buttons on screen.
+     */
+    fun reviewDayCounts(
+        baseUrl: String,
+        token: String,
+        cameras: List<String>,
+        labels: List<String>,
+    ): List<ReviewDayCount> {
+        val builder = url(baseUrl, "/api/review/summary").newBuilder()
+            .addQueryParameter("timezone", ZoneId.systemDefault().id)
+        if (cameras.isNotEmpty()) builder.addQueryParameter("cameras", cameras.joinToString(","))
+        if (labels.isNotEmpty()) builder.addQueryParameter("labels", labels.joinToString(","))
+
+        val request = Request.Builder()
+            .url(builder.build())
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        val counted = json.decodeFromString(
+            MapSerializer(String.serializer(), ReviewDayCount.serializer()),
+            request.okBody(),
+        )
+        return counted.map { (day, count) -> count.copy(day = day) }
+            .filter { it.day != "last24Hours" }
     }
 
     /**
@@ -610,9 +652,9 @@ class FrigateApi(
  * parameter is answered with the last one alone, which was checked against
  * 0.18.2.
  *
- * `after` is sent as zero rather than left out. Left out, the server only looks
- * at the last day, and asking for older reviews would bring nothing back because
- * the day window never moves.
+ * `after` is sent as one rather than zero. Zero is read as falsy by the server and
+ * treated as not given, which means only the last day is looked at however far
+ * back you ask. One is the first second of 1970, which is everything.
  */
 internal fun reviewQuery(
     severity: String?,
@@ -626,7 +668,7 @@ internal fun reviewQuery(
     val query = mutableListOf("limit" to limit.toString())
     // Whole seconds: a double put into a URL comes out as 1.7934444E9, and the
     // digits past that are the edges of the day.
-    query += "after" to ((after ?: 0.0).toLong().toString())
+    query += "after" to ((after ?: 1.0).toLong().toString())
     if (before != null) query += "before" to before.toLong().toString()
     if (cameras.isNotEmpty()) query += "cameras" to cameras.joinToString(",")
     if (labels.isNotEmpty()) query += "labels" to labels.joinToString(",")

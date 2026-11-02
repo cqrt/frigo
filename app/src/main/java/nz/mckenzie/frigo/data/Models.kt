@@ -133,6 +133,23 @@ data class ReviewData(
     val detections: List<String> = emptyList(),
 )
 
+/**
+ * One day of reviews, as `/api/review/summary` counts them: how many there were
+ * and how many have been watched.
+ *
+ * The answer holds a day per key, plus one entry for the last twenty-four hours
+ * which isn't a day at all. [day] is filled in from the key, and that entry is
+ * left out by the caller.
+ */
+@Serializable
+data class ReviewDayCount(
+    val day: String = "",
+    @SerialName("total_alert") val totalAlerts: Int = 0,
+    @SerialName("reviewed_alert") val reviewedAlerts: Int = 0,
+    @SerialName("total_detection") val totalDetections: Int = 0,
+    @SerialName("reviewed_detection") val reviewedDetections: Int = 0,
+)
+
 /** A camera as the app shows it. */
 data class Camera(
     val name: String,

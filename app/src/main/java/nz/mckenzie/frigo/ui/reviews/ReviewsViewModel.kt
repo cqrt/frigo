@@ -12,6 +12,7 @@ import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.FrigoRepository
+import nz.mckenzie.frigo.data.ReviewDayCount
 import nz.mckenzie.frigo.data.ReviewKind
 import nz.mckenzie.frigo.data.ReviewSettings
 import nz.mckenzie.frigo.data.labelsFor
@@ -35,6 +36,14 @@ data class ReviewsUiState(
     val showReviewed: Boolean = false,
     /** Frigate's own lists, which say what this tab can be narrowed to. */
     val settings: ReviewSettings? = null,
+    /** What the server says each day held, narrowed the way this tab is. */
+    val counts: List<ReviewDayCount>? = null,
+    /** The same with no labels: what the tab you're not on has left. */
+    val otherCounts: List<ReviewDayCount>? = null,
+    /** Whether a whole list is being marked read, or put back. */
+    val marking: Boolean = false,
+    /** The reviews "Mark these as read" just cleared, so they can go back. */
+    val justRead: List<String> = emptyList(),
 ) {
     /** The labels this tab offers, for all cameras or the one picked. */
     val labelsOn: List<String>
@@ -43,6 +52,12 @@ data class ReviewsUiState(
     /** Whether a filter narrows the list at all. */
     val narrowed: Boolean
         get() = camera != null || chosenLabels.isNotEmpty() || period != Period.All
+
+    /** How much of one tab is left to look at, or null while the server hasn't said. */
+    fun left(kind: ReviewKind): Int? {
+        val counted = if (kind == this.kind) counts else otherCounts
+        return counted?.left(kind, period)
+    }
 }
 
 class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
@@ -63,7 +78,13 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
         // The two tabs hold different lists of labels, so a choice made on one
         // doesn't carry to the other.
         _state.update {
-            it.copy(kind = kind, chosenLabels = emptySet(), reviews = emptyList(), hasMore = true)
+            it.copy(
+                kind = kind,
+                chosenLabels = emptySet(),
+                reviews = emptyList(),
+                hasMore = true,
+                justRead = emptyList(),
+            )
         }
         refresh()
     }
@@ -71,7 +92,7 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
     fun selectCamera(camera: String?) {
         if (_state.value.camera == camera) return
         _state.update { current ->
-            val next = current.copy(camera = camera)
+            val next = current.copy(camera = camera, justRead = emptyList())
             // A label this camera can't have would narrow the list to nothing
             // while the chip had no way to say it was on.
             next.copy(chosenLabels = next.chosenLabels.intersect(next.labelsOn.toSet()))
@@ -82,6 +103,7 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
     fun toggleLabel(label: String) {
         _state.update { current ->
             current.copy(
+                justRead = emptyList(),
                 chosenLabels = if (label in current.chosenLabels) {
                     current.chosenLabels - label
                 } else {
@@ -94,20 +116,32 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
 
     fun setPeriod(period: Period) {
         if (_state.value.period == period) return
-        _state.update { it.copy(period = period) }
+        _state.update { it.copy(period = period, justRead = emptyList()) }
         refresh()
     }
 
     fun clearFilters() {
         _state.update {
-            it.copy(camera = null, chosenLabels = emptySet(), period = Period.All)
+            it.copy(
+                camera = null,
+                chosenLabels = emptySet(),
+                period = Period.All,
+                justRead = emptyList(),
+            )
         }
         refresh()
     }
 
     fun setShowReviewed(on: Boolean) {
         if (_state.value.showReviewed == on) return
-        _state.update { it.copy(showReviewed = on, reviews = emptyList(), hasMore = true) }
+        _state.update {
+            it.copy(
+                showReviewed = on,
+                reviews = emptyList(),
+                hasMore = true,
+                justRead = emptyList(),
+            )
+        }
         viewModelScope.launch { runCatching { repository.setShowReviewed(on) } }
         refresh()
     }
@@ -117,6 +151,7 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
         val (after, before) = current.period.range()
         viewModelScope.launch {
             _state.update { it.copy(loading = true, error = null) }
+            count(current)
             runCatching {
                 repository.reviews(
                     severity = current.kind.apiValue,
@@ -144,6 +179,29 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
     }
 
     /**
+     * Asks the server how much is left on each half of the page.
+     *
+     * This tab is counted with its labels, because a count that ignored them
+     * would say there's more left than the list can show. The other tab is
+     * counted without labels, since its labels are its own. With no labels
+     * chosen the two answers are the same, so the one call serves both.
+     */
+    private suspend fun count(current: ReviewsUiState = _state.value) {
+        val cameras = listOfNotNull(current.camera)
+        val labels = current.chosenLabels.toList()
+        val mine = runCatching { repository.reviewDayCounts(cameras, labels) }
+        val others = if (labels.isEmpty()) mine else runCatching {
+            repository.reviewDayCounts(cameras)
+        }
+        _state.update {
+            it.copy(
+                counts = mine.getOrNull() ?: it.counts,
+                otherCounts = others.getOrNull() ?: it.otherCounts,
+            )
+        }
+    }
+
+    /**
      * Said once a clip is over half watched, which is when Frigate counts a
      * review as seen. The server keeps that, so the web page drops it too.
      */
@@ -163,11 +221,97 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
                             current.copy(reviews = current.reviews.filterNot { it.id == review.id })
                         }
                     }
+                    count()
                 }
                 .onFailure { error ->
                     _state.update { it.copy(error = error.friendlyMessage()) }
                 }
         }
+    }
+
+    /**
+     * Marks everything the filters would show as reviewed, without playing any
+     * of it.
+     *
+     * The ids come from walking the same list the screen shows, two hundred at a
+     * time, because the server takes a whole list and the list is more than one
+     * page. The walk stops at a limit, since clearing a phone's worth of alerts
+     * in one tap is the point and clearing ten thousand is not.
+     */
+    fun markAllRead() {
+        val current = _state.value
+        if (current.marking) return
+        val (after, before) = current.period.range()
+        viewModelScope.launch {
+            _state.update { it.copy(marking = true, error = null) }
+            runCatching {
+                val ids = idsToRead(current, after, before)
+                if (ids.isNotEmpty()) repository.markReviews(ids, reviewed = true)
+                ids
+            }
+                .onSuccess { ids ->
+                    _state.update {
+                        it.copy(
+                            marking = false,
+                            justRead = ids,
+                            reviews = when {
+                                ids.isEmpty() -> it.reviews
+                                it.showReviewed -> it.reviews.map { review ->
+                                    review.copy(hasBeenReviewed = true)
+                                }
+                                else -> emptyList()
+                            },
+                            hasMore = false,
+                        )
+                    }
+                    refresh()
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(marking = false, error = error.friendlyMessage()) }
+                }
+        }
+    }
+
+    /** Puts back everything [markAllRead] just cleared. */
+    fun undoMarkAll() {
+        val ids = _state.value.justRead
+        if (ids.isEmpty() || _state.value.marking) return
+        viewModelScope.launch {
+            _state.update { it.copy(marking = true, error = null) }
+            runCatching { repository.markReviews(ids, reviewed = false) }
+                .onSuccess {
+                    _state.update { it.copy(marking = false, justRead = emptyList()) }
+                    refresh()
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(marking = false, error = error.friendlyMessage()) }
+                }
+        }
+    }
+
+    /** Every id the current filters would show, oldest page last, up to a limit. */
+    private suspend fun idsToRead(
+        state: ReviewsUiState,
+        after: Double?,
+        before: Double?,
+    ): List<String> {
+        val ids = mutableListOf<String>()
+        var cursor = before
+        while (ids.size < MARK_LIMIT) {
+            val page = repository.reviews(
+                severity = state.kind.apiValue,
+                limit = MARK_PAGE,
+                before = cursor,
+                after = after,
+                cameras = listOfNotNull(state.camera),
+                labels = state.chosenLabels.toList(),
+                showReviewed = false,
+            )
+            ids += page.map { it.id }
+            if (page.size < MARK_PAGE) break
+            cursor = page.last().startTime
+        }
+        return ids.distinct().take(MARK_LIMIT)
     }
 
     fun loadMore() {
@@ -215,6 +359,12 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
 
     companion object {
         private const val PAGE = 30
+
+        /** A page for the walk that collects ids, which the server takes up to 200 at a time. */
+        private const val MARK_PAGE = 200
+
+        /** What "Mark these as read" will clear in one go. More than this is not a phone's job. */
+        private const val MARK_LIMIT = 2000
 
         fun factory(container: AppContainer) = viewModelFactory {
             initializer { ReviewsViewModel(container.repository) }
