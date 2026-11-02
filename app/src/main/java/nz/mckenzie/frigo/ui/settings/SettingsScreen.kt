@@ -234,6 +234,15 @@ fun SettingsScreen(
                     title = "Signed in as",
                     value = username,
                 )
+                CardDivider()
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = { scope.launch { repository.signOut() } }) {
+                        Text("Sign out")
+                    }
+                }
             }
 
             Group("Notifications") {
@@ -490,15 +499,6 @@ fun SettingsScreen(
                 }
             }
 
-            Button(
-                onClick = { scope.launch { repository.signOut() } },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-            ) {
-                Text("Sign out")
-            }
-
             Group("About") {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -515,8 +515,7 @@ fun SettingsScreen(
                 }
             }
 
-            // Clear of the sign out button, so a thumb reaching for the bottom of
-            // the page finds the version rather than the way out.
+            // Clear of the bottom of the page, so the last card is not against the bar.
             Spacer(Modifier.height(24.dp))
         }
     }

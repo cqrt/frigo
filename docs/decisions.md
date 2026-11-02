@@ -1999,3 +1999,13 @@ Delete takes the row away first and puts it back if the server turns it down, so
 visible rather than lost. Rename and delete both wait behind a dialog, delete because the file is
 gone for good, rename because the name is typed.
 
+
+## Sign out belongs to the server it signs out of
+
+Sign out was a filled button across the width at the bottom of Settings. It read as the most
+important thing on the page, and it sat right where a thumb comes to rest when the page is scrolled
+to the end, so a wrong tap was easy.
+
+It is a text button at the foot of the Server card instead, under the name it's signed in as. That
+card already says which server you're on and who you are, so the way out of it belongs there, and a
+text button is the size the rest of the cards use for a plain action.

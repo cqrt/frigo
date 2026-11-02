@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.9.9
+
+- Sign out is a small button in the Server card now, not a big one at the bottom of Settings.
+
 ## 0.9.8
 
 - The home page has two layouts now: a grid, and one camera to a row.
