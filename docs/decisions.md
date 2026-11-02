@@ -1586,7 +1586,7 @@ happens where the stretches are read, so the bar, the day strip and the pieces a
 cut from all agree, and it is done again after the twenty-second tail is stitched on,
 because the two halves meet at a moment neither of them chose.
 
-## What Frigate flags is edited through its settings API
+## Alerts and detections are edited through Frigate's settings API
 
 The four settings behind Review are Frigate's own: whether alerts are made, which objects make
 them, the same for detections. They are read from `/api/config`, which any signed-in account may
@@ -1612,11 +1612,16 @@ A 403 is thrown as `NotAnAdminException`, not as `FrigateException`. The reposit
 `FrigateException` as an aged-out token and retries after fetching a fresh one, which does nothing
 for an account that simply isn't allowed to change anything.
 
-The label list is built from the detector's `model.labelmap` rather than `/api/labels`. The server's
-own list there is the labels it has seen events for, four names on this server, where the label map
-is the ninety COCO names the model can actually say. Anything already tracked or already chosen is
-added to the map's names, so a label that is in use never falls out of the picker. Zero in a label
-map is the backdrop, `background`, and is left out because nothing can be flagged as it.
+The picker offers Frigate's own labels: bark, car, cat, fire_alarm, glass, person, scream, smash,
+smoke_detector, speech and yell. Anything already tracked or already chosen is added to them, so a
+label in use never falls out of the picker.
+
+The two other places a list could come from both read wrong. `/api/labels` is the labels the server
+has seen events for, four of them here, so most of what can be chosen would be missing from it. The
+detector's `model.labelmap` is the ninety COCO names the model was trained on, which is what the
+model can recognise rather than what Frigate acts on: it offered `airplan`, a misspelling in the
+server's own map, `background`, the class numbered zero, and no sounds at all. Read on the emulator,
+eleven names a person recognises against ninety they don't.
 
 The picker will not let the alert list be emptied, because Frigate reads an empty list as no alert
 labels and would stop making alerts without saying so; turning Alerts off is the honest way to do
@@ -1685,11 +1690,12 @@ the 16:06:31 it had paused on, the Live pill still up, and the bar and the line 
 today and on now. The emulator decodes 1440p in software at about two thirds of real time, so
 ten seconds behind is what it does while playing; the phone is a second to two.
 
-With what Frigate flags: the tune icon on Review opened the page on All cameras with Alerts and
-Detections both on, Person and Car under Alerts, and Everything else under Detections, the camera
-row running off the right edge and scrolling, and the note under the cards saying every camera
-follows these. The alert picker listed the tracked Person first and marked, Car ticked further down,
-the names in alphabetical order with the model's `background` left out, the search box narrowing to
-Car and Carrot on `car`, and Done greyed out once nothing was ticked. Flipping Alerts off from the
-app took effect on the server with no error and no restart, `/api/config` showing alerts off for
-every camera; flipping it back on had the same effect in reverse.
+With Alerts & Detections: the tune icon on Review opened the page on All cameras with Alerts
+and Detections both on, Person and Car under Alerts, and Everything else under Detections, the
+camera row running off the right edge and scrolling, and a sentence under each card saying what
+it sets. The alert picker offered the eleven Frigate labels and nothing else, Car, Cat and Person
+marked as tracked and in that order above the rest, Car and Person ticked, the search box
+narrowing the list, and Done greyed out with a line saying to pick one or turn Alerts off once
+nothing was ticked. Flipping Alerts off from the app took effect on the server with no error and
+no restart, `/api/config` showing alerts off for every camera; flipping it back on did the same
+in reverse.

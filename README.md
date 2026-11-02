@@ -62,8 +62,8 @@ rather than twenty events. Tap one to watch the clip of that time. Alerts and
 detections are separate halves of the list. Watch past halfway and the review
 counts as watched, here and on the web page, so it leaves the list. Show reviewed
 brings the watched ones back. Pull the list down for what has happened since. The
-tune icon in the corner opens what Frigate flags, where you set which objects
-make an alert and which make a detection.
+tune icon in the corner opens Alerts & Detections, where you choose the labels
+behind each.
 
 **Explore.** What Frigate has recorded, newest first, with thumbnails, the way
 the Explore page on the server has it. Narrow it by camera, by what was seen, by
@@ -202,14 +202,16 @@ A review's picture is the first thing it saw. Frigate keeps a separate thumbnail
 for the review, but it sits behind the web server rather than the API, so the app
 takes the event's picture instead, which is the same one.
 
-## Changing what's flagged
+## Alerts and detections
 
-The tune icon on Review opens a page for the two lists. Alerts has a switch and
-the objects that make one. Detections has the same, and empty there means
-everything that isn't an alert. Tap **Change** to pick the objects, with a search
-box and the ones your detectors already track marked at the top.
+The tune icon on Review opens a page for the two lists. Alerts has a switch and the
+labels that make one. Detections has the same, and empty there means every other
+label. Tap **Change** to pick them, with a search box and the labels your cameras
+track marked at the top.
 
-A change goes to the server as you make it, so the next thing Frigate sees
+The labels are Frigate's own: bark, car, cat, fire alarm, glass, person, scream,
+smash, smoke detector, speech and yell, plus anything already in use on your
+server. A change goes to the server as you make it, so the next thing Frigate sees
 follows it and nothing restarts. The row along the top picks the scope: all
 cameras, or one of them. A camera you never pick follows the shared settings.
 

@@ -89,9 +89,10 @@ fun ReviewSettingsScreen(
         return
     }
 
+
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("What Frigate flags") },
+            title = { Text("Alerts & Detections") },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -178,7 +179,7 @@ fun ReviewSettingsScreen(
                     summary = shown.alertLabels.takeIf { it.isNotEmpty() }
                         ?.joinToString(", ") { it.labelName() }
                         ?: "Nothing",
-                    detail = "One of these seen in a zone makes an alert.",
+                    detail = "Settings for which tracked objects generate alerts.",
                     changeable = page.admin && !state.busy,
                     onToggle = viewModel::setAlertsOn,
                     onChange = { picking = ReviewLabels.Alerts },
@@ -193,21 +194,12 @@ fun ReviewSettingsScreen(
                         shown.detectionLabels.isEmpty() -> "Nothing"
                         else -> shown.detectionLabels.joinToString(", ") { it.labelName() }
                     },
-                    detail = "These fill the list, but aren't alerts.",
+                    detail = "Settings for which tracked objects generate detections " +
+                        "(non-alert).",
                     changeable = page.admin && !state.busy,
                     onToggle = viewModel::setDetectionsOn,
                     onChange = { picking = ReviewLabels.Detections },
                     modifier = Modifier.padding(horizontal = 12.dp),
-                )
-
-                Text(
-                    text = state.scope?.let { name ->
-                        val title = page.cameras.firstOrNull { it.name == name }?.title ?: name
-                        "Only $title."
-                    } ?: "Every camera that doesn't have its own settings follows these.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
             }
         }
@@ -324,25 +316,23 @@ private fun LabelPicker(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         )
 
-        val hint = if (kind == ReviewLabels.Alerts) {
-            if (nothingTicked) {
-                "Pick at least one, or turn Alerts off to stop them altogether."
-            } else {
-                "One of these seen in a zone makes an alert."
-            }
-        } else {
-            "Tick what makes a detection. Leave them all unticked and every object does."
+        val hint = when {
+            !nothingTicked -> null
+            kind == ReviewLabels.Alerts -> "Pick at least one, or turn Alerts off."
+            else -> "None ticked means every other object."
         }
-        Text(
-            text = hint,
-            style = MaterialTheme.typography.bodySmall,
-            color = if (kind == ReviewLabels.Alerts && nothingTicked) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
+        if (hint != null) {
+            Text(
+                text = hint,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (kind == ReviewLabels.Alerts) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
 
         if (listed.isEmpty()) {
             Text(

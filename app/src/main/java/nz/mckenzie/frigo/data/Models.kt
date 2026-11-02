@@ -19,8 +19,6 @@ data class FrigateConfig(
     val review: ReviewBlockConfig = ReviewBlockConfig(),
     val objects: TrackedObjects = TrackedObjects(),
     val cameras: Map<String, CameraConfig> = emptyMap(),
-    val model: DetectorModelConfig? = null,
-    val detectors: Map<String, DetectorEntryConfig> = emptyMap(),
 )
 
 /**
@@ -60,18 +58,11 @@ data class ReviewFlagConfig(
     val enabled: Boolean = true,
     /**
      * Absent on a camera means it follows the camera above it. Absent on
-     * detections means every other object, and absent on alerts means the two
+     * detections means every other object, and absent on alerts means the list
      * Frigate starts with.
      */
     val labels: List<String>? = null,
 )
-
-/** One detector, which carries the model and with it the list of names it can say. */
-@Serializable
-data class DetectorEntryConfig(val model: DetectorModelConfig? = null)
-
-@Serializable
-data class DetectorModelConfig(val labelmap: Map<String, String>? = null)
 
 @Serializable
 data class FrigateEvent(
@@ -247,7 +238,7 @@ data class ReviewFlags(
 data class ReviewSettings(
     val all: ReviewFlags,
     val cameras: Map<String, ReviewFlags>,
-    /** Every object the detector can name, the tracked ones first. */
+    /** Every label Frigate can flag, the tracked ones first. */
     val objects: List<String>,
     val tracked: Set<String>,
 )
@@ -260,15 +251,22 @@ data class ReviewPage(
 )
 
 /**
- * What Frigate flags, read from its settings file.
+ * The labels Frigate flags by itself: the objects it follows and the sounds it
+ * listens for. Its own settings page offers the same names.
+ */
+val FrigateLabels = listOf(
+    "bark", "car", "cat", "fire_alarm", "glass", "scream",
+    "person", "smash", "smoke_detector", "speech", "yell",
+).sorted()
+
+/**
+ * Alerts and detections, read from Frigate's settings file.
  *
- * The list to choose from is built the way Frigate's own page builds it: the
- * names in the model the detector runs, plus anything already tracked or already
- * chosen. A label in use therefore never falls out of the picker, even when the
- * model has never heard of it.
- *
- * A model's label map numbers its classes from zero, and zero is the backdrop it
- * calls `background`. Nothing can be flagged as that, so it is left out.
+ * The list to choose from is [FrigateLabels], plus anything already tracked or
+ * already chosen. A label in use therefore never falls out of the picker, even
+ * when Frigate doesn't offer it. The label map the detector runs is deliberately
+ * not used: it holds the ninety names the model was trained on, which is not the
+ * set Frigate acts on, and most of them no camera here can see.
  */
 fun FrigateConfig.reviewSettings(): ReviewSettings {
     val tracked = (objects.track + cameras.values.flatMap { it.objects.track })
@@ -276,9 +274,7 @@ fun FrigateConfig.reviewSettings(): ReviewSettings {
         .toSet()
 
     val objects = LinkedHashSet<String>()
-    model?.labelmap?.values?.let { objects += it }
-    detectors.values.forEach { detector -> detector.model?.labelmap?.values?.let { objects += it } }
-    objects -= "background"
+    objects += FrigateLabels
     objects += tracked
     objects += review.alerts.labels.orEmpty()
     objects += review.detections.labels.orEmpty()

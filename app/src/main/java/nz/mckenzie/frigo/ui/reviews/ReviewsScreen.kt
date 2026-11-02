@@ -71,7 +71,7 @@ fun ReviewsScreen(
             title = { Text("Review") },
             actions = {
                 IconButton(onClick = onOpenSettings) {
-                    Icon(FrigoIcons.Tune, contentDescription = "What Frigate flags")
+                    Icon(FrigoIcons.Tune, contentDescription = "Alerts and detections")
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),

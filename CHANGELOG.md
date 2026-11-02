@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.8.3
+
+- The labels on the settings page are Frigate's own, eleven of them, rather than every object the model can name.
+- The page is called Alerts & Detections, and each card says what it sets instead of the note at the bottom.
+
 ## 0.8.2
 
 - Review has a settings page, so you can choose which objects make an alert or a detection, for all cameras or just one.
