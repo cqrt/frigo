@@ -141,6 +141,14 @@ private const val StatusEveryMillis = 8_000L
 private const val SilentReadings = 2
 
 /**
+ * How long the screen waits for the camera's own stream before Frigate's still is
+ * drawn in its place. The still keeps being shown while the video arrives and is
+ * taken away when the first frame is drawn, so this decides only how long the screen
+ * is empty, not what the camera's own stream is given.
+ */
+private const val StandInMillis = 2_500L
+
+/**
  * How long the camera's own stream is given to put a picture up before the screen
  * settles for Frigate's stills. Long enough to cover a slow connection to a camera
  * that is busy, short enough that a route that has stopped working does not look
@@ -212,6 +220,11 @@ fun PlayerScreen(
     // with its whole picture and its sound on one connection; Frigate's stills are
     // what it falls back to when that doesn't answer.
     var source by remember(watching) { mutableStateOf(LiveSource.Camera) }
+    // Whether the camera's own stream has drawn a frame. Until it has, the stills
+    // can stand in on the picture rather than the screen staying empty.
+    var ownFrame by remember(watching) { mutableStateOf(false) }
+    // Whether the stills are standing in while the camera's own stream starts.
+    var standingIn by remember(watching) { mutableStateOf(false) }
     // The address of the camera's own stream. Missing only if the app has somehow
     // lost its sign-in, in which case the stills are what get drawn.
     val ownStream = remember(watching) {
@@ -320,27 +333,34 @@ fun PlayerScreen(
         repository.setStreamChoice(watching, height, rate)
     }
 
-    // The camera's own stream goes up first, and is given a few seconds to show
-    // something. A phone on mobile data, a proxy that has lost the video path, or a
-    // server that has just restarted all end up on Frigate's stills rather than on a
-    // spinner. Opening the camera again tries the camera's own stream again.
+    // The camera's own stream goes up first and is given a couple of seconds on its
+    // own. After that Frigate's still is drawn in the same place, so a camera that is
+    // slow to answer shows a picture rather than an empty screen, and the video
+    // replaces it the moment its first frame is drawn. A phone on mobile data, a
+    // proxy that has lost the video path, or a server that has just restarted end up
+    // on the stills for good rather than on a spinner. Opening the camera again tries
+    // the camera's own stream again.
     LaunchedEffect(watching, streaming, source) {
         if (!streaming || source != LiveSource.Camera) return@LaunchedEffect
         connecting = true
         problem = null
-        delay(OwnStreamGraceMillis)
-        if (connecting) source = LiveSource.Stills
+        delay(StandInMillis)
+        if (!ownFrame) standingIn = true
+        delay(OwnStreamGraceMillis - StandInMillis)
+        if (!ownFrame) source = LiveSource.Stills
     }
 
-    // Frigate's stills, one frame at a time, and only when the camera's own stream
-    // isn't what's on screen. The stream follows the choice itself rather than the
-    // two numbers inside it, so reading the choice out is what starts it. Keyed on
-    // them instead, a camera whose choice happened to be 720p at five frames a
-    // second -- the same two numbers it opens at while the choice is not yet known --
-    // would never open at all.
-    LaunchedEffect(watching, choice, streaming, source) {
+    // Frigate's stills, one frame at a time: standing in while the camera's own
+    // stream starts, and what the screen settles on when it doesn't answer. They stop
+    // the moment the video has a frame, since there is nothing left for them to do. The
+    // stream follows the choice itself rather than the two numbers inside it, so
+    // reading the choice out is what starts it. Keyed on them instead, a camera whose
+    // choice happened to be 720p at five frames a second -- the same two numbers it
+    // opens at while the choice is not yet known -- would never open at all.
+    val stillsOnScreen = source == LiveSource.Stills || (standingIn && !ownFrame)
+    LaunchedEffect(watching, choice, streaming, stillsOnScreen) {
         val wanted = choice
-        if (!streaming || wanted == null || source != LiveSource.Stills) return@LaunchedEffect
+        if (!streaming || wanted == null || !stillsOnScreen) return@LaunchedEffect
         val height = wanted.first
         val rate = wanted.second
         frame = null
@@ -655,10 +675,26 @@ fun PlayerScreen(
                         source = ownStream,
                         camera = watching,
                         withSound = sound && live,
-                        onFirstFrame = { connecting = false },
+                        visible = ownFrame,
+                        onFirstFrame = {
+                            ownFrame = true
+                            connecting = false
+                        },
                         onFailed = { source = LiveSource.Stills },
                         modifier = Modifier.fillMaxSize(),
                     )
+                    // While the video hasn't drawn anything the still is what the
+                    // screen shows, and it goes the moment the first frame is up, so
+                    // what is drawn can change without the screen being empty in
+                    // between.
+                    if (!ownFrame) {
+                        frame?.let { bitmap ->
+                            ZoomableStill(
+                                bitmap = bitmap,
+                                camera = watching,
+                            )
+                        }
+                    }
                 } else {
                     frame?.let { bitmap ->
                         ZoomableStill(

@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -66,12 +67,19 @@ private const val StuckMillis = 12_000L
  * what sends it back to Frigate's stream. A stream that stops is a failure as much
  * as one that never started: what is on screen would otherwise be a still that looks
  * live.
+ *
+ * [visible] is what keeps the video out of the way while the stills stand in for it.
+ * The player is a view of its own, and a view is drawn over everything the page
+ * draws around it, so a still drawn beside it would sit underneath it rather than on
+ * top. The video is there with nothing drawn in it until it has a frame, which is
+ * what that flag is for.
  */
 @Composable
 internal fun LiveVideo(
     source: ClipSource,
     camera: String,
     withSound: Boolean,
+    visible: Boolean,
     onFirstFrame: () -> Unit,
     onFailed: () -> Unit,
     modifier: Modifier = Modifier,
@@ -131,9 +139,18 @@ internal fun LiveVideo(
             }
     }
 
+    // Whether this player has drawn a frame yet. A player that is still filling its
+    // first buffer reports itself as waiting for more, which is not the same thing as
+    // a picture that has stalled, and reopening it there only pushes the picture
+    // further away.
+    var started by remember(player) { mutableStateOf(false) }
+
     DisposableEffect(player) {
         val listener = object : Player.Listener {
-            override fun onRenderedFirstFrame() = sayFrame()
+            override fun onRenderedFirstFrame() {
+                started = true
+                sayFrame()
+            }
 
             override fun onVideoSizeChanged(size: VideoSize) {
                 if (size.width > 0 && size.height > 0) {
@@ -177,13 +194,16 @@ internal fun LiveVideo(
     // further and further behind the clock is the thing this screen was changed to
     // get away from. So the gap between the picture and now is measured while the
     // screen is in front of you, and the stream is opened again when it grows. A
-    // player that sits waiting for more is treated the same way.
+    // player that sits waiting for more is treated the same way. Nothing is measured
+    // until the first frame is up: a stream on its way is waiting for more, and
+    // reopening it there does not make it arrive sooner.
     LaunchedEffect(player, camera) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             var soonest = Long.MAX_VALUE
             var waitingSince = 0L
             while (isActive) {
                 delay(LagEveryMillis)
+                if (!started) continue
                 val now = SystemClock.elapsedRealtime()
                 if (player.playbackState == Player.STATE_BUFFERING) {
                     if (waitingSince == 0L) waitingSince = now
@@ -212,9 +232,16 @@ internal fun LiveVideo(
         AndroidView(
             factory = { context ->
                 (LayoutInflater.from(context).inflate(R.layout.live_video, null) as PlayerView)
-                    .apply { this.player = player }
+                    .apply {
+                        this.player = player
+                        alpha = if (visible) 1f else 0f
+                    }
             },
-            update = { view -> view.player = player },
+            update = { view ->
+                view.player = player
+                val wanted = if (visible) 1f else 0f
+                if (view.alpha != wanted) view.alpha = wanted
+            },
             modifier = Modifier.fillMaxSize(),
         )
     }

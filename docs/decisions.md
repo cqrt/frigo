@@ -1469,6 +1469,37 @@ The measuring left to do on a phone: the picture's lag against the camera's own 
 hour of watching on mobile data, and battery. On the emulator the audio track reported
 write errors, which is the emulator's audio hardware rather than the stream.
 
+## A slow camera shows a still while it starts
+
+Opening a camera could sit on "Connecting…" for ten seconds and then settle on the stills,
+which is the one thing the change was meant to stop. Two faults were behind it, and both
+are about a stream that is still on its way being treated as one that has failed.
+
+**The player restarted a stream that was still filling.** A player that has not drawn a
+frame yet reports itself as waiting for more, which is exactly what a stalled picture
+reports, so the twelve second check reopened the stream and pushed the picture further
+away. Nothing is measured now until the first frame is up. The stream still has the
+twelve seconds before the screen settles for the stills, so a route that has stopped
+working is caught the same as before.
+
+**Nothing stood in for it.** The video can take a moment to arrive, and the screen was
+empty until it did. After two and a half seconds Frigate's still is drawn in the same
+place, and the video takes over the moment its first frame is drawn. The stills stop
+there, so a camera that answers quickly never opens the second stream at all, and the
+line about the small picture only appears once the stills are what the screen has settled
+on rather than what it is waiting with.
+
+The still had to be faded in rather than drawn on top: the player is a view, and a view is
+drawn over everything the page draws around it, so a still placed beside it sits
+underneath it and is never seen. The video is transparent until it has a frame instead,
+which has the same effect as drawing the still over it and costs nothing.
+
+Measured from the server, a cold stream hands over its first frame in one to two seconds.
+On the emulator the first frame was drawn between one and four seconds after the camera
+opened. One open of north took longer than the twelve seconds on an evening when the whole
+emulator was slow, and the stills stayed with the line under them, which is what that
+grace is for.
+
 ## The bar keeps up with the clock
 
 While you watch the stream the day goes on being written: Frigate closes a recording file

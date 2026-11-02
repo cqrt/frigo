@@ -112,9 +112,10 @@ about a fifteenth of the small one.
 It comes over HTTP rather than WebRTC. That runs over TCP, so frames arrive rather than
 late ones being dropped, and it needs no extra port on your router.
 
-When that path doesn't answer, the player falls back to Frigate's stream of stills within
-a few seconds and says so under the picture. Zooming scales the picture the phone already
-has either way, so the stream keeps its own size and rate.
+When the video is slow to arrive, Frigate's small picture is drawn in the same place until
+it does, and the video takes over the moment it has a frame. If it never comes, the stills
+stay and a line under the picture says so. Zooming scales the picture the phone already has
+either way, so the stream keeps its own size and rate.
 
 The stills are one whole frame at a time, kept at the size Frigate decodes for detection:
 640x360 on the two outdoor cameras, 1280x960 on the door, 1280x720 on the printer. Frigate
