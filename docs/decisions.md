@@ -1638,6 +1638,40 @@ answered 200 `{"success": true}`, the global one added a `review` block and no c
 camera one left that camera's settings alone and its neighbours' unchanged, the detection labels came
 back still absent, and the file was 331 lines again after the test block was deleted.
 
+## A camera's switches are saved settings, not Frigate's quick toggles
+
+Frigate has two ways to turn a camera's features off. `PUT /api/camera/<name>/set/<feature>` changes a
+runtime toggle without touching the settings file, and `PUT /api/config/set` writes the setting down.
+
+The quick toggle was the first choice and had to be given up: the server never says what one is set
+to. `/api/config` goes on answering with the file's value. Birdseye was turned off through the runtime
+endpoint and the config read three seconds and eight seconds later: `enabled` was still true, and the
+same for motion. `/api/stats` carries `detection_enabled`, which covers object detection alone; the
+other five have no read-back anywhere. A page of switches built on those would be showing guesses, and
+a camera turned off in Frigate's own web page could show as on here.
+
+So all eight are settings writes, which is also what Frigate's own camera page does. `requires_restart:
+0` with the topic `config/cameras/<name>/<section>` publishes the change to whoever listens, and Frigate
+applies it as it saves. Checked against the 0.18.2 source: all eight `enabled` fields are per-camera
+fields Frigate itself marks as needing no restart, `detect` needing one only for its resolution and
+tracking numbers.
+
+The cost is a line in `config.yml` where the camera used to inherit, and `enabled: true` written where
+there was nothing before. That is what makes the page honest: the value it shows is the value the
+server will use. The write also drops any runtime override for the same key, so a stale override
+cannot outlive a visit to the page.
+
+Face recognition and license plate recognition have a switch for the whole server as well
+(`face_recognition.enabled`, `lpr.enabled`). While that is off a camera's own switch does nothing,
+which is why the row reads off, says so, and cannot be moved. This server has LPR off for everything
+and face recognition on.
+
+There is no "all cameras" scope. The four cameras here are not set the same, and one tap that stopped
+recording everywhere would be a long way from what was meant.
+
+Recording asks before it stops: it is the one switch where the next minutes are lost rather than the
+next few events.
+
 ## Checked on the emulator
 
 
@@ -1699,3 +1733,13 @@ narrowing the list, and Done greyed out with a line saying to pick one or turn A
 nothing was ticked. Flipping Alerts off from the app took effect on the server with no error and
 no restart, `/api/config` showing alerts off for every camera; flipping it back on did the same
 in reverse.
+
+With the camera switches, against the real server: Settings listed the four cameras under a
+Cameras heading with a chevron each, and 3d printer opened with object detection, recording and
+audio detection off, the other five on, and license plate recognition greyed out with "Off for
+the whole server." under it. Turning Snapshots off showed it off at once and `/api/config` had
+it false, with nothing else on the camera changed. Turning Recording on for 3d printer was refused
+by the server with "Camera 3d_printer has record enabled, but record is not assigned to an
+input." and that switch went back to off while the rest of the page stayed put. On North cam,
+Recording off asked "Stop recording?", and Stop put it off on the server and back on again
+without asking. Every camera read as it did before the test once the switches were put back.

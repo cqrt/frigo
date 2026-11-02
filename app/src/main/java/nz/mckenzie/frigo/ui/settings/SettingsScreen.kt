@@ -8,6 +8,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -22,6 +23,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -54,6 +56,7 @@ import nz.mckenzie.frigo.data.Updater
 import nz.mckenzie.frigo.data.askToInstallApps
 import nz.mckenzie.frigo.data.canInstallApps
 import nz.mckenzie.frigo.data.installUpdate
+import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.theme.ThemeMode
 import java.io.File
 
@@ -65,6 +68,7 @@ fun SettingsScreen(
     baseUrl: String,
     username: String,
     modifier: Modifier = Modifier,
+    onOpenCamera: (String) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -297,6 +301,14 @@ fun SettingsScreen(
 
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
+            Text("Cameras", style = MaterialTheme.typography.titleSmall)
+
+            cameras.forEach { camera ->
+                CameraRow(title = camera.title) { onOpenCamera(camera.name) }
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+
             Text("Appearance", style = MaterialTheme.typography.titleSmall)
 
             Text(
@@ -419,6 +431,29 @@ fun SettingsScreen(
                 Text("Sign out")
             }
         }
+    }
+}
+
+/** A camera's name with a chevron, opening that camera's switches. */
+@Composable
+private fun CameraRow(title: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = FrigoIcons.Chevron,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

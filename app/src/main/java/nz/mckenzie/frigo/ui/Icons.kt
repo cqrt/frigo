@@ -122,6 +122,13 @@ object FrigoIcons {
             )
         }
     }
+
+    /** A corner turned to the right, for a row that opens something. */
+    val Chevron: ImageVector by lazy {
+        vector("Chevron") {
+            path("M9.2 5.4 15.8 12l-6.6 6.6", strokeWidth = 2.2f)
+        }
+    }
 }
 
 /** Filled unless a stroke is asked for, which is how the magnifying glass is drawn. */

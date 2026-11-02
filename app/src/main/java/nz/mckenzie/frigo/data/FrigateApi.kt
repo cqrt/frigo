@@ -89,12 +89,12 @@ class FrigateApi(
     }
 
     /**
-     * Changes what Frigate flags.
+     * Changes one of Frigate's own settings.
      *
      * The change goes in as a settings edit, which Frigate applies to itself as
-     * it saves, so the next alert follows it and nothing restarts.
+     * it saves, so it takes effect at once and nothing restarts.
      */
-    fun setReview(baseUrl: String, token: String, change: ReviewChange) {
+    fun saveConfig(baseUrl: String, token: String, change: ConfigChange) {
         val body = buildJsonObject {
             put("requires_restart", 0)
             put("update_topic", change.updateTopic)
@@ -537,9 +537,11 @@ class FrigateApi(
             }
 
             if (answer != null && textOf(answer["success"]) == "false") {
+                val said = textOf(answer["message"])
+                    ?.removePrefix("Error saving config: ")
                 throw FrigateException(
                     response.code,
-                    textOf(answer["message"]) ?: "Frigate didn't accept that change.",
+                    said ?: "Frigate didn't accept that change.",
                 )
             }
             return raw

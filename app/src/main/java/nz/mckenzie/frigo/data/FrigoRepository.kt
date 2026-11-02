@@ -177,8 +177,34 @@ class FrigoRepository(
     }
 
     /** Changes what Frigate flags, for every camera or for one. */
-    suspend fun setReview(change: ReviewChange) {
-        authorized { baseUrl, token -> api.setReview(baseUrl, token, change) }
+    suspend fun setReview(change: ConfigChange) {
+        authorized { baseUrl, token -> api.saveConfig(baseUrl, token, change) }
+    }
+
+    /**
+     * The cameras to offer on the switches page, what each switch is set to, and
+     * whether this account may change any of it. One trip, because a round trip
+     * is felt.
+     */
+    suspend fun cameraSwitchPage(): CameraSwitchPage = authorized { baseUrl, token ->
+        val profile = api.profile(baseUrl, token)
+        val config = api.config(baseUrl, token)
+        val cameras = config.visibleCameras(profile.allowedCameras)
+        CameraSwitchPage(
+            cameras = cameras,
+            switches = cameras.associate { camera ->
+                camera.name to (config.cameras[camera.name]?.switches() ?: CameraSwitches())
+            },
+            faceRecognitionOff = !config.faceRecognition.enabled,
+            licensePlateOff = !config.lpr.enabled,
+            admin = profile.role == "admin",
+        )
+    }
+
+    /** Turns one switch on or off on one camera. */
+    suspend fun setCameraSwitch(camera: String, switch: CameraSwitch, on: Boolean) {
+        val change = cameraSwitchChange(camera, switch, on)
+        authorized { baseUrl, token -> api.saveConfig(baseUrl, token, change) }
     }
 
     suspend fun events(

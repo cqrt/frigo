@@ -219,6 +219,24 @@ These are Frigate's settings rather than the app's. They live in its own setting
 file and the server's web page shows the same values. An admin account can change
 them and anyone signed in can look.
 
+## What each camera does
+
+Settings lists your cameras. Tap one for eight switches: object detection, motion
+detection, recording, snapshots, audio detection, birdseye, face recognition and
+license plate recognition. Each one belongs to that camera alone.
+
+They're Frigate's settings rather than the app's, so its own web page shows the
+same values. A change goes to the server as you make it and is applied without a
+restart. Recording asks first, because nothing new is saved once it stops.
+
+Motion detection is worth knowing about. Turning it off doesn't quiet a camera:
+Frigate then looks for objects on every frame, which is more work, not less.
+
+Face recognition and license plate recognition only run when your server has them
+on for everything. While one doesn't, its row says so and can't be turned on.
+
+An admin account can change these and anyone signed in can look.
+
 ## Updating
 
 Frigo isn't in a store. Each release is an APK on the GitHub release page, and the

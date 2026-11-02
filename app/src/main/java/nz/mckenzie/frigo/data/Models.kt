@@ -19,7 +19,17 @@ data class FrigateConfig(
     val review: ReviewBlockConfig = ReviewBlockConfig(),
     val objects: TrackedObjects = TrackedObjects(),
     val cameras: Map<String, CameraConfig> = emptyMap(),
+    /**
+     * The server's own setting for the two features a camera can't run without.
+     * Its starting point is on, and only a server that says otherwise is read.
+     */
+    @SerialName("face_recognition") val faceRecognition: SwitchConfig = SwitchConfig(),
+    val lpr: SwitchConfig = SwitchConfig(),
 )
+
+/** Whether a feature is on. Frigate keeps a lot more beside it that this app doesn't read. */
+@Serializable
+data class SwitchConfig(val enabled: Boolean = true)
 
 /**
  * What the signed-in user is allowed to see. `/api/config` answers with every
@@ -40,6 +50,14 @@ data class CameraConfig(
     @SerialName("friendly_name") val friendlyName: String? = null,
     val review: ReviewBlockConfig = ReviewBlockConfig(),
     val objects: TrackedObjects = TrackedObjects(),
+    val detect: SwitchConfig = SwitchConfig(),
+    val motion: SwitchConfig = SwitchConfig(),
+    val record: SwitchConfig = SwitchConfig(),
+    val snapshots: SwitchConfig = SwitchConfig(),
+    val audio: SwitchConfig = SwitchConfig(),
+    val birdseye: SwitchConfig = SwitchConfig(),
+    @SerialName("face_recognition") val faceRecognition: SwitchConfig = SwitchConfig(),
+    val lpr: SwitchConfig = SwitchConfig(),
 )
 
 /** The objects a camera is set to follow. */
@@ -300,7 +318,7 @@ private fun ReviewBlockConfig.flags() = ReviewFlags(
 )
 
 /** A settings change ready to send: the part of Frigate to refresh, and the change itself. */
-data class ReviewChange(val updateTopic: String, val configData: JsonObject)
+data class ConfigChange(val updateTopic: String, val configData: JsonObject)
 
 /**
  * The request for whatever changed between [before] and [after], or null when
@@ -317,7 +335,7 @@ data class ReviewChange(val updateTopic: String, val configData: JsonObject)
  * worker listens on a camera's review settings, and `*` there means every camera,
  * which is how a change lands without a restart.
  */
-fun reviewChange(camera: String?, before: ReviewFlags, after: ReviewFlags): ReviewChange? {
+fun reviewChange(camera: String?, before: ReviewFlags, after: ReviewFlags): ConfigChange? {
     val alerts = buildJsonObject {
         if (before.alertsOn != after.alertsOn) put("enabled", after.alertsOn)
         if (before.alertLabels.sorted() != after.alertLabels.sorted()) {
@@ -343,12 +361,12 @@ fun reviewChange(camera: String?, before: ReviewFlags, after: ReviewFlags): Revi
     }
 
     return if (camera == null) {
-        ReviewChange(
+        ConfigChange(
             updateTopic = "config/cameras/*/review",
             configData = buildJsonObject { put("review", review) },
         )
     } else {
-        ReviewChange(
+        ConfigChange(
             updateTopic = "config/cameras/$camera/review",
             configData = buildJsonObject {
                 put(
@@ -359,6 +377,88 @@ fun reviewChange(camera: String?, before: ReviewFlags, after: ReviewFlags): Revi
         )
     }
 }
+
+/** The eight switches on a camera's page, in the order the page lists them. */
+enum class CameraSwitch(val label: String, val section: String) {
+    ObjectDetection("Object detection", "detect"),
+    MotionDetection("Motion detection", "motion"),
+    Recording("Recording", "record"),
+    Snapshots("Snapshots", "snapshots"),
+    AudioDetection("Audio detection", "audio"),
+    Birdseye("Birdseye", "birdseye"),
+    FaceRecognition("Face recognition", "face_recognition"),
+    LicensePlate("License plate recognition", "lpr"),
+}
+
+/** What the eight switches are set to on one camera. */
+data class CameraSwitches(
+    val on: Map<CameraSwitch, Boolean> = CameraSwitch.entries.associateWith { true },
+) {
+    operator fun get(switch: CameraSwitch): Boolean = on[switch] ?: true
+
+    fun with(switch: CameraSwitch, value: Boolean) = copy(on = on + (switch to value))
+}
+
+/** A camera's eight switches, read from Frigate's settings file. */
+fun CameraConfig.switches(): CameraSwitches = CameraSwitches(
+    mapOf(
+        CameraSwitch.ObjectDetection to detect.enabled,
+        CameraSwitch.MotionDetection to motion.enabled,
+        CameraSwitch.Recording to record.enabled,
+        CameraSwitch.Snapshots to snapshots.enabled,
+        CameraSwitch.AudioDetection to audio.enabled,
+        CameraSwitch.Birdseye to birdseye.enabled,
+        CameraSwitch.FaceRecognition to faceRecognition.enabled,
+        CameraSwitch.LicensePlate to lpr.enabled,
+    ),
+)
+
+/** The switches page in one answer: which cameras, what each is set to, and whether you may change it. */
+data class CameraSwitchPage(
+    val cameras: List<Camera>,
+    val switches: Map<String, CameraSwitches>,
+    /** Frigate has these switched off for every camera, so a camera's own switch does nothing. */
+    val faceRecognitionOff: Boolean = false,
+    val licensePlateOff: Boolean = false,
+    val admin: Boolean = false,
+) {
+    /** Why a switch can't be moved, or null when it can. */
+    fun blocked(switch: CameraSwitch): String? = when {
+        switch == CameraSwitch.FaceRecognition && faceRecognitionOff -> ServerOff
+        switch == CameraSwitch.LicensePlate && licensePlateOff -> ServerOff
+        else -> null
+    }
+
+    private companion object {
+        const val ServerOff = "Off for the whole server."
+    }
+}
+
+/**
+ * One switch, turned on or off on one camera.
+ *
+ * Only that switch is sent, so the rest of the camera's settings and the other
+ * cameras are left as they are. Frigate saves the change into its own settings
+ * file and applies it as it saves, so nothing restarts, and the setting is still
+ * there after one.
+ */
+fun cameraSwitchChange(camera: String, switch: CameraSwitch, on: Boolean): ConfigChange =
+    ConfigChange(
+        updateTopic = "config/cameras/$camera/${switch.section}",
+        configData = buildJsonObject {
+            put(
+                "cameras",
+                buildJsonObject {
+                    put(
+                        camera,
+                        buildJsonObject {
+                            put(switch.section, buildJsonObject { put("enabled", on) })
+                        },
+                    )
+                },
+            )
+        },
+    )
 
 /** Turns `door_cam` into `Door cam`, for cameras without a friendly name. */
 fun prettyCameraName(raw: String): String = raw

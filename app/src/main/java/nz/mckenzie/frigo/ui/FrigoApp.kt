@@ -35,6 +35,7 @@ import nz.mckenzie.frigo.ui.explore.ExploreScreen
 import nz.mckenzie.frigo.ui.login.LoginScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewSettingsScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewsScreen
+import nz.mckenzie.frigo.ui.settings.CameraSwitchesScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
 
 @Composable
@@ -154,6 +155,18 @@ private fun MainScaffold(
                     baseUrl = server.baseUrl,
                     username = server.username,
                     modifier = Modifier.padding(padding),
+                    onOpenCamera = { camera ->
+                        navController.navigate("camera-switches/$camera") { launchSingleTop = true }
+                    },
+                )
+            }
+            composable("camera-switches/{camera}") { entry ->
+                val camera = entry.arguments?.getString("camera") ?: return@composable
+                CameraSwitchesScreen(
+                    container = container,
+                    cameraName = camera,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable("$PLAYER_PREFIX{camera}") { entry ->
