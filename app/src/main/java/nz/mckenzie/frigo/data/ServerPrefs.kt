@@ -120,6 +120,17 @@ class ServerPrefs(private val context: Context) {
     }
 
     /**
+     * Whether the walkthrough is done, or null if this phone has never had it
+     * decided. Signing out leaves it alone, so the way back in is the plain
+     * sign-in page rather than the tour again.
+     */
+    suspend fun readOnboarded(): Boolean? = context.dataStore.data.first()[Keys.onboarded]
+
+    suspend fun writeOnboarded(on: Boolean) {
+        context.dataStore.edit { prefs -> prefs[Keys.onboarded] = on }
+    }
+
+    /**
      * The picture size and frame rate each camera was last watched at, as camera to
      * (height, rate). Kept per camera, because a camera you watch closely and one you
      * glance at are not the same thing to spend data on.
@@ -163,6 +174,7 @@ class ServerPrefs(private val context: Context) {
         val cameraLayout = intPreferencesKey("camera_layout")
         val liveTiles = booleanPreferencesKey("live_tiles")
         val theme = intPreferencesKey("theme")
+        val onboarded = booleanPreferencesKey("onboarded")
         val streamChoices = stringSetPreferencesKey("stream_choices")
     }
 }

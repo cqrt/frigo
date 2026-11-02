@@ -66,6 +66,7 @@ import nz.mckenzie.frigo.data.canInstallApps
 import nz.mckenzie.frigo.data.cameraState
 import nz.mckenzie.frigo.data.installUpdate
 import nz.mckenzie.frigo.ui.FrigoIcons
+import nz.mckenzie.frigo.ui.openBatterySettings
 import nz.mckenzie.frigo.ui.components.CardDivider
 import nz.mckenzie.frigo.ui.components.Group
 import nz.mckenzie.frigo.ui.components.Item
@@ -321,14 +322,7 @@ fun SettingsScreen(
                 )
 
                 TextButton(
-                    onClick = {
-                        runCatching {
-                            context.startActivity(
-                                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            )
-                        }
-                    },
+                    onClick = { context.openBatterySettings() },
                     modifier = Modifier.padding(start = 8.dp, bottom = 6.dp),
                 ) {
                     Text("Battery settings")
@@ -512,6 +506,12 @@ fun SettingsScreen(
                     Fact("Version", BuildConfig.VERSION_NAME)
                     Fact("Author", "Matt Mckenzie")
                     Fact("Copyright", "© 2026 Matt Mckenzie")
+                    TextButton(
+                        onClick = { scope.launch { repository.setOnboarded(false) } },
+                        modifier = Modifier.padding(start = 0.dp),
+                    ) {
+                        Text("Show the welcome again")
+                    }
                 }
             }
 

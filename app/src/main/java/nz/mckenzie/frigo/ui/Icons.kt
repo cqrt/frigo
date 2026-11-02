@@ -149,6 +149,18 @@ object FrigoIcons {
         }
     }
 
+    /** A battery, for the one setting Android keeps to itself. */
+    val Battery: ImageVector by lazy {
+        vector("Battery") {
+            path(
+                "M4.2 7.4h12.6a1.8 1.8 0 0 1 1.8 1.8v5.6a1.8 1.8 0 0 1-1.8 1.8H4.2" +
+                    "a1.8 1.8 0 0 1-1.8-1.8V9.2a1.8 1.8 0 0 1 1.8-1.8z",
+                strokeWidth = 1.7f,
+            )
+            path("M20.4 10.4v3.2", strokeWidth = 1.9f)
+        }
+    }
+
     /** A bell, for the notifications setting. */
     val Bell: ImageVector by lazy {
         vector("Bell") {

@@ -2009,3 +2009,39 @@ to the end, so a wrong tap was easy.
 It is a text button at the foot of the Server card instead, under the name it's signed in as. That
 card already says which server you're on and who you are, so the way out of it belongs there, and a
 text button is the size the rest of the cards use for a plain action.
+
+## A first run that explains the two Android permissions
+
+Frigo needs two things from Android that it cannot grant itself: permission to post a notification, and
+being left out of battery optimisation. Both are easy to skip, and skipping them leaves an app that
+looks broken. The first run says what each one is for, and opens the page that owns it.
+
+The alerts page has four states, because the answer comes from Android and not from the app:
+
+- Nothing ticked: the button is dim, and a line under it says a camera and an object are what it needs.
+  Alerts start with nothing ticked, so nobody gets a buzz they did not ask for.
+- Ticked: the button turns on, and a line says Android asks about notifications once.
+- Allowed: a card with a tick and the picks, no camera list. It is done, so the page stops asking.
+- Refused: an error card that says the phone's settings are where to change it, and a text button that
+  opens them. The picks are kept, so allowing it there costs nothing but the one switch, and coming back
+  to the app finds the new answer and moves the page on by itself.
+
+The battery page is read again on every return for the same reason. Android's screen belongs to Android,
+so a page that assumed its own answer would sit there saying On for Frigo after the fix.
+
+## The walkthrough is remembered, and one flag decides
+
+`onboarded` is a boolean in the same preferences as the server. Signing out does not clear it, so a phone
+that signs out lands on the plain sign-in page rather than the tour again.
+
+An install that predates the walkthrough never sees it. The flag starts absent, and the first launch
+after the update reads it as "asked already" when a server is saved on the phone. The launch writes that
+answer down, so the question is settled once instead of guessed at every start. A phone with nothing
+saved writes false and keeps the walkthrough, including after it signs in half way through: the sign-in
+happens inside the tour, so the saved server is no evidence of an old install.
+
+The app holds the answer as a nullable flow and shows its own spinner until it is read. A new phone would
+otherwise flash the tabs before the welcome, and an old one the welcome before the tabs.
+
+Settings can ask for the walkthrough again with a text button in the About card. It is a text button
+because it is a small occasional thing, which is the shape the rest of the cards use for one.

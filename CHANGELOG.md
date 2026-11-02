@@ -8,6 +8,13 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.0
+
+- The first run walks you through the app: your server, alerts, battery, and a page for each tab.
+- The alerts page starts with nothing ticked, and says what to do if Android turned the notifications down.
+- Battery settings now opens Frigo's own page in Android's settings.
+- Settings has Show the welcome again, under About.
+
 ## 0.9.9
 
 - Sign out is a small button in the Server card now, not a big one at the bottom of Settings.

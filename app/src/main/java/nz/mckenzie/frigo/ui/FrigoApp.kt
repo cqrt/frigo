@@ -34,6 +34,7 @@ import nz.mckenzie.frigo.ui.cameras.PlayerScreen
 import nz.mckenzie.frigo.ui.clips.ClipsScreen
 import nz.mckenzie.frigo.ui.explore.ExploreScreen
 import nz.mckenzie.frigo.ui.login.LoginScreen
+import nz.mckenzie.frigo.ui.onboarding.OnboardingScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewSettingsScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewsScreen
 import nz.mckenzie.frigo.ui.settings.CameraSwitchesScreen
@@ -43,6 +44,7 @@ import nz.mckenzie.frigo.ui.settings.SettingsScreen
 fun FrigoApp(container: AppContainer, openCamera: String? = null, onCameraOpened: () -> Unit = {}) {
     val gate by container.repository.gate.collectAsStateWithLifecycle()
     val alerts by container.repository.alerts.collectAsStateWithLifecycle()
+    val onboarded by container.repository.onboarded.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     LaunchedEffect(Unit) { container.repository.restore() }
@@ -52,6 +54,13 @@ fun FrigoApp(container: AppContainer, openCamera: String? = null, onCameraOpened
     LaunchedEffect(gate, alerts.on) {
         if (gate is Gate.SignedIn && alerts.on) AlertService.start(context)
         else AlertService.stop(context)
+    }
+
+    // The walkthrough comes first on a new phone, and takes over from the tabs
+    // whenever Settings asks for it back.
+    if (onboarded == false) {
+        OnboardingScreen(container)
+        return
     }
 
     when (val state = gate) {
@@ -70,14 +79,15 @@ fun FrigoApp(container: AppContainer, openCamera: String? = null, onCameraOpened
     }
 }
 
-private data class Tab(val route: String, val label: String, val icon: ImageVector)
+internal data class FrigoTab(val route: String, val label: String, val icon: ImageVector)
 
-private val Tabs = listOf(
-    Tab("cameras", "Cameras", Icons.Filled.Home),
-    Tab("reviews", "Review", FrigoIcons.Reviews),
-    Tab("explore", "Explore", FrigoIcons.Search),
-    Tab("clips", "Clips", FrigoIcons.Clips),
-    Tab("settings", "Settings", Icons.Filled.Settings),
+/** The five tabs, in the order the bar shows them. The walkthrough lights them up. */
+internal val FrigoTabs = listOf(
+    FrigoTab("cameras", "Cameras", Icons.Filled.Home),
+    FrigoTab("reviews", "Review", FrigoIcons.Reviews),
+    FrigoTab("explore", "Explore", FrigoIcons.Search),
+    FrigoTab("clips", "Clips", FrigoIcons.Clips),
+    FrigoTab("settings", "Settings", Icons.Filled.Settings),
 )
 
 private const val PLAYER_PREFIX = "player/"
@@ -107,7 +117,7 @@ private fun MainScaffold(
         bottomBar = {
             if (!watching) {
                 NavigationBar {
-                    Tabs.forEach { tab ->
+                    FrigoTabs.forEach { tab ->
                         NavigationBarItem(
                             selected = currentRoute == tab.route,
                             onClick = { navController.switchTo(tab.route) },

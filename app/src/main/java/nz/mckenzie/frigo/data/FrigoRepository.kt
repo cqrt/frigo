@@ -79,6 +79,14 @@ class FrigoRepository(
     val alerts: StateFlow<ServerPrefs.Alerts> = _alerts.asStateFlow()
 
     /**
+     * Whether the walkthrough is still to come, or null until the phone has been
+     * read. The app shows its own spinner for the null, so a new phone never
+     * flashes the tabs and an old one never flashes the tour.
+     */
+    private val _onboarded = MutableStateFlow<Boolean?>(null)
+    val onboarded: StateFlow<Boolean?> = _onboarded.asStateFlow()
+
+    /**
      * Whether the alert choices have been read off the phone yet. The service
      * starts by itself after a restart, before any screen has run, and it needs
      * the saved choices rather than a blank slate.
@@ -99,6 +107,18 @@ class FrigoRepository(
     suspend fun restore() {
         loadAlerts()
         val saved = prefs.read()
+        // The first launch after the walkthrough arrived settles the question once
+        // and writes the answer down. A phone with a server already saved is one
+        // that was set up before the walkthrough existed, so it is not owed it.
+        // A phone with nothing saved is new, and carries on owing it even after it
+        // signs in half way through.
+        val done = prefs.readOnboarded() ?: run {
+            val skip = saved != null
+            prefs.writeOnboarded(skip)
+            skip
+        }
+        _onboarded.value = done
+
         if (saved == null || saved.token.isNullOrBlank()) {
             _gate.value = Gate.SignedOut(
                 address = saved?.baseUrl.orEmpty(),
@@ -146,6 +166,15 @@ class FrigoRepository(
             prefs.clear()
         }
         _gate.value = Gate.SignedOut()
+    }
+
+    /**
+     * The walkthrough is done. Settings also calls this with false, to put the
+     * welcome back on the list for anyone who wants to see it again.
+     */
+    suspend fun setOnboarded(on: Boolean) {
+        _onboarded.value = on
+        prefs.writeOnboarded(on)
     }
 
     /**
