@@ -129,6 +129,46 @@ object FrigoIcons {
             path("M9.2 5.4 15.8 12l-6.6 6.6", strokeWidth = 2.2f)
         }
     }
+
+    /** Two stacked boxes, for the address of the server. */
+    val Server: ImageVector by lazy {
+        vector("Server") {
+            path(
+                "M5.5 3.6h13a2 2 0 0 1 2 2v2.3a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V5.6a2 2 0 0 1 2-2z" +
+                    "M5.5 14.1h13a2 2 0 0 1 2 2v2.3a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 2-2z",
+                strokeWidth = 1.7f,
+            )
+            path("M7 6.75h.01M7 17.25h.01", strokeWidth = 1.9f)
+        }
+    }
+
+    /** A head and shoulders, for the account signed in. */
+    val Person: ImageVector by lazy {
+        vector("Person") {
+            path("M12 4.6a3.4 3.4 0 0 0 0 6.8 3.4 3.4 0 0 0 0-6.8z", strokeWidth = 1.7f)
+            path("M5.4 19.4c0-3.1 3-5.2 6.6-5.2s6.6 2.1 6.6 5.2", strokeWidth = 1.7f)
+        }
+    }
+
+    /** A bell, for the notifications setting. */
+    val Bell: ImageVector by lazy {
+        vector("Bell") {
+            path("M6.4 16.2v-5a5.6 5.6 0 0 1 11.2 0v5", strokeWidth = 1.7f)
+            path("M4.8 16.2h14.4", strokeWidth = 1.7f)
+            path("M10.2 19.4a2 2 0 0 0 3.6 0", strokeWidth = 1.7f)
+        }
+    }
+
+    /** A camera on its side with a lens at the front, for a camera's switches. */
+    val Camera: ImageVector by lazy {
+        vector("Camera") {
+            path(
+                "M5 6.4h9.8a2.2 2.2 0 0 1 2.2 2.2v6.8a2.2 2.2 0 0 1-2.2 2.2H5a2.2 2.2 0 0 1-2.2-2.2V8.6A2.2 2.2 0 0 1 5 6.4z",
+                strokeWidth = 1.7f,
+            )
+            path("M17 10.4 21.2 8v8L17 13.6", strokeWidth = 1.7f)
+        }
+    }
 }
 
 /** Filled unless a stroke is asked for, which is how the magnifying glass is drawn. */

@@ -1774,3 +1774,39 @@ Bark, Fire alarm, Glass, Scream, Smash, Smoke detector, Speech and Yell, Cat fir
 camera tracks it. Switching tabs dropped the label already chosen. Today, Yesterday and a day
 from the calendar each came back with only that day's reviews, and a day in the future came back
 empty. Clear put the list back as it started.
+
+## Settings says what sits behind each camera
+
+The camera rows were a name and a chevron, which gave no sign that eight switches were behind
+them, and nothing to tell a camera that had recording off from one with everything on. Three
+layouts were drawn: grouped cards, a two by two grid of camera tiles, and a flat list with no
+cards. Grouped cards was picked.
+
+Each group is a small heading over a card: Server, Notifications, Live view, Cameras, Appearance,
+Updates, About. Rows carry a leading icon, and a divider between rows starts clear of it. The
+camera row reads **Everything on**, or names what is off, in amber: "Recording off", "Object
+detection and recording off", or "Object detection, recording and 2 more off". Past two the rest
+are counted, so the line stays a line.
+
+A switch the server holds off is left out of that line. License plate recognition is off for the
+whole server here, so every camera would otherwise read as having something wrong with it. That is
+why a camera with eight switches on can say **Everything on** and not **All eight on**: the row
+counts only the switches that camera can actually move.
+
+The summary comes from `/api/config` through `cameraSwitchPage()`, the same call the switches page
+makes, so the two pages cannot disagree. The camera list and the switches now come from that one
+trip rather than two.
+
+Appearance is a single-choice segmented button instead of three filter chips, which is what
+Material 3 uses for a choice of three that applies at once.
+
+The icons are drawn in `ui/Icons.kt` beside the rest, because Material's core set has no server,
+camera or bell that match the app's stroked weight.
+
+With the new Settings, against the real server: Server showed the address and dev. Notifications
+held the switch, the four cameras and the objects, with Fire alarm read as two words rather than an
+underscore. Live view sat under it. Cameras listed 3d printer as "Object detection, recording and 1
+more off" in amber, with the other three saying "Everything on", because license plate recognition
+is off for the whole server and so is not counted. Appearance switched the whole app to Night, and
+the amber line turned to a lighter orange that still read against the dark card. Updates said 0.9.2
+was the newest, and About sat under it.

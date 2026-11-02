@@ -10,6 +10,7 @@ explain, leave out.
 
 ## 0.9.2
 
+- Settings is laid out in groups, and each camera says what it has switched off.
 - Settings ends with an About section: the version, who it's by, and the copyright.
 
 ## 0.9.1

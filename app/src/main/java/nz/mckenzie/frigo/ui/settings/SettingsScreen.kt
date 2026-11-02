@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -19,14 +20,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +52,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -51,17 +62,25 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.BuildConfig
 import nz.mckenzie.frigo.data.Camera
+import nz.mckenzie.frigo.data.CameraState
+import nz.mckenzie.frigo.data.CameraSwitchPage
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.ServerPrefs
 import nz.mckenzie.frigo.data.Update
 import nz.mckenzie.frigo.data.Updater
 import nz.mckenzie.frigo.data.askToInstallApps
 import nz.mckenzie.frigo.data.canInstallApps
+import nz.mckenzie.frigo.data.cameraState
 import nz.mckenzie.frigo.data.installUpdate
 import nz.mckenzie.frigo.ui.FrigoIcons
+import nz.mckenzie.frigo.ui.components.prettyLabel
 import nz.mckenzie.frigo.ui.theme.ThemeMode
 import java.io.File
 
+/**
+ * The page is a stack of groups: a small heading, and a card under it holding
+ * the rows. Every group is one thing you came here to change.
+ */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
@@ -82,10 +101,20 @@ fun SettingsScreen(
 
     var cameras by remember { mutableStateOf<List<Camera>>(emptyList()) }
     var labels by remember { mutableStateOf<List<String>>(emptyList()) }
+    var switches by remember { mutableStateOf<CameraSwitchPage?>(null) }
     var blocked by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        runCatching { repository.cameras() }.onSuccess { cameras = it }
+        // One trip answers both: the cameras to list, and what each camera has
+        // switched off.
+        runCatching { repository.cameraSwitchPage() }
+            .onSuccess { page ->
+                switches = page
+                cameras = page.cameras
+            }
+            .onFailure {
+                runCatching { repository.cameras() }.onSuccess { cameras = it }
+            }
         runCatching { repository.labels() }.onSuccess { labels = it }
     }
 
@@ -192,260 +221,301 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text("Server", style = MaterialTheme.typography.titleSmall)
-            Row(label = "Address", value = baseUrl)
-            Row(label = "Signed in as", value = username)
-
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-
-            Text("Notifications", style = MaterialTheme.typography.titleSmall)
-
-            Text(
-                text = "You'll be alerted when Frigate spots something. Tap the notification for live view.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Enable(
-                checked = alerts.on,
-                onCheckedChange = { wanted ->
-                    blocked = false
-                    if (!wanted) {
-                        save(alerts.copy(on = false))
-                        return@Enable
-                    }
-                    val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                        ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.POST_NOTIFICATIONS,
-                        ) != PackageManager.PERMISSION_GRANTED
-                    if (needsPermission) {
-                        askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    } else {
-                        switchOn()
-                    }
-                },
-            )
-
-            if (blocked) {
-                Text(
-                    text = "Notifications are off for Frigo in Android.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+            Group("Server") {
+                Item(
+                    icon = FrigoIcons.Server,
+                    title = "Address",
+                    value = baseUrl,
+                )
+                CardDivider()
+                Item(
+                    icon = FrigoIcons.Person,
+                    title = "Signed in as",
+                    value = username,
                 )
             }
 
-            Pick(
-                title = "Cameras",
-                options = cameras.map { it.name to it.title },
-                chosen = alerts.cameras,
-                onToggle = { name, ticked ->
-                    val next = if (ticked) alerts.cameras + name else alerts.cameras - name
-                    save(alerts.copy(cameras = next))
-                },
-            )
+            Group("Notifications") {
+                Item(
+                    icon = FrigoIcons.Bell,
+                    title = "Enable",
+                    supporting = "You'll be alerted when Frigate spots something. Tap the " +
+                        "notification for live view.",
+                    trailing = {
+                        Switch(
+                            checked = alerts.on,
+                            onCheckedChange = { wanted ->
+                                blocked = false
+                                if (!wanted) {
+                                    save(alerts.copy(on = false))
+                                    return@Switch
+                                }
+                                val needsPermission =
+                                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                        ContextCompat.checkSelfPermission(
+                                            context,
+                                            Manifest.permission.POST_NOTIFICATIONS,
+                                        ) != PackageManager.PERMISSION_GRANTED
+                                if (needsPermission) {
+                                    askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    switchOn()
+                                }
+                            },
+                        )
+                    },
+                )
 
-            Pick(
-                title = "Objects",
-                options = labels.map { it to it.replaceFirstChar { c -> c.uppercase() } },
-                chosen = alerts.labels,
-                onToggle = { name, ticked ->
-                    val next = if (ticked) alerts.labels + name else alerts.labels - name
-                    save(alerts.copy(labels = next))
-                },
-            )
+                if (blocked) {
+                    Note(
+                        text = "Notifications are off for Frigo in Android.",
+                        colour = MaterialTheme.colorScheme.error,
+                    )
+                }
 
-            if (alerts.on && (alerts.cameras.isEmpty() || alerts.labels.isEmpty())) {
-                Text(
-                    text = "Nothing ticked in one list, so nothing will buzz.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+                CardDivider()
+
+                Pick(
+                    title = "Cameras",
+                    options = cameras.map { it.name to it.title },
+                    chosen = alerts.cameras,
+                    onToggle = { name, ticked ->
+                        val next = if (ticked) alerts.cameras + name else alerts.cameras - name
+                        save(alerts.copy(cameras = next))
+                    },
+                )
+
+                Pick(
+                    title = "Objects",
+                    options = labels.map { it to prettyLabel(it) },
+                    chosen = alerts.labels,
+                    onToggle = { name, ticked ->
+                        val next = if (ticked) alerts.labels + name else alerts.labels - name
+                        save(alerts.copy(labels = next))
+                    },
+                )
+
+                if (alerts.on && (alerts.cameras.isEmpty() || alerts.labels.isEmpty())) {
+                    Note(
+                        text = "Nothing ticked in one list, so nothing will buzz.",
+                        colour = MaterialTheme.colorScheme.error,
+                    )
+                }
+
+                CardDivider()
+
+                Note(
+                    text = "Frigo runs in the background to keep the alerts coming. So that " +
+                        "Android doesn't shut it down to save battery, turn off battery " +
+                        "optimization for Frigo.",
+                )
+
+                TextButton(
+                    onClick = {
+                        runCatching {
+                            context.startActivity(
+                                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        }
+                    },
+                    modifier = Modifier.padding(start = 8.dp, bottom = 6.dp),
+                ) {
+                    Text("Battery settings")
+                }
+            }
+
+            Group("Live view") {
+                Item(
+                    icon = Icons.Filled.PlayArrow,
+                    title = "Enable",
+                    supporting = "Plays video on the Cameras tab. It uses more battery and data.",
+                    trailing = {
+                        Switch(
+                            checked = liveTiles,
+                            onCheckedChange = { on ->
+                                scope.launch { repository.setLiveTiles(on) }
+                            },
+                        )
+                    },
                 )
             }
 
-            Text(
-                text = "Frigo runs in the background to keep the alerts coming. To prevent " +
-                    "Android from shutting down Frigo to save battery, tap below to turn off " +
-                    "battery optimization for Frigo.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            TextButton(onClick = {
-                runCatching {
-                    context.startActivity(
-                        Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
+            Group("Cameras") {
+                if (cameras.isEmpty()) {
+                    Note("No camera this account can see.")
                 }
-            }) {
-                Text("Battery Settings")
-            }
-
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-
-            Text("Live View", style = MaterialTheme.typography.titleSmall)
-
-            Text(
-                text = "Show live video on the Cameras tab. Will require more device and " +
-                    "network resources.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Enable(
-                checked = liveTiles,
-                onCheckedChange = { on -> scope.launch { repository.setLiveTiles(on) } },
-            )
-
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-
-            Text("Cameras", style = MaterialTheme.typography.titleSmall)
-
-            cameras.forEach { camera ->
-                CameraRow(title = camera.title) { onOpenCamera(camera.name) }
-            }
-
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-
-            Text("Appearance", style = MaterialTheme.typography.titleSmall)
-
-            Text(
-                text = "Theme",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp),
-            )
-
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ThemeMode.entries.forEach { mode ->
-                    FilterChip(
-                        selected = theme == mode.ordinal,
-                        onClick = { scope.launch { repository.setTheme(mode.ordinal) } },
-                        label = { Text(mode.label()) },
+                cameras.forEachIndexed { index, camera ->
+                    if (index > 0) CardDivider()
+                    CameraRow(
+                        title = camera.title,
+                        state = switches?.cameraState(camera.name),
+                        onClick = { onOpenCamera(camera.name) },
                     )
                 }
             }
 
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-
-            Text("Updates", style = MaterialTheme.typography.titleSmall)
-
-            Text(
-                text = "Frigo ${BuildConfig.VERSION_NAME}",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-
-            // Worked out before the branch below, so each of them is one value the
-            // screen can hold on to rather than something that can change under it.
-            val newer = release?.takeIf { it.isNewerThan(BuildConfig.VERSION_NAME) }
-            val apk = ready
-
-            when {
-                fetching -> Text(
-                    text = "Downloading… $percent%",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                newer != null && apk != null -> {
-                    Text(
-                        text = "Frigo ${newer.version} is ready to install.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Button(onClick = { install(apk) }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Install")
-                    }
-                }
-
-                newer != null -> {
-                    Text(
-                        text = "Frigo ${newer.version} is out.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Button(
-                        onClick = { fetch(newer) },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("Download")
-                    }
-                    if (newer.page.isNotEmpty()) {
-                        TextButton(onClick = {
-                            runCatching {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse(newer.page))
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                )
+            Group("Appearance") {
+                Column(Modifier.padding(16.dp)) {
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        ThemeMode.entries.forEachIndexed { index, mode ->
+                            SegmentedButton(
+                                selected = theme == mode.ordinal,
+                                onClick = { scope.launch { repository.setTheme(mode.ordinal) } },
+                                shape = SegmentedButtonDefaults.itemShape(
+                                    index = index,
+                                    count = ThemeMode.entries.size,
+                                ),
+                            ) {
+                                Text(mode.label())
                             }
-                        }) {
-                            Text("What's new")
+                        }
+                    }
+                    Text(
+                        text = "Follows the phone unless you pick one.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 10.dp, start = 4.dp),
+                    )
+                }
+            }
+
+            Group("Updates") {
+                // Worked out before the branches below, so each of them is one value
+                // the screen can hold on to rather than something that can change
+                // under it.
+                val newer = release?.takeIf { it.isNewerThan(BuildConfig.VERSION_NAME) }
+                val apk = ready
+
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = "Frigo ${BuildConfig.VERSION_NAME}",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+
+                    when {
+                        fetching -> Text(
+                            text = "Downloading… $percent%",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+
+                        newer != null && apk != null -> {
+                            Text(
+                                text = "Frigo ${newer.version} is ready to install.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Button(
+                                onClick = { install(apk) },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text("Install")
+                            }
+                        }
+
+                        newer != null -> {
+                            Text(
+                                text = "Frigo ${newer.version} is out.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Button(
+                                onClick = { fetch(newer) },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text("Download")
+                            }
+                            if (newer.page.isNotEmpty()) {
+                                TextButton(
+                                    onClick = {
+                                        runCatching {
+                                            context.startActivity(
+                                                Intent(Intent.ACTION_VIEW, Uri.parse(newer.page))
+                                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier.padding(start = 0.dp),
+                                ) {
+                                    Text("What's new")
+                                }
+                            }
+                        }
+
+                        looking -> Text(
+                            text = "Looking for a newer version…",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+
+                        else -> if (looked) Text(
+                            text = "This is the newest version.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    // Said on its own line rather than in place of the version, so a
+                    // look that failed once does not hide a download already here.
+                    if (lookProblem != null) {
+                        Text(
+                            text = lookProblem.orEmpty(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+
+                    if (needsPermission) {
+                        Text(
+                            text = "Android needs your permission to install Frigo. Turn on " +
+                                "Allow from this source, then tap Install again.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+
+                    if (!looking && !fetching && (newer == null || apk != null)) {
+                        TextButton(
+                            onClick = { look(fresh = true) },
+                            modifier = Modifier.padding(start = 0.dp),
+                        ) {
+                            Text("Check again")
                         }
                     }
                 }
-
-                looking -> Text(
-                    text = "Looking for a newer version…",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                else -> if (looked) Text(
-                    text = "This is the newest version.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
-
-            // Said on its own line rather than in place of the version, so a look
-            // that failed once does not hide a download that is already here.
-            if (lookProblem != null) {
-                Text(
-                    text = lookProblem.orEmpty(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-
-            if (needsPermission) {
-                Text(
-                    text = "Android needs your permission to install Frigo. Turn on Allow " +
-                        "from this source, then tap Install again.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-
-            if (!looking && !fetching && (newer == null || apk != null)) {
-                TextButton(onClick = { look(fresh = true) }) { Text("Check again") }
-            }
-
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
             Button(
                 onClick = { scope.launch { repository.signOut() } },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
             ) {
                 Text("Sign out")
             }
 
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-
-            Text("About", style = MaterialTheme.typography.titleSmall)
-
-            Text(
-                text = "Frigo puts your Frigate cameras on your phone.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Row(label = "Version", value = BuildConfig.VERSION_NAME)
-            Row(label = "Author", value = "Matt Mckenzie")
-            Row(label = "Copyright", value = "© 2026 Matt Mckenzie")
+            Group("About") {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        text = "Frigo puts your Frigate cameras on your phone.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Fact("Version", BuildConfig.VERSION_NAME)
+                    Fact("Author", "Matt Mckenzie")
+                    Fact("Copyright", "© 2026 Matt Mckenzie")
+                }
+            }
 
             // Clear of the sign out button, so a thumb reaching for the bottom of
             // the page finds the version rather than the way out.
@@ -454,42 +524,97 @@ fun SettingsScreen(
     }
 }
 
-/** A camera's name with a chevron, opening that camera's switches. */
+/** A heading over a card, which is what one thing you can change looks like. */
 @Composable
-private fun CameraRow(title: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+private fun Group(label: String, content: @Composable ColumnScope.() -> Unit) {
+    Column {
         Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
         )
-        Icon(
-            imageVector = FrigoIcons.Chevron,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(content = content)
+        }
     }
 }
 
-/** An "Enable" label with its switch on the right. */@Composable
-private fun Enable(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+/**
+ * A line of the card: an icon, a name, and either a value or what sits beside
+ * it, such as a switch or a chevron.
+ */
+@Composable
+private fun Item(
+    icon: ImageVector,
+    title: String,
+    value: String? = null,
+    supporting: String? = null,
+    colour: Color? = null,
+    onClick: (() -> Unit)? = null,
+    trailing: @Composable (() -> Unit)? = null,
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = "Enable",
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp),
         )
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Column(Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            if (value != null) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (supporting != null) {
+                Text(
+                    text = supporting,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colour ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        trailing?.invoke()
     }
+}
+
+/** A camera's name and what its switches come to, opening that camera's page. */
+@Composable
+private fun CameraRow(
+    title: String,
+    state: CameraState?,
+    onClick: () -> Unit,
+) {
+    Item(
+        icon = FrigoIcons.Camera,
+        title = title,
+        supporting = state?.said,
+        colour = if (state?.somethingOff == true) attention() else null,
+        onClick = onClick,
+        trailing = {
+            Icon(
+                imageVector = FrigoIcons.Chevron,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+        },
+    )
 }
 
 /** A heading and a row of chips that tick and untick one thing each. */
@@ -501,12 +626,12 @@ private fun Pick(
     chosen: Set<String>,
     onToggle: (name: String, ticked: Boolean) -> Unit,
 ) {
-    Column {
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 6.dp),
+            modifier = Modifier.padding(start = 4.dp),
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             options.forEach { (name, shown) ->
@@ -521,8 +646,20 @@ private fun Pick(
     }
 }
 
+/** A line of smaller print inside a card. */
 @Composable
-private fun Row(label: String, value: String) {
+private fun Note(text: String, colour: Color? = null) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = colour ?: MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+    )
+}
+
+/** A name and what it is set to, one over the other. */
+@Composable
+private fun Fact(label: String, value: String) {
     Column {
         Text(
             text = label,
@@ -532,6 +669,24 @@ private fun Row(label: String, value: String) {
         Text(text = value, style = MaterialTheme.typography.bodyMedium)
     }
 }
+
+/** Between two lines of a card, starting clear of the icon. */
+@Composable
+private fun CardDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = 54.dp),
+        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+    )
+}
+
+/** Amber, for a camera with something switched off. */
+@Composable
+private fun attention(): Color =
+    if (MaterialTheme.colorScheme.background.luminance() < 0.5f) {
+        Color(0xFFFFB874)
+    } else {
+        Color(0xFF8A4B00)
+    }
 
 /** What the chip says. */
 private fun ThemeMode.label(): String = when (this) {

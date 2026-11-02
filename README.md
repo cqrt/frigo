@@ -235,6 +235,9 @@ Settings lists your cameras. Tap one for eight switches: object detection, motio
 detection, recording, snapshots, audio detection, birdseye, face recognition and
 license plate recognition. Each one belongs to that camera alone.
 
+Under each name it says what those switches come to, either **Everything on** or the
+names of what's off. A camera with recording off doesn't need opening to find out.
+
 They're Frigate's settings rather than the app's, so its own web page shows the
 same values. A change goes to the server as you make it and is applied without a
 restart. Recording asks first, because nothing new is saved once it stops.

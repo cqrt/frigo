@@ -458,6 +458,37 @@ data class CameraSwitchPage(
     }
 }
 
+/** How a camera's switches read on the Settings page. */
+data class CameraState(
+    val said: String,
+    /** Something is off, so the line is worth reading. */
+    val somethingOff: Boolean = false,
+)
+
+/**
+ * What one camera's switches come to, said in a line.
+ *
+ * A switch the server holds off is left out. It is off on every camera, so
+ * naming it under one would say nothing about that camera.
+ */
+fun CameraSwitchPage.cameraState(camera: String): CameraState {
+    val set = switches[camera] ?: CameraSwitches()
+    val movable = CameraSwitch.entries.filter { blocked(it) == null }
+    val off = movable.filterNot { set[it] }
+
+    if (off.isEmpty()) return CameraState("Everything on")
+
+    val names = off.take(2).map { it.label }
+    val said = when (off.size) {
+        1 -> "${names[0]} off"
+        2 -> "${names[0]} and ${names[1].lowerFirst()} off"
+        else -> "${names[0]}, ${names[1].lowerFirst()} and ${off.size - 2} more off"
+    }
+    return CameraState(said, somethingOff = true)
+}
+
+private fun String.lowerFirst(): String = replaceFirstChar { it.lowercase() }
+
 /**
  * One switch, turned on or off on one camera.
  *
