@@ -3,12 +3,9 @@ package nz.mckenzie.frigo.ui.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,12 +29,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.CameraSwitch
+import nz.mckenzie.frigo.ui.FrigoIcons
+import nz.mckenzie.frigo.ui.components.CardDivider
+import nz.mckenzie.frigo.ui.components.Group
+import nz.mckenzie.frigo.ui.components.Item
 
 /**
  * What one camera does: whether it looks for objects, records, keeps snapshots,
@@ -96,15 +97,17 @@ fun CameraSwitchesScreen(
             }
 
             else -> Column(
-                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 if (!page.admin) {
                     Text(
                         text = "Only an admin can change these.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     )
                 }
 
@@ -113,28 +116,39 @@ fun CameraSwitchesScreen(
                         text = message,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     )
                 }
 
-                CameraSwitch.entries.forEach { switch ->
-                    val off = page.blocked(switch)
-                    SwitchRow(
-                        label = switch.label,
-                        on = switches?.get(switch) ?: false,
-                        changeable = page.admin && off == null,
-                        note = off,
-                        onToggle = { wanted ->
-                            // Recording is the one that loses something when it
-                            // stops, so it asks first.
-                            if (switch == CameraSwitch.Recording && !wanted) {
-                                stopping = true
-                            } else {
-                                viewModel.set(switch, wanted)
-                            }
-                        },
-                    )
+                groups.forEach { (heading, listed) ->
+                    Group(heading) {
+                        listed.forEachIndexed { index, switch ->
+                            if (index > 0) CardDivider()
+                            val off = page.blocked(switch)
+                            SwitchRow(
+                                switch = switch,
+                                on = switches?.get(switch) ?: false,
+                                changeable = page.admin && off == null,
+                                note = off,
+                                onToggle = { wanted ->
+                                    // Recording is the one that loses something when it
+                                    // stops, so it asks first.
+                                    if (switch == CameraSwitch.Recording && !wanted) {
+                                        stopping = true
+                                    } else {
+                                        viewModel.set(switch, wanted)
+                                    }
+                                },
+                            )
+                        }
+                    }
                 }
+
+                Text(
+                    text = "Changes save on the server as you tap.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp),
+                )
             }
         }
     }
@@ -161,37 +175,47 @@ fun CameraSwitchesScreen(
     }
 }
 
+/** The eight switches, in the order they sit on the page. */
+private val groups: List<Pair<String, List<CameraSwitch>>> = listOf(
+    "Detection" to listOf(
+        CameraSwitch.ObjectDetection,
+        CameraSwitch.MotionDetection,
+        CameraSwitch.AudioDetection,
+    ),
+    "Recording" to listOf(CameraSwitch.Recording, CameraSwitch.Snapshots),
+    "Live view" to listOf(CameraSwitch.Birdseye),
+    "Recognition" to listOf(CameraSwitch.FaceRecognition, CameraSwitch.LicensePlate),
+)
+
 /** One setting, its switch on the right, and a line under it when it can't be moved. */
 @Composable
 private fun SwitchRow(
-    label: String,
+    switch: CameraSwitch,
     on: Boolean,
     changeable: Boolean,
     note: String?,
     onToggle: (Boolean) -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .toggleable(
-                value = on,
-                enabled = changeable,
-                role = Role.Switch,
-                onValueChange = onToggle,
-            )
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(text = label, style = MaterialTheme.typography.bodyLarge)
-            if (note != null) {
-                Text(
-                    text = note,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Switch(checked = on, onCheckedChange = null, enabled = changeable)
-    }
+    Item(
+        icon = switch.icon,
+        title = switch.label,
+        supporting = note,
+        onClick = if (changeable) ({ onToggle(!on) }) else null,
+        trailing = {
+            Switch(checked = on, onCheckedChange = null, enabled = changeable)
+        },
+    )
 }
+
+/** What each switch looks like at the start of its line. */
+private val CameraSwitch.icon: ImageVector
+    get() = when (this) {
+        CameraSwitch.ObjectDetection -> FrigoIcons.Eye
+        CameraSwitch.MotionDetection -> FrigoIcons.Motion
+        CameraSwitch.Recording -> FrigoIcons.Camera
+        CameraSwitch.Snapshots -> FrigoIcons.Photo
+        CameraSwitch.AudioDetection -> FrigoIcons.Sound
+        CameraSwitch.Birdseye -> FrigoIcons.Grid
+        CameraSwitch.FaceRecognition -> FrigoIcons.Face
+        CameraSwitch.LicensePlate -> FrigoIcons.Car
+    }

@@ -62,7 +62,7 @@ rather than twenty events. Tap one to watch the clip of that time. Alerts and
 detections are separate halves of the list. Watch past halfway and the review
 counts as watched, here and on the web page, so it leaves the list. Show reviewed
 brings the watched ones back. Pull the list down for what has happened since. The
-tune icon in the corner opens Alerts & Detections, where you choose the labels
+tune icon in the corner opens Alerts and detections, where you choose the objects
 behind each.
 
 **Explore.** What Frigate has recorded, newest first, with thumbnails, the way
@@ -202,10 +202,10 @@ A review's picture is the first thing it saw. Frigate keeps a separate thumbnail
 for the review, but it sits behind the web server rather than the API, so the app
 takes the event's picture instead, which is the same one.
 
-The chips under the buttons narrow the list. The first row picks a camera, or all
-of them. Labels picks what was seen, and the day chip covers all time, today,
-yesterday, or a single day from the calendar. Clear puts all three back, and Load
-older keeps them.
+The chips above the list narrow it. The first names a camera, or all of them.
+Labels picks what was seen, and the day chip covers all time, today, yesterday, or
+a single day from the calendar. Show reviewed sits beside them. Clear puts the
+narrowing back, and Load older keeps it.
 
 The labels offered are the ones turned on for the tab: the alert labels on Alerts,
 the detection labels on Detections. A detection list left empty means every other
@@ -215,14 +215,14 @@ its own is offered its own.
 ## Alerts and detections
 
 The tune icon on Review opens a page for the two lists. Alerts has a switch and the
-labels that make one. Detections has the same, and empty there means every other
-label. Tap **Change** to pick them, with a search box and the labels your cameras
-track marked at the top.
+objects that make one. Detections has the same, and nothing picked there means
+every other object. Tap Objects to pick them, with a search box and the labels your
+cameras track marked.
 
 The labels are Frigate's own: bark, car, cat, fire alarm, glass, person, scream,
 smash, smoke detector, speech and yell, plus anything already in use on your
 server. A change goes to the server as you make it, so the next thing Frigate sees
-follows it and nothing restarts. The row along the top picks the scope: all
+follows it and nothing restarts. The chip along the top picks the scope: all
 cameras, or one of them. A camera you never pick follows the shared settings.
 
 These are Frigate's settings rather than the app's. They live in its own settings

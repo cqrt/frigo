@@ -11,7 +11,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -20,22 +19,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,8 +47,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -73,6 +66,11 @@ import nz.mckenzie.frigo.data.canInstallApps
 import nz.mckenzie.frigo.data.cameraState
 import nz.mckenzie.frigo.data.installUpdate
 import nz.mckenzie.frigo.ui.FrigoIcons
+import nz.mckenzie.frigo.ui.components.CardDivider
+import nz.mckenzie.frigo.ui.components.Group
+import nz.mckenzie.frigo.ui.components.Item
+import nz.mckenzie.frigo.ui.components.OpenMark
+import nz.mckenzie.frigo.ui.components.attention
 import nz.mckenzie.frigo.ui.components.prettyLabel
 import nz.mckenzie.frigo.ui.theme.ThemeMode
 import java.io.File
@@ -526,75 +524,6 @@ fun SettingsScreen(
 
 /** A heading over a card, which is what one thing you can change looks like. */
 @Composable
-private fun Group(label: String, content: @Composable ColumnScope.() -> Unit) {
-    Column {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
-        )
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(content = content)
-        }
-    }
-}
-
-/**
- * A line of the card: an icon, a name, and either a value or what sits beside
- * it, such as a switch or a chevron.
- */
-@Composable
-private fun Item(
-    icon: ImageVector,
-    title: String,
-    value: String? = null,
-    supporting: String? = null,
-    colour: Color? = null,
-    onClick: (() -> Unit)? = null,
-    trailing: @Composable (() -> Unit)? = null,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(22.dp),
-        )
-        Column(Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
-            if (value != null) {
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (supporting != null) {
-                Text(
-                    text = supporting,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colour ?: MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        trailing?.invoke()
-    }
-}
-
-/** A camera's name and what its switches come to, opening that camera's page. */
-@Composable
 private fun CameraRow(
     title: String,
     state: CameraState?,
@@ -606,14 +535,7 @@ private fun CameraRow(
         supporting = state?.said,
         colour = if (state?.somethingOff == true) attention() else null,
         onClick = onClick,
-        trailing = {
-            Icon(
-                imageVector = FrigoIcons.Chevron,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
-            )
-        },
+        trailing = { OpenMark() },
     )
 }
 
@@ -669,24 +591,6 @@ private fun Fact(label: String, value: String) {
         Text(text = value, style = MaterialTheme.typography.bodyMedium)
     }
 }
-
-/** Between two lines of a card, starting clear of the icon. */
-@Composable
-private fun CardDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(start = 54.dp),
-        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-    )
-}
-
-/** Amber, for a camera with something switched off. */
-@Composable
-private fun attention(): Color =
-    if (MaterialTheme.colorScheme.background.luminance() < 0.5f) {
-        Color(0xFFFFB874)
-    } else {
-        Color(0xFF8A4B00)
-    }
 
 /** What the chip says. */
 private fun ThemeMode.label(): String = when (this) {

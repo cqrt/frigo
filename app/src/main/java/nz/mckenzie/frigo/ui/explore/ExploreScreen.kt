@@ -49,7 +49,7 @@ import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.Period
 import nz.mckenzie.frigo.ui.components.CachedImage
-import nz.mckenzie.frigo.ui.components.CameraChips
+import nz.mckenzie.frigo.ui.components.CameraMenu
 import nz.mckenzie.frigo.ui.components.ChoiceChip
 import nz.mckenzie.frigo.ui.components.DayDialog
 import nz.mckenzie.frigo.ui.components.PeriodChip
@@ -75,17 +75,18 @@ fun ExploreScreen(container: AppContainer, modifier: Modifier = Modifier) {
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         )
 
-        CameraChips(
-            cameras = state.cameras,
-            chosen = state.camera,
-            onChoose = viewModel::selectCamera,
-        )
-
         LazyRow(
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
+            item {
+                CameraMenu(
+                    cameras = state.cameras,
+                    chosen = state.camera,
+                    onChoose = viewModel::selectCamera,
+                )
+            }
             item {
                 ChoiceChip(
                     title = "Labels",
@@ -213,8 +214,8 @@ private fun EventRow(
     onClick: () -> Unit,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

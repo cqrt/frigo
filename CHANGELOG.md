@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.9.3
+
+- The camera switches, Alerts and detections, Review and Explore wear the same cards as Settings.
+- Review and Explore narrow from one row of chips, so the list gets the rest of the screen.
+- A camera's eight switches are grouped into detection, recording, live view and recognition.
+
 ## 0.9.2
 
 - Settings is laid out in groups, and each camera says what it has switched off.

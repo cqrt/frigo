@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -25,7 +26,6 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -52,7 +52,7 @@ import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.Period
 import nz.mckenzie.frigo.ui.components.CachedImage
-import nz.mckenzie.frigo.ui.components.CameraChips
+import nz.mckenzie.frigo.ui.components.CameraMenu
 import nz.mckenzie.frigo.ui.components.ChoiceChip
 import nz.mckenzie.frigo.ui.components.DayDialog
 import nz.mckenzie.frigo.ui.components.PeriodChip
@@ -103,17 +103,18 @@ fun ReviewsScreen(
             }
         }
 
-        CameraChips(
-            cameras = state.cameras,
-            chosen = state.camera,
-            onChoose = viewModel::selectCamera,
-        )
-
         LazyRow(
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
+            item {
+                CameraMenu(
+                    cameras = state.cameras,
+                    chosen = state.camera,
+                    onChoose = viewModel::selectCamera,
+                )
+            }
             item {
                 ChoiceChip(
                     title = "Labels",
@@ -131,26 +132,18 @@ fun ReviewsScreen(
                     onPickDay = { pickingDay = true },
                 )
             }
+            item {
+                FilterChip(
+                    selected = state.showReviewed,
+                    onClick = { viewModel.setShowReviewed(!state.showReviewed) },
+                    label = { Text("Show reviewed") },
+                )
+            }
             if (state.narrowed) {
                 item {
                     TextButton(onClick = viewModel::clearFilters) { Text("Clear") }
                 }
             }
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { viewModel.setShowReviewed(!state.showReviewed) }
-                .padding(start = 16.dp, end = 16.dp, top = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "Show reviewed",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-            )
-            Switch(checked = state.showReviewed, onCheckedChange = viewModel::setShowReviewed)
         }
 
         state.error?.takeIf { state.reviews.isNotEmpty() }?.let { message ->
@@ -274,8 +267,8 @@ private fun ReviewRow(
     onClick: () -> Unit,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

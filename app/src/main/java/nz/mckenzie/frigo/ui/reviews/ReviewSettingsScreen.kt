@@ -5,16 +5,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -22,12 +19,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,11 +36,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import nz.mckenzie.frigo.data.AppContainer
+import nz.mckenzie.frigo.ui.FrigoIcons
+import nz.mckenzie.frigo.ui.components.CameraMenu
+import nz.mckenzie.frigo.ui.components.CardDivider
+import nz.mckenzie.frigo.ui.components.Group
+import nz.mckenzie.frigo.ui.components.Item
+import nz.mckenzie.frigo.ui.components.OpenMark
 
 /**
  * The page behind the tune icon on Review: which objects make an alert, which
@@ -89,10 +89,9 @@ fun ReviewSettingsScreen(
         return
     }
 
-
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Alerts & Detections") },
+            title = { Text("Alerts and detections") },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -131,131 +130,116 @@ fun ReviewSettingsScreen(
                 )
             }
 
-            else -> Column(
-                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+            else -> {
+                val changeable = page.admin && !state.busy
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    item("all") {
-                        FilterChip(
-                            selected = state.scope == null,
-                            onClick = { viewModel.show(null) },
-                            label = { Text("All cameras") },
+                    CameraMenu(
+                        cameras = page.cameras,
+                        chosen = state.scope,
+                        onChoose = viewModel::show,
+                    )
+
+                    if (!page.admin) {
+                        Text(
+                            text = "Only an admin can change these.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
                         )
                     }
-                    items(page.cameras, key = { it.name }) { camera ->
-                        FilterChip(
-                            selected = state.scope == camera.name,
-                            onClick = { viewModel.show(camera.name) },
-                            label = { Text(camera.title) },
+
+                    state.error?.let { message ->
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+
+                    Group("Alerts") {
+                        Item(
+                            icon = FrigoIcons.Bell,
+                            title = "Enable",
+                            onClick = if (changeable) {
+                                { viewModel.setAlertsOn(!shown.alertsOn) }
+                            } else {
+                                null
+                            },
+                            trailing = {
+                                Switch(
+                                    checked = shown.alertsOn,
+                                    onCheckedChange = null,
+                                    enabled = changeable,
+                                )
+                            },
+                        )
+                        CardDivider()
+                        Item(
+                            icon = FrigoIcons.Tag,
+                            title = "Objects",
+                            value = shown.alertLabels.takeIf { it.isNotEmpty() }
+                                ?.joinToString(", ") { it.labelName() }
+                                ?: "Nothing",
+                            onClick = if (changeable) {
+                                { picking = ReviewLabels.Alerts }
+                            } else {
+                                null
+                            },
+                            trailing = if (changeable) ({ OpenMark() }) else null,
+                        )
+                    }
+
+                    Group("Detections") {
+                        Item(
+                            icon = FrigoIcons.Eye,
+                            title = "Enable",
+                            onClick = if (changeable) {
+                                { viewModel.setDetectionsOn(!shown.detectionsOn) }
+                            } else {
+                                null
+                            },
+                            trailing = {
+                                Switch(
+                                    checked = shown.detectionsOn,
+                                    onCheckedChange = null,
+                                    enabled = changeable,
+                                )
+                            },
+                        )
+                        CardDivider()
+                        Item(
+                            icon = FrigoIcons.Tag,
+                            title = "Objects",
+                            value = when {
+                                shown.detectionLabels == null -> "Everything else"
+                                shown.detectionLabels.isEmpty() -> "Nothing"
+                                else -> shown.detectionLabels.joinToString(", ") { it.labelName() }
+                            },
+                            onClick = if (changeable) {
+                                { picking = ReviewLabels.Detections }
+                            } else {
+                                null
+                            },
+                            trailing = if (changeable) ({ OpenMark() }) else null,
+                        )
+                    }
+
+                    if (state.scope == null) {
+                        Text(
+                            text = "These cover every camera. Pick one above to set its own.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp),
                         )
                     }
                 }
-
-                if (!page.admin) {
-                    Text(
-                        text = "Only an admin can change these.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                }
-
-                state.error?.let { message ->
-                    Text(
-                        text = message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                }
-
-                FlagCard(
-                    title = "Alerts",
-                    on = shown.alertsOn,
-                    summary = shown.alertLabels.takeIf { it.isNotEmpty() }
-                        ?.joinToString(", ") { it.labelName() }
-                        ?: "Nothing",
-                    detail = "Settings for which tracked objects generate alerts.",
-                    changeable = page.admin && !state.busy,
-                    onToggle = viewModel::setAlertsOn,
-                    onChange = { picking = ReviewLabels.Alerts },
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                )
-
-                FlagCard(
-                    title = "Detections",
-                    on = shown.detectionsOn,
-                    summary = when {
-                        shown.detectionLabels == null -> "Everything else"
-                        shown.detectionLabels.isEmpty() -> "Nothing"
-                        else -> shown.detectionLabels.joinToString(", ") { it.labelName() }
-                    },
-                    detail = "Settings for which tracked objects generate detections " +
-                        "(non-alert).",
-                    changeable = page.admin && !state.busy,
-                    onToggle = viewModel::setDetectionsOn,
-                    onChange = { picking = ReviewLabels.Detections },
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                )
             }
-        }
-    }
-}
-
-@Composable
-private fun FlagCard(
-    title: String,
-    on: Boolean,
-    summary: String,
-    detail: String,
-    changeable: Boolean,
-    onToggle: (Boolean) -> Unit,
-    onChange: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(12.dp),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(top = 4.dp, bottom = 10.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                Switch(checked = on, onCheckedChange = onToggle, enabled = changeable)
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                if (changeable) {
-                    TextButton(onClick = onChange) { Text("Change") }
-                }
-            }
-            Text(
-                text = detail,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
         }
     }
 }

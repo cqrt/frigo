@@ -1810,3 +1810,38 @@ more off" in amber, with the other three saying "Everything on", because license
 is off for the whole server and so is not counted. Appearance switched the whole app to Night, and
 the amber line turned to a lighter orange that still read against the dark card. Updates said 0.9.2
 was the newest, and About sat under it.
+
+## The cards reach the rest of the app
+
+The grouped cards were picked for Settings first, and the pages behind it were still a stack of
+panels: the eight switches on a bare page, Alerts and Detections as two wide cards, Review and
+Explore as a list under two rows of chips. They now use the same pieces, lifted into
+`ui/components/Cards.kt` so one group of rows looks the same everywhere: a small heading, a card,
+a leading icon per row, and a divider that starts clear of the icon.
+
+The eight switches are grouped into detection, recording, live view and recognition. That is the
+order Frigate itself uses, and it means the page can be read in four parts rather than eight lines.
+A switch the server holds off still says **Off for the whole server.** under its name, with its
+switch greyed.
+
+Alerts and detections became two cards of two rows: the switch, then the objects with their names
+underneath and a chevron. The **Change** button is gone, because the row that says what is picked is
+the row you tap to pick it.
+
+Review and Explore were first drawn with the filters as a card of rows, which took about 200 dp of a
+700 dp screen and pushed four reviews off the bottom. Two smaller ways were drawn: one row of chips,
+or a single Filters row opening a sheet. The row of chips was picked. It keeps every filter one tap
+away, and the camera choice becomes a chip that names the camera instead of a chip per camera, which
+is where the second row went. Show reviewed became a chip in the same row, so it stopped needing a
+row of its own. The sheet was dropped because it would add a second tap and a pattern the rest of
+the app doesn't use.
+
+The chips now sit in one row: the camera, the labels, the person on Explore, the day, Show reviewed,
+and Clear once anything is narrowed. The row scrolls sideways when it has to, the same as the chip
+rows before it.
+
+With the new pages, against the real server: North cam showed its eight switches in four cards, face
+recognition on and license plate recognition saying it was off for the whole server. Alerts and
+detections showed the camera chip, Person and Car under Alerts, and Everything else under Detections.
+Review put All cameras, Labels, All time and Show reviewed on one line with the list filling the rest
+of the screen, and Explore put People between Labels and All time.

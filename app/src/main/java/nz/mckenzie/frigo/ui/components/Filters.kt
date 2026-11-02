@@ -1,12 +1,7 @@
 package nz.mckenzie.frigo.ui.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
@@ -36,37 +31,57 @@ import java.time.ZoneOffset
 
 /**
  * The chips that narrow a list, shared by Explore and Review so the two pages
- * read the same way: a row of cameras, then a chip for the labels and one for
- * the day.
+ * read the same way: one chip naming the camera, then a chip each for what was
+ * seen and for the day.
  */
 
-/** Every camera, then one chip each. Nothing is drawn when there is only one. */
+/**
+ * One chip naming the camera in view, opening the list of them. A chip keeps
+ * the whole choice on one line, where a chip per camera took a row of its own.
+ */
 @Composable
-fun CameraChips(
+fun CameraMenu(
     cameras: List<Camera>,
     chosen: String?,
     onChoose: (String?) -> Unit,
 ) {
-    if (cameras.size < 2) return
+    var open by remember { mutableStateOf(false) }
+    val picked = cameras.firstOrNull { it.name == chosen }
 
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        item {
-            FilterChip(
-                selected = chosen == null,
-                onClick = { onChoose(null) },
-                label = { Text("All") },
+    Box {
+        FilterChip(
+            selected = picked != null,
+            onClick = { open = true },
+            label = { Text(picked?.title ?: "All cameras") },
+            trailingIcon = { Arrow() },
+        )
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text("All cameras") },
+                onClick = {
+                    open = false
+                    onChoose(null)
+                },
+                trailingIcon = if (chosen == null) {
+                    { Icon(Icons.Filled.Check, contentDescription = "Chosen") }
+                } else {
+                    null
+                },
             )
-        }
-        items(cameras, key = { it.name }) { camera ->
-            FilterChip(
-                selected = chosen == camera.name,
-                onClick = { onChoose(camera.name) },
-                label = { Text(camera.title) },
-            )
+            cameras.forEach { camera ->
+                DropdownMenuItem(
+                    text = { Text(camera.title) },
+                    onClick = {
+                        open = false
+                        onChoose(camera.name)
+                    },
+                    trailingIcon = if (chosen == camera.name) {
+                        { Icon(Icons.Filled.Check, contentDescription = "Chosen") }
+                    } else {
+                        null
+                    },
+                )
+            }
         }
     }
 }

@@ -169,6 +169,82 @@ object FrigoIcons {
             path("M17 10.4 21.2 8v8L17 13.6", strokeWidth = 1.7f)
         }
     }
+
+    /** An eye, for what a camera looks for. */
+    val Eye: ImageVector by lazy {
+        vector("Eye") {
+            path(
+                "M3 12.2S6.4 6.9 12 6.9s9 5.3 9 5.3-3.4 5.3-9 5.3-9-5.3-9-5.3z",
+                strokeWidth = 1.7f,
+            )
+            path("M12 9.4a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 1 0 0-5.6z", strokeWidth = 1.7f)
+        }
+    }
+
+    /** A line that jumps and settles, for motion. */
+    val Motion: ImageVector by lazy {
+        vector("Motion") {
+            path("M3 12.4h3.4l2.1-5.2 3.4 10.2 2.2-5.8 1.6 3.2H21", strokeWidth = 1.9f)
+        }
+    }
+
+    /** A photograph in a frame, for snapshots. */
+    val Photo: ImageVector by lazy {
+        vector("Photo") {
+            path(
+                "M5.8 5.2h12.4a2.6 2.6 0 0 1 2.6 2.6v8.4a2.6 2.6 0 0 1-2.6 2.6H5.8a2.6 2.6 0 0 1-2.6-2.6" +
+                    "V7.8a2.6 2.6 0 0 1 2.6-2.6z",
+                strokeWidth = 1.7f,
+            )
+            path("M8.6 8.6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3z", strokeWidth = 1.5f)
+            path("M4.4 16.6 9.4 12l3.2 3.1 2.6-2.2 4.2 4", strokeWidth = 1.7f)
+        }
+    }
+
+    /** A face with a smile, for recognising one. */
+    val Face: ImageVector by lazy {
+        vector("Face") {
+            path("M12 4a8 8 0 1 0 0 16 8 8 0 1 0 0-16z", strokeWidth = 1.7f)
+            path("M9.2 10.1h.01M14.8 10.1h.01", strokeWidth = 2f)
+            path("M8.9 14.4a4 4 0 0 0 6.2 0", strokeWidth = 1.7f)
+        }
+    }
+
+    /** A car seen from the side, for number plates. */
+    val Car: ImageVector by lazy {
+        vector("Car") {
+            path(
+                "M4.6 15.2 6.2 9.7a2.4 2.4 0 0 1 2.3-1.8h7a2.4 2.4 0 0 1 2.3 1.8l1.6 5.5",
+                strokeWidth = 1.7f,
+            )
+            path("M3.6 15.2h16.8", strokeWidth = 1.7f)
+            path("M6.4 15.2v2.4M17.6 15.2v2.4", strokeWidth = 1.7f)
+        }
+    }
+
+    /** A label with a hole, for the objects a camera knows. */
+    val Tag: ImageVector by lazy {
+        vector("Tag") {
+            path(
+                "M3.4 6.2h8.4l7.8 5.8-7.8 5.8H3.4a1.4 1.4 0 0 1-1.4-1.4V7.6a1.4 1.4 0 0 1 1.4-1.4z",
+                strokeWidth = 1.7f,
+            )
+            path("M6.6 10.7a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 1 0 0-2.6z", strokeWidth = 1.5f)
+        }
+    }
+
+    /** A page of dates, for a day to narrow to. */
+    val Calendar: ImageVector by lazy {
+        vector("Calendar") {
+            path(
+                "M5.8 5.4h12.4a2.2 2.2 0 0 1 2.2 2.2v10.6a2.2 2.2 0 0 1-2.2 2.2H5.8a2.2 2.2 0 0 1-2.2" +
+                    "-2.2V7.6a2.2 2.2 0 0 1 2.2-2.2z",
+                strokeWidth = 1.7f,
+            )
+            path("M3.6 10.2h16.8", strokeWidth = 1.7f)
+            path("M8.4 3.4v3.6M15.6 3.4v3.6", strokeWidth = 1.8f)
+        }
+    }
 }
 
 /** Filled unless a stroke is asked for, which is how the magnifying glass is drawn. */
