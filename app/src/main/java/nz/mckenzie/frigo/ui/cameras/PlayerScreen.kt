@@ -81,6 +81,7 @@ import nz.mckenzie.frigo.data.RecordingSpan
 import nz.mckenzie.frigo.data.StreamLimits
 import nz.mckenzie.frigo.data.fittingChoice
 import nz.mckenzie.frigo.data.heightsFor
+import nz.mckenzie.frigo.data.joined
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.data.ratesFor
 import nz.mckenzie.frigo.ui.FrigoIcons
@@ -512,11 +513,13 @@ fun PlayerScreen(
                 if (later != null) {
                     // Anything that started before the window is already on the bar;
                     // everything from there on comes from this answer, which is the
-                    // newer of the two.
+                    // newer of the two. Joined again after the stitch, because the
+                    // two halves meet at a moment neither of them chose.
                     spans = (spans.filter { it.startTime < from } + later)
                         .associateBy { it.startTime }
                         .values
                         .sortedBy { it.startTime }
+                        .joined()
                 }
                 if (marks != null) {
                     // A flag is merged by its id rather than by its moment, because

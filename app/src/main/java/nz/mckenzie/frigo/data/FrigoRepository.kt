@@ -159,13 +159,26 @@ class FrigoRepository(
      */
     suspend fun cameras(): List<Camera> = authorized { baseUrl, token ->
         val allowed = api.profile(baseUrl, token).allowedCameras
-        api.config(baseUrl, token).cameras
-            .filterValues { it.enabled }
-            .filter { (name, _) -> allowed == null || name in allowed }
-            .map { (name, config) ->
-                Camera(name = name, title = config.friendlyName ?: prettyCameraName(name))
-            }
-            .sortedBy { it.title.lowercase() }
+        api.config(baseUrl, token).visibleCameras(allowed)
+    }
+
+    /**
+     * What Frigate flags, the cameras to offer on that page, and whether this
+     * account may change any of it. One trip, because a round trip is felt.
+     */
+    suspend fun reviewPage(): ReviewPage = authorized { baseUrl, token ->
+        val profile = api.profile(baseUrl, token)
+        val config = api.config(baseUrl, token)
+        ReviewPage(
+            settings = config.reviewSettings(),
+            cameras = config.visibleCameras(profile.allowedCameras),
+            admin = profile.role == "admin",
+        )
+    }
+
+    /** Changes what Frigate flags, for every camera or for one. */
+    suspend fun setReview(change: ReviewChange) {
+        authorized { baseUrl, token -> api.setReview(baseUrl, token, change) }
     }
 
     suspend fun events(
@@ -440,11 +453,11 @@ class FrigoRepository(
     suspend fun recordingDays(camera: String, timezone: String): List<RecordingDay> =
         authorized { baseUrl, token -> api.recordingDays(baseUrl, token, camera, timezone) }
 
-    /** The stretches of recording between two moments, gaps and all. */
+    /** The stretches of recording between two moments, with the joins in them closed. */
     suspend fun recordingSpans(camera: String, after: Double, before: Double): List<RecordingSpan> =
         authorized { baseUrl, token ->
             api.recordingSpans(baseUrl, token, camera, after, before)
-        }
+        }.joined()
 
     /** A picture of the recording at that moment, for while the clip arrives. */
     suspend fun recordingStill(camera: String, moment: Double, height: Int = 720): ByteArray? =
@@ -627,3 +640,15 @@ class FrigoRepository(
         }
     }
 }
+
+/**
+ * The cameras to show, and only the ones this user may watch, named the way the
+ * app names them. A user who may see everything gets no list, which means all.
+ */
+private fun FrigateConfig.visibleCameras(allowed: List<String>?): List<Camera> = cameras
+    .filterValues { it.enabled }
+    .filter { (name, _) -> allowed == null || name in allowed }
+    .map { (name, config) ->
+        Camera(name = name, title = config.friendlyName ?: prettyCameraName(name))
+    }
+    .sortedBy { it.title.lowercase() }

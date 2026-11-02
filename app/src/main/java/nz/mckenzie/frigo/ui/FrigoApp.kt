@@ -33,6 +33,7 @@ import nz.mckenzie.frigo.ui.cameras.CamerasScreen
 import nz.mckenzie.frigo.ui.cameras.PlayerScreen
 import nz.mckenzie.frigo.ui.explore.ExploreScreen
 import nz.mckenzie.frigo.ui.login.LoginScreen
+import nz.mckenzie.frigo.ui.reviews.ReviewSettingsScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewsScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
 
@@ -128,7 +129,20 @@ private fun MainScaffold(
                 }
             }
             composable("reviews") {
-                ReviewsScreen(container, Modifier.padding(padding))
+                ReviewsScreen(
+                    container = container,
+                    modifier = Modifier.padding(padding),
+                    onOpenSettings = {
+                        navController.navigate("review-settings") { launchSingleTop = true }
+                    },
+                )
+            }
+            composable("review-settings") {
+                ReviewSettingsScreen(
+                    container = container,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable("explore") {
                 ExploreScreen(container, Modifier.padding(padding))

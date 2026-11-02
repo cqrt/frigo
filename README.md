@@ -61,7 +61,9 @@ groups what it saw into these, so a visitor who stays a while is one review
 rather than twenty events. Tap one to watch the clip of that time. Alerts and
 detections are separate halves of the list. Watch past halfway and the review
 counts as watched, here and on the web page, so it leaves the list. Show reviewed
-brings the watched ones back. Pull the list down for what has happened since.
+brings the watched ones back. Pull the list down for what has happened since. The
+tune icon in the corner opens what Frigate flags, where you set which objects
+make an alert and which make a detection.
 
 **Explore.** What Frigate has recorded, newest first, with thumbnails, the way
 the Explore page on the server has it. Narrow it by camera, by what was seen, by
@@ -116,6 +118,10 @@ When the video is slow to arrive, Frigate's small picture is drawn in the same p
 it does, and the video takes over the moment it has a frame. If it never comes, the stills
 stay and a line under the picture says so. Zooming scales the picture the phone already has
 either way, so the stream keeps its own size and rate.
+
+Leave the app and come back, and the stream is opened again rather than carried on from
+where it stopped. Picked up where it stopped, a picture paused for two minutes would come
+back two minutes behind the clock, still saying Live.
 
 The stills are one whole frame at a time, kept at the size Frigate decodes for detection:
 640x360 on the two outdoor cameras, 1280x960 on the door, 1280x720 on the printer. Frigate
@@ -195,6 +201,21 @@ else, which is the longer list.
 A review's picture is the first thing it saw. Frigate keeps a separate thumbnail
 for the review, but it sits behind the web server rather than the API, so the app
 takes the event's picture instead, which is the same one.
+
+## Changing what's flagged
+
+The tune icon on Review opens a page for the two lists. Alerts has a switch and
+the objects that make one. Detections has the same, and empty there means
+everything that isn't an alert. Tap **Change** to pick the objects, with a search
+box and the ones your detectors already track marked at the top.
+
+A change goes to the server as you make it, so the next thing Frigate sees
+follows it and nothing restarts. The row along the top picks the scope: all
+cameras, or one of them. A camera you never pick follows the shared settings.
+
+These are Frigate's settings rather than the app's. They live in its own settings
+file and the server's web page shows the same values. An admin account can change
+them and anyone signed in can look.
 
 ## Updating
 

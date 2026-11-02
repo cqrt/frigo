@@ -88,6 +88,27 @@ class FrigateApi(
         return json.decodeFromString(FrigateConfig.serializer(), request.okBody())
     }
 
+    /**
+     * Changes what Frigate flags.
+     *
+     * The change goes in as a settings edit, which Frigate applies to itself as
+     * it saves, so the next alert follows it and nothing restarts.
+     */
+    fun setReview(baseUrl: String, token: String, change: ReviewChange) {
+        val body = buildJsonObject {
+            put("requires_restart", 0)
+            put("update_topic", change.updateTopic)
+            put("config_data", change.configData)
+        }.toString().toRequestBody(JSON)
+
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/config/set"))
+            .header("Authorization", "Bearer $token")
+            .put(body)
+            .build()
+        request.okConfigWrite()
+    }
+
     /** Which cameras this user may watch, and which role they have. */
     fun profile(baseUrl: String, token: String): FrigateProfile {
         val request = Request.Builder()
@@ -496,6 +517,35 @@ class FrigateApi(
         }
     }
 
+    /**
+     * A settings write. Frigate saves the change and applies it, and answers with
+     * `success`, or with the one reason it wouldn't take it.
+     *
+     * A 403 is not an aged-out session here, it is an account that isn't an admin,
+     * so it is told apart before anything treats it as a sign-in problem.
+     */
+    private fun Request.okConfigWrite(): String {
+        client.newCall(this).execute().use { response ->
+            val raw = runCatching { response.body?.string() }.getOrNull().orEmpty()
+            val answer = runCatching { json.parseToJsonElement(raw) as JsonObject }.getOrNull()
+
+            if (response.code == 403) throw NotAnAdminException()
+
+            if (!response.isSuccessful) {
+                val said = answer?.let { serverMessageOf(it) }
+                throw FrigateException(response.code, said ?: "The server returned ${response.code}")
+            }
+
+            if (answer != null && textOf(answer["success"]) == "false") {
+                throw FrigateException(
+                    response.code,
+                    textOf(answer["message"]) ?: "Frigate didn't accept that change.",
+                )
+            }
+            return raw
+        }
+    }
+
     private fun Response.toException(): FrigateException {
         val serverSaid = serverMessage()
         val text = when (code) {
@@ -513,7 +563,10 @@ class FrigateApi(
         val raw = runCatching { body?.string() }.getOrNull().orEmpty()
         if (raw.isBlank()) return null
         val obj = runCatching { json.parseToJsonElement(raw) as JsonObject }.getOrNull() ?: return null
+        return serverMessageOf(obj)
+    }
 
+    private fun serverMessageOf(obj: JsonObject): String? {
         textOf(obj["message"])?.let { return it }
 
         return when (val detail = obj["detail"]) {

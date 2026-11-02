@@ -55,6 +55,12 @@ private const val MostLagMillis = 15_000L
 private const val StuckMillis = 12_000L
 
 /**
+ * How long the app may be away before the stream is opened again rather than played
+ * on from where it stopped.
+ */
+private const val AwayMillis = 3_000L
+
+/**
  * The camera's own picture, as the camera sends it.
  *
  * Frigate's stream is one frame per camera, kept at the size it decodes for
@@ -173,12 +179,27 @@ internal fun LiveVideo(
         }
     }
 
-    // Watching is no reason to play on in the background.
+    // Watching is no reason to play on in the background, and coming back is the
+    // other half of it. A stream that was paused resumes from where it stopped, and
+    // the camera has carried on without it, so the picture would sit that much behind
+    // the clock for as long as you watched, saying Live. Anything longer than a
+    // moment away opens the stream again instead of carrying on.
+    val stoppedAt = remember(player) { longArrayOf(0L) }
     DisposableEffect(lifecycle, player) {
         val watcher = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_STOP -> player.pause()
-                Lifecycle.Event.ON_START -> player.play()
+                Lifecycle.Event.ON_STOP -> {
+                    stoppedAt[0] = SystemClock.elapsedRealtime()
+                    player.pause()
+                }
+                Lifecycle.Event.ON_START -> {
+                    val away = SystemClock.elapsedRealtime() - stoppedAt[0]
+                    if (stoppedAt[0] != 0L && away > AwayMillis) {
+                        opening++
+                    } else {
+                        player.play()
+                    }
+                }
                 else -> Unit
             }
         }
@@ -190,6 +211,12 @@ internal fun LiveVideo(
         player.volume = if (withSound) 1f else 0f
     }
 
+    // The best the picture has managed since it was opened, and when it last stopped
+    // for more. Kept outside the loop below because the loop starts again every time
+    // the screen comes back: what the picture lost while it was away is still lost,
+    // and measuring from the moment you came back would call that much behind normal.
+    val marks = remember(player) { longArrayOf(Long.MAX_VALUE, 0L) }
+
     // A stream with no end never says it has fallen behind, and a picture that lags
     // further and further behind the clock is the thing this screen was changed to
     // get away from. So the gap between the picture and now is measured while the
@@ -199,31 +226,31 @@ internal fun LiveVideo(
     // reopening it there does not make it arrive sooner.
     LaunchedEffect(player, camera) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            var soonest = Long.MAX_VALUE
-            var waitingSince = 0L
             while (isActive) {
-                delay(LagEveryMillis)
-                if (!started) continue
-                val now = SystemClock.elapsedRealtime()
-                if (player.playbackState == Player.STATE_BUFFERING) {
-                    if (waitingSince == 0L) waitingSince = now
-                    if (now - waitingSince > StuckMillis) {
-                        opening++
-                        return@repeatOnLifecycle
-                    }
-                } else {
-                    waitingSince = 0L
-                    if (!player.isPlaying) continue
-                    // How far the picture is behind the clock, measured against the
-                    // best it has managed since it was opened: the stream itself
-                    // need not start at any particular place.
-                    val behind = now - player.currentPosition
-                    soonest = minOf(soonest, behind)
-                    if (behind - soonest > MostLagMillis) {
-                        opening++
-                        return@repeatOnLifecycle
+                if (started) {
+                    val now = SystemClock.elapsedRealtime()
+                    if (player.playbackState == Player.STATE_BUFFERING) {
+                        if (marks[1] == 0L) marks[1] = now
+                        if (now - marks[1] > StuckMillis) {
+                            opening++
+                            return@repeatOnLifecycle
+                        }
+                    } else {
+                        marks[1] = 0L
+                        if (player.isPlaying) {
+                            // How far the picture is behind the clock, measured
+                            // against the best it has managed since it was opened: the
+                            // stream itself need not start at any particular place.
+                            val behind = now - player.currentPosition
+                            marks[0] = minOf(marks[0], behind)
+                            if (behind - marks[0] > MostLagMillis) {
+                                opening++
+                                return@repeatOnLifecycle
+                            }
+                        }
                     }
                 }
+                delay(LagEveryMillis)
             }
         }
     }

@@ -1545,7 +1545,96 @@ Versions are compared as numbers rather than as text, so 0.7.100 counts as later
 0.7.99 instead of earlier. The release workflow derives the version code the same way, so
 the phone agrees with the app about which version is newer.
 
+## Coming back to the app is not carrying on
+
+Leaving the app pauses the stream, which is right: watching is no reason to play on in the
+background. Coming back resumed it from the paused moment, and the camera had gone on
+without it. Two minutes away came back as a picture two minutes old, with the pill still
+saying Live, and nothing to catch it up.
+
+The watchdog should have caught it, and did not: it measures how far the picture is behind
+the clock against the best the picture has managed since it was opened, and it starts again
+every time the screen comes back. So the two minutes were taken as the new normal, and the
+picture stayed put.
+
+Coming back is now handled where the pause is: a stream left for more than three seconds is
+opened again rather than played on. The best the picture has managed is also kept across the
+pause, so anything lost while the screen was away still counts as lost. Reopening costs
+about a second of picture, which is the same thing the watchdog already does when a stream
+falls behind on its own.
+
+## The bar draws a run, not its segments
+
+The bar showed hundreds of hairlines across an hour of a camera that never stopped
+recording. They were there in the data: over three hours, South cam came back as 1,073
+rows, 915 of them with 0.03 seconds between one row's end and the next one's start, and 153
+with about a second. North cam did the same, 785 slivers and 126 second-long ones. Every
+segment ends a fraction of a second either side of the next one's start, so nothing is
+missing from the recording; a segment of ten seconds is simply not cut on the same tick as
+the one before it.
+
+Two things then turn that into something you can see. Each row was drawn as its own block,
+and an edge drawn with antialiasing is a partly covered pixel, so two blocks that touch
+leave a lighter seam even with no gap at all. A second of gap at hour scale is a third of a
+pixel, which is enough to read as a line.
+
+So the rows are joined before they are drawn: anything less than two seconds apart is one
+run. A second of nothing is not something you can watch, and neither the play button nor the
+scrubber could land in it, so the bar saying the run is unbroken is the truthful reading.
+Real holes, minutes of a camera that stopped, are wider than that and stay grey. The join
+happens where the stretches are read, so the bar, the day strip and the pieces a playback is
+cut from all agree, and it is done again after the twenty-second tail is stitched on,
+because the two halves meet at a moment neither of them chose.
+
+## What Frigate flags is edited through its settings API
+
+The four settings behind Review are Frigate's own: whether alerts are made, which objects make
+them, the same for detections. They are read from `/api/config`, which any signed-in account may
+read, and written with `PUT /api/config/set`, which only an admin may call. The body is
+`{requires_restart: 0, update_topic, config_data}`.
+
+The topic chooses who hears about it. The review maintainer subscribes to
+`CameraConfigUpdateEnum.review`, which is `config/cameras/<name>/review`, so a write to
+`config/cameras/*/review` or to one camera's path is applied as Frigate saves it and nothing
+restarts. `requires_restart` is left at 0 for the same reason; this is the one place the app writes
+to the server at all.
+
+Only the fields that changed go in the body. A camera with no review settings of its own follows the
+top-level ones, and writing those same values back under the camera would end that: from then on the
+camera would keep that copy and stop following. So flipping a switch sends `{"enabled": false}` and
+nothing else, and the labels are written only when the labels changed.
+
+A detection list sent as JSON `null` is a key deleted, which is how "everything else" is put back.
+Frigate reads a missing `labels` under detections as every other object, and under alerts as the two
+it starts with, so null is the right value there and an empty array is not.
+
+A 403 is thrown as `NotAnAdminException`, not as `FrigateException`. The repository reads a 403 from
+`FrigateException` as an aged-out token and retries after fetching a fresh one, which does nothing
+for an account that simply isn't allowed to change anything.
+
+The label list is built from the detector's `model.labelmap` rather than `/api/labels`. The server's
+own list there is the labels it has seen events for, four names on this server, where the label map
+is the ninety COCO names the model can actually say. Anything already tracked or already chosen is
+added to the map's names, so a label that is in use never falls out of the picker. Zero in a label
+map is the backdrop, `background`, and is left out because nothing can be flagged as it.
+
+The picker will not let the alert list be emptied, because Frigate reads an empty list as no alert
+labels and would stop making alerts without saying so; turning Alerts off is the honest way to do
+that and it says so. An empty detection list is allowed, and means every other object.
+
+What a change costs the server's file: the write leaves a block in `config.yml` where there was none
+before, and the app has no way to take it back. Deleting the whole block with `{"review": null}` is
+what restores the inherited values, and that also drops any other review setting under it, so the app
+does not offer it. The settings page shows what Frigate resolved, which means a camera with its own
+copy reads the same as one following the shared settings, and the app cannot tell which it is.
+
+Both shapes were written against the real 0.18.2 server: a global write and a per-camera write each
+answered 200 `{"success": true}`, the global one added a `review` block and no camera block, the
+camera one left that camera's settings alone and its neighbours' unchanged, the detection labels came
+back still absent, and the file was 331 lines again after the test block was deleted.
+
 ## Checked on the emulator
+
 
 Against the mock: the Live pill under the stream with its dot dimming and brightening, no
 MJPEG line, the menu on the stream; a tap on the bar turning the picture into a playback
@@ -1589,3 +1678,18 @@ offered 360p alone and 5 and 2 alone. The OSD clock in the picture went from 10:
 and no drift on top of it, and the frame gaps sat at about 200 ms with 422 ms the worst,
 over one stream opened and kept for four and a half minutes. Switching North cam to
 Printer cam to North cam to South cam to Printer cam opened each in 510 to 720 ms.
+
+With the app left: South cam opened and playing, the phone's home pressed at 16:06:48, the app
+brought back at 16:09:18. The picture was on 16:09:33 against a clock at 16:09:43 rather than
+the 16:06:31 it had paused on, the Live pill still up, and the bar and the line under it on
+today and on now. The emulator decodes 1440p in software at about two thirds of real time, so
+ten seconds behind is what it does while playing; the phone is a second to two.
+
+With what Frigate flags: the tune icon on Review opened the page on All cameras with Alerts and
+Detections both on, Person and Car under Alerts, and Everything else under Detections, the camera
+row running off the right edge and scrolling, and the note under the cards saying every camera
+follows these. The alert picker listed the tracked Person first and marked, Car ticked further down,
+the names in alphabetical order with the model's `background` left out, the search box narrowing to
+Car and Carrot on `car`, and Done greyed out once nothing was ticked. Flipping Alerts off from the
+app took effect on the server with no error and no restart, `/api/config` showing alerts off for
+every camera; flipping it back on had the same effect in reverse.

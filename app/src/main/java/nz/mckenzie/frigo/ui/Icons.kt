@@ -111,6 +111,17 @@ object FrigoIcons {
             path("M5 19.8h14", strokeWidth = 2.1f)
         }
     }
+
+    /** Two lines with a knob on each, for the page that says what Frigate flags. */
+    val Tune: ImageVector by lazy {
+        vector("Tune") {
+            path("M4 7h8.4M17.6 7H20M4 17h2.4M11.6 17H20", strokeWidth = 2f)
+            path(
+                "M15 4.8a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 1 0 0-4.4z" +
+                    "M9 14.8a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 1 0 0-4.4z",
+            )
+        }
+    }
 }
 
 /** Filled unless a stroke is asked for, which is how the magnifying glass is drawn. */
