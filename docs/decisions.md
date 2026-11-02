@@ -1937,3 +1937,56 @@ One smaller thing on the same screen. The two numbers on the halves came out sta
 other inside `SegmentedButton`, so a button laid out its own children on top of the label it was
 given. They are one `Text` holding an `AnnotatedString` now, which draws in one line and reads to a
 screen reader as one label rather than two.
+
+## A stretch goes to the phone or stays on the server
+
+Save used to mean one thing: a file on the phone. It means two now, and the two are close enough in
+sound that a pair of buttons side by side would need a sentence each for the difference to land.
+One pill opens a sheet with two lines, each with its own sentence, and the sheet is where the answer
+belongs. A second button under the picture would also have pushed the bar's own row about.
+
+The export endpoints, checked against 0.18.2 with a real sixty second clip of `door_cam`:
+
+- `POST /api/export/{camera}/start/{start}/end/{end}` with `{"source":"recordings","name":…,
+  "image_path":""}` answers `{success, message, export_id, status}` and queues the work. A stretch
+  the camera did not record is HTTP 400 with `{"success":false,"message":"No recordings found for time
+  range"}`, which is put into words as "Frigate has no recording of that stretch."
+- `GET /api/exports` lists them newest first, with `id, camera, name, date, video_path, thumb_path,
+  in_progress, export_case`.
+- `PATCH /api/export/{id}/rename` with `{"name":…}`, and `POST /api/exports/delete` with `{"ids":[…]}`.
+
+The files sit under `/media/frigate`, and the addresses that serve them leave that folder off: the
+video at `/exports/<basename>.mp4` (a real length, `Accept-Ranges: bytes`) and the picture at
+`/clips/export/<id>.webp`. `servedPath` cuts the prefix where it is there and falls back to the folder
+the file belongs in, so a server that reports the path differently still gets a working address.
+
+`date` is when the stretch starts, not when it was kept. The field is documented as the time the
+export was created, and the times say otherwise: a clip asked for at ten in the morning with a start
+of 08:54 came back carrying 08:54, as did both of the server's own older exports against their file
+names. So the list says the moment the footage is from. The first version of the row said "Kept 1 hr.
+ago" for a clip kept a minute earlier, which is how the difference was found.
+
+A clip the app kept is named after its camera and its moment, `Door cam Tue 3 Nov 08:54`, so the row
+drops its own line for the moment when the name already ends with it. A clip named by hand keeps it.
+
+Kept clips are fetched into the cache and played the way every other clip is, under `kept-<id>`. The
+endpoint does support ranges, but a player on a home connection still benefits from the whole file,
+and the code, the repair pass and the trim already exist.
+
+## The clips list has its own tab
+
+Five tabs is more than four, and the alternative was worse. Settings would have hidden a library
+behind a page you go to for the switches, Explore mixes searching with a library, and reaching the
+list only through the sheet means you can only look at what you have kept when you are keeping
+something new. On the bottom bar it is one tap from anywhere, and the filmstrip says what is behind
+it.
+
+A row keeps the shape the rest of the app uses: `surfaceContainerLow`, sixteen corners, the picture
+on the left. A clip still being cut has a spinner over its picture and does not open. The list asks
+again every three seconds while one is in progress and stops when none is, so a clip is never left
+saying it is being cut when it is done.
+
+Delete takes the row away first and puts it back if the server turns it down, so a wrong tap is
+visible rather than lost. Rename and delete both wait behind a dialog, delete because the file is
+gone for good, rename because the name is typed.
+

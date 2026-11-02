@@ -499,6 +499,57 @@ class FrigoRepository(
     /** A moment written the way a URL is read: digits, then a dot. */
     private fun moment(seconds: Double): String = String.format(Locale.ROOT, "%.3f", seconds)
 
+    /** Every clip kept on the server, newest first. */
+    suspend fun exports(): List<Export> =
+        authorized { baseUrl, token -> api.exports(baseUrl, token) }
+
+    /**
+     * Asks the server to keep a stretch of a camera's recordings, and answers with
+     * the id it is kept under. The cut happens on the server, so the phone can be
+     * put down while it runs.
+     */
+    suspend fun keepClip(camera: String, start: Double, end: Double, name: String): String =
+        authorized { baseUrl, token ->
+            api.startExport(baseUrl, token, camera, start, end, name)
+        }
+
+    /** Gives a kept clip another name. The file on disk keeps its own. */
+    suspend fun renameExport(id: String, name: String) {
+        authorized { baseUrl, token -> api.renameExport(baseUrl, token, id, name) }
+    }
+
+    /** Deletes kept clips from the server. The files go with them. */
+    suspend fun deleteExports(ids: List<String>) {
+        authorized { baseUrl, token -> api.deleteExports(baseUrl, token, ids) }
+    }
+
+    /**
+     * The address of a kept clip's file and the token to send with it.
+     *
+     * Unlike a clip cut on request, this one is a finished file with a length and
+     * support for ranges. It is still fetched whole, so the player has all of it and
+     * can be scrubbed.
+     */
+    fun exportSource(export: Export): ClipSource {
+        val current = stored ?: throw FrigateException(401, "Not signed in")
+        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        return ClipSource(url = "${current.baseUrl}${export.videoUrlPath}", token = token)
+    }
+
+    /** A kept clip as a file on the phone, fetched if it isn't already there. */
+    suspend fun exportFile(export: Export, onProgress: (Long) -> Unit): File =
+        clipFile(
+            source = exportSource(export),
+            key = "kept-${export.id}",
+            onProgress = onProgress,
+            notThere = "That clip isn't on the server any more.",
+        )
+
+    /** The picture Frigate made for a kept clip, or null when it made none. */
+    suspend fun exportThumbnail(export: Export): ByteArray? = runCatching {
+        authorized { baseUrl, token -> api.exportThumbnail(baseUrl, token, export) }
+    }.getOrNull()
+
     /** Which days this camera kept recordings for. */
     suspend fun recordingDays(camera: String, timezone: String): List<RecordingDay> =
         authorized { baseUrl, token -> api.recordingDays(baseUrl, token, camera, timezone) }
@@ -535,6 +586,7 @@ class FrigoRepository(
         source: ClipSource,
         key: String,
         onProgress: (Long) -> Unit,
+        notThere: String? = null,
     ): File = withContext(Dispatchers.IO) {
         val name = key.replace(NOT_IN_A_FILENAME, "_") + ".mp4"
         val clip = File(clipDir, name)
@@ -552,7 +604,7 @@ class FrigoRepository(
         val part = File(clipDir, "$name.part")
         val job = coroutineContext[Job]
         try {
-            api.downloadClip(source, part, onProgress) { job?.isActive != false }
+            api.downloadClip(source, part, onProgress, { job?.isActive != false }, notThere)
             // The clip arrives with the recordings' timing, which can leave a
             // player holding the first frame for hours. Straightening it costs a
             // moment and changes nothing on a clip that is already sound.

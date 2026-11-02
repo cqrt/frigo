@@ -8,6 +8,14 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.9.7
+
+- Save asks where the stretch should go: a file on your phone, or kept on the server.
+- Frigate cuts out the ones you keep itself, and holds them after its clean-up has taken the recordings.
+- Clips is a fifth tab. It lists what you've kept, newest first, with the picture of each.
+- A kept clip plays, saves to the phone, takes another name, or goes for good.
+- A stretch Frigate is still cutting out says so, and fills itself in when it's done.
+
 ## 0.9.6
 
 - The calendar puts a dot under each day that still has something to look at.

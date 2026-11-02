@@ -112,6 +112,22 @@ object FrigoIcons {
         }
     }
 
+    /** A strip of film with its sprocket holes, for the tab of clips kept on the server. */
+    val Clips: ImageVector by lazy {
+        vector("Clips") {
+            path(
+                // The frame, with the holes cut out of it: one shape, evenOdd.
+                "M4.4 4h15.2a2.4 2.4 0 0 1 2.4 2.4v11.2a2.4 2.4 0 0 1-2.4 2.4H4.4" +
+                    "A2.4 2.4 0 0 1 2 17.6V6.4A2.4 2.4 0 0 1 4.4 4z" +
+                    "M5.2 7.2h1.8v1.8H5.2zM5.2 11.1h1.8v1.8H5.2zM5.2 15h1.8v1.8H5.2z" +
+                    "M17 7.2h1.8v1.8H17zM17 11.1h1.8v1.8H17zM17 15h1.8v1.8H17z",
+                evenOdd = true,
+            )
+            // The picture in the middle of the strip, a shade dimmer than the frame.
+            path("M9.2 8.2h5.6v7.6H9.2z", alpha = 0.45f)
+        }
+    }
+
     /** Two lines with a knob on each, for the page that says what Frigate flags. */
     val Tune: ImageVector by lazy {
         vector("Tune") {

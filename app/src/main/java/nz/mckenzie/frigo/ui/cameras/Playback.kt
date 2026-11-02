@@ -39,9 +39,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -64,6 +67,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -381,20 +385,33 @@ internal fun ModePill(
 }
 
 /**
- * Keeps the stretch the caption beside it names as a file on the phone.
+ * What can be done with the stretch the caption beside it names: it can be saved as
+ * a file on the phone, or kept on the server where Frigate's clean-up cannot reach
+ * it.
  *
- * The phone's own save screen opens first, so where the file lands is its decision
- * and the app asks for no permission and puts nothing in the gallery. Nothing is
- * fetched until a place is chosen, so a tap thought better of costs nothing.
+ * The two are one pill because they are one question, and a sheet is where the
+ * question is answered: saving a file and keeping a copy on the server are different
+ * things, and a page of one line each is the shortest way to say so.
+ *
+ * Saving opens the phone's own save screen first, so where the file lands is its
+ * decision and the app asks for no permission and puts nothing in the gallery.
+ * Nothing is fetched until a place is chosen, so a tap thought better of costs
+ * nothing.
  *
  * [fetch] is what the viewer fetches, under the same name, so a stretch already
- * watched in it is copied off the phone rather than asked for again.
+ * watched in it is copied off the phone rather than asked for again. [keep] asks the
+ * server to hold the stretch, and the server does the cutting, so the phone can be
+ * put down while it runs.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SaveClipButton(
     name: String,
+    stretch: String,
     enabled: Boolean,
     fetch: ClipFetch,
+    keep: suspend () -> Unit,
+    onOpenClips: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -406,6 +423,12 @@ internal fun SaveClipButton(
     var received by remember { mutableLongStateOf(0L) }
     var saved by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
+
+    // The sheet, and how the keep went if it was asked for.
+    var sheet by remember { mutableStateOf(false) }
+    var keeping by remember { mutableStateOf(false) }
+    var kept by remember { mutableStateOf(false) }
+    var keepProblem by remember { mutableStateOf<String?>(null) }
 
     // The save screen is remembered rather than made afresh each time: a new one
     // every recomposition would register and unregister the launcher while a save
@@ -457,8 +480,8 @@ internal fun SaveClipButton(
             .clickable(enabled = ready, onClickLabel = "Save this clip") {
                 saved = false
                 failed = false
-                pending = fetch
-                ask.launch(name)
+                keepProblem = null
+                sheet = true
             }
             .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -490,6 +513,155 @@ internal fun SaveClipButton(
             maxLines = 1,
             modifier = Modifier.padding(start = 6.dp),
         )
+    }
+
+    if (sheet) {
+        SaveSheet(
+            stretch = stretch,
+            keeping = keeping,
+            kept = kept,
+            problem = keepProblem,
+            onSave = {
+                sheet = false
+                pending = fetch
+                ask.launch(name)
+            },
+            onKeep = {
+                keepProblem = null
+                kept = false
+                keeping = true
+                scope.launch {
+                    val outcome = runCatching { keep() }
+                    keeping = false
+                    kept = outcome.isSuccess
+                    keepProblem = outcome.exceptionOrNull()?.friendlyMessage()
+                }
+            },
+            onOpenClips = {
+                sheet = false
+                onOpenClips()
+            },
+            onDismiss = { sheet = false },
+        )
+    }
+}
+
+/**
+ * Where a stretch can go, in two lines, and the way to the clips kept already.
+ *
+ * The keep is said where it was asked for: the sheet stays up while the server cuts
+ * the clip, and says what happened after, so a stretch it has no recording of is
+ * one sentence rather than a button that quietly did nothing.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SaveSheet(
+    stretch: String,
+    keeping: Boolean,
+    kept: Boolean,
+    problem: String?,
+    onSave: () -> Unit,
+    onKeep: () -> Unit,
+    onOpenClips: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp)) {
+            Text(
+                text = "This stretch",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = stretch,
+                style = MaterialTheme.typography.titleMedium,
+            )
+
+            Spacer(Modifier.height(14.dp))
+
+            SaveChoice(
+                icon = FrigoIcons.Save,
+                title = "Save to this phone",
+                note = "A file you can move or share, like any other.",
+                enabled = !keeping,
+                onClick = onSave,
+            )
+
+            SaveChoice(
+                icon = FrigoIcons.Clips,
+                title = "Keep on the server",
+                note = when {
+                    problem != null -> problem
+                    kept -> "Kept. It waits on the Clips tab."
+                    keeping -> "Frigate is cutting it out."
+                    else -> "Frigate holds it after its clean-up takes the recordings."
+                },
+                noteIsProblem = problem != null,
+                busy = keeping,
+                enabled = !keeping,
+                onClick = onKeep,
+            )
+
+            TextButton(onClick = onOpenClips, modifier = Modifier.padding(top = 6.dp)) {
+                Text("Clips kept already")
+            }
+        }
+    }
+}
+
+/** One line of the sheet: what it does, and what that means. */
+@Composable
+private fun SaveChoice(
+    icon: ImageVector,
+    title: String,
+    note: String,
+    enabled: Boolean,
+    busy: Boolean = false,
+    noteIsProblem: Boolean = false,
+    onClick: () -> Unit,
+) {
+    val ink = MaterialTheme.colorScheme.onSurface
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+            if (busy) {
+                CircularProgressIndicator(
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(16.dp),
+                )
+            } else {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (enabled) ink else ink.copy(alpha = 0.4f),
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+        Column(Modifier.weight(1f).padding(start = 16.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (enabled) ink else ink.copy(alpha = 0.5f),
+            )
+            Text(
+                text = note,
+                style = MaterialTheme.typography.bodySmall,
+                color = when {
+                    noteIsProblem -> LiveRed
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
     }
 }
 

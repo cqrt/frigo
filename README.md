@@ -51,10 +51,13 @@ picture had reached. Over a gap, the picture goes blank and the line underneath
 says nothing was recorded then. On its side the timeline goes and the picture fills
 the screen.
 
-On a recording, **Save** in the bottom corner keeps the stretch the line under the
-time names as a file on your phone. It asks where to put it first and fetches
-nothing until you've chosen, then shows how much has arrived. Nothing lands in your
-photos and there's no permission to grant.
+On a recording, **Save** in the bottom corner asks where the stretch named under the
+time should go. Save to this phone keeps it as a file: it asks where to put it
+first, fetches nothing until you've chosen, then shows how much has arrived.
+Nothing lands in your photos and there's no permission to grant. Keep on the
+server has Frigate cut the stretch out itself and hold it, so it's still there
+after the recordings it came from have aged out. The sheet says what happened
+before it closes, and its last line goes to the clips you've kept already.
 
 **Review.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review
@@ -74,6 +77,12 @@ from a calendar. Pull the list down to run the search again. Tap an event to
 watch it. An event with a play mark on its thumbnail has a clip, and the clip
 plays with a scrub bar. On its side the clip fills the screen and the close mark
 sits on the picture. One without a play mark shows the still Frigate kept.
+
+**Clips.** The stretches you've kept on the server, newest first, each with the
+picture Frigate made of it and the moment it starts. Tap one to watch it. The three
+dots offer the rest: save a copy to your phone, give it another name, or delete it
+from the server. One that Frigate is still cutting out says so, and fills itself in
+when it's done. Pull the list down to ask again.
 
 **Alerts.** Your phone tells you when Frigate sees one of the things you picked,
 with a picture. Tap the alert and that camera opens. The back arrow goes to the
@@ -185,6 +194,12 @@ the timing before it plays, and the picture and sound themselves are untouched.
 Save uses the same fetched clip. A stretch you've just watched is copied off the
 phone rather than asked for again, so saving it is instant. A stretch you haven't
 watched is fetched first, which is why the button shows how much has arrived.
+
+Keeping one on the server asks Frigate to cut it out instead, and the server does
+the work, so you can put the phone down. The file goes into Frigate's own exports
+folder, which its clean-up leaves alone, and the list of them is what the Clips tab
+shows. A camera with nothing recorded across the stretch is turned down with a
+reason, and the sheet says which: Frigate has no recording of that stretch.
 
 Frigate cuts from the nearest keyframe, so the file can start up to a second before
 the moment you picked. In a file you keep, that's harmless.
@@ -323,7 +338,8 @@ is ever committed. Backup: there's a copy of the key and its password at
 - `data/Updates.kt` - asks GitHub for the newest release, fetches its APK, and hands it to Android's installer.
 - `alerts/` - the service that holds the message feed and the notifications it posts.
 - `ui/` - one folder per screen, Compose throughout.
-- `ui/components/ClipViewer.kt` - the full screen clip player that an event or a review opens.
+- `ui/components/ClipViewer.kt` - the full screen clip player that an event, a review or a kept clip opens.
 - `ui/components/LiveSound.kt` - the camera's sound for the speaker button, when the picture is the stills stream.
 - `ui/cameras/LiveVideo.kt` - the camera's own video, its sound, and keeping the picture up with the clock.
 - `ui/cameras/Playback.kt` - the day's bar under a camera, its spikes, the moment's picture, and the other cameras.
+- `ui/clips/` - the tab of clips kept on the server: the list, the rename and the delete, and the copy saved to the phone.

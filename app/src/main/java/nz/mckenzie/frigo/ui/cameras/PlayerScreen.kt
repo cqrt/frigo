@@ -190,6 +190,7 @@ fun PlayerScreen(
     repository: FrigoRepository,
     cameraName: String,
     onBack: () -> Unit,
+    onOpenClips: () -> Unit = {},
 ) {
     // Which camera is on screen. Tapping one of the other cameras underneath
     // changes this rather than navigating, so Back still lands on the grid you came
@@ -600,6 +601,12 @@ fun PlayerScreen(
         return "frigo-$watching-${at.format(SaveStamp)}.mp4"
     }
 
+    // The name a clip kept on the server carries there: the camera and when the
+    // stretch starts, said plainly, since that is what the list and Frigate's own
+    // page show.
+    fun keptName(): String =
+        "${prettyCameraName(watching)} ${stamp(clipStart, zone)}"
+
     // The status bar's own icons sit on the page's background, so they follow it:
     // light icons on the night colours, dark ones in the day.
     val dayColours = MaterialTheme.colorScheme.background.luminance() > 0.5f
@@ -957,6 +964,7 @@ fun PlayerScreen(
                     if (!live) {
                         SaveClipButton(
                             name = saveName(),
+                            stretch = "${clock(clipStart, zone)} to ${clock(clipEnd, zone)}",
                             enabled = canPlay,
                             fetch = { onProgress ->
                                 repository.clipFile(
@@ -969,6 +977,15 @@ fun PlayerScreen(
                                     onProgress = onProgress,
                                 )
                             },
+                            keep = {
+                                repository.keepClip(
+                                    camera = watching,
+                                    start = clipStart,
+                                    end = clipEnd,
+                                    name = keptName(),
+                                )
+                            },
+                            onOpenClips = onOpenClips,
                         )
                     }
                 }

@@ -298,12 +298,16 @@ class FrigateApi(
      *
      * `shouldKeepGoing` is checked between chunks: closing the viewer stops the
      * download rather than leaving it running with nobody watching.
+     *
+     * [notThere] is what to say when the server has no such file, since a kept clip
+     * and a clip cut on request are gone for different reasons.
      */
     fun downloadClip(
         source: ClipSource,
         target: File,
         onProgress: (Long) -> Unit,
         shouldKeepGoing: () -> Boolean,
+        notThere: String? = null,
     ) {
         val request = Request.Builder()
             .url(source.url)
@@ -316,7 +320,7 @@ class FrigateApi(
             // endpoint" or "that username and password weren't accepted", neither
             // of which is what happened.
             if (response.code == 400 || response.code == 404) {
-                throw FrigateException(response.code, NO_CLIP)
+                throw FrigateException(response.code, notThere ?: NO_CLIP)
             }
             if (response.code == 401 || response.code == 403) {
                 throw FrigateException(response.code, "Your session has expired. Sign in again.")
@@ -499,6 +503,105 @@ class FrigateApi(
             .get()
             .build()
         return request.okBytes()
+    }
+
+    /** Every clip kept on the server, newest first. */
+    fun exports(baseUrl: String, token: String): List<Export> {
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/exports"))
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return json.decodeFromString(ListSerializer(Export.serializer()), request.okBody())
+            .sortedByDescending { it.date }
+    }
+
+    /**
+     * Asks Frigate to cut a stretch out of the recordings and keep it.
+     *
+     * It queues the work and answers at once with the export's id, and the export
+     * says it is in progress until the file is on disk. Asked for a stretch no
+     * camera recorded, it turns the request down with a reason of its own, which is
+     * put into words here rather than passed along.
+     */
+    fun startExport(
+        baseUrl: String,
+        token: String,
+        camera: String,
+        start: Double,
+        end: Double,
+        name: String,
+    ): String {
+        val body = buildJsonObject {
+            put("source", "recordings")
+            put("name", name)
+            // The picture on the card comes from the export itself, so there is no
+            // image path to send.
+            put("image_path", "")
+        }.toString().toRequestBody(JSON)
+
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/export/$camera/start/${start.toLong()}/end/${end.toLong()}"))
+            .header("Authorization", "Bearer $token")
+            .post(body)
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            if (response.code == 401 || response.code == 403) {
+                throw FrigateException(response.code, "Your session has expired. Sign in again.")
+            }
+            val raw = runCatching { response.body?.string() }.getOrNull().orEmpty()
+            val answer = runCatching {
+                json.decodeFromString(StartedExport.serializer(), raw)
+            }.getOrNull()
+            val said = answer?.message?.takeIf { it.isNotBlank() }
+
+            if (!response.isSuccessful || answer?.success != true) {
+                throw FrigateException(response.code, refusal(said))
+            }
+            return answer?.exportId.orEmpty()
+        }
+    }
+
+    /** Renames a kept clip. Frigate's own name for it, not the file on disk. */
+    fun renameExport(baseUrl: String, token: String, id: String, name: String) {
+        val body = buildJsonObject { put("name", name) }.toString().toRequestBody(JSON)
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/export/$id/rename"))
+            .header("Authorization", "Bearer $token")
+            .patch(body)
+            .build()
+        request.okBody()
+    }
+
+    /** Deletes kept clips, by id. */
+    fun deleteExports(baseUrl: String, token: String, ids: List<String>) {
+        val body = buildJsonObject {
+            put("ids", JsonArray(ids.map { JsonPrimitive(it) }))
+        }.toString().toRequestBody(JSON)
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/exports/delete"))
+            .header("Authorization", "Bearer $token")
+            .post(body)
+            .build()
+        request.okBody()
+    }
+
+    /** The picture Frigate made for a kept clip. */
+    fun exportThumbnail(baseUrl: String, token: String, export: Export): ByteArray {
+        val request = Request.Builder()
+            .url(url(baseUrl, export.thumbUrlPath))
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return request.okBytes()
+    }
+
+    /** Frigate's reason for turning an export down, in words rather than in its own. */
+    private fun refusal(said: String?): String = when {
+        said == null -> "Frigate wouldn't keep that stretch."
+        said.contains("No recordings", ignoreCase = true) -> "Frigate has no recording of that stretch."
+        else -> said
     }
 
     /**

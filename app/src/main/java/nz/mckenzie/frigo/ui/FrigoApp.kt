@@ -31,6 +31,7 @@ import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.Gate
 import nz.mckenzie.frigo.ui.cameras.CamerasScreen
 import nz.mckenzie.frigo.ui.cameras.PlayerScreen
+import nz.mckenzie.frigo.ui.clips.ClipsScreen
 import nz.mckenzie.frigo.ui.explore.ExploreScreen
 import nz.mckenzie.frigo.ui.login.LoginScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewSettingsScreen
@@ -75,6 +76,7 @@ private val Tabs = listOf(
     Tab("cameras", "Cameras", Icons.Filled.Home),
     Tab("reviews", "Review", FrigoIcons.Reviews),
     Tab("explore", "Explore", FrigoIcons.Search),
+    Tab("clips", "Clips", FrigoIcons.Clips),
     Tab("settings", "Settings", Icons.Filled.Settings),
 )
 
@@ -148,6 +150,9 @@ private fun MainScaffold(
             composable("explore") {
                 ExploreScreen(container, Modifier.padding(padding))
             }
+            composable("clips") {
+                ClipsScreen(container, Modifier.padding(padding))
+            }
             composable("settings") {
                 SettingsScreen(
                     repository = container.repository,
@@ -177,6 +182,7 @@ private fun MainScaffold(
                     repository = container.repository,
                     cameraName = camera,
                     onBack = { navController.popBackStack() },
+                    onOpenClips = { navController.switchTo("clips") },
                 )
             }
         }

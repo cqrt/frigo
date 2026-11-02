@@ -150,6 +150,54 @@ data class ReviewDayCount(
     @SerialName("reviewed_detection") val reviewedDetections: Int = 0,
 )
 
+/**
+ * A clip Frigate has cut out of a camera's recordings and kept in its own folder,
+ * where its clean-up does not reach.
+ *
+ * [date] is when the stretch itself starts, in epoch seconds, not when the clip was
+ * kept: a clip cut from last night's recordings carries last night, however late it
+ * was asked for. `video_path` and `thumb_path` are paths inside the server's media
+ * folder, and each is served at the same path with that folder left off.
+ */
+@Serializable
+data class Export(
+    val id: String,
+    val camera: String = "",
+    val name: String = "",
+    val date: Double = 0.0,
+    @SerialName("video_path") val videoPath: String = "",
+    @SerialName("thumb_path") val thumbPath: String = "",
+    @SerialName("in_progress") val inProgress: Boolean = false,
+) {
+    /** Where the file is served from. */
+    val videoUrlPath: String get() = servedPath(videoPath, "exports")
+
+    /** Where its picture is served from. */
+    val thumbUrlPath: String get() = servedPath(thumbPath, "clips/export")
+}
+
+/**
+ * A media path as Frigate serves it.
+ *
+ * The files sit under the media folder inside the server, and the addresses that
+ * serve them leave that folder off: `/media/frigate/exports/a.mp4` is served at
+ * `/exports/a.mp4`. Where a path doesn't name that folder, the file is looked for
+ * in the folder it would normally be in.
+ */
+internal fun servedPath(path: String, folder: String): String {
+    val inside = path.substringAfter("/media/frigate", "")
+    if (inside.startsWith("/") && inside.length > 1) return inside
+    return "/$folder/${path.substringAfterLast('/')}"
+}
+
+/** What Frigate answers when it is asked to keep a stretch. */
+@Serializable
+data class StartedExport(
+    val success: Boolean = false,
+    val message: String = "",
+    @SerialName("export_id") val exportId: String? = null,
+)
+
 /** A camera as the app shows it. */
 data class Camera(
     val name: String,
