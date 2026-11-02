@@ -12,11 +12,8 @@ explain, leave out.
 
 - Settings lists your cameras, and each one has its own page with eight switches: object detection, motion detection, recording, snapshots, audio detection, birdseye, face recognition and license plate recognition.
 - Recording asks before it stops, since nothing new is saved after that.
-
-## 0.8.3
-
-- The labels on the settings page are Frigate's own, eleven of them, rather than every object the model can name.
-- The page is called Alerts & Detections, and each card says what it sets instead of the note at the bottom.
+- The labels on the Review settings page are Frigate's own, eleven of them, rather than every object the model can name.
+- That page is called Alerts & Detections, and each card says what it sets instead of a note at the bottom.
 
 ## 0.8.2
 
