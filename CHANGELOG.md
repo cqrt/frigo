@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.9.6
+
+- The calendar puts a dot under each day that still has something to look at.
+- A week in the calendar starts on the day your phone starts it.
+
 ## 0.9.5
 
 - Review says how many alerts and how many detections are left.

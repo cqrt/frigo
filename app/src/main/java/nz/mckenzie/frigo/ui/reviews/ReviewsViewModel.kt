@@ -19,6 +19,7 @@ import nz.mckenzie.frigo.data.labelsFor
 import nz.mckenzie.frigo.ui.Period
 import nz.mckenzie.frigo.ui.friendlyMessage
 import nz.mckenzie.frigo.ui.range
+import java.time.LocalDate
 
 data class ReviewsUiState(
     val reviews: List<FrigateReview> = emptyList(),
@@ -58,6 +59,10 @@ data class ReviewsUiState(
         val counted = if (kind == this.kind) counts else otherCounts
         return counted?.left(kind, period)
     }
+
+    /** The days this tab still has something on, for the calendar's dots. */
+    val markedDays: Set<LocalDate>
+        get() = counts.orEmpty().daysWithLeft(kind)
 }
 
 class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {

@@ -35,6 +35,13 @@ internal fun ReviewKind.emptyLeft(): String = when (this) {
     ReviewKind.Detections -> "No detections left to review."
 }
 
+/** The days that still have something of one kind, for the calendar's dots. */
+internal fun List<ReviewDayCount>.daysWithLeft(kind: ReviewKind): Set<LocalDate> =
+    mapNotNull { count ->
+        if (count.left(kind) <= 0) return@mapNotNull null
+        runCatching { LocalDate.parse(count.day) }.getOrNull()
+    }.toSet()
+
 /** Said when Frigate hasn't kept any of one kind at all. */
 internal fun ReviewKind.emptyAll(): String = when (this) {
     ReviewKind.Alerts ->

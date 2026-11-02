@@ -2,6 +2,7 @@ package nz.mckenzie.frigo.ui
 
 import nz.mckenzie.frigo.data.ReviewDayCount
 import nz.mckenzie.frigo.data.ReviewKind
+import nz.mckenzie.frigo.ui.reviews.daysWithLeft
 import nz.mckenzie.frigo.ui.reviews.left
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -60,5 +61,20 @@ class ReviewCountsTest {
     fun aDayNeverCountsLessThanNothing() {
         val odd = listOf(ReviewDayCount("2026-11-03", totalAlerts = 1, reviewedAlerts = 3))
         assertEquals(0, odd.left(ReviewKind.Alerts, Period.Today, today))
+    }
+
+    /** The calendar dots the days that still have something, and only those. */
+    @Test
+    fun theDottedDaysAreTheOnesWithSomethingLeft() {
+        val dotted = setOf(LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 3))
+        assertEquals(dotted, days.daysWithLeft(ReviewKind.Alerts))
+        assertEquals(dotted, days.daysWithLeft(ReviewKind.Detections))
+    }
+
+    /** A day the summary names oddly is skipped rather than crashing the calendar. */
+    @Test
+    fun aDayThatIsNotADateIsSkipped() {
+        val odd = days + ReviewDayCount("last24Hours", totalAlerts = 5)
+        assertEquals(setOf(LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 3)), odd.daysWithLeft(ReviewKind.Alerts))
     }
 }

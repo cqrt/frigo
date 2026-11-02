@@ -5,16 +5,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,9 +20,6 @@ import androidx.compose.ui.unit.dp
 import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.ui.Period
 import nz.mckenzie.frigo.ui.said
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
 
 /**
  * The chips that narrow a list, shared by Explore and Review so the two pages
@@ -178,37 +170,6 @@ private fun Arrow() {
         contentDescription = null,
         modifier = Modifier.size(18.dp),
     )
-}
-
-/** A calendar, for a day that isn't today or yesterday. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DayDialog(initial: LocalDate?, onDismiss: () -> Unit, onPick: (LocalDate) -> Unit) {
-    val start = (initial ?: LocalDate.now())
-        .atStartOfDay(ZoneOffset.UTC)
-        .toInstant()
-        .toEpochMilli()
-    val picker = rememberDatePickerState(initialSelectedDateMillis = start)
-
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    picker.selectedDateMillis?.let { millis ->
-                        onPick(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
-                    }
-                },
-            ) {
-                Text("Use this day")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
-    ) {
-        DatePicker(state = picker)
-    }
 }
 
 /** "Labels", or "Person +1" when a few are on, so the chip stays short. */

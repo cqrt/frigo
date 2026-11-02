@@ -1904,3 +1904,36 @@ clear would be noise on the days when clearing a morning's alerts is the whole p
 Checked on the emulator against the real server: 15 alerts for today, `Mark all as reviewed`, the two
 numbers falling to nothing, `No alerts left to review.`, and `Put them back` returning all fifteen. The
 four detections marked while testing were put back on the server afterwards.
+
+## The calendar is one I drew, because the dots had to live on it
+
+The day chip opened Material's own month. It draws a month well and there is no way to hang anything
+off a day: `DatePicker` takes a selected day and nothing else, so a dot under the days with something
+left was not going to happen inside it. Writing the month out is about a hundred lines: a grid of
+seven columns, a header, two arrows, and a cell per day. In exchange each cell is mine to mark, to dim
+and to close.
+
+What is marked comes from the same summary the numbers use. `daysWithLeft` walks the day counts and
+keeps the days where total minus reviewed is above nothing, so the dot under a day and the number
+beside the tab are the same answer twice. The dots follow the tab: a day with three alerts and no
+detections gets a dot on Alerts and none on Detections. Explore has no summary behind it, so it passes
+no days and the calendar is only a calendar.
+
+The weeks start where the phone says they start, through `WeekFields.of(Locale.getDefault())`, and
+the letters along the top follow. Material's calendar does the same, and a calendar that begins on a
+different day than the phone's own would read as a mistake.
+
+Days ahead of today are dimmed and cannot be picked, and the arrow to the next month stops at this
+one. Nothing has been recorded in a month that has not begun, so there is nothing to reach.
+
+The month is worked out by `monthWeeks`, which turns a `YearMonth` into weeks of seven cells with
+blanks at the edges. Seven unit tests cover it: a month starting on a Sunday leaves six blanks, a
+month starting on the first day of the week starts at the first cell, a Sunday-first week puts Sunday
+first, every day appears once and in order, every week is seven cells, a leap February keeps its
+twenty-ninth, and the blanks never sit in the middle. Without those the grid is off by a day at some
+month somewhere and only the eye would catch it.
+
+One smaller thing on the same screen. The two numbers on the halves came out stacked on top of each
+other inside `SegmentedButton`, so a button laid out its own children on top of the label it was
+given. They are one `Text` holding an `AnnotatedString` now, which draws in one line and reads to a
+screen reader as one label rather than two.

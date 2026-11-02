@@ -206,8 +206,9 @@ takes the event's picture instead, which is the same one.
 
 The chips above the list narrow it. The first names a camera, or all of them.
 Labels picks what was seen, and the day chip covers all time, today, yesterday, or
-a single day from the calendar. Show reviewed sits beside them. Clear puts the
-narrowing back, and Load older keeps it.
+a single day from the calendar. A dot sits under each day in the calendar that
+still has something to look at on this tab. Show reviewed sits beside them. Clear
+puts the narrowing back, and Load older keeps it.
 
 The number beside each half is what's left to look at over the days the day chip
 covers, so it moves when you change the day or the camera. Nothing is shown when

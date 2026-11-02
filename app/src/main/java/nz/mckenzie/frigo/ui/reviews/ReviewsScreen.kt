@@ -293,6 +293,7 @@ fun ReviewsScreen(
     if (pickingDay) {
         DayDialog(
             initial = (state.period as? Period.On)?.day,
+            marked = state.markedDays,
             onDismiss = { pickingDay = false },
             onPick = { day ->
                 viewModel.setPeriod(Period.On(day))
