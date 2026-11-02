@@ -1,0 +1,15 @@
+# Frigo
+
+What changed in each release, newest first. The release workflow copies the
+section for the version it is building onto the release page, which is also what
+the app shows under **What's new**. A version with no section here is not
+released, so the notes are never left to memory.
+
+One line per change, in a sentence you'd say out loud. Anything you'd have to
+explain, leave out.
+
+## 0.8.2
+
+- Review has a settings page, so you can choose which objects make an alert or a detection, for all cameras or just one.
+- Leave the app and come back, and the picture is live again rather than from minutes ago.
+- A run of recordings draws as one bar, instead of hundreds of hairlines.

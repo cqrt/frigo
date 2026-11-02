@@ -75,6 +75,52 @@ jobs:
           echo "code=${CODE}" >> "${GITHUB_OUTPUT}"
           echo "Releasing ${TAG} as versionName ${VERSION}, versionCode ${CODE}"
 
+      # The release page says what changed, which is also what the app shows
+      # under What's new. The lines come from CHANGELOG.md, so writing the notes
+      # is part of cutting the release rather than a thing to remember. A release
+      # with nothing to say is caught here, before the build, not on the page.
+      - name: Collect what changed
+        id: notes
+        run: |
+          VERSION="${{ steps.version.outputs.name }}"
+
+          # Read through a copy with the line endings evened out, so a checkout
+          # that has been rewritten with carriage returns still matches.
+          tr -d '\r' < CHANGELOG.md > "${RUNNER_TEMP}/changelog.md"
+
+          if ! grep -qx "## ${VERSION}" "${RUNNER_TEMP}/changelog.md"; then
+            echo "::error::CHANGELOG.md has no '## ${VERSION}' section. Add one line per change under it, then run this again."
+            exit 1
+          fi
+
+          awk -v heading="## ${VERSION}" '
+            $0 == heading { inside = 1; next }
+            inside && /^## / { exit }
+            inside { print }
+          ' "${RUNNER_TEMP}/changelog.md" \
+            | sed -e '/./,$!d' | tac | sed -e '/./,$!d' | tac \
+            > "${RUNNER_TEMP}/notes.md"
+
+          if [ ! -s "${RUNNER_TEMP}/notes.md" ]; then
+            echo "::error::The '## ${VERSION}' section of CHANGELOG.md is empty. Write a line for each change."
+            exit 1
+          fi
+
+          {
+            cat "${RUNNER_TEMP}/notes.md"
+            echo
+            echo "Download \`frigo-${VERSION}.apk\` and open it on the phone."
+            echo
+            echo "Signed with the Frigo release key, so later versions install over this one"
+            echo "without uninstalling anything first."
+            echo
+            echo "First time on the phone, Android asks whether to allow installing from this"
+            echo "browser or app. That prompt is Android's, not Frigo's."
+          } > "${RUNNER_TEMP}/body.md"
+
+          echo "Release notes:"
+          cat "${RUNNER_TEMP}/body.md"
+
       # A release nobody can install is worse than no release, so a missing
       # keystore stops the run here rather than producing an unsigned APK.
       - name: Decode the signing keystore
@@ -118,14 +164,6 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: Frigo ${{ steps.version.outputs.name }}
-          generate_release_notes: true
-          body: |
-            Download `frigo-${{ steps.version.outputs.name }}.apk` and open it on the phone.
-
-            Signed with the Frigo release key, so later versions install over this one
-            without uninstalling anything first.
-
-            First time on the phone, Android asks whether to allow installing from this
-            browser or app. That prompt is Android's, not Frigo's.
+          body_path: ${{ runner.temp }}/body.md
           files: |
             app/build/outputs/apk/release/frigo-*.apk
