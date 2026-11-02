@@ -395,6 +395,20 @@ class FrigoRepository(
     }
 
     /**
+     * The address of a camera's own video and the token to send with it.
+     *
+     * This is the camera's own H.264, left as the camera sends it, coming from
+     * go2rtc through the same proxy path the sound uses. It carries the sound with
+     * it. Frigate's own stream is one frame per camera, kept at the size it decodes
+     * for detection, so this is the only way to see what the camera actually sees.
+     */
+    fun liveSource(camera: String): ClipSource {
+        val current = stored ?: throw FrigateException(401, "Not signed in")
+        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        return ClipSource(url = "${current.baseUrl}/api/stream.mp4?src=$camera", token = token)
+    }
+
+    /**
      * A review's clip. Frigate cuts it from your recordings when it is asked for
      * one, so the period it covers is the review's start and end.
      */

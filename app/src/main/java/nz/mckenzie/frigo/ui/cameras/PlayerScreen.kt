@@ -61,6 +61,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -94,6 +95,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.floor
+import kotlin.math.roundToInt
 
 /**
  * The heights and rates the player offers, biggest first. What it actually shows is
@@ -126,7 +128,7 @@ private const val BarRefreshSpan = 600.0
  * Frigate's cameras send 16:9, and the picture is fitted rather than cropped, so a
  * frame of this shape sits exactly where the video is drawn.
  */
-private const val PictureAspect = 16f / 9f
+internal const val PictureAspect = 16f / 9f
 
 /**
  * How often the server is asked whether this camera is still sending. Frigate counts
@@ -137,6 +139,23 @@ private const val StatusEveryMillis = 8_000L
 
 /** Readings in a row with nothing arriving before the picture is called offline. */
 private const val SilentReadings = 2
+
+/**
+ * How long the camera's own stream is given to put a picture up before the screen
+ * settles for Frigate's stills. Long enough to cover a slow connection to a camera
+ * that is busy, short enough that a route that has stopped working does not look
+ * like a screen that has stopped working.
+ */
+private const val OwnStreamGraceMillis = 12_000L
+
+/** Where the live picture comes from. */
+internal enum class LiveSource {
+    /** The camera's own H.264, through go2rtc. */
+    Camera,
+
+    /** Frigate's stream of stills, one frame per camera. */
+    Stills,
+}
 
 /**
  * How a saved clip's moment is written into its name. Dashes and a dot rather than
@@ -189,6 +208,15 @@ fun PlayerScreen(
     // Whether the camera has stopped sending. The stream goes on handing back the
     // last frame it sent, so the picture itself never says so.
     var silent by remember(watching) { mutableStateOf(false) }
+    // Where the live picture comes from. The camera's own stream is tried first,
+    // with its whole picture and its sound on one connection; Frigate's stills are
+    // what it falls back to when that doesn't answer.
+    var source by remember(watching) { mutableStateOf(LiveSource.Camera) }
+    // The address of the camera's own stream. Missing only if the app has somehow
+    // lost its sign-in, in which case the stills are what get drawn.
+    val ownStream = remember(watching) {
+        runCatching { repository.liveSource(watching) }.getOrNull()
+    }
 
     // The day on the bar, where along it the marker is, and what Frigate flagged
     // on that day. Live means the picture is the stream and the marker sits at
@@ -292,16 +320,32 @@ fun PlayerScreen(
         repository.setStreamChoice(watching, height, rate)
     }
 
-    // The stream follows the choice itself rather than the two numbers inside it, so
-    // reading the choice out is what starts the stream. Keyed on them instead, a
-    // camera whose choice happened to be 720p at five frames a second -- the same two
-    // numbers it opens at while the choice is not yet known -- would never open at all.
-    LaunchedEffect(watching, choice, streaming) {
+    // The camera's own stream goes up first, and is given a few seconds to show
+    // something. A phone on mobile data, a proxy that has lost the video path, or a
+    // server that has just restarted all end up on Frigate's stills rather than on a
+    // spinner. Opening the camera again tries the camera's own stream again.
+    LaunchedEffect(watching, streaming, source) {
+        if (!streaming || source != LiveSource.Camera) return@LaunchedEffect
+        connecting = true
+        problem = null
+        delay(OwnStreamGraceMillis)
+        if (connecting) source = LiveSource.Stills
+    }
+
+    // Frigate's stills, one frame at a time, and only when the camera's own stream
+    // isn't what's on screen. The stream follows the choice itself rather than the
+    // two numbers inside it, so reading the choice out is what starts it. Keyed on
+    // them instead, a camera whose choice happened to be 720p at five frames a
+    // second -- the same two numbers it opens at while the choice is not yet known --
+    // would never open at all.
+    LaunchedEffect(watching, choice, streaming, source) {
         val wanted = choice
-        if (!streaming || wanted == null) return@LaunchedEffect
+        if (!streaming || wanted == null || source != LiveSource.Stills) return@LaunchedEffect
         val height = wanted.first
         val rate = wanted.second
+        frame = null
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+
             connecting = true
             problem = null
             while (isActive) {
@@ -537,8 +581,14 @@ fun PlayerScreen(
     HideSystemBars(landscape)
 
     // The sound follows the speaker, so it comes from the stream while you are
-    // watching the stream and from the recording while you are watching one.
-    LiveSound(repository = repository, camera = watching, playing = sound && live) {
+    // watching the stream and from the recording while you are watching one. The
+    // camera's own stream carries its sound, so this second player is only for the
+    // stills, which have none.
+    LiveSound(
+        repository = repository,
+        camera = watching,
+        playing = sound && live && source == LiveSource.Stills,
+    ) {
         sound = false
         noSound = true
     }
@@ -565,9 +615,10 @@ fun PlayerScreen(
                             contentDescription = if (sound) "Turn the sound off" else "Turn the sound on",
                         )
                     }
-                    // Size and frame rate are the stream's, so they are not offered
-                    // on a recording, where nothing here changes it.
-                    if (live) {
+                    // Size and frame rate are the stills stream's, so they are not
+                    // offered on a recording, where nothing here changes it, or on
+                    // the camera's own stream, which decides its own picture.
+                    if (live && source == LiveSource.Stills) {
                         IconButton(onClick = { menuOpen = true }) {
                             Icon(Icons.Filled.MoreVert, contentDescription = "Stream quality")
                         }
@@ -599,11 +650,22 @@ fun PlayerScreen(
             contentAlignment = Alignment.Center,
         ) {
             if (streaming) {
-                frame?.let { bitmap ->
-                    ZoomableStill(
-                        bitmap = bitmap,
+                if (source == LiveSource.Camera && ownStream != null) {
+                    LiveVideo(
+                        source = ownStream,
                         camera = watching,
+                        withSound = sound && live,
+                        onFirstFrame = { connecting = false },
+                        onFailed = { source = LiveSource.Stills },
+                        modifier = Modifier.fillMaxSize(),
                     )
+                } else {
+                    frame?.let { bitmap ->
+                        ZoomableStill(
+                            bitmap = bitmap,
+                            camera = watching,
+                        )
+                    }
                 }
 
                 if (connecting) {
@@ -765,6 +827,18 @@ fun PlayerScreen(
                     )
                 }
             }
+        }
+
+        // The picture falls from the camera's own to Frigate's small one when the
+        // camera's stream doesn't answer, which is a change worth saying rather than
+        // leaving to be noticed.
+        if (live && source == LiveSource.Stills) {
+            Text(
+                text = "The camera's own stream didn't answer, so this is the small picture.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
         }
 
         if (!landscape) {
@@ -975,23 +1049,27 @@ private fun MenuChoice(text: String, chosen: Boolean, onClick: () -> Unit) {
 }
 
 /**
- * The picture, with a pinch to zoom in, a drag to move around it, and a double
- * tap to go back to the whole frame.
+ * A picture you can pinch into, a drag to move around it, and a double tap to go
+ * back to the whole frame.
  *
- * A new frame arrives every moment, so the zoom belongs to the screen rather than
- * to any one picture: the frames change underneath while the view stays where you
- * put it.
+ * [aspect] is the picture's own shape, so it is drawn whole inside the box and
+ * fitted rather than cropped: a pinch has something to move into. [picture] is
+ * either a stream's frames or the player the camera's own video arrives in, and the
+ * zoom belongs to the screen rather than to any one frame, so what is drawn
+ * underneath can change without the view moving.
  */
 @Composable
-private fun ZoomableStill(
-    bitmap: ImageBitmap,
+internal fun ZoomablePicture(
     camera: String,
+    aspect: Float,
     modifier: Modifier = Modifier,
+    picture: @Composable () -> Unit,
 ) {
+    val density = LocalDensity.current
     var scale by remember(camera) { mutableFloatStateOf(1f) }
     var offset by remember(camera) { mutableStateOf(Offset.Zero) }
     var viewport by remember(camera) { mutableStateOf(IntSize.Zero) }
-    var fitted by remember(camera) { mutableStateOf(IntSize.Zero) }
+    val fitted = fitPicture(aspect, viewport)
 
     // Zooming keeps the point between your fingers where it is, which is what
     // makes a pinch feel like it is grabbing the picture.
@@ -1006,6 +1084,7 @@ private fun ZoomableStill(
 
     Box(
         modifier
+            .fillMaxSize()
             .clipToBounds()
             .onSizeChanged { viewport = it }
             .pointerInput(camera) {
@@ -1028,20 +1107,53 @@ private fun ZoomableStill(
             },
         contentAlignment = Alignment.Center,
     ) {
-        Image(
-            bitmap = bitmap,
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier
-                .aspectRatio(bitmap.width.toFloat() / bitmap.height)
-                .onSizeChanged { fitted = it }
+        Box(
+            Modifier
+                .size(
+                    width = with(density) { fitted.width.toDp() },
+                    height = with(density) { fitted.height.toDp() },
+                )
                 .graphicsLayer(
                     scaleX = scale,
                     scaleY = scale,
                     translationX = offset.x,
                     translationY = offset.y,
                 ),
+        ) {
+            picture()
+        }
+    }
+}
+
+/** Frigate's stills, in the pinchable frame. */
+@Composable
+private fun ZoomableStill(
+    bitmap: ImageBitmap,
+    camera: String,
+    modifier: Modifier = Modifier,
+) {
+    ZoomablePicture(
+        camera = camera,
+        aspect = bitmap.width.toFloat() / bitmap.height,
+        modifier = modifier,
+    ) {
+        Image(
+            bitmap = bitmap,
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize(),
         )
+    }
+}
+
+/** The rectangle a picture of [aspect] is drawn in, fitted inside [viewport]. */
+private fun fitPicture(aspect: Float, viewport: IntSize): IntSize {
+    if (viewport.width <= 0 || viewport.height <= 0 || aspect <= 0f) return IntSize.Zero
+    val height = (viewport.width / aspect).roundToInt()
+    return if (height <= viewport.height) {
+        IntSize(viewport.width, height)
+    } else {
+        IntSize((viewport.height * aspect).roundToInt(), viewport.height)
     }
 }
 

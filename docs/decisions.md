@@ -1411,18 +1411,63 @@ to 16.4 times a second because a sharp frame has more motion in it, and the phon
 at 1080 cost 2.8 MB/s. Doing the same to North cam would put the box near three quarters,
 which is where the streams fell apart before.
 
-So the live picture is going to come from go2rtc instead, which holds the main streams
-already and hands them out without decoding: the camera's own 2560x1440 H.264 at 190 KB a
-second, about a second behind, with the sound included.
+So the live picture comes from go2rtc instead, which holds the main streams already and
+hands them out without decoding: the camera's own 2560x1440 H.264 at 190 KB a second, with
+the sound in the same stream.
 
-The way in is half built. The proxy already hands `/api/stream.aac` to go2rtc's own port for
-the sound, and go2rtc answers it without a Frigate login. Video needs one more location of
-the same kind, for `/api/stream.mp4`, at the same port. Frigate cannot be serving that path
-today: asked for it with an admin token, it answers "Access denied. A user with the admin
-role is required", which is what it says about a path it has no route for.
+The way in was half built. The proxy already handed `/api/stream.aac` to go2rtc's own port
+for the sound, and go2rtc answered it without a Frigate login. Video needed one more
+location of the same kind, for `/api/stream.mp4`, at the same port. Frigate could not have
+been serving that path: asked for it with an admin token, it answered "Access denied. A
+user with the admin role is required", which is what it says about a path it has no route
+for.
 
-The plan for it lives in the project's plans, not in this file, since this file records what
-was decided and measured.
+That location was added and it works. `/api/stream.mp4?src=north_cam` answers `200` with
+`video/mp4; codecs="avc1.4D0029,mp4a.40.2"`, chunked, fragmented MP4, one video track at
+2560x1440 and one AAC track, at about 160 KB a second. No sign-in is needed or looked at;
+the app sends its token anyway, because a proxy access list may want it.
+
+## The live picture is the camera's own video
+
+The player asks go2rtc first, over that one connection, and plays it with the media3
+player it already had for recordings. Go2rtc's video is a texture view rather than a
+surface view, because a surface is drawn over the page by the system and cannot be moved,
+scaled or clipped by the app, and this picture is pinched and dragged like the stills were.
+
+Two things about a stream with no end had to be dealt with, and both were found by
+watching it rather than by reasoning.
+
+**The buffer.** The player's default keeps tens of seconds of media in hand, which on a
+live stream is tens of seconds of lag that never comes back. It now keeps three seconds
+and starts with half a second, with the live offset set to half a second as well.
+
+**Falling behind.** A stream with no end never says it has fallen behind. The player
+watches the gap between what it is showing and now, and opens the stream again when the gap
+has grown fifteen seconds since the best it managed. A picture that sits waiting for more
+than twelve seconds is reopened the same way, and a stream that ends sends the screen back
+to the stills.
+
+On the emulator the picture falls behind steadily, because its H.264 decoder runs in
+software: its position advanced 11 seconds over 18 seconds of clock, so the gap reached the
+fifteen seconds and the stream was reopened, which is what that check is for. A phone
+decodes this in hardware, so the gap stays where it started; that is worth checking on a
+phone rather than taking on trust.
+
+**The fallback.** The camera's own stream gets twelve seconds to put a picture up. Without
+one, the screen switches to Frigate's stills and a line under the picture says so, because
+the picture drops from 2K to 640x360 and that should not be left to be noticed. The size
+and rate menu is only offered while the stills are playing, since it changes nothing about
+the camera's own stream. A player error, a stream that ends, or a picture that never
+arrives all end on the stills rather than on a spinner.
+
+**The sound.** Go2rtc's stream carries its own AAC track, so the speaker button turns the
+volume of the video up and down, and the separate sound player on `/api/stream.aac` is only
+used with the stills. That also means sound and picture arrive together rather than a
+moment apart.
+
+The measuring left to do on a phone: the picture's lag against the camera's own clock, an
+hour of watching on mobile data, and battery. On the emulator the audio track reported
+write errors, which is the emulator's audio hardware rather than the stream.
 
 ## The bar keeps up with the clock
 

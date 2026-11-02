@@ -102,46 +102,32 @@ already filled in.
 
 ## How live view works
 
-The full screen player asks the server for a stream of still frames over the same
-HTTPS connection as everything else (`/api/<camera>`). The tiles on the home page
-ask for one picture a second instead, which is cheap. Switch live pictures on in
-Settings and each tile keeps the same stream open at five frames a second and
-360p, which is smoother and costs more data and battery.
+The full screen player asks for the camera's own video (`/api/stream.mp4?src=<camera>`).
+Frigate ships a stream server called go2rtc, which already holds your cameras, and your
+proxy hands that path to it the same way it hands over the sound. So the picture is the
+2K one Frigate records, about a second behind the clock, with the sound arriving on the
+same connection. H.264 sends only what changed between frames, so the whole picture costs
+about a fifteenth of the small one.
 
-That choice follows Frigate's own reasoning. Frigate deliberately serves its web
-live view as MSE rather than WebRTC, because MSE runs over TCP and every frame
-arrives, while WebRTC drops late frames on a poor connection. An Android app
-cannot use MSE, so the closest equivalent is this JPEG stream: same TCP, same
-guarantee, and it needs no extra ports or router changes.
+It comes over HTTP rather than WebRTC. That runs over TCP, so frames arrive rather than
+late ones being dropped, and it needs no extra port on your router.
 
-The trade is bandwidth, since every frame is a whole picture. The player's menu
-sets the height and frame rate, and ticks what's on. It only offers what the live
-picture has, and the live picture is not the sharp one. Frigate records the
-camera's main stream at 2K, but the frame it keeps for live view is the camera's
-second, lower quality stream: 640x360 on the two outdoor cameras, 1280x960 on the
-door, 1280x720 on the printer. So a menu offering 2160p offers a picture the
-server makes up, since Frigate scales each frame up to whatever is asked for and
-sends it as often as asked. That is what made one camera at 2160p and 30 frames a
-second slow every other camera down. Playback plays the recordings, so it has the
-2K detail the live view doesn't. Each camera keeps its own choice, so a camera you
-watch closely and one you glance at are set separately, and both keep their
-setting after the app is closed. That menu is only there while you're watching the
-stream, since it changes nothing about a recording.
+When that path doesn't answer, the player falls back to Frigate's stream of stills within
+a few seconds and says so under the picture. Zooming scales the picture the phone already
+has either way, so the stream keeps its own size and rate.
 
-A speaker button in the player adds the camera's sound. Frigate's API has none in
-it, so the sound comes from go2rtc, the stream server inside Frigate, through one
-more path on your proxy ([setup](docs/sound.md)).
+The stills are one whole frame at a time, kept at the size Frigate decodes for detection:
+640x360 on the two outdoor cameras, 1280x960 on the door, 1280x720 on the printer. Frigate
+scales each frame up to whatever it's asked for, so asking for more than the camera sends
+only buys a bigger copy of the same pixels. The player's menu sets the height and frame rate
+for that stream, offers only what the camera has, and ticks what's on. Each camera keeps its
+own choice, and both keep their setting after the app is closed. The menu is only there
+while the stills are what's playing, since it changes nothing about a recording and the
+camera's own stream decides its own picture.
 
-Zooming scales the picture the phone already has, so the stream keeps asking for
-the same frames. Zoomed right in, a 640x360 camera looks soft, and there's no
-size above its own that puts more detail in it.
-
-Your cameras also send a bigger stream, and that's the one Frigate records. Watching it
-live means asking go2rtc, the stream server inside Frigate, rather than Frigate's stream of
-stills. That's about a second behind instead of four, and a fifteenth of the data, because
-H.264 sends only what changed between frames. The catch is getting a phone to go2rtc, which
-the Frigate add-on doesn't publish, so it's a job for a later version rather than a patch
-([decisions](docs/decisions.md)).
+The tiles on the home page are separate: they ask for one still a second, which is cheap.
+Switch live pictures on in Settings and each tile keeps a stills stream open at five frames
+a second and 360p, which is smoother and costs more data and battery.
 
 ## How alerts reach your phone
 
@@ -275,5 +261,6 @@ is ever committed. Backup: there's a copy of the key and its password at
 - `alerts/` - the service that holds the message feed and the notifications it posts.
 - `ui/` - one folder per screen, Compose throughout.
 - `ui/components/ClipViewer.kt` - the full screen clip player that an event or a review opens.
-- `ui/components/LiveSound.kt` - the camera's sound, for the speaker button in the player.
+- `ui/components/LiveSound.kt` - the camera's sound for the speaker button, when the picture is the stills stream.
+- `ui/cameras/LiveVideo.kt` - the camera's own video, its sound, and keeping the picture up with the clock.
 - `ui/cameras/Playback.kt` - the day's bar under a camera, its spikes, the moment's picture, and the other cameras.
