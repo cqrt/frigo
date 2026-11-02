@@ -1743,3 +1743,34 @@ by the server with "Camera 3d_printer has record enabled, but record is not assi
 input." and that switch went back to off while the rest of the page stayed put. On North cam,
 Recording off asked "Stop recording?", and Stop put it off on the server and back on again
 without asking. Every camera read as it did before the test once the switches were put back.
+
+## The Review list is narrowed by the server, not by the page
+
+The three chips send their choices to `/api/review` as query parameters rather than filtering
+the rows already on screen. Filtering the page would only cover what has been fetched so far,
+and **Load older** would keep filling the list with the things the filter is meant to drop.
+
+`cameras` and `labels` are each one comma-separated value. A repeated parameter is answered with
+the last one alone, which was checked against 0.18.2 for `/api/events`; `/api/review` reads the
+same way. A label matches a review that saw it anywhere in its data, not only the label that made
+it an alert, so narrowing Alerts by car keeps a review where a person was seen beside one.
+
+The labels on offer come from Frigate's own review settings, read from `/api/config`, because
+Frigate alone decides what can make an alert or a detection. A camera that names no lists of its
+own follows the shared ones. A detection list that names none means every other object, so the
+chip offers the rest of the names Frigate has: the tracked ones first, then the eleven it flags
+by itself. That is wider than a camera can strictly produce, and the empty state says so plainly
+when a choice brings nothing back.
+
+The day chip is the one Explore already had, moved to `ui/Period.kt` with its chips in
+`ui/components/Filters.kt`, so both pages ask for a day the same way. A day picked in the
+calendar is that day on the phone, and the two ends go to the server as whole seconds.
+
+With the Review filters, against the real server: the chips sat under the tabs, and the Labels
+chip on Alerts offered Person and Car, which is what that list holds. Picking Car left the one
+car alert and put a Clear beside the chips. Picking North cam with Car left nothing and said
+"Nothing for these filters." with a Clear filters button. On Detections the chip offered Cat,
+Bark, Fire alarm, Glass, Scream, Smash, Smoke detector, Speech and Yell, Cat first because that
+camera tracks it. Switching tabs dropped the label already chosen. Today, Yesterday and a day
+from the calendar each came back with only that day's reviews, and a day in the future came back
+empty. Clear put the list back as it started.

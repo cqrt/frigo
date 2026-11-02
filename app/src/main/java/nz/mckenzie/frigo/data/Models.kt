@@ -252,6 +252,12 @@ data class ReviewFlags(
     val detectionLabels: List<String>? = null,
 )
 
+/** The two kinds of review worth showing. Motion on its own is not one of them. */
+enum class ReviewKind(val apiValue: String, val label: String) {
+    Alerts("alert", "Alerts"),
+    Detections("detection", "Detections"),
+}
+
 /** Everything the Review settings page needs. */
 data class ReviewSettings(
     val all: ReviewFlags,
@@ -267,6 +273,24 @@ data class ReviewPage(
     val cameras: List<Camera>,
     val admin: Boolean,
 )
+
+/**
+ * The labels one tab can be narrowed to, for all cameras or for one.
+ *
+ * A camera that names no labels of its own follows the shared list, and a
+ * detection list that names none means every other object, so what is left of
+ * Frigate's own names is what can turn up.
+ */
+fun ReviewSettings.labelsFor(kind: ReviewKind, camera: String?): List<String> {
+    val flags = camera?.let { cameras[it] } ?: all
+    val labels = when (kind) {
+        ReviewKind.Alerts -> flags.alertLabels
+        ReviewKind.Detections ->
+            flags.detectionLabels?.takeIf { it.isNotEmpty() }
+                ?: objects.filterNot { it in flags.alertLabels }
+    }
+    return labels.filter { it.isNotBlank() }.distinct()
+}
 
 /**
  * The labels Frigate flags by itself: the objects it follows and the sounds it

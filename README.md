@@ -202,6 +202,16 @@ A review's picture is the first thing it saw. Frigate keeps a separate thumbnail
 for the review, but it sits behind the web server rather than the API, so the app
 takes the event's picture instead, which is the same one.
 
+The chips under the buttons narrow the list. The first row picks a camera, or all
+of them. Labels picks what was seen, and the day chip covers all time, today,
+yesterday, or a single day from the calendar. Clear puts all three back, and Load
+older keeps them.
+
+The labels offered are the ones turned on for the tab: the alert labels on Alerts,
+the detection labels on Detections. A detection list left empty means every other
+object, so the chip offers the rest of what Frigate tracks. A camera with lists of
+its own is offered its own.
+
 ## Alerts and detections
 
 The tune icon on Review opens a page for the two lists. Alerts has a switch and the

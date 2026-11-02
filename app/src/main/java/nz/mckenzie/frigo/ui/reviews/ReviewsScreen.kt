@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -26,6 +27,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -45,9 +47,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.FrigoRepository
+import nz.mckenzie.frigo.data.ReviewKind
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.FrigoIcons
+import nz.mckenzie.frigo.ui.Period
 import nz.mckenzie.frigo.ui.components.CachedImage
+import nz.mckenzie.frigo.ui.components.CameraChips
+import nz.mckenzie.frigo.ui.components.ChoiceChip
+import nz.mckenzie.frigo.ui.components.DayDialog
+import nz.mckenzie.frigo.ui.components.PeriodChip
+import nz.mckenzie.frigo.ui.components.prettyLabel
 import nz.mckenzie.frigo.ui.relativeTime
 
 /**
@@ -65,6 +74,7 @@ fun ReviewsScreen(
     val viewModel: ReviewsViewModel = viewModel(factory = ReviewsViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
     var opened by remember { mutableStateOf<FrigateReview?>(null) }
+    var pickingDay by remember { mutableStateOf(false) }
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
@@ -89,6 +99,41 @@ fun ReviewsScreen(
                     shape = SegmentedButtonDefaults.itemShape(index, ReviewKind.entries.size),
                 ) {
                     Text(kind.label)
+                }
+            }
+        }
+
+        CameraChips(
+            cameras = state.cameras,
+            chosen = state.camera,
+            onChoose = viewModel::selectCamera,
+        )
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            item {
+                ChoiceChip(
+                    title = "Labels",
+                    choices = state.labelsOn,
+                    chosen = state.chosenLabels,
+                    name = ::prettyLabel,
+                    onToggle = viewModel::toggleLabel,
+                    empty = "Nothing to narrow by on this tab.",
+                )
+            }
+            item {
+                PeriodChip(
+                    period = state.period,
+                    onChoose = viewModel::setPeriod,
+                    onPickDay = { pickingDay = true },
+                )
+            }
+            if (state.narrowed) {
+                item {
+                    TextButton(onClick = viewModel::clearFilters) { Text("Clear") }
                 }
             }
         }
@@ -144,6 +189,8 @@ fun ReviewsScreen(
                 ) {
                     Text(
                         text = when {
+                            state.narrowed -> "Nothing for these filters."
+
                             state.showReviewed -> if (state.kind == ReviewKind.Alerts) {
                                 "No alerts yet. Frigate makes one when something you care " +
                                     "about is seen in a zone with alerts on."
@@ -159,7 +206,9 @@ fun ReviewsScreen(
                         },
                         style = MaterialTheme.typography.bodyLarge,
                     )
-                    if (!state.showReviewed) {
+                    if (state.narrowed) {
+                        Button(onClick = viewModel::clearFilters) { Text("Clear filters") }
+                    } else if (!state.showReviewed) {
                         Text(
                             text = "Anything you've watched is hidden. Turn on Show reviewed " +
                                 "to see it again.",
@@ -203,6 +252,17 @@ fun ReviewsScreen(
             review = review,
             onDismiss = { opened = null },
             onHalfWatched = { viewModel.markReviewed(review) },
+        )
+    }
+
+    if (pickingDay) {
+        DayDialog(
+            initial = (state.period as? Period.On)?.day,
+            onDismiss = { pickingDay = false },
+            onPick = { day ->
+                viewModel.setPeriod(Period.On(day))
+                pickingDay = false
+            },
         )
     }
 }

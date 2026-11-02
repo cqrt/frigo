@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.9.1
+
+- Review narrows by camera, by label and by day.
+- The labels offered are the ones turned on for that tab.
+
 ## 0.9.0
 
 - Settings lists your cameras, and each one has its own page with eight switches: object detection, motion detection, recording, snapshots, audio detection, birdseye, face recognition and license plate recognition.

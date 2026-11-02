@@ -12,38 +12,9 @@ import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.FrigateEvent
 import nz.mckenzie.frigo.data.FrigoRepository
+import nz.mckenzie.frigo.ui.Period
 import nz.mckenzie.frigo.ui.friendlyMessage
-import java.time.LocalDate
-import java.time.ZoneId
-
-/** The stretch of time the list covers. */
-sealed interface Period {
-    data object All : Period
-    data object Today : Period
-    data object Yesterday : Period
-
-    /** One day, as the phone's calendar has it. */
-    data class On(val day: LocalDate) : Period
-}
-
-private val zone: ZoneId get() = ZoneId.systemDefault()
-
-/** Midnight at the start of a day, in epoch seconds, which is how Frigate counts time. */
-private fun LocalDate.startSeconds(): Double = atStartOfDay(zone).toEpochSecond().toDouble()
-
-/** The two ends the server is asked for, as epoch seconds, or nothing for either. */
-internal fun Period.range(): Pair<Double?, Double?> = when (this) {
-    Period.All -> null to null
-
-    Period.Today -> LocalDate.now(zone).startSeconds() to null
-
-    Period.Yesterday -> {
-        val today = LocalDate.now(zone)
-        today.minusDays(1).startSeconds() to today.startSeconds()
-    }
-
-    is Period.On -> day.startSeconds() to day.plusDays(1).startSeconds()
-}
+import nz.mckenzie.frigo.ui.range
 
 data class ExploreUiState(
     val events: List<FrigateEvent> = emptyList(),

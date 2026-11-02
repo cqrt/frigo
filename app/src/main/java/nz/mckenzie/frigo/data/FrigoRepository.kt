@@ -232,6 +232,9 @@ class FrigoRepository(
         severity: String,
         limit: Int = 30,
         before: Double? = null,
+        after: Double? = null,
+        cameras: List<String> = emptyList(),
+        labels: List<String> = emptyList(),
         showReviewed: Boolean = false,
     ): List<FrigateReview> = authorized { baseUrl, token ->
         api.reviews(
@@ -240,6 +243,9 @@ class FrigoRepository(
             severity = severity,
             limit = limit,
             before = before,
+            after = after,
+            cameras = cameras,
+            labels = labels,
             showReviewed = showReviewed,
         )
     }

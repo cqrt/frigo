@@ -164,14 +164,12 @@ class FrigateApi(
 
     /**
      * The reviews Frigate has kept: the stretches of time it thought were worth a
-     * look. `severity` narrows it to `alert` or `detection`.
+     * look. `severity` narrows it to `alert` or `detection`, `cameras` and
+     * `labels` narrow it further, and `after` and `before` pick the stretch of
+     * time.
      *
      * The endpoint is `/api/review`, singular, which is easy to get wrong when
      * the events endpoint sitting next to it is `/api/events`.
-     *
-     * `after` is sent as zero rather than left out. Left out, the server only
-     * looks at the last day, and asking for older reviews would bring nothing
-     * back because the day window never moves.
      */
     fun reviews(
         baseUrl: String,
@@ -179,16 +177,14 @@ class FrigateApi(
         severity: String?,
         limit: Int,
         before: Double?,
+        after: Double?,
+        cameras: List<String>,
+        labels: List<String>,
         showReviewed: Boolean,
     ): List<FrigateReview> {
         val builder = url(baseUrl, "/api/review").newBuilder()
-            .addQueryParameter("limit", limit.toString())
-            .addQueryParameter("after", "0")
-        if (!severity.isNullOrBlank()) builder.addQueryParameter("severity", severity)
-        if (before != null) builder.addQueryParameter("before", before.toString())
-        // Left out, the server sends reviewed and unreviewed together, which is
-        // what "show reviewed" means. Asked for, it sends one kind or the other.
-        if (!showReviewed) builder.addQueryParameter("reviewed", "0")
+        reviewQuery(severity, limit, before, after, cameras, labels, showReviewed)
+            .forEach { (name, value) -> builder.addQueryParameter(name, value) }
 
         val request = Request.Builder()
             .url(builder.build())
@@ -604,4 +600,39 @@ class FrigateApi(
         const val EMPTY_CLIP = "The server sent an empty clip. Its recordings may not " +
             "cover that moment yet, so try again in a moment."
     }
+}
+
+/**
+ * What the Review list asks for, as name and value pairs in the order the server
+ * reads them.
+ *
+ * `cameras` and `labels` are each sent as one comma-separated value. A repeated
+ * parameter is answered with the last one alone, which was checked against
+ * 0.18.2.
+ *
+ * `after` is sent as zero rather than left out. Left out, the server only looks
+ * at the last day, and asking for older reviews would bring nothing back because
+ * the day window never moves.
+ */
+internal fun reviewQuery(
+    severity: String?,
+    limit: Int,
+    before: Double?,
+    after: Double?,
+    cameras: List<String>,
+    labels: List<String>,
+    showReviewed: Boolean,
+): List<Pair<String, String>> {
+    val query = mutableListOf("limit" to limit.toString())
+    // Whole seconds: a double put into a URL comes out as 1.7934444E9, and the
+    // digits past that are the edges of the day.
+    query += "after" to ((after ?: 0.0).toLong().toString())
+    if (before != null) query += "before" to before.toLong().toString()
+    if (cameras.isNotEmpty()) query += "cameras" to cameras.joinToString(",")
+    if (labels.isNotEmpty()) query += "labels" to labels.joinToString(",")
+    if (!severity.isNullOrBlank()) query += "severity" to severity
+    // Left out, the server sends reviewed and unreviewed together, which is what
+    // "show reviewed" means. Asked for, it sends one kind or the other.
+    if (!showReviewed) query += "reviewed" to "0"
+    return query
 }

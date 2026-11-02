@@ -18,17 +18,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -37,7 +30,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,12 +47,14 @@ import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.FrigateEvent
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.prettyCameraName
+import nz.mckenzie.frigo.ui.Period
 import nz.mckenzie.frigo.ui.components.CachedImage
+import nz.mckenzie.frigo.ui.components.CameraChips
+import nz.mckenzie.frigo.ui.components.ChoiceChip
+import nz.mckenzie.frigo.ui.components.DayDialog
+import nz.mckenzie.frigo.ui.components.PeriodChip
+import nz.mckenzie.frigo.ui.components.prettyLabel
 import nz.mckenzie.frigo.ui.relativeTime
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 
 /**
  * What Frigate has recorded, newest first, the way the Explore page on the server
@@ -81,28 +75,11 @@ fun ExploreScreen(container: AppContainer, modifier: Modifier = Modifier) {
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         )
 
-        if (state.cameras.size > 1) {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                item {
-                    FilterChip(
-                        selected = state.camera == null,
-                        onClick = { viewModel.selectCamera(null) },
-                        label = { Text("All") },
-                    )
-                }
-                items(state.cameras, key = { it.name }) { camera ->
-                    FilterChip(
-                        selected = state.camera == camera.name,
-                        onClick = { viewModel.selectCamera(camera.name) },
-                        label = { Text(camera.title) },
-                    )
-                }
-            }
-        }
+        CameraChips(
+            cameras = state.cameras,
+            chosen = state.camera,
+            onChoose = viewModel::selectCamera,
+        )
 
         LazyRow(
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
@@ -111,19 +88,17 @@ fun ExploreScreen(container: AppContainer, modifier: Modifier = Modifier) {
         ) {
             item {
                 ChoiceChip(
-                    text = chosenText("Labels", state.chosenLabels) { prettyLabel(it) },
-                    active = state.chosenLabels.isNotEmpty(),
+                    title = "Labels",
                     choices = state.labels,
                     chosen = state.chosenLabels,
-                    name = { prettyLabel(it) },
+                    name = ::prettyLabel,
                     onToggle = viewModel::toggleLabel,
                     empty = "The server listed no labels.",
                 )
             }
             item {
                 ChoiceChip(
-                    text = chosenText("People", state.chosenSubLabels) { it },
-                    active = state.chosenSubLabels.isNotEmpty(),
+                    title = "People",
                     choices = state.subLabels,
                     chosen = state.chosenSubLabels,
                     name = { it },
@@ -230,151 +205,6 @@ fun ExploreScreen(container: AppContainer, modifier: Modifier = Modifier) {
         )
     }
 }
-
-/** A chip that opens a list of names, each one ticked when it's on. */
-@Composable
-private fun <T> ChoiceChip(
-    text: String,
-    active: Boolean,
-    choices: List<T>,
-    chosen: Set<T>,
-    name: (T) -> String,
-    onToggle: (T) -> Unit,
-    empty: String,
-) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        FilterChip(
-            selected = active,
-            onClick = { open = true },
-            label = { Text(text) },
-            trailingIcon = { Arrow() },
-        )
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            if (choices.isEmpty()) {
-                DropdownMenuItem(text = { Text(empty) }, onClick = { open = false })
-            } else {
-                choices.forEach { choice ->
-                    DropdownMenuItem(
-                        text = { Text(name(choice)) },
-                        onClick = { onToggle(choice) },
-                        trailingIcon = if (chosen.contains(choice)) {
-                            { Icon(Icons.Filled.Check, contentDescription = "Chosen") }
-                        } else {
-                            null
-                        },
-                    )
-                }
-            }
-        }
-    }
-}
-
-/** A chip for the stretch of time, with its own list and a way to a calendar. */
-@Composable
-private fun PeriodChip(period: Period, onChoose: (Period) -> Unit, onPickDay: () -> Unit) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        FilterChip(
-            selected = period != Period.All,
-            onClick = { open = true },
-            label = { Text(period.said()) },
-            trailingIcon = { Arrow() },
-        )
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            listOf(Period.All, Period.Today, Period.Yesterday).forEach { choice ->
-                DropdownMenuItem(
-                    text = { Text(choice.said()) },
-                    onClick = {
-                        open = false
-                        onChoose(choice)
-                    },
-                    trailingIcon = if (period == choice) {
-                        { Icon(Icons.Filled.Check, contentDescription = "Chosen") }
-                    } else {
-                        null
-                    },
-                )
-            }
-            DropdownMenuItem(
-                text = { Text("Pick a day…") },
-                onClick = {
-                    open = false
-                    onPickDay()
-                },
-                trailingIcon = if (period is Period.On) {
-                    { Icon(Icons.Filled.Check, contentDescription = "Chosen") }
-                } else {
-                    null
-                },
-            )
-        }
-    }
-}
-
-@Composable
-private fun Arrow() {
-    Icon(
-        Icons.Filled.ArrowDropDown,
-        contentDescription = null,
-        modifier = Modifier.size(18.dp),
-    )
-}
-
-/** A calendar, for a day that isn't today or yesterday. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DayDialog(initial: LocalDate?, onDismiss: () -> Unit, onPick: (LocalDate) -> Unit) {
-    val start = (initial ?: LocalDate.now())
-        .atStartOfDay(ZoneOffset.UTC)
-        .toInstant()
-        .toEpochMilli()
-    val picker = rememberDatePickerState(initialSelectedDateMillis = start)
-
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    picker.selectedDateMillis?.let { millis ->
-                        onPick(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
-                    }
-                },
-            ) {
-                Text("Use this day")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
-    ) {
-        DatePicker(state = picker)
-    }
-}
-
-private val dayFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM")
-
-private fun Period.said(): String = when (this) {
-    Period.All -> "All time"
-    Period.Today -> "Today"
-    Period.Yesterday -> "Yesterday"
-    is Period.On -> day.format(dayFormat)
-}
-
-/** "Labels", or "Person +1" when a few are on, so the chip stays short. */
-private fun chosenText(name: String, chosen: Set<String>, pretty: (String) -> String): String {
-    val sorted = chosen.sorted()
-    return when (sorted.size) {
-        0 -> name
-        1 -> pretty(sorted.first())
-        else -> "${pretty(sorted.first())} +${sorted.size - 1}"
-    }
-}
-
-private fun prettyLabel(raw: String): String = raw
-    .replace('_', ' ')
-    .trim()
-    .replaceFirstChar { it.uppercase() }
 
 @Composable
 private fun EventRow(
