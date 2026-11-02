@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.9.4
+
+- A recording plays from where you leave the bar again.
+
 ## 0.9.3
 
 - Settings is laid out in groups, and each camera says what it has switched off.

@@ -92,6 +92,9 @@ private const val JoinSeconds = 1.0
  * [before] is where the stretch before this one ends, kept clear of because a
  * stretch that is recorded as ending a shade over its boundary would otherwise be
  * the one cut from.
+ *
+ * A stretch here is one of Frigate's ten second files, not a run of them joined
+ * together: joined, its beginning is hours back and the cut asked for is hours long.
  */
 private fun askFrom(rowStart: Double, before: Double?): Double {
     val cleared = if (before == null) rowStart else maxOf(rowStart, before) + RowNudge
@@ -138,7 +141,7 @@ internal fun RecordingRun(
     repository: FrigoRepository,
     camera: String,
     from: Double,
-    spans: List<RecordingSpan>,
+    rows: List<RecordingSpan>,
     until: Double,
     speed: Float,
     withSound: Boolean,
@@ -225,12 +228,15 @@ internal fun RecordingRun(
                 delay(150)
             }
 
-            val piece = pieceFrom(next, spans, until) ?: break
+            val piece = pieceFrom(next, rows, until) ?: break
 
-            // The stretch of recording the piece starts in, and the one before it,
-            // which is what the cut has to be kept clear of.
-            val row = spans.lastOrNull { it.startTime <= piece.startTime } ?: piece
-            val before = spans.lastOrNull { it.endTime <= row.startTime }?.endTime
+            // The file the piece starts in, and the one before it, which is what the
+            // cut has to be kept clear of. A row is one of Frigate's ten second
+            // files: asked for from the start of one, a cut begins on that file's
+            // own first frame. Handed a run of them joined together, the same ask
+            // would be for hours of video, which is what slowed a run to nothing.
+            val row = rows.lastOrNull { it.startTime <= piece.startTime } ?: piece
+            val before = rows.lastOrNull { it.endTime <= row.startTime }?.endTime
             val from = askFrom(row.startTime, before)
             val to = piece.endTime + TailSeconds
 
@@ -317,32 +323,32 @@ internal fun RecordingRun(
 }
 
 /**
- * The piece of recording to play from a moment: the stretch the moment is in, or
- * the next one when it fell in a gap, cut to [ChunkSeconds] and stopping at the end
- * of that stretch and at [until].
+ * The piece of recording to play from a moment: the file the moment is in, or the
+ * next one when it fell in a gap, cut to [ChunkSeconds] and stopping at the end of
+ * that file and at [until].
  *
- * The stretches Frigate lists are the ten second files it records into, one touching
- * the next while a camera keeps recording. Two things follow from that. One piece is
- * worth many of them, because every piece is a request to the server and a request
- * every ten seconds cannot be cut and fetched fast enough to keep the picture moving
- * at speed. And a piece ends where one of those files ends, so the next piece begins
- * exactly there and every cut can be asked to start on a file's first frame rather
- * than in the middle of one, which is what a player has to seek into.
+ * [rows] are the files Frigate lists, ten seconds each, one touching the next while
+ * a camera keeps recording. Two things follow from that. One piece is worth many of
+ * them, because every piece is a request to the server and a request every ten
+ * seconds cannot be cut and fetched fast enough to keep the picture moving at speed.
+ * And a piece ends where one of those files ends, so the next piece begins exactly
+ * there and every cut can be asked to start on a file's first frame rather than in
+ * the middle of one, which is what a player has to seek into.
  */
 internal fun pieceFrom(
     moment: Double,
-    spans: List<RecordingSpan>,
+    rows: List<RecordingSpan>,
     until: Double,
 ): RecordingSpan? {
-    val first = spans.firstOrNull { moment >= it.startTime && moment < it.endTime }
-        ?: spans.firstOrNull { it.startTime > moment }
+    val first = rows.firstOrNull { moment >= it.startTime && moment < it.endTime }
+        ?: rows.firstOrNull { it.startTime > moment }
         ?: return null
     val start = maxOf(moment, first.startTime)
     val most = minOf(start + ChunkSeconds, until)
     var end = minOf(first.endTime, most)
-    var index = spans.indexOf(first)
+    var index = rows.indexOf(first)
     while (end < most) {
-        val next = spans.getOrNull(index + 1) ?: break
+        val next = rows.getOrNull(index + 1) ?: break
         // A gap ends the stretch, and so does the piece being long enough.
         if (next.startTime > end + JoinSeconds) break
         if (next.endTime > most) break

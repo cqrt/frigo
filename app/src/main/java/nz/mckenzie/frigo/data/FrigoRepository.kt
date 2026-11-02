@@ -485,11 +485,17 @@ class FrigoRepository(
     suspend fun recordingDays(camera: String, timezone: String): List<RecordingDay> =
         authorized { baseUrl, token -> api.recordingDays(baseUrl, token, camera, timezone) }
 
-    /** The stretches of recording between two moments, with the joins in them closed. */
+    /**
+     * The stretches of recording between two moments, file by file, gaps and all.
+     *
+     * The files Frigate records into are ten seconds each and are what a clip is
+     * cut from, so they are handed over as they are. A run of them is joined where
+     * it is drawn, by the screen, rather than here.
+     */
     suspend fun recordingSpans(camera: String, after: Double, before: Double): List<RecordingSpan> =
         authorized { baseUrl, token ->
             api.recordingSpans(baseUrl, token, camera, after, before)
-        }.joined()
+        }
 
     /** A picture of the recording at that moment, for while the clip arrives. */
     suspend fun recordingStill(camera: String, moment: Double, height: Int = 720): ByteArray? =

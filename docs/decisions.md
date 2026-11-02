@@ -1845,3 +1845,26 @@ recognition on and license plate recognition saying it was off for the whole ser
 detections showed the camera chip, Person and Car under Alerts, and Everything else under Detections.
 Review put All cameras, Labels, All time and Show reviewed on one line with the list filling the rest
 of the screen, and Explore put People between Labels and All time.
+
+## A clip is cut from a file, not from a run
+
+The bar draws a spell of recording as one run. In 0.8.2 that joining moved into
+`FrigoRepository.recordingSpans`, so it is joined before it reaches the screen and the bar is handed
+runs and nothing else. The bar wanted that. Playback did not. A cut is asked for from the start of the
+stretch the piece begins in, and a joined run starts at the beginning of the whole spell, so a camera
+that had been recording since the evening was asked for a clip from then to now.
+
+It showed as a bar that stopped the picture. The stretch asked for was 23:59:55 to 02:21:01, 8,466
+seconds, and the cut was still arriving at 49 MB with no first frame, so the player had nothing to put
+there and sat on the still.
+
+The repository hands over Frigate's own rows again: the ten second files a cut is actually made from.
+`PlayerScreen` keeps both, joins the rows into runs for the bar and for the caption, and gives playback
+the rows. The same scrub now asks for 120 seconds, and the file arrives in a moment.
+
+On the emulator, dragging the bar back to 02:22 and letting go fills the picture with the recording from
+there, and it carries on at 1×: the clock burned into the picture reads 02:22:37 on the first frame and
+02:23:22 forty-five seconds later. `stamp()` shows minutes, so that is as close as the readout and the
+picture can be held together, and the picture is not behind the bar by more than the minute it cannot
+show.
+

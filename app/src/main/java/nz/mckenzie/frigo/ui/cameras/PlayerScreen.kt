@@ -237,7 +237,11 @@ fun PlayerScreen(
     // now; touching the bar steps the stream aside for the recording there. None
     // of this is keyed on the camera: a camera you tap into keeps the moment.
     var days by remember { mutableStateOf<List<RecordingDay>>(emptyList()) }
+    // The stretches as the bar draws them, one run per spell of recording, and the
+    // ten second files that run was listed as. A cut has to begin on a file's own
+    // first frame, so playback is given the files and the bar is given the run.
     var spans by remember { mutableStateOf<List<RecordingSpan>>(emptyList()) }
+    var rows by remember { mutableStateOf<List<RecordingSpan>>(emptyList()) }
     var spikes by remember { mutableStateOf<List<FrigateReview>>(emptyList()) }
     var day by rememberSaveable { mutableStateOf<String?>(null) }
     var chosen by rememberSaveable { mutableDoubleStateOf(0.0) }
@@ -456,7 +460,8 @@ fun PlayerScreen(
             .getOrDefault(emptyList())
         val foundSpikes = runCatching { repository.reviewSpikes(watching, start, end) }
             .getOrDefault(emptyList())
-        spans = found
+        rows = found
+        spans = found.joined()
         spikes = foundSpikes
         // A camera you tapped into keeps the moment you were looking at, as long
         // as it has that day at all.
@@ -515,11 +520,11 @@ fun PlayerScreen(
                     // everything from there on comes from this answer, which is the
                     // newer of the two. Joined again after the stitch, because the
                     // two halves meet at a moment neither of them chose.
-                    spans = (spans.filter { it.startTime < from } + later)
+                    rows = (rows.filter { it.startTime < from } + later)
                         .associateBy { it.startTime }
                         .values
                         .sortedBy { it.startTime }
-                        .joined()
+                    spans = rows.joined()
                 }
                 if (marks != null) {
                     // A flag is merged by its id rather than by its moment, because
@@ -739,7 +744,7 @@ fun PlayerScreen(
                             repository = repository,
                             camera = watching,
                             from = run,
-                            spans = spans,
+                            rows = rows,
                             until = minOf(dayStart + SecondsInADay, now),
                             speed = speed,
                             withSound = sound,
