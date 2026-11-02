@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.9.2
+
+- Settings ends with an About section: the version, who it's by, and the copyright.
+
 ## 0.9.1
 
 - Review narrows by camera, by label and by day.

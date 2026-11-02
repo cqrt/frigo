@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -430,6 +432,24 @@ fun SettingsScreen(
             ) {
                 Text("Sign out")
             }
+
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+
+            Text("About", style = MaterialTheme.typography.titleSmall)
+
+            Text(
+                text = "Frigo puts your Frigate cameras on your phone.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Row(label = "Version", value = BuildConfig.VERSION_NAME)
+            Row(label = "Author", value = "Matt Mckenzie")
+            Row(label = "Copyright", value = "© 2026 Matt Mckenzie")
+
+            // Clear of the sign out button, so a thumb reaching for the bottom of
+            // the page finds the version rather than the way out.
+            Spacer(Modifier.height(24.dp))
         }
     }
 }
