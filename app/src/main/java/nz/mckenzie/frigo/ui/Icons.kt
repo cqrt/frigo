@@ -61,23 +61,6 @@ object FrigoIcons {
         }
     }
 
-    /** A dot and a line, three times, shown on the button that goes from the grid to the list. */
-    val Rows: ImageVector by lazy {
-        vector("Rows") {
-            path(
-                // Three bullets in one path, then three lines in another.
-                "M4.8 4.9a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3z" +
-                    "M4.8 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3z" +
-                    "M4.8 16.1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3z",
-            )
-            path(
-                "M8.6 6.4a1.1 1.1 0 0 1 1.1-1.1h9.2a1.1 1.1 0 0 1 0 2.2H9.7a1.1 1.1 0 0 1-1.1-1.1z" +
-                    "M8.6 12a1.1 1.1 0 0 1 1.1-1.1h9.2a1.1 1.1 0 0 1 0 2.2H9.7A1.1 1.1 0 0 1 8.6 12z" +
-                    "M8.6 17.6a1.1 1.1 0 0 1 1.1-1.1h9.2a1.1 1.1 0 0 1 0 2.2H9.7a1.1 1.1 0 0 1-1.1-1.1z",
-            )
-        }
-    }
-
     /** A speaker with two sound waves, for turning the sound on. */
     val Sound: ImageVector by lazy {
         vector("Sound") {

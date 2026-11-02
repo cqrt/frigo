@@ -12,16 +12,19 @@ import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.ui.friendlyMessage
 
-/** How the cameras are laid out on the home page. */
-enum class CameraLayout {
+/**
+ * How the cameras are laid out on the home page.
+ *
+ * Each look keeps the number it was saved under. A list of one camera to a line was
+ * the middle look for a while, so the wide one is still 2 and a phone that was on it
+ * stays on it.
+ */
+enum class CameraLayout(val saved: Int) {
     /** Two to a row, the way it has always been. */
-    Grid,
-
-    /** One to a line, with a small picture and the name beside it. */
-    List,
+    Grid(0),
 
     /** One picture to a row, filling the width, with the name on it. */
-    Wide,
+    Wide(2),
 }
 
 class CamerasViewModel(private val repository: FrigoRepository) : ViewModel() {
@@ -52,9 +55,9 @@ class CamerasViewModel(private val repository: FrigoRepository) : ViewModel() {
 
     init {
         viewModelScope.launch {
-            _layout.value = CameraLayout.entries.getOrElse(repository.readCameraLayout()) {
-                CameraLayout.Grid
-            }
+            _layout.value = CameraLayout.entries.firstOrNull {
+                it.saved == repository.readCameraLayout()
+            } ?: CameraLayout.Grid
         }
         // Collected rather than read once, so flipping it in Settings changes the
         // tiles you come back to.
@@ -62,15 +65,14 @@ class CamerasViewModel(private val repository: FrigoRepository) : ViewModel() {
         refresh()
     }
 
-    /** Grid to list, list to wide, wide back to grid: one button, three looks. */
+    /** Grid to wide, wide back to grid: one button, two looks. */
     fun cycleLayout() {
         val next = when (_layout.value) {
-            CameraLayout.Grid -> CameraLayout.List
-            CameraLayout.List -> CameraLayout.Wide
+            CameraLayout.Grid -> CameraLayout.Wide
             CameraLayout.Wide -> CameraLayout.Grid
         }
         _layout.value = next
-        viewModelScope.launch { repository.setCameraLayout(next.ordinal) }
+        viewModelScope.launch { repository.setCameraLayout(next.saved) }
     }
 
     fun refresh() {

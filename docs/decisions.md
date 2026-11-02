@@ -503,17 +503,26 @@ It now reads the saved choices when it starts and redraws itself whenever they
 change. It also names the list that is empty, cameras or objects, rather than
 blaming the cameras every time.
 
-## Three camera layouts, one button
+## Two camera layouts, one button
 
-The home page has three looks behind one button: two to a row, one to a line, and
-one picture filling the width with its name on a dark fade. The fade is there
-because a camera pointed at a bright wall would leave white text unreadable.
+The home page has two looks behind one button: two to a row, and one picture
+filling the width with its name on a dark fade. The fade is there because a
+camera pointed at a bright wall would leave white text unreadable.
 
 The icon shows the look you get next, not the one you're in, so a tap always
 moves you somewhere you can see coming. The choice is kept on the phone.
 
+There was a third look, one camera to a line with a small picture and its name
+beside it. It went because nobody used it: the line spent the width on the name
+and left the picture the size of a thumbnail, and the grid already reads the
+same at a glance. With two looks the button is a plain swap, so a tap never
+goes through a look you didn't want.
+
+The wide look keeps the number 2 that it was saved under, so a phone that was
+on it stays on it. Anything else saved reads as the grid.
+
 Material's own icon set has no play mark in a box, no magnifying glass with room
-for a label, and no wide frame, so Reviews, Explore, the grid and the list marks
+for a label, and no wide frame, so Reviews, Explore, the grid and the wide marks
 are vectors drawn in `ui/Icons.kt`. The depth in the Reviews mark is one path at
 22% opacity, tinted along with everything else.
 

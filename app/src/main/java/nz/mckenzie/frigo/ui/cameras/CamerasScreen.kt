@@ -6,13 +6,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -27,7 +25,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -113,18 +110,6 @@ fun CamerasScreen(
                     }
                 }
 
-                layout == CameraLayout.List -> LazyColumn(
-                    contentPadding = PaddingValues(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(cameras, key = { it.name }) { camera ->
-                        CameraRow(container.repository, camera, refreshKey, liveTiles) {
-                            onOpenCamera(camera)
-                        }
-                    }
-                }
-
                 else -> LazyColumn(
                     contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -151,10 +136,6 @@ private fun LayoutButton(layout: CameraLayout, onClick: () -> Unit) {
     val said: String
     when (layout) {
         CameraLayout.Grid -> {
-            icon = FrigoIcons.Rows
-            said = "Show one to a line"
-        }
-        CameraLayout.List -> {
             icon = FrigoIcons.Wide
             said = "Show one to a row"
         }
@@ -197,41 +178,6 @@ private fun CameraTile(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            )
-        }
-    }
-}
-
-/** The same camera on one line: a small picture and its name. */
-@Composable
-private fun CameraRow(
-    repository: FrigoRepository,
-    camera: Camera,
-    refreshKey: Int,
-    live: Boolean,
-    onClick: () -> Unit,
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(10.dp),
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            CameraStill(
-                repository = repository,
-                camera = camera.name,
-                refreshKey = refreshKey,
-                live = live,
-                modifier = Modifier
-                    .padding(8.dp)
-                    .size(width = 128.dp, height = 72.dp),
-            )
-            Text(
-                text = camera.title,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f).padding(end = 12.dp),
             )
         }
     }
