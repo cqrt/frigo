@@ -2095,3 +2095,16 @@ six, and the last page's button says Done.
 
 The figures are drawn at the real bar's own heights, a minute a line and the bands at 20 to 36 dp and
 the slivers to 52, so the small copy reads as the same thing as the bar it stands in for.
+
+## The live picture keeps a camera's shape
+
+The walkthrough's frame was one height for all six pages, 246 dp, so the page with the day strip and the
+hour bar under the picture left the picture the rest of the room: about 2.5 to 1 on a wide phone. A
+camera is not that shape, so the page taught the wrong picture.
+
+The frame on that page is now worked out from the width: 16:9 inside the 12 dp of padding, then the strip,
+the hour bar and the two gaps added on. About 305 dp on a 411 dp phone. The other pages keep the fixed
+height, because a clip frame and a list of rows are the shapes they are.
+
+The trade was one page with its own height. The alternative was dropping the hour bar so the frame stayed
+short, which would have left the strip as the only thing under the picture.

@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -677,7 +678,13 @@ private fun BatteryStep(
 /* ------------------------------------------------------------------- tour */
 
 /** One page of the walkthrough: its heading, its words, and the tab it lights. */
-private data class TourStop(val title: String, val tab: Int, val words: String)
+private data class TourStop(
+    val title: String,
+    val tab: Int,
+    val words: String,
+    /** True on the page that draws a camera picture, which keeps its own shape. */
+    val camera: Boolean = false,
+)
 
 /**
  * The six pages, in order. The first two are the Cameras tab twice over: the
@@ -696,6 +703,7 @@ private val TourStops = listOf(
         tab = 0,
         words = "Tap a camera and the picture goes live. The bar underneath is the day; " +
             "drag it to go back through it. Turn the phone on its side for the whole screen.",
+        camera = true,
     ),
     TourStop(
         title = "Review",
@@ -766,17 +774,27 @@ private fun TourPage(stop: TourStop, index: Int, onSkip: () -> Unit, onNext: () 
             modifier = Modifier.weight(1f).fillMaxWidth(),
             verticalArrangement = Arrangement.Center,
         ) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    // Tall enough for a 16:9 clip and the lines under it, which
-                    // is the page that needs the most room.
-                    .height(246.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                    .padding(12.dp),
-            ) {
-                TourArt(index)
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                // A page with a camera picture takes its height from the width, so
+                // the picture is a camera's shape rather than whatever the page has
+                // left over after the bars: 16:9 inside the 12dp of padding, plus
+                // the day strip, the hour bar and the two gaps between them.
+                val frame = if (stop.camera) {
+                    (maxWidth - 24.dp) * 9f / 16f + 24.dp + 16.dp + 58.dp + 16.dp
+                } else {
+                    246.dp
+                }
+
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(frame)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                        .padding(12.dp),
+                ) {
+                    TourArt(index)
+                }
             }
             Spacer(Modifier.height(24.dp))
             Text(stop.title, style = MaterialTheme.typography.headlineMedium)

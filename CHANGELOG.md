@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.2
+
+- The picture on the walkthrough's live page is a camera's shape now, instead of a letterbox.
+
 ## 0.10.1
 
 - The first-run pages show drawn pictures now, instead of grey boxes.
