@@ -705,6 +705,7 @@ private fun TourStep(onDone: () -> Unit) {
 private fun TourPage(index: Int, onSkip: () -> Unit, onNext: () -> Unit) {
     val words = when (index) {
         0 -> "A picture from each camera, about once a second. Tap one for live view. " +
+            "The strip under it is the day: drag it to go back through what was recorded. " +
             "Turn the phone on its side for fullscreen."
 
         1 -> "The moments Frigate thought were worth a look, newest first. Tap one to " +
@@ -715,7 +716,7 @@ private fun TourPage(index: Int, onSkip: () -> Unit, onNext: () -> Unit) {
         3 -> "The clips you kept. Watch one, save it to your phone, or delete it " +
             "from the server."
 
-        else -> "Your server, what buzzes your phone, and the colours."
+        else -> "Your server, your alerts, and how the app looks."
     }
 
     Column(
