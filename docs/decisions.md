@@ -2082,3 +2082,16 @@ which is what makes typing it wrong easy to do twice.
 
 The words are the same as before, including the port hint, which sits under the address it belongs to
 rather than loose between two boxes.
+
+## The walkthrough splits the Cameras tab in two
+
+One page was trying to describe two screens: the grid of four cameras, and one camera opened with the
+day under it. The words had to serve both, so they served neither well.
+
+The walkthrough is six pages now. The first is the grid on its own. The second is a camera open: the
+picture with its Live tag, the day strip, and an hour of the bar with the playhead in the middle. Both
+keep Cameras lit in the bar at the bottom, because the second is reached from the first. The dots go to
+six, and the last page's button says Done.
+
+The figures are drawn at the real bar's own heights, a minute a line and the bands at 20 to 36 dp and
+the slivers to 52, so the small copy reads as the same thing as the bar it stands in for.

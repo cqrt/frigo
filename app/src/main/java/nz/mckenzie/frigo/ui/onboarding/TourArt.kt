@@ -41,12 +41,12 @@ import androidx.compose.ui.unit.dp
  */
 
 /**
- * A small drawing of what the tab holds, in the app's own shapes.
+ * A small drawing of what the page holds, in the app's own shapes.
  */
 @Composable
 internal fun TourArt(index: Int) {
     when (index) {
-        // Four cameras, and the bar that runs under a camera when you open it.
+        // The grid: four cameras, and nothing else.
         0 -> Column(
             Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -65,10 +65,35 @@ internal fun TourArt(index: Int) {
                 MiniTile("Back yard", Scene.BackYard, Modifier.weight(1f).fillMaxHeight())
                 MiniTile("Garage", Scene.Garage, Modifier.weight(1f).fillMaxHeight())
             }
-            DayBar()
         }
 
-        1 -> Column {
+        // One camera open: the picture, the day under it, and the hour it plays.
+        1 -> Column(
+            Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Box(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(10.dp))) {
+                SceneArt(Scene.FrontDoor, Modifier.fillMaxSize())
+                Box(
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0x8C08111A))
+                        .padding(horizontal = 7.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        text = "Live",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFF2F7FC),
+                    )
+                }
+            }
+            DayBar()
+            HourBar()
+        }
+
+        2 -> Column {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MiniChip("Alerts 4")
                 MiniChip("Detections 12")
@@ -80,7 +105,7 @@ internal fun TourArt(index: Int) {
         }
 
         // The filters across the top, a week of days, then what it plays.
-        2 -> Column {
+        3 -> Column {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MiniChip("Person")
                 MiniChip("Driveway")
@@ -96,7 +121,7 @@ internal fun TourArt(index: Int) {
             MiniRow(Scene.BackYard, tag = false)
         }
 
-        3 -> Column {
+        4 -> Column {
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -190,6 +215,88 @@ private fun DayBar() {
                 size = Size(size.width * 0.008f, bandHeight),
             )
         }
+    }
+}
+
+/**
+ * An hour of the day under the picture. A line a minute, a wash where the camera
+ * kept something, a sliver wherever it flagged something, and the playhead in
+ * the middle that stays put while the hour slides past it.
+ */
+@Composable
+private fun HourBar() {
+    val ink = MaterialTheme.colorScheme.onBackground
+    val kept = if (ink.luminance() > 0.5f) 0.7f else 0.45f
+    val detection = Color(0xFFE9A23B)
+    val alert = Color(0xFFF05252)
+
+    Canvas(
+        Modifier
+            .fillMaxWidth()
+            .height(58.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(ink.copy(alpha = 0.08f)),
+    ) {
+        // The heights are the real bar's, so the two read as the same thing.
+        val bandTop = 20.dp.toPx()
+        val bandBottom = 36.dp.toPx()
+        val detectionTop = 44.dp.toPx()
+        val alertTop = 36.dp.toPx()
+        val spikeBottom = 52.dp.toPx()
+
+        // Thirty minutes across the width: a line a minute, longer every five.
+        val step = size.width / 30f
+        repeat(31) { minute ->
+            val major = minute % 5 == 0
+            drawLine(
+                color = ink.copy(alpha = if (major) 0.2f else 0.08f),
+                start = Offset(minute * step, 0f),
+                end = Offset(minute * step, size.height),
+                strokeWidth = if (major) 1.5f else 1f,
+            )
+        }
+
+        listOf(
+            0f to 0.16f,
+            0.22f to 0.4f,
+            0.52f to 0.71f,
+            0.78f to 0.92f,
+        ).forEach { (from, to) ->
+            drawRect(
+                color = ink.copy(alpha = kept),
+                topLeft = Offset(size.width * from, bandTop),
+                size = Size(size.width * (to - from), bandBottom - bandTop),
+            )
+        }
+
+        listOf(0.09f, 0.28f, 0.47f, 0.63f, 0.86f).forEach { at ->
+            drawRect(
+                color = detection,
+                topLeft = Offset(size.width * at, detectionTop),
+                size = Size(size.width * 0.01f, spikeBottom - detectionTop),
+            )
+        }
+        listOf(0.34f, 0.58f, 0.95f).forEach { at ->
+            drawRect(
+                color = alert,
+                topLeft = Offset(size.width * at, alertTop),
+                size = Size(size.width * 0.014f, spikeBottom - alertTop),
+            )
+        }
+
+        // The playhead halfway along: the moment the picture is showing.
+        val centre = size.width / 2f
+        drawLine(
+            color = ink,
+            start = Offset(centre, 0f),
+            end = Offset(centre, size.height),
+            strokeWidth = 2.dp.toPx(),
+        )
+        drawCircle(
+            color = ink,
+            radius = 3.dp.toPx(),
+            center = Offset(centre, 3.dp.toPx()),
+        )
     }
 }
 

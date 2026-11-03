@@ -676,10 +676,54 @@ private fun BatteryStep(
 
 /* ------------------------------------------------------------------- tour */
 
-/** One page per tab, with the bar underneath lit on that tab. */
+/** One page of the walkthrough: its heading, its words, and the tab it lights. */
+private data class TourStop(val title: String, val tab: Int, val words: String)
+
+/**
+ * The six pages, in order. The first two are the Cameras tab twice over: the
+ * grid, then one camera opened with the day under it. Splitting them is what
+ * lets each page say one thing.
+ */
+private val TourStops = listOf(
+    TourStop(
+        title = "Cameras",
+        tab = 0,
+        words = "All four cameras at once, so a glance tells you whether anyone is " +
+            "about. Tap one for live view.",
+    ),
+    TourStop(
+        title = "Live and playback",
+        tab = 0,
+        words = "Tap a camera and the picture goes live. The bar underneath is the day; " +
+            "drag it to go back through it. Turn the phone on its side for the whole screen.",
+    ),
+    TourStop(
+        title = "Review",
+        tab = 1,
+        words = "The moments Frigate thought were worth a look, newest first. Tap one to " +
+            "watch it, and it leaves the list once you've seen it.",
+    ),
+    TourStop(
+        title = "Explore",
+        tab = 2,
+        words = "Everything Frigate recorded. Narrow it by camera, by what was seen, or by day.",
+    ),
+    TourStop(
+        title = "Clips",
+        tab = 3,
+        words = "The clips you kept. Watch one, save it to your phone, or delete it " +
+            "from the server.",
+    ),
+    TourStop(
+        title = "Settings",
+        tab = 4,
+        words = "Your server, your alerts, and how the app looks.",
+    ),
+)
+
 @Composable
 private fun TourStep(onDone: () -> Unit) {
-    val pager = rememberPagerState(pageCount = { FrigoTabs.size })
+    val pager = rememberPagerState(pageCount = { TourStops.size })
     val scope = rememberCoroutineScope()
 
     Column(Modifier.fillMaxSize()) {
@@ -689,36 +733,21 @@ private fun TourStep(onDone: () -> Unit) {
             key = { it },
         ) { index ->
             TourPage(
+                stop = TourStops[index],
                 index = index,
                 onSkip = onDone,
                 onNext = {
-                    if (index == FrigoTabs.lastIndex) onDone()
+                    if (index == TourStops.lastIndex) onDone()
                     else scope.launch { pager.animateScrollToPage(index + 1) }
                 },
             )
         }
-        TourBar(active = pager.currentPage)
+        TourBar(active = TourStops[pager.currentPage].tab)
     }
 }
 
 @Composable
-private fun TourPage(index: Int, onSkip: () -> Unit, onNext: () -> Unit) {
-    val words = when (index) {
-        0 -> "A picture from each camera, about once a second. Tap one for live view. " +
-            "The strip under it is the day: drag it to go back through what was recorded. " +
-            "Turn the phone on its side for fullscreen."
-
-        1 -> "The moments Frigate thought were worth a look, newest first. Tap one to " +
-            "watch it, and it leaves the list once you've seen it."
-
-        2 -> "Everything Frigate recorded. Narrow it by camera, by what was seen, or by day."
-
-        3 -> "The clips you kept. Watch one, save it to your phone, or delete it " +
-            "from the server."
-
-        else -> "Your server, your alerts, and how the app looks."
-    }
-
+private fun TourPage(stop: TourStop, index: Int, onSkip: () -> Unit, onNext: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
@@ -750,10 +779,10 @@ private fun TourPage(index: Int, onSkip: () -> Unit, onNext: () -> Unit) {
                 TourArt(index)
             }
             Spacer(Modifier.height(24.dp))
-            Text(FrigoTabs[index].label, style = MaterialTheme.typography.headlineMedium)
+            Text(stop.title, style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(8.dp))
             Text(
-                text = words,
+                text = stop.words,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -765,7 +794,7 @@ private fun TourPage(index: Int, onSkip: () -> Unit, onNext: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FrigoTabs.indices.forEach { page ->
+                TourStops.indices.forEach { page ->
                     Box(
                         Modifier
                             .height(6.dp)
@@ -779,7 +808,7 @@ private fun TourPage(index: Int, onSkip: () -> Unit, onNext: () -> Unit) {
                 }
             }
             TextButton(onClick = onNext) {
-                Text(if (index == FrigoTabs.lastIndex) "Done" else "Next")
+                Text(if (index == TourStops.lastIndex) "Done" else "Next")
             }
         }
     }
