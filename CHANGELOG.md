@@ -11,10 +11,9 @@ explain, leave out.
 ## 0.10.1
 
 - The first-run pages show drawn pictures now, instead of grey boxes.
-- The Clips page says clips, not stretches.
-- The walkthrough says what the strip under a live camera is for.
 - The walkthrough has two camera pages: the grid, then one camera open with the day under it.
-- Signing in uses the same filled lines as the rest of the app, with an icon on each and an eye on the password.
+- The Clips page says clips, not stretches.
+- Signing in looks like the rest of the app, and the password has an eye.
 
 ## 0.10.0
 
