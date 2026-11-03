@@ -2108,3 +2108,14 @@ height, because a clip frame and a list of rows are the shapes they are.
 
 The trade was one page with its own height. The alternative was dropping the hour bar so the frame stayed
 short, which would have left the strip as the only thing under the picture.
+
+## Every thumbnail wears the same corners
+
+The 112 by 63 stills on the Review, Explore and Clips pages were square, while the small camera tiles
+under a live picture have an 8 dp corner. Two shapes for the same kind of thing reads as an oversight,
+so the three pages now use the 8 dp corner too: on the picture alone where there is no overlay, and on
+the box around it where a play mark sits on top, so the mark cannot spill past the corner.
+
+The Clips page is titled Saved clips. A clip there is on the server, and saving one to the phone is the
+row's own action, so the title names where the clips are rather than what you did. The empty state
+follows it: nothing saved yet.

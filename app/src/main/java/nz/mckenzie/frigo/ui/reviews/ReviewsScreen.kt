@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
@@ -320,7 +321,9 @@ private fun ReviewRow(
                 modifier = Modifier
                     .padding(8.dp)
                     .size(width = 112.dp, height = 63.dp)
-                    .aspectRatio(16f / 9f),
+                    .aspectRatio(16f / 9f)
+                    // The same corners as the small camera tiles under the live picture.
+                    .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop,
                 load = { repository.reviewThumbnail(review) },
             )

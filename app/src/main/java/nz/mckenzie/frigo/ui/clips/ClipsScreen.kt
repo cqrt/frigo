@@ -50,6 +50,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -148,7 +149,7 @@ fun ClipsScreen(container: AppContainer, modifier: Modifier = Modifier) {
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Kept clips") },
+            title = { Text("Saved clips") },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         )
 
@@ -198,7 +199,7 @@ fun ClipsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("Nothing kept yet.", style = MaterialTheme.typography.bodyLarge)
+                    Text("Nothing saved yet.", style = MaterialTheme.typography.bodyLarge)
                     Text(
                         text = "With a recording on screen, Save asks where to put it: " +
                             "on this phone, or on the server. Whatever the server keeps " +
@@ -309,7 +310,8 @@ private fun ClipRow(
             .clickable(enabled = !export.inProgress, onClick = onClick),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.padding(8.dp)) {
+            // The same corners as the small camera tiles under the live picture.
+            Box(Modifier.padding(8.dp).clip(RoundedCornerShape(8.dp))) {
                 CachedImage(
                     cacheKey = "kept-${export.id}",
                     modifier = Modifier

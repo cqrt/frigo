@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.3
+
+- Thumbnails on the Review, Explore and Clips pages have rounded corners.
+- The Clips page says Saved clips.
+
 ## 0.10.2
 
 - The picture on the walkthrough's live page is a camera's shape now, instead of a letterbox.
