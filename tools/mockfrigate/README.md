@@ -32,13 +32,29 @@ reads a still's own size instead of asking for a bigger one.
 
 `/api/labels` answers with the objects the app can tick in Settings. `/api/review`
 answers with three alerts and three detections, newest first, and a clip for each.
-It filters on `severity` the way the real endpoint does. `/ws` is a
-websocket that behaves like Frigate's message feed: it takes the same bearer
-token, and every twenty seconds it publishes a new event, alternating a person on
-the door camera with a car on the north camera. That alternation is the point.
-Tick `person` only and the car never buzzes; untick the door camera and the person
-never does. It answers pings and closes when the app closes, which is what a real
-server does when it goes away.
+It filters on `severity` the way the real endpoint does.
+
+`/api/config` carries the two pages the app follows: notifications are on for the
+whole server and for the door and north cameras, and the server-wide alert list is
+`person` and `car`. Every other camera has its notifications off, which is what a
+camera nobody has touched says. Turn one of them on in the app and it starts
+buzzing, because the app has no list of its own.
+
+`/ws` is a websocket that behaves like Frigate's message feed: it takes the same
+bearer token, and it publishes on both of the topics the app can listen to.
+
+- On `events`, every twenty seconds, a new event: a person on the door camera, then
+  a car on the north camera, and so on.
+- On `reviews`, every twenty seconds starting fourteen seconds in: a review that is
+  already an alert, then one that starts as a detection and turns into an alert
+  three seconds later with the same id and the same start time.
+
+The app's trial switch chooses which of the two topics it listens to, so both are
+sent and the switch can be flipped without restarting anything. The turn from
+detection to alert is the case a zone makes: the object has to step into the
+driveway before the server calls it an alert, and the app only buzzes inside a few
+seconds of the review's start. It answers pings and closes when the app closes,
+which is what a real server does when it goes away.
 
 The recordings and the reviews follow the clock. Recordings are ten second files
 worked out from the moment asked for, up to now and no further, which is how the

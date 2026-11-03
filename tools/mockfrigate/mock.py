@@ -78,6 +78,31 @@ CAMERAS = {
     "offline_cam": {"enabled": False},
 }
 
+# The cameras whose switch is on, on the server's notifications page. The others are
+# off, which is what a camera nobody has touched says. Turn one on in the app and its
+# alerts start buzzing, because the app reads these and has no list of its own.
+NOTIFYING = {"door_cam", "north_cam"}
+
+# What the server flags as an alert, server-wide. A review's object is checked
+# against this, and against the camera's own list when it has one.
+ALERT_LABELS = ["person", "car"]
+
+# The settings file the app reads, with only the keys it uses. The notifications
+# page and the alerts page are both here, because the app follows them rather than
+# keeping a list of its own.
+CONFIG = {
+    "notifications": {"enabled": True},
+    "review": {
+        "alerts": {"enabled": True, "labels": ALERT_LABELS},
+        "detections": {"enabled": True},
+    },
+    "objects": {"track": ["person", "car", "dog", "cat"]},
+    "cameras": {
+        name: {**settings, "notifications": {"enabled": name in NOTIFYING}}
+        for name, settings in CAMERAS.items()
+    },
+}
+
 # Cameras with nothing arriving. Frigate has no flag that says a camera is offline:
 # it counts the frames each one produces, and one that has stopped produces none, so
 # this is what its stats say about it. The stream still hands back the last frame it
@@ -117,6 +142,41 @@ REVIEWED = set()
 
 # The websocket handshake's fixed magic string, from RFC 6455.
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
+# The reviews the socket publishes, alternating between the two cameras whose
+# notifications are on. `person` on door_cam and `car` on north_cam, which is what
+# the alerts page calls an alert.
+SOCKET_REVIEWS = [("door_cam", ["person"], ["driveway"]), ("north_cam", ["car"], ["driveway"])]
+
+
+def review_body(number, severity, start_time=None):
+    """One review, shaped like 0.18's, with the one detection its picture comes from."""
+    camera, objects, zones = SOCKET_REVIEWS[number % len(SOCKET_REVIEWS)]
+    started = time.time() if start_time is None else start_time
+    return {
+        "id": f"{started:.6f}-socket{number}",
+        "camera": camera,
+        "start_time": started,
+        "end_time": None,
+        "severity": severity,
+        "has_been_reviewed": False,
+        "data": {
+            "audio": [],
+            "detections": [f"{started:.6f}-socket{number}"],
+            "objects": objects,
+            "sub_labels": [],
+            "significant_motion_areas": [],
+            "zones": zones,
+        },
+    }
+
+
+def review_message(change, body):
+    """The envelope the socket sends: a topic, and the change as a JSON string."""
+    return {
+        "topic": "reviews",
+        "payload": json.dumps({"type": change, "before": {}, "after": body}),
+    }
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -222,7 +282,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({"message": "unauthorized"}, status=401)
 
         if path == "/api/config":
-            return self.send_json({"cameras": CAMERAS})
+            return self.send_json(CONFIG)
 
         if path == "/api/labels":
             return self.send_json(LABELS)
@@ -374,6 +434,7 @@ class Handler(BaseHTTPRequestHandler):
     # JSON for an event.
 
     alerts_sent = 0
+    reviews_sent = 0
 
     def serve_alerts(self):
         key = self.headers.get("Sec-WebSocket-Key")
@@ -392,16 +453,27 @@ class Handler(BaseHTTPRequestHandler):
         self.close_connection = True
 
         # Something arrives shortly after connecting, then every twenty seconds,
-        # so an alert is never a long wait while trying this out.
+        # so an alert is never a long wait while trying this out. Reviews arrive on
+        # their own timer: one that is an alert already, then one that starts as a
+        # detection and turns into an alert a few seconds later, and so on. Both
+        # topics are sent, because which one the app listens to is its own switch.
         next_alert = time.time() + 8
+        next_review = time.time() + 14
+        pending = []  # (when, message) for the review that turns into an alert
         try:
             while True:
                 ready, _, _ = select.select([self.connection], [], [], 1)
                 if ready and not self.read_frame():
                     return
-                if time.time() >= next_alert:
+                now = time.time()
+                while pending and pending[0][0] <= now:
+                    self.send_frame(json.dumps(pending.pop(0)[1]).encode())
+                if now >= next_alert:
                     self.send_alert()
-                    next_alert = time.time() + 20
+                    next_alert = now + 20
+                if now >= next_review:
+                    self.send_review(pending)
+                    next_review = now + 20
         except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, OSError):
             return
 
@@ -429,6 +501,26 @@ class Handler(BaseHTTPRequestHandler):
             "payload": json.dumps({"type": "new", "before": {}, "after": event}),
         }
         self.send_frame(json.dumps(message).encode())
+
+    def send_review(self, pending):
+        """One review, and every other one turns into an alert three seconds in.
+
+        A review that starts as a detection is the ordinary case for a zone: the
+        object has to step into the driveway before the server calls it an alert.
+        The app has a window for exactly that, so the second message is what tries
+        it.
+        """
+        Handler.reviews_sent += 1
+        number = Handler.reviews_sent
+        if number % 2:
+            self.send_frame(json.dumps(review_message("new", review_body(number, "alert"))).encode())
+            return
+
+        started = review_body(number, "detection")
+        self.send_frame(json.dumps(review_message("new", started)).encode())
+        turned = review_body(number, "alert")
+        turned["start_time"] = started["start_time"]
+        pending.append((time.time() + 3, review_message("update", turned)))
 
     def send_frame(self, payload):
         length = len(payload)

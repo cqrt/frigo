@@ -2119,3 +2119,45 @@ the box around it where a play mark sits on top, so the mark cannot spill past t
 The Clips page is titled Saved clips. A clip there is on the server, and saving one to the phone is the
 row's own action, so the title names where the clips are rather than what you did. The empty state
 follows it: nothing saved yet.
+
+## Alerts follow the server, not a list on the phone
+
+The phone kept its own two lists: which cameras buzz, and which objects. They were convenient and they
+were wrong. Frigate already knows which cameras may tell anyone anything, on its notifications page, and
+which objects make an alert, on its alerts page. A phone with a third opinion needed both kept in step by
+hand, and the usual failure was quiet: a camera turned on in a browser, the phone still silent, nothing
+saying why.
+
+Three answers now decide a buzz, all on the server: notifications on for the server, notifications on for
+that camera, and that camera's alerts on with the object in its list. Turning any one of them off silences
+the phone, which is the same rule Frigate applies to its own notifications.
+
+The app keeps a copy of those answers rather than an opinion. The copy is refreshed when the app opens,
+when the socket reconnects, and after a change made on the Review page. It is stored on the phone so a
+restart with no signal still knows what to watch, and so the quiet notification can say what is happening
+without asking first. A change made in a browser lands the next time the app looks, which is when you open
+it.
+
+The cost is that the phone cannot be quieter than the server. There is no per-phone narrowing any more: a
+camera that buzzes in Frigate's own app buzzes here too, and the only place to change it is the server.
+That is the trade the plan took, and it is worth saying out loud.
+
+A camera with no alert list of its own follows the server-wide list, because that is what Frigate's own
+config merge does. Reading a hardcoded `person, car` in that gap, which is what the code did before, meant
+the phone could disagree with the server about a camera nobody had touched.
+
+Two ways of buzzing are tried behind a switch in Settings, and one of them will be kept:
+
+- Per event, on the `events` topic: a buzz for each thing the server tracks, held to one per camera every
+  twenty seconds.
+- Per happening, on the `reviews` topic: a buzz for each moment the server calls an alert. A review that
+  starts as a detection buzzes when it turns into an alert, but only inside ten seconds of its own start,
+  which is the window a zone needs. A review that changes twice buzzes once, because its id is kept for
+  three minutes.
+
+The review topic is the one that matches what the alerts page means by an alert. The event topic is what
+the app shipped with, and it is cheaper to reason about, so both run until one has been tried on real
+cameras.
+
+Turning notifications off on the server, or off on every camera, would otherwise look like a broken app.
+The quiet notification and the Settings row both say which switch is doing it.

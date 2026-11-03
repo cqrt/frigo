@@ -29,6 +29,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import nz.mckenzie.frigo.FrigoApplication
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.FrigateEvent
+import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.StreamSource
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -65,6 +66,9 @@ class AlertService : Service() {
     /** When each camera last buzzed, so one visitor does not set the phone off twice. */
     private val lastBuzzed = mutableMapOf<String, Long>()
 
+    /** The rule for reviews, and the ids of the ones already buzzed. */
+    private val reviewBuzz = ReviewBuzz()
+
     /**
      * A client of its own: the feed stays open with no read timeout, and a ping
      * every half minute both keeps the phone's network path open and notices a
@@ -83,13 +87,18 @@ class AlertService : Service() {
         container = (application as FrigoApplication).container
         createChannels()
 
-        // The quiet notification counts the cameras you ticked, so it follows the
-        // Settings screen: tick a camera and it says one camera, not none. The
-        // saved choices are read first, because after a phone restart this service
-        // runs before any screen has, and it would otherwise start with nothing.
+        // The quiet notification counts the cameras the server has turned on, so it
+        // follows what is set on the server: turn a camera on and it says one
+        // camera, not none. Only the last answer was saved, because after a phone
+        // restart this service runs before any screen has, and it would otherwise
+        // start with nothing.
         scope.launch {
             container.repository.loadAlerts()
+            container.repository.loadAlertRules()
             container.repository.alerts.collect { showWatching() }
+        }
+        scope.launch {
+            container.repository.alertRules.collect { showWatching() }
         }
     }
 
@@ -166,6 +175,9 @@ class AlertService : Service() {
                         return
                     }
                     setState(WatchState.Connected)
+                    // The connection coming back is one of the moments the server is
+                    // asked again, so a camera turned on in a browser is picked up.
+                    scope.launch { container.repository.refreshAlertRules() }
                 }
 
                 override fun onMessage(webSocket: WebSocket, text: String) {
@@ -200,29 +212,46 @@ class AlertService : Service() {
 
     /**
      * Frigate sends every message it publishes, each as `{"topic": ..., "payload":
-     * ...}`. The ones that matter here are the new events, and only the ones you
-     * ticked.
+     * ...}`. The ones that matter here are the new events and the reviews, and
+     * either only counts when the server's own rules say so.
      *
-     * The topic is `events`. Frigate's own page listens for that name, and the
-     * server strips the `frigate/` prefix its MQTT brokers use before it goes out
-     * on the socket. Some builds keep the prefix, so both names are taken.
+     * The topics are `events` and `reviews`. Frigate's own page listens for those
+     * names, and the server strips the `frigate/` prefix its MQTT brokers use
+     * before it goes out on the socket. Some builds keep the prefix, so both names
+     * are taken.
      */
     private fun onMessage(text: String) {
         val root = runCatching { json.parseToJsonElement(text) as? JsonObject }.getOrNull() ?: return
-        val topic = root.text("topic") ?: return
-        if (topic.removePrefix("frigate/") != "events") return
+        val topic = root.text("topic")?.removePrefix("frigate/") ?: return
 
-        // The payload is the event as a JSON string, but a plain object arrives
+        // The payload is the object as a JSON string, but a plain object arrives
         // the same way in some builds.
         val raw = root["payload"] ?: return
         val payload = when (raw) {
             is JsonPrimitive -> raw.content
             else -> raw.toString()
         }
-        val message = runCatching { json.parseToJsonElement(payload) as? JsonObject }.getOrNull() ?: return
+        val message = runCatching { json.parseToJsonElement(payload) as? JsonObject }.getOrNull()
+            ?: return
 
-        // `new` is the moment an object first appears. `update` follows every time
-        // its details change, and `end` when it leaves, so only `new` buzzes.
+        // The trial switch says which of the two paths is the one being tried.
+        // Both are filtered by the same rules, so only one of them can buzz.
+        val perHappening = container.repository.alerts.value.perHappening
+        when {
+            topic == "events" && !perHappening -> onEvent(message)
+            topic == "reviews" && perHappening -> onReview(message)
+        }
+    }
+
+    /**
+     * One new event, when the buzz is per thing the server tracks.
+     *
+     * `new` is the moment an object first appears. `update` follows every time its
+     * details change, and `end` when it leaves, so only `new` buzzes. The twenty
+     * second hush per camera is here and not on the review path: this path buzzes
+     * per object, so one visitor crossing a zone can start several events.
+     */
+    private fun onEvent(message: JsonObject) {
         if (message.text("type") != "new") return
         val event = (message["after"] as? JsonObject) ?: return
 
@@ -230,7 +259,7 @@ class AlertService : Service() {
         val camera = event.text("camera") ?: return
         val label = event.text("label") ?: return
 
-        if (!container.repository.alerts.value.wants(camera, label)) return
+        if (!container.repository.alertRules.value.buzzes(camera, label)) return
 
         val now = System.currentTimeMillis()
         val last = lastBuzzed[camera] ?: 0L
@@ -249,6 +278,27 @@ class AlertService : Service() {
                 ),
                 picture = picture,
             )
+        }
+    }
+
+    /**
+     * One review, when the buzz is per happening the server calls an alert. The
+     * rule itself lives in [ReviewBuzz], so it can be tried without a phone.
+     */
+    private fun onReview(message: JsonObject) {
+        val after = (message["after"] as? JsonObject) ?: return
+        val review = runCatching {
+            json.decodeFromString(FrigateReview.serializer(), after.toString())
+        }.getOrNull() ?: return
+
+        val rules = container.repository.alertRules.value
+        if (!reviewBuzz.buzzes(review, message.text("type"), System.currentTimeMillis(), rules)) {
+            return
+        }
+
+        scope.launch {
+            val picture = container.repository.reviewThumbnail(review)
+            Alerts.review(context = this@AlertService, review = review, picture = picture)
         }
     }
 
@@ -277,7 +327,7 @@ class AlertService : Service() {
     }
 
     private fun watchingNotification(): Notification =
-        Alerts.watching(this, state, container.repository.alerts.value).build()
+        Alerts.watching(this, state, container.repository.alertRules.value).build()
 
     private fun createChannels() {
         val manager = getSystemService(NotificationManager::class.java)

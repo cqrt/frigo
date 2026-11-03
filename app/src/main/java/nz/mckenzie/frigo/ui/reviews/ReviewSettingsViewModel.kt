@@ -98,7 +98,12 @@ class ReviewSettingsViewModel(private val repository: FrigoRepository) : ViewMod
 
         viewModelScope.launch {
             runCatching { repository.setReview(change) }
-                .onSuccess { _state.update { it.copy(busy = false) } }
+                .onSuccess {
+                    _state.update { it.copy(busy = false) }
+                    // The buzz follows these, so the phone's copy is brought up to
+                    // date now rather than waiting for the next launch.
+                    repository.refreshAlertRules()
+                }
                 .onFailure { failure ->
                     // Put the page back the way the server still has it.
                     _state.update {

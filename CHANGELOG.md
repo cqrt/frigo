@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.4
+
+- Alerts follow your server's own settings now, instead of a list kept on the phone.
+
 ## 0.10.3
 
 - Thumbnails on the Review, Explore and Clips pages have rounded corners.

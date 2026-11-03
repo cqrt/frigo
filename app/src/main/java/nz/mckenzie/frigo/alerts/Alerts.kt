@@ -9,8 +9,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import nz.mckenzie.frigo.MainActivity
 import nz.mckenzie.frigo.R
+import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.FrigateEvent
-import nz.mckenzie.frigo.data.ServerPrefs
+import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.prettyCameraName
 
 /**
@@ -36,9 +37,9 @@ object Alerts {
     fun watching(
         context: Context,
         state: WatchState,
-        alerts: ServerPrefs.Alerts,
+        rules: AlertRules,
     ): NotificationCompat.Builder {
-        val text = state.text(alerts)
+        val text = state.text(rules)
         val open = PendingIntent.getActivity(
             context,
             0,
@@ -62,10 +63,30 @@ object Alerts {
      * which is what you want to look at next anyway.
      */
     fun event(context: Context, event: FrigateEvent, picture: ByteArray?) {
-        val id = nextEventId++
-        val camera = prettyCameraName(event.camera)
         val title = listOfNotNull(event.label.replaceFirstChar { it.uppercase() }, event.subLabel)
             .joinToString(" · ")
+        buzz(context, event.camera, title, picture)
+    }
+
+    /**
+     * One review, with the picture of the first thing it saw. Its title is what
+     * the review saw, which can be more than one thing.
+     */
+    fun review(context: Context, review: FrigateReview, picture: ByteArray?) {
+        val title = review.data.objects
+            .map { it.replace('_', ' ').replaceFirstChar { first -> first.uppercase() } }
+            .joinToString(" · ")
+            .ifBlank { "Alert" }
+        buzz(context, review.camera, title, picture)
+    }
+
+    /**
+     * Posts one buzz, and every buzz takes the next id, so two in the shade do
+     * not become one.
+     */
+    private fun buzz(context: Context, cameraName: String, title: String, picture: ByteArray?) {
+        val id = nextEventId++
+        val camera = prettyCameraName(cameraName)
 
         // One request code per alert: Android treats two intents with the same
         // action and component as the same pending intent, extras and all. Sharing
@@ -74,7 +95,7 @@ object Alerts {
             context,
             id,
             Intent(context, MainActivity::class.java)
-                .putExtra(MainActivity.EXTRA_CAMERA, event.camera)
+                .putExtra(MainActivity.EXTRA_CAMERA, cameraName)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
@@ -111,24 +132,48 @@ sealed interface WatchState {
     data object SignedOut : WatchState
 
     /**
-     * What the quiet notification says. It counts the cameras you ticked, and it
-     * says so when a list is empty, because that is the reason nothing buzzes.
+     * What the quiet notification says. When nothing will buzz it names the one
+     * thing to change, because going quiet without saying why looks broken. When
+     * something will, it counts the cameras the server has turned on and names
+     * what they buzz for.
      */
-    fun text(alerts: ServerPrefs.Alerts): String {
-        if (this is SignedOut) return "Your session has expired. Open Frigo and sign in again."
-        if (alerts.cameras.isEmpty()) {
-            return "No cameras ticked, so nothing will buzz. Tick some in Settings."
+    fun text(rules: AlertRules): String {
+        if (this is SignedOut) return Expired
+
+        // The first of these that is true is the one worth saying: turning a
+        // camera on below it would change nothing until this one is dealt with.
+        if (!rules.notificationsOn) {
+            return "Notifications are off on your server, so nothing will buzz."
         }
-        if (alerts.labels.isEmpty()) {
-            return "No objects ticked, so nothing will buzz. Tick some in Settings."
+        val telling = rules.cameras.values.filter { it.notify }
+        if (telling.isEmpty()) {
+            return "Every camera is off on your server's notifications page, so nothing will buzz."
         }
-        val count = alerts.cameras.size
+        val alerting = telling.filter { it.alertsOn }
+        if (alerting.isEmpty()) return "No camera has alerts on, so nothing will buzz."
+
+        val buzzing = alerting.filter { it.labels.isNotEmpty() }
+        if (buzzing.isEmpty()) return "No camera has any alert objects, so nothing will buzz."
+
+        val count = buzzing.size
         val watching = if (count == 1) "One camera" else "$count cameras"
+        val labels = said(buzzing.flatMap { it.labels }.distinct())
         return when (this) {
-            Connecting -> "$watching. Connecting to your server."
-            Connected -> "$watching. New events arrive as they happen."
-            is NotReaching -> "$watching. $detail Trying again."
-            SignedOut -> "Your session has expired. Open Frigo and sign in again."
+            Connecting -> "$watching for $labels. Connecting to your server."
+            Connected -> "$watching for $labels. New events arrive as they happen."
+            is NotReaching -> "$watching for $labels. $detail Trying again."
+            SignedOut -> Expired
+        }
+    }
+
+    private companion object {
+        const val Expired = "Your session has expired. Open Frigo and sign in again."
+
+        /** Two at most, then a count, so the line stays a line. */
+        fun said(labels: List<String>): String = when {
+            labels.isEmpty() -> "nothing"
+            labels.size <= 2 -> labels.joinToString(" and ")
+            else -> "${labels[0]}, ${labels[1]} and ${labels.size - 2} more"
         }
     }
 }

@@ -79,6 +79,14 @@ class FrigoRepository(
     val alerts: StateFlow<ServerPrefs.Alerts> = _alerts.asStateFlow()
 
     /**
+     * What the server says is worth a buzz, the last time it was asked. The
+     * service reads this rather than any choice of its own, and the copy on the
+     * phone is what it starts from after a restart with no network.
+     */
+    private val _alertRules = MutableStateFlow(AlertRules())
+    val alertRules: StateFlow<AlertRules> = _alertRules.asStateFlow()
+
+    /**
      * Whether the walkthrough is still to come, or null until the phone has been
      * read. The app shows its own spinner for the null, so a new phone never
      * flashes the tabs and an old one never flashes the tour.
@@ -93,6 +101,9 @@ class FrigoRepository(
      */
     @Volatile private var alertsLoaded = false
 
+    /** The same, for the server's rules. */
+    @Volatile private var alertRulesLoaded = false
+
     /**
      * Reads what should set your phone off, once. Safe to call from anywhere;
      * the second caller gets the choices already in memory.
@@ -103,9 +114,38 @@ class FrigoRepository(
         alertsLoaded = true
     }
 
+    /**
+     * Reads the rules the server left on this phone last time. Safe to call from
+     * anywhere, and what the service starts from before it has a connection.
+     */
+    suspend fun loadAlertRules() {
+        if (alertRulesLoaded) return
+        _alertRules.value = prefs.readAlertRules() ?: AlertRules()
+        alertRulesLoaded = true
+    }
+
+    /**
+     * Asks the server what is worth a buzz and keeps the answer, on the phone as
+     * well as in memory.
+     *
+     * Called when the app opens, when the connection comes back, and after a
+     * change made here. A change made in a browser lands the next time the app
+     * looks, which is when you open it. A server that can't be reached leaves the
+     * last answer alone rather than going quiet on a guess.
+     */
+    suspend fun refreshAlertRules() {
+        val rules = runCatching {
+            authorized { baseUrl, token -> api.config(baseUrl, token).alertRules() }
+        }.getOrNull() ?: return
+        prefs.writeAlertRules(rules)
+        _alertRules.value = rules
+        alertRulesLoaded = true
+    }
+
     /** Called once on launch. Keeps you signed in if the token still works. */
     suspend fun restore() {
         loadAlerts()
+        loadAlertRules()
         val saved = prefs.read()
         // The first launch after the walkthrough arrived settles the question once
         // and writes the answer down. A phone with a server already saved is one
@@ -135,6 +175,7 @@ class FrigoRepository(
         result.onSuccess { fresh ->
             if (fresh != null) saveToken(fresh)
             _gate.value = Gate.SignedIn(saved.baseUrl, saved.username)
+            refreshAlertRules()
         }.onFailure { error ->
             // A server that cannot be reached is not a sign-out: the phone may be
             // out of signal, and the screens show their own errors for that.
@@ -158,6 +199,7 @@ class FrigoRepository(
         stored = saved
         prefs.write(saved)
         _gate.value = Gate.SignedIn(baseUrl, username)
+        refreshAlertRules()
     }
 
     suspend fun signOut() {
@@ -317,10 +359,10 @@ class FrigoRepository(
     suspend fun reviewThumbnail(review: FrigateReview): ByteArray? =
         review.detections.firstOrNull()?.let { thumbnail(it) }
 
-    /** The objects this server has been set up to look for, which is what you choose from. */
+    /** The objects this server has been set up to look for, which is what Explore filters by. */
     suspend fun labels(): List<String> = authorized { baseUrl, token ->
-        // Lower case, the way Frigate names them on an event. The settings screen
-        // capitalises them for display.
+        // Lower case, the way Frigate names them on an event. The screens
+        // capitalise them for display.
         api.labels(baseUrl, token).distinct().sorted()
     }
 

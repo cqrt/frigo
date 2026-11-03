@@ -12,6 +12,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "frigo")
 
@@ -34,18 +35,18 @@ class ServerPrefs(private val context: Context) {
     )
 
     /**
-     * What should set your phone off: nothing at all, or the cameras and the
-     * objects you picked.
+     * The app's own switch for watching, and which of the two ways a buzz arrives
+     * it is trying.
+     *
+     * A phone from an older version still has the cameras and objects it picked
+     * in this same file. They are left alone and no longer read, so going back a
+     * version finds its picks where it left them.
      */
     data class Alerts(
         val on: Boolean = false,
-        val cameras: Set<String> = emptySet(),
-        val labels: Set<String> = emptySet(),
-    ) {
-        /** True when this event is one of the ones you asked to hear about. */
-        fun wants(camera: String, label: String): Boolean =
-            on && camera in cameras && label in labels
-    }
+        /** One buzz per happening the server calls an alert, rather than per event. */
+        val perHappening: Boolean = false,
+    )
 
     suspend fun read(): Stored? {
         val prefs = context.dataStore.data.first()
@@ -70,17 +71,30 @@ class ServerPrefs(private val context: Context) {
         val prefs = context.dataStore.data.first()
         return Alerts(
             on = prefs[Keys.alertsOn] ?: false,
-            cameras = prefs[Keys.alertCameras] ?: emptySet(),
-            labels = prefs[Keys.alertLabels] ?: emptySet(),
+            perHappening = prefs[Keys.alertsPerHappening] ?: false,
         )
     }
 
     suspend fun writeAlerts(alerts: Alerts) {
         context.dataStore.edit { prefs ->
             prefs[Keys.alertsOn] = alerts.on
-            prefs[Keys.alertCameras] = alerts.cameras
-            prefs[Keys.alertLabels] = alerts.labels
+            prefs[Keys.alertsPerHappening] = alerts.perHappening
         }
+    }
+
+    /**
+     * The server's rules as they stood the last time the app looked, so the
+     * service can start after a restart with nothing to ask.
+     */
+    suspend fun readAlertRules(): AlertRules? {
+        val stored = context.dataStore.data.first()[Keys.alertRules] ?: return null
+        return runCatching { AlertJson.decodeFromString(AlertRules.serializer(), stored) }
+            .getOrNull()
+    }
+
+    suspend fun writeAlertRules(rules: AlertRules) {
+        val stored = AlertJson.encodeToString(AlertRules.serializer(), rules)
+        context.dataStore.edit { prefs -> prefs[Keys.alertRules] = stored }
     }
 
     /** Whether the reviews list shows the ones you've already watched. */
@@ -168,13 +182,18 @@ class ServerPrefs(private val context: Context) {
         val username = stringPreferencesKey("username")
         val token = stringPreferencesKey("token")
         val alertsOn = booleanPreferencesKey("alerts_on")
-        val alertCameras = stringSetPreferencesKey("alert_cameras")
-        val alertLabels = stringSetPreferencesKey("alert_labels")
+        val alertsPerHappening = booleanPreferencesKey("alerts_per_happening")
+        val alertRules = stringPreferencesKey("alert_rules")
         val showReviewed = booleanPreferencesKey("show_reviewed")
         val cameraLayout = intPreferencesKey("camera_layout")
         val liveTiles = booleanPreferencesKey("live_tiles")
         val theme = intPreferencesKey("theme")
         val onboarded = booleanPreferencesKey("onboarded")
         val streamChoices = stringSetPreferencesKey("stream_choices")
+    }
+
+    private companion object {
+        /** The rules go in as one block, so a key Frigate adds can't break the read. */
+        val AlertJson = Json { ignoreUnknownKeys = true }
     }
 }

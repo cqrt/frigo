@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -36,7 +34,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -61,18 +58,14 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.data.AppContainer
-import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.Gate
-import nz.mckenzie.frigo.data.ServerPrefs
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.FrigoTabs
 import nz.mckenzie.frigo.ui.components.CardDivider
 import nz.mckenzie.frigo.ui.components.Item
 import nz.mckenzie.frigo.ui.components.attention
-import nz.mckenzie.frigo.ui.components.prettyLabel
 import nz.mckenzie.frigo.ui.batteryIsFree
-import nz.mckenzie.frigo.ui.friendlyMessage
 import nz.mckenzie.frigo.ui.notificationsAllowed
 import nz.mckenzie.frigo.ui.openBatterySettings
 import nz.mckenzie.frigo.ui.openNotificationSettings
@@ -101,17 +94,8 @@ fun OnboardingScreen(container: AppContainer) {
 
     var step by rememberSaveable { mutableStateOf(Step.Welcome) }
 
-    // What the alerts page needs, all of it kept here so a step change does not
-    // lose a tick. The walkthrough can be asked for again from Settings, so the
-    // picks start from what is already saved rather than pretending nothing is
-    // set. The saved answer may not be in memory yet, so it is read again below.
-    var cameras by remember { mutableStateOf(emptyList<Camera>()) }
-    var labels by remember { mutableStateOf(emptyList<String>()) }
-    var pickedCameras by remember { mutableStateOf(emptySet<String>()) }
-    var pickedLabels by remember { mutableStateOf(emptySet<String>()) }
-    var asking by remember { mutableStateOf(false) }
-    var problem by remember { mutableStateOf<String?>(null) }
-
+    // The walkthrough can be asked for again from Settings, so the switch starts
+    // from what is already saved rather than pretending nothing is set.
     var shade by remember {
         mutableStateOf(if (context.notificationsAllowed()) Shade.Allowed else Shade.Unknown)
     }
@@ -120,19 +104,12 @@ fun OnboardingScreen(container: AppContainer) {
 
     LaunchedEffect(Unit) {
         repository.loadAlerts()
-        val saved = repository.alerts.value
-        pickedCameras = saved.cameras
-        pickedLabels = saved.labels
-        alertsOn = saved.on && saved.cameras.isNotEmpty() && saved.labels.isNotEmpty()
+        alertsOn = repository.alerts.value.on
     }
 
     fun saveAlerts(on: Boolean) {
         scope.launch {
-            runCatching {
-                repository.setAlerts(
-                    ServerPrefs.Alerts(on = on, cameras = pickedCameras, labels = pickedLabels),
-                )
-            }.onFailure { problem = it.friendlyMessage() }
+            runCatching { repository.setAlerts(repository.alerts.value.copy(on = on)) }
         }
     }
 
@@ -144,8 +121,8 @@ fun OnboardingScreen(container: AppContainer) {
             alertsOn = true
             saveAlerts(on = true)
         } else {
-            // The picks are kept, so allowing it in Android's settings later
-            // costs nothing but the one switch.
+            // Nothing is ticked here to lose: which cameras and objects buzz is
+            // set on the server. Allowing it later costs the one switch.
             shade = Shade.Refused
             saveAlerts(on = false)
         }
@@ -157,24 +134,10 @@ fun OnboardingScreen(container: AppContainer) {
         batteryFree = context.batteryIsFree()
         if (shade == Shade.Refused && context.notificationsAllowed()) {
             shade = Shade.Allowed
-            if (pickedCameras.isNotEmpty() && pickedLabels.isNotEmpty()) {
-                alertsOn = true
-                saveAlerts(on = true)
-            }
+            alertsOn = true
+            saveAlerts(on = true)
         }
         onPauseOrDispose { }
-    }
-
-    LaunchedEffect(step, server?.baseUrl) {
-        if (step != Step.Alerts || server == null || cameras.isNotEmpty() || asking) {
-            return@LaunchedEffect
-        }
-        asking = true
-        runCatching {
-            cameras = repository.cameras()
-            labels = repository.labels()
-        }.onFailure { problem = it.friendlyMessage() }
-        asking = false
     }
 
     // Back goes one step at a time, so a thumb reaching for the arrow does not
@@ -204,18 +167,6 @@ fun OnboardingScreen(container: AppContainer) {
                 )
 
                 Step.Alerts -> AlertsStep(
-                    loading = asking,
-                    problem = problem,
-                    cameras = cameras,
-                    labels = labels,
-                    pickedCameras = pickedCameras,
-                    pickedLabels = pickedLabels,
-                    onPickCamera = { name, ticked ->
-                        pickedCameras = if (ticked) pickedCameras + name else pickedCameras - name
-                    },
-                    onPickLabel = { name, ticked ->
-                        pickedLabels = if (ticked) pickedLabels + name else pickedLabels - name
-                    },
                     shade = shade,
                     alertsOn = alertsOn,
                     onTurnOn = {
@@ -365,17 +316,8 @@ private fun ServerStep(
 
 /* ----------------------------------------------------------------- alerts */
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AlertsStep(
-    loading: Boolean,
-    problem: String?,
-    cameras: List<Camera>,
-    labels: List<String>,
-    pickedCameras: Set<String>,
-    pickedLabels: Set<String>,
-    onPickCamera: (String, Boolean) -> Unit,
-    onPickLabel: (String, Boolean) -> Unit,
     shade: Shade,
     alertsOn: Boolean,
     onTurnOn: () -> Unit,
@@ -383,8 +325,6 @@ private fun AlertsStep(
     onNext: () -> Unit,
     onNotNow: () -> Unit,
 ) {
-    val picked = pickedCameras.isNotEmpty() && pickedLabels.isNotEmpty()
-
     Column(
         Modifier
             .fillMaxSize()
@@ -394,99 +334,64 @@ private fun AlertsStep(
         Text("Alerts", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(8.dp))
         Text(
-            text = if (alertsOn || shade == Shade.Refused) {
-                "Your phone tells you when Frigate sees something."
-            } else {
-                "Your phone tells you when Frigate sees something. Tick what's worth a buzz."
-            },
+            text = "Your phone tells you when your server reports an alert.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(16.dp))
 
-        // A server with a long list of objects would push the card past the
-        // bottom of the screen, so the card scrolls and the buttons stay put.
-        Box(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                when {
-                    // Android's own switch wins: it can be turned off after the
-                    // walkthrough allowed it, and the page should say so.
-                    shade == Shade.Refused -> RefusedCard()
-                    alertsOn -> AllowedCard(cameras, labels, pickedCameras, pickedLabels)
-                    else -> Column(Modifier.padding(14.dp)) {
-                        Text(
-                            text = "Cameras",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
-                        )
-                        if (cameras.isEmpty()) {
-                            Text(
-                                text = if (loading) "Asking your server…" else "No camera this account can see.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 4.dp),
-                            )
-                        }
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            cameras.forEach { camera ->
-                                val ticked = camera.name in pickedCameras
-                                FilterChip(
-                                    selected = ticked,
-                                    onClick = { onPickCamera(camera.name, !ticked) },
-                                    label = { Text(camera.title) },
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (shade == Shade.Refused) RefusedCard() else {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Box(
+                            Modifier.size(24.dp).clip(CircleShape)
+                                .background(
+                                    if (alertsOn) {
+                                        MaterialTheme.colorScheme.secondaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceContainerHighest
+                                    },
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (alertsOn) {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp),
                                 )
                             }
                         }
-
                         Text(
-                            text = "Objects",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp, top = 10.dp, bottom = 6.dp),
+                            text = if (alertsOn) "Notifications allowed" else "Notifications",
+                            style = MaterialTheme.typography.bodyLarge,
                         )
-                        if (labels.isEmpty()) {
-                            Text(
-                                text = if (loading) "" else "No object this account can see.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 4.dp),
-                            )
-                        }
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            labels.forEach { label ->
-                                val ticked = label in pickedLabels
-                                FilterChip(
-                                    selected = ticked,
-                                    onClick = { onPickLabel(label, !ticked) },
-                                    label = { Text(prettyLabel(label)) },
-                                )
-                            }
-                        }
-
-                        if (problem != null) {
-                            Text(
-                                text = problem,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.padding(start = 4.dp, top = 10.dp),
-                            )
-                        }
                     }
+                    Text(
+                        text = "Which cameras and objects buzz is set on your server. " +
+                            "Its notifications page and its alerts page decide.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.weight(1f))
 
         when {
             shade == Shade.Refused -> {
                 Text(
-                    text = "Your picks are kept, so there is nothing to tick again.",
+                    text = "Alerts stay off until you allow them in Android's settings.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -516,17 +421,13 @@ private fun AlertsStep(
 
             else -> {
                 Text(
-                    text = when {
-                        picked -> "Android asks about notifications once."
-                        else -> "Pick a camera and an object first."
-                    },
+                    text = "Android asks about notifications once.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(10.dp))
                 Button(
                     onClick = onTurnOn,
-                    enabled = picked && !loading,
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                 ) {
                     Text("Turn on alerts")
@@ -539,46 +440,6 @@ private fun AlertsStep(
                 }
             }
         }
-    }
-}
-
-/** What the page says once Android has allowed the notifications. */
-@Composable
-private fun AllowedCard(
-    cameras: List<Camera>,
-    labels: List<String>,
-    pickedCameras: Set<String>,
-    pickedLabels: Set<String>,
-) {
-    val named = cameras.filter { it.name in pickedCameras }.map { it.title }
-    val seen = labels.filter { it in pickedLabels }.map { prettyLabel(it) }
-
-    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(
-                Modifier.size(24.dp).clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.secondaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(16.dp),
-                )
-            }
-            Text("Notifications allowed", style = MaterialTheme.typography.bodyLarge)
-        }
-        Text(
-            text = named.joinToString(" · "),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = seen.joinToString(" · "),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

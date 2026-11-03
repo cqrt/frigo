@@ -173,6 +173,9 @@ private fun MainScaffold(
                     onOpenCamera = { camera ->
                         navController.navigate("camera-switches/$camera") { launchSingleTop = true }
                     },
+                    onOpenAlerts = {
+                        navController.navigate("review-settings") { launchSingleTop = true }
+                    },
                 )
             }
             composable("camera-switches/{camera}") { entry ->

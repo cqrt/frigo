@@ -386,7 +386,10 @@ class FrigateApi(
             .okBytes()
     }
 
-    /** The objects this server looks for: `person`, `car`, and whatever else is set up. */
+    /**
+     * The objects this server looks for: `person`, `car`, and whatever else is set
+     * up. Explore's filter offers them.
+     */
     fun labels(baseUrl: String, token: String): List<String> {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/labels"))

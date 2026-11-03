@@ -83,24 +83,25 @@ dots offer the rest: save a copy to your phone, give it another name, or delete 
 from the server. One that Frigate is still cutting out says so, and fills itself in
 when it's done. Pull the list down to ask again.
 
-**Alerts.** Your phone tells you when Frigate sees one of the things you picked,
-with a picture. Tap the alert and that camera opens. The back arrow goes to the
+**Alerts.** Your phone tells you when your server reports an alert, with a picture
+of what it saw. Tap the alert and that camera opens. The back arrow goes to the
 camera grid.
 
 **Settings.** Shows which server you are signed in to, signs you out, and holds
 two switches: one for notifications, and one that plays the home page tiles live.
-You pick the cameras and objects that buzz. There's a link to the phone's battery
-settings, because that's where you stop Android shutting Frigo down. Under
-Appearance you choose the colours: System follows the phone, Day stays light, and
-Night stays dark. Under Updates it says which version you're on, and whether
-there's a newer one to install.
+Under Alerts and detections you reach the server's own pages for what makes an
+alert and what makes a detection. There's a link to the phone's battery settings,
+because that's where you stop Android shutting Frigo down. Under Appearance you
+choose the colours: System follows the phone, Day stays light, and Night stays
+dark. Under Updates it says which version you're on, and whether there's a newer
+one to install.
 
 ## The first time you open it
 
 Frigo opens on a welcome, then takes you through what it needs:
 
 1. **Your server** is the address you use in a browser and your Frigate sign-in.
-2. **Alerts** is which cameras and objects buzz your phone. Nothing is ticked until you tick it. Android asks about notifications once, and the page says so if you turned them down. Your picks are kept either way.
+2. **Alerts** turns notifications on. Which cameras and objects buzz is set on your server, so there is nothing to tick here. Android asks about notifications once, and the page says so if you turned them down.
 3. **Battery** says whether Android is free to shut Frigo down, and opens the phone's settings if it isn't. Come back and the page checks again.
 4. **The tabs** is a page for each of the five, with a drawn picture of what it holds and the bar underneath lit on the one it's describing. Skip leaves at any point.
 5. **You're set** is the end of it, with the address you're signed in to.
@@ -166,15 +167,28 @@ alert arrives as Frigate sees something rather than at the next poll.
 
 The connection lives in a background service, because Android will not let an app
 hold one otherwise. Android shows a notification for any such service, so there is
-a quiet "Watching for alerts" one in the shade. It says how many cameras are
-ticked and whether the connection is up, and it is the app's way of saying it is
-still there. Switching alerts off in Settings stops the service and takes the
+a quiet "Watching for alerts" one in the shade. It says how many cameras will buzz
+and whether the connection is up, and it is the app's way of saying it is still
+there. Switching alerts off in Settings stops the service and takes the
 notification away.
 
-You choose what buzzes: the cameras, the objects, or both. The first time you
-switch alerts on, every camera is ticked and `person` is picked if your server
-looks for it. A camera that has just buzzed stays quiet for twenty seconds, so one
-visitor walking past is one notification.
+Your server decides what buzzes, not the phone. Three things have to agree:
+
+1. Notifications are on for the server.
+2. Notifications are on for that camera.
+3. Its alerts are on, and the thing it saw is in its alert objects.
+
+The first two are on your server's notifications page, and the third is on its
+alerts page. Turn any of them off and the phone stays quiet. Frigate's own web
+page shows the same values, so a change made in a browser is picked up the next
+time the app opens or reconnects.
+
+The app keeps a copy of those answers on the phone, so a restart with no signal
+still knows what to watch. The quiet notification says which of the three is
+keeping everything quiet, so it never goes silent without saying why.
+
+A camera that has just buzzed stays quiet for twenty seconds, so one visitor
+walking past is one notification.
 
 Android can stop a background app to save battery, and it will do that after a
 while on its own. If alerts go quiet, open the app once and they start again.
@@ -252,6 +266,10 @@ The tune icon on Review opens a page for the two lists. Alerts has a switch and 
 objects that make one. Detections has the same, and nothing picked there means
 every other object. Tap Objects to pick them, with a search box and the labels your
 cameras track marked.
+
+These two lists are also what decides what buzzes your phone, so the page is where
+you go to change it. The notifications page, which says which cameras may tell you
+anything at all, is on your server's own web page.
 
 The labels are Frigate's own: bark, car, cat, fire alarm, glass, person, scream,
 smash, smoke detector, speech and yell, plus anything already in use on your

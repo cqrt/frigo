@@ -20,6 +20,11 @@ data class FrigateConfig(
     val objects: TrackedObjects = TrackedObjects(),
     val cameras: Map<String, CameraConfig> = emptyMap(),
     /**
+     * The server's own switch for telling anyone about an alert. Frigate starts it
+     * off, and a camera whose switch is on still says nothing while this is off.
+     */
+    val notifications: SwitchConfig = SwitchConfig(enabled = false),
+    /**
      * The server's own setting for the two features a camera can't run without.
      * Its starting point is on, and only a server that says otherwise is read.
      */
@@ -50,6 +55,11 @@ data class CameraConfig(
     @SerialName("friendly_name") val friendlyName: String? = null,
     val review: ReviewBlockConfig = ReviewBlockConfig(),
     val objects: TrackedObjects = TrackedObjects(),
+    /**
+     * Whether this camera is one worth telling anyone about. Off until it is turned
+     * on, which is what a camera nobody has touched says.
+     */
+    val notifications: SwitchConfig = SwitchConfig(enabled = false),
     val detect: SwitchConfig = SwitchConfig(),
     val motion: SwitchConfig = SwitchConfig(),
     val record: SwitchConfig = SwitchConfig(),
@@ -358,6 +368,51 @@ fun ReviewSettings.labelsFor(kind: ReviewKind, camera: String?): List<String> {
 }
 
 /**
+ * What the server says is worth telling you about, as one shape the service can
+ * ask a single question of.
+ *
+ * Every part of it is set on the server: the notifications switch for everything,
+ * the notifications switch for a camera, whether that camera's alerts are on, and
+ * the objects that make an alert on it. The phone holds a copy rather than an
+ * opinion, so a phone that restarts with no network still knows what to watch.
+ */
+@Serializable
+data class AlertRules(
+    val notificationsOn: Boolean = false,
+    val cameras: Map<String, CameraAlerts> = emptyMap(),
+) {
+    /** True when the server says this camera seeing this object is worth a buzz. */
+    fun buzzes(camera: String, label: String): Boolean {
+        if (!notificationsOn) return false
+        val found = cameras[camera] ?: return false
+        return found.notify && found.alertsOn && label in found.labels
+    }
+}
+
+/** One camera's three answers: tell me about it, its alerts are on, and what makes one. */
+@Serializable
+data class CameraAlerts(
+    val notify: Boolean = false,
+    val alertsOn: Boolean = true,
+    val labels: List<String> = emptyList(),
+)
+
+/** The rules, read from the same settings file the alerts page reads. */
+fun FrigateConfig.alertRules(): AlertRules {
+    val settings = reviewSettings()
+    return AlertRules(
+        notificationsOn = notifications.enabled,
+        cameras = cameras.mapValues { (name, camera) ->
+            CameraAlerts(
+                notify = camera.notifications.enabled,
+                alertsOn = camera.review.alerts.enabled,
+                labels = settings.labelsFor(ReviewKind.Alerts, name),
+            )
+        },
+    )
+}
+
+/**
  * The labels Frigate flags by itself: the objects it follows and the sounds it
  * listens for. Its own settings page offers the same names.
  */
@@ -392,16 +447,24 @@ fun FrigateConfig.reviewSettings(): ReviewSettings {
 
     return ReviewSettings(
         all = review.flags(),
-        cameras = cameras.mapValues { it.value.review.flags() },
+        cameras = cameras.mapValues { it.value.review.flags(review) },
         objects = objects.filter { it.isNotBlank() }.distinct()
             .sortedWith(compareBy({ it !in tracked }, { it })),
         tracked = tracked,
     )
 }
 
-private fun ReviewBlockConfig.flags() = ReviewFlags(
+/**
+ * A camera's flags, with what it doesn't name taken from the server-wide settings.
+ *
+ * A camera's alerts list is absent until that camera is given one of its own, and
+ * Frigate reads absent as "whatever the server-wide list says". Filling in the
+ * server's own starting list instead would quietly disagree with the server about
+ * a camera nobody has touched.
+ */
+private fun ReviewBlockConfig.flags(shared: ReviewBlockConfig = this) = ReviewFlags(
     alertsOn = alerts.enabled,
-    alertLabels = alerts.labels ?: listOf("person", "car"),
+    alertLabels = alerts.labels ?: shared.alerts.labels ?: listOf("person", "car"),
     detectionsOn = detections.enabled,
     detectionLabels = detections.labels,
 )

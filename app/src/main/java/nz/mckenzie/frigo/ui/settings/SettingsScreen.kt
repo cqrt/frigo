@@ -8,11 +8,8 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,8 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -72,7 +67,6 @@ import nz.mckenzie.frigo.ui.components.Group
 import nz.mckenzie.frigo.ui.components.Item
 import nz.mckenzie.frigo.ui.components.OpenMark
 import nz.mckenzie.frigo.ui.components.attention
-import nz.mckenzie.frigo.ui.components.prettyLabel
 import nz.mckenzie.frigo.ui.theme.ThemeMode
 import java.io.File
 
@@ -80,7 +74,7 @@ import java.io.File
  * The page is a stack of groups: a small heading, and a card under it holding
  * the rows. Every group is one thing you came here to change.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     repository: FrigoRepository,
@@ -89,17 +83,18 @@ fun SettingsScreen(
     username: String,
     modifier: Modifier = Modifier,
     onOpenCamera: (String) -> Unit = {},
+    onOpenAlerts: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val alerts by repository.alerts.collectAsStateWithLifecycle()
+    val rules by repository.alertRules.collectAsStateWithLifecycle()
     val liveTiles by repository.liveTiles.collectAsStateWithLifecycle(initialValue = false)
     val theme by repository.theme.collectAsStateWithLifecycle(
         initialValue = ThemeMode.System.ordinal,
     )
 
     var cameras by remember { mutableStateOf<List<Camera>>(emptyList()) }
-    var labels by remember { mutableStateOf<List<String>>(emptyList()) }
     var switches by remember { mutableStateOf<CameraSwitchPage?>(null) }
     var blocked by remember { mutableStateOf(false) }
 
@@ -114,28 +109,17 @@ fun SettingsScreen(
             .onFailure {
                 runCatching { repository.cameras() }.onSuccess { cameras = it }
             }
-        runCatching { repository.labels() }.onSuccess { labels = it }
     }
 
     fun save(next: ServerPrefs.Alerts) {
         scope.launch { repository.setAlerts(next) }
     }
 
-    // The first time you switch this on, everything is ticked: one thing to
-    // narrow down rather than an empty list that buzzes for nothing.
-    fun switchOn() {
-        val pickedCameras = alerts.cameras.ifEmpty { cameras.map { it.name }.toSet() }
-        val pickedLabels = alerts.labels.ifEmpty {
-            if ("person" in labels) setOf("person") else labels.toSet()
-        }
-        save(alerts.copy(on = true, cameras = pickedCameras, labels = pickedLabels))
-    }
-
     val askPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         blocked = !granted
-        if (granted) switchOn()
+        if (granted) save(alerts.copy(on = true))
     }
 
     // What GitHub says about the newest Frigo, asked for each time this page is
@@ -270,7 +254,7 @@ fun SettingsScreen(
                                 if (needsPermission) {
                                     askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                                 } else {
-                                    switchOn()
+                                    save(alerts.copy(on = true))
                                 }
                             },
                         )
@@ -286,29 +270,46 @@ fun SettingsScreen(
 
                 CardDivider()
 
-                Pick(
-                    title = "Cameras",
-                    options = cameras.map { it.name to it.title },
-                    chosen = alerts.cameras,
-                    onToggle = { name, ticked ->
-                        val next = if (ticked) alerts.cameras + name else alerts.cameras - name
-                        save(alerts.copy(cameras = next))
+                // Temporary, while the two ways of buzzing are tried against your
+                // own cameras. It goes once one of them has won.
+                Item(
+                    icon = FrigoIcons.Reviews,
+                    title = "One buzz per happening",
+                    supporting = if (alerts.perHappening) {
+                        "Your server reports each alert once, so each one is one buzz."
+                    } else {
+                        "Every thing your server tracks is a buzz, as it happens."
+                    },
+                    onClick = { save(alerts.copy(perHappening = !alerts.perHappening)) },
+                    trailing = {
+                        Switch(
+                            checked = alerts.perHappening,
+                            onCheckedChange = null,
+                        )
                     },
                 )
 
-                Pick(
-                    title = "Objects",
-                    options = labels.map { it to prettyLabel(it) },
-                    chosen = alerts.labels,
-                    onToggle = { name, ticked ->
-                        val next = if (ticked) alerts.labels + name else alerts.labels - name
-                        save(alerts.copy(labels = next))
-                    },
+                CardDivider()
+
+                Item(
+                    icon = FrigoIcons.Tune,
+                    title = "Alerts and detections",
+                    supporting = "Which cameras and objects buzz. These are your server's settings.",
+                    onClick = onOpenAlerts,
+                    trailing = { OpenMark() },
                 )
 
-                if (alerts.on && (alerts.cameras.isEmpty() || alerts.labels.isEmpty())) {
-                    Note(
-                        text = "Nothing ticked in one list, so nothing will buzz.",
+                // Quiet without saying why would look broken. Two switches on the
+                // server can silence everything, and both are reachable now.
+                when {
+                    !rules.notificationsOn -> Note(
+                        text = "Notifications are off on your server, so nothing will buzz.",
+                        colour = MaterialTheme.colorScheme.error,
+                    )
+
+                    rules.cameras.values.none { it.notify } -> Note(
+                        text = "Every camera is off on your server's notifications page, " +
+                            "so nothing will buzz.",
                         colour = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -536,35 +537,6 @@ private fun CameraRow(
         onClick = onClick,
         trailing = { OpenMark() },
     )
-}
-
-/** A heading and a row of chips that tick and untick one thing each. */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun Pick(
-    title: String,
-    options: List<Pair<String, String>>,
-    chosen: Set<String>,
-    onToggle: (name: String, ticked: Boolean) -> Unit,
-) {
-    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp),
-        )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            options.forEach { (name, shown) ->
-                val ticked = name in chosen
-                FilterChip(
-                    selected = ticked,
-                    onClick = { onToggle(name, !ticked) },
-                    label = { Text(shown) },
-                )
-            }
-        }
-    }
 }
 
 /** A line of smaller print inside a card. */
