@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.1
+
+- The first-run pages show drawn pictures now, instead of grey boxes.
+- The Clips page says clips, not stretches.
+
 ## 0.10.0
 
 - The first run walks you through the app: your server, alerts, battery, and a page for each tab.

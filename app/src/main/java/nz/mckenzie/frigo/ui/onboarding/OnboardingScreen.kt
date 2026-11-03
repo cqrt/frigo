@@ -53,7 +53,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -294,14 +293,10 @@ private fun PictureTile(name: String, modifier: Modifier = Modifier) {
         modifier
             .fillMaxWidth()
             .aspectRatio(16f / 9f)
-            .clip(RoundedCornerShape(18.dp))
-            .background(Brush.linearGradient(listOf(Color(0xFF2A3B4F), Color(0xFF111A26)))),
+            .clip(RoundedCornerShape(18.dp)),
     ) {
-        Box(
-            Modifier.fillMaxSize().background(
-                Brush.verticalGradient(listOf(Color.Transparent, Color(0xF2030810))),
-            ),
-        )
+        SceneArt(Scene.FrontDoor, Modifier.fillMaxSize())
+        NameScrim(52.dp, Modifier.align(Alignment.BottomCenter))
         Text(
             text = name,
             style = MaterialTheme.typography.titleMedium,
@@ -717,8 +712,8 @@ private fun TourPage(index: Int, onSkip: () -> Unit, onNext: () -> Unit) {
 
         2 -> "Everything Frigate recorded. Narrow it by camera, by what was seen, or by day."
 
-        3 -> "The stretches you kept. Watch one, save it to your phone, or delete it from " +
-            "the server."
+        3 -> "The clips you kept. Watch one, save it to your phone, or delete it " +
+            "from the server."
 
         else -> "Your server, what buzzes your phone, and the colours."
     }
@@ -744,7 +739,9 @@ private fun TourPage(index: Int, onSkip: () -> Unit, onNext: () -> Unit) {
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    // Tall enough for a 16:9 clip and the lines under it, which
+                    // is the page that needs the most room.
+                    .height(246.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainerLow)
                     .padding(12.dp),

@@ -2045,3 +2045,24 @@ otherwise flash the tabs before the welcome, and an old one the welcome before t
 
 Settings can ask for the walkthrough again with a text button in the About card. It is a text button
 because it is a small occasional thing, which is the shape the rest of the cards use for one.
+
+## The walkthrough draws its pictures instead of showing yours
+
+The first run shows what a tab looks like, and the honest picture would be your own cameras. It is not
+yours, so the pictures are drawn: a porch, a driveway, a back yard and a garage, in `SceneArt.kt`.
+
+They are Compose vectors on a 160 by 100 box, scaled to whatever box they land in. Nothing to ship as an
+image file, and the same drawing serves the welcome, the four tiles, the rows and the clip frame.
+
+The box is wider or narrower than the drawing on most pages, so the drawing is cropped at the edges
+rather than squashed, the way a camera picture is. That is why the clip frame is 16:9: a wider frame
+crops a 160 by 100 drawing down to its middle, and the car fell off the bottom of it.
+
+Daylight scenes, in both themes. A night version was drawn first and dropped: it is near black on a light
+card, and at thumbnail size the four scenes look alike once the only light left is a lamp. A drawing does
+not change with the theme, so one set reads the same in Day and Night, and the page around it is what
+changes.
+
+The bar under the Cameras page copies the real strip rather than approximating it: the kept hours as a
+wash of the page ink, and the flags as slivers inside the band, in the same red and amber the timeline
+uses.

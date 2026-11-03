@@ -102,7 +102,7 @@ Frigo opens on a welcome, then takes you through what it needs:
 1. **Your server** is the address you use in a browser and your Frigate sign-in.
 2. **Alerts** is which cameras and objects buzz your phone. Nothing is ticked until you tick it. Android asks about notifications once, and the page says so if you turned them down. Your picks are kept either way.
 3. **Battery** says whether Android is free to shut Frigo down, and opens the phone's settings if it isn't. Come back and the page checks again.
-4. **The tabs** is a page for each of the five, with the bar underneath lit on the one it's describing. Skip leaves at any point.
+4. **The tabs** is a page for each of the five, with a drawn picture of what it holds and the bar underneath lit on the one it's describing. Skip leaves at any point.
 5. **You're set** is the end of it, with the address you're signed in to.
 
 The walkthrough doesn't come back on its own. Signing out leaves it alone, and the way back in is the plain sign-in page. If you want to see it again, **Show the welcome again** under About in Settings puts it back on the list.
