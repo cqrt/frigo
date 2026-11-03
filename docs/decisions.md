@@ -2066,3 +2066,19 @@ changes.
 The bar under the Cameras page copies the real strip rather than approximating it: the kept hours as a
 wash of the page ink, and the flags as slivers inside the band, in the same red and amber the timeline
 uses.
+
+## The sign-in form is a card of rows, so the first thing you see looks like the app
+
+The three fields were outlined boxes on the page, which is a shape nothing else in the app uses. Every
+other screen is filled cards with a low-contrast block for each line, so the form is now the same: one
+filled block per line, an icon at the left of each, and the name of the field above what you type.
+
+That costs the material text field's own container, so `SignInForm.kt` builds the line from a
+`BasicTextField` inside a `Row`. The focused ring is two dp wide and always there, clear until the field
+has the cursor, because a ring that appears on focus moves the text two dp sideways otherwise.
+
+The password carries an eye at its end. It is the one field where what you typed is hidden from you,
+which is what makes typing it wrong easy to do twice.
+
+The words are the same as before, including the port hint, which sits under the address it belongs to
+rather than loose between two boxes.

@@ -34,16 +34,16 @@ fun LoginScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text("Frigo", style = MaterialTheme.typography.headlineLarge)
+            Spacer(Modifier.height(6.dp))
             Text(
                 text = "Sign in to your Frigate server.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(22.dp))
 
             SignInForm(
                 repository = repository,

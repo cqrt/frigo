@@ -192,6 +192,29 @@ object FrigoIcons {
         }
     }
 
+    /** The same eye struck through, for a password that is being shown. */
+    val EyeOff: ImageVector by lazy {
+        vector("EyeOff") {
+            path(
+                "M3 12.2S6.4 6.9 12 6.9s9 5.3 9 5.3-3.4 5.3-9 5.3-9-5.3-9-5.3z",
+                strokeWidth = 1.7f,
+            )
+            path("M12 9.4a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 1 0 0-5.6z", strokeWidth = 1.7f)
+            path("M4.8 4.4 19.2 19.6", strokeWidth = 1.7f)
+        }
+    }
+
+    /** A padlock, for the password that goes with the username. */
+    val Lock: ImageVector by lazy {
+        vector("Lock") {
+            path(
+                "M7 10.4h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2z",
+                strokeWidth = 1.7f,
+            )
+            path("M8.4 10.4V8a3.6 3.6 0 0 1 7.2 0v2.4", strokeWidth = 1.7f)
+        }
+    }
+
     /** A line that jumps and settles, for motion. */
     val Motion: ImageVector by lazy {
         vector("Motion") {

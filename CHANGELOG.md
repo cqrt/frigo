@@ -12,6 +12,7 @@ explain, leave out.
 
 - The first-run pages show drawn pictures now, instead of grey boxes.
 - The Clips page says clips, not stretches.
+- Signing in uses the same filled lines as the rest of the app, with an icon on each and an eye on the password.
 
 ## 0.10.0
 
