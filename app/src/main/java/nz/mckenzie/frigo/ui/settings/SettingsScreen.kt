@@ -528,11 +528,6 @@ fun SettingsScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(
-                        text = "Frigo puts your Frigate cameras on your phone.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                     Fact("Version", BuildConfig.VERSION_NAME)
                     Fact("Author", "Matt Mckenzie")
                     Fact("Copyright", "© 2026 Matt Mckenzie")
