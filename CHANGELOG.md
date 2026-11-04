@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.11
+
+- An opened alert shows the picture and the whole sentence, instead of one or the other.
+
 ## 0.10.10
 
 - An opened alert shows its sentence in full, with the picture as a thumbnail beside it, instead of cutting the sentence to one line.

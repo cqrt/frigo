@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="window_background">#FF0B1220</color>
+
+    <!-- See values/colors.xml: the alert's own layout, on the system's dark card. -->
+    <color name="alert_title">#FFFFFFFF</color>
+    <color name="alert_text">#DEFFFFFF</color>
 </resources>

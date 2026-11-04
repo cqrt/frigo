@@ -2,4 +2,10 @@
 <resources>
     <color name="window_background">#FFF7F9FC</color>
     <color name="ic_launcher_background">#FF0B1220</color>
+
+    <!-- The alert notification draws its own opened layout, and notification views
+         are read with the app's resources but sit on the system's card. These
+         follow the system's light or dark, which is what the card follows. -->
+    <color name="alert_title">#DE000000</color>
+    <color name="alert_text">#DE000000</color>
 </resources>

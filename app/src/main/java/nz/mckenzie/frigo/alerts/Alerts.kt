@@ -6,8 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory
 import nz.mckenzie.frigo.MainActivity
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AlertRules
@@ -206,7 +209,14 @@ object Alerts {
         val bitmap = picture?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
         if (bitmap != null) builder.setLargeIcon(bitmap)
 
-        if (bitmap != null && !full) {
+        if (bitmap != null && full) {
+            // The system's big picture gives the text two lines, which cuts a
+            // description off. This lays the two out itself so the sentence arrives
+            // whole. The big text style stays behind it, so if a launcher ever
+            // ignores the custom view the sentence is still readable.
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            builder.setCustomBigContentView(alertView(context, title, text, bitmap))
+        } else if (bitmap != null) {
             builder.setStyle(
                 NotificationCompat.BigPictureStyle()
                     .bigPicture(bitmap)
@@ -227,6 +237,33 @@ object Alerts {
             )
         }
         return builder
+    }
+
+    /**
+     * The opened layout: the title, the sentence to its end, and the picture under
+     * them. Everything here is a view the notification shade can draw, which is a
+     * short list: no buttons, no scrolling, and no corners on a picture, so they
+     * are drawn onto the bitmap first.
+     */
+    private fun alertView(
+        context: Context,
+        title: String,
+        text: String,
+        picture: Bitmap,
+    ): RemoteViews = RemoteViews(context.packageName, R.layout.notification_alert).apply {
+        setTextViewText(R.id.alert_title, title)
+        setTextViewText(R.id.alert_text, text)
+        setImageViewBitmap(R.id.alert_picture, softCorners(context, picture))
+    }
+
+    /** The picture with its corners taken off, the way the shade's own pictures are. */
+    private fun softCorners(context: Context, picture: Bitmap): Bitmap {
+        val rounded = RoundedBitmapDrawableFactory.create(context.resources, picture)
+        rounded.cornerRadius = 6 * context.resources.displayMetrics.density
+        val cornered = Bitmap.createBitmap(picture.width, picture.height, Bitmap.Config.ARGB_8888)
+        rounded.setBounds(0, 0, cornered.width, cornered.height)
+        rounded.draw(Canvas(cornered))
+        return cornered
     }
 }
 
