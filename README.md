@@ -225,6 +225,13 @@ everything quiet, so it never goes silent without saying why.
 A camera that has just buzzed stays quiet for twenty seconds, so one visitor
 walking past is one notification.
 
+When your server describes a review, the sentence it writes takes the place of
+the bare "something was seen" on the notification already in the shade. The
+description arrives a few seconds after the buzz, so the phone rewrites that
+notification rather than posting a second one, and it stays quiet because the
+buzz has already happened. Turn on Generative AI review descriptions on your
+server for this. Without them the notification keeps what it had.
+
 Android can stop a background app to save battery, and it will do that after a
 while on its own. If alerts go quiet, open the app once and they start again.
 "Battery settings" in Settings is where you make that less likely.

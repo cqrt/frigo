@@ -69,6 +69,9 @@ class AlertService : Service() {
     /** The rule for reviews, and the ids of the ones already buzzed. */
     private val reviewBuzz = ReviewBuzz()
 
+    /** Which notification belongs to which thing the server saw, so a description can find it. */
+    private val ledger = AlertLedger()
+
     /**
      * A client of its own: the feed stays open with no read timeout, and a ping
      * every half minute both keeps the phone's network path open and notices a
@@ -247,6 +250,10 @@ class AlertService : Service() {
         // Both are filtered by the same rules, so only one of them can buzz.
         val perHappening = container.repository.alerts.value.perHappening
         when {
+            // A description is written once the review has been running a while,
+            // and belongs to whichever path put the buzz out, so the switch has
+            // no say in it.
+            topic == "reviews" && message.text("type") == "genai" -> onDescription(message)
             topic == "events" && !perHappening -> onEvent(message)
             topic == "reviews" && perHappening -> onReview(message)
         }
@@ -277,7 +284,7 @@ class AlertService : Service() {
 
         scope.launch {
             val picture = container.repository.thumbnail(id)
-            Alerts.event(
+            val posted = Alerts.event(
                 context = this@AlertService,
                 event = FrigateEvent(
                     id = id,
@@ -287,6 +294,7 @@ class AlertService : Service() {
                 ),
                 picture = picture,
             )
+            ledger.noteEvent(id, posted, System.currentTimeMillis())
         }
     }
 
@@ -307,7 +315,33 @@ class AlertService : Service() {
 
         scope.launch {
             val picture = container.repository.reviewThumbnail(review)
-            Alerts.review(context = this@AlertService, review = review, picture = picture)
+            val posted = Alerts.review(context = this@AlertService, review = review, picture = picture)
+            ledger.noteReview(review.id, posted, System.currentTimeMillis())
+        }
+    }
+
+    /**
+     * The server has looked at a review's clip and written what it saw. The buzz
+     * for it has already gone out, so this fills that notification in rather than
+     * posting another one.
+     */
+    private fun onDescription(message: JsonObject) {
+        val after = (message["after"] as? JsonObject) ?: return
+        val review = runCatching {
+            json.decodeFromString(FrigateReview.serializer(), after.toString())
+        }.getOrNull() ?: return
+        if (review.data.metadata == null) return
+
+        val notification = ledger.take(review, System.currentTimeMillis()) ?: return
+
+        scope.launch {
+            val picture = container.repository.reviewThumbnail(review)
+            Alerts.describe(
+                context = this@AlertService,
+                id = notification,
+                review = review,
+                picture = picture,
+            )
         }
     }
 

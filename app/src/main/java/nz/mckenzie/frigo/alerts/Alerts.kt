@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.alerts
 
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -60,32 +61,87 @@ object Alerts {
 
     /**
      * One event, with its picture. Tapping it opens the camera it happened on,
-     * which is what you want to look at next anyway.
+     * which is what you want to look at next anyway. The id comes back so the
+     * notification can be rewritten when the server describes it.
      */
-    fun event(context: Context, event: FrigateEvent, picture: ByteArray?) {
+    fun event(context: Context, event: FrigateEvent, picture: ByteArray?): Int {
         val title = listOfNotNull(event.label.replaceFirstChar { it.uppercase() }, event.subLabel)
             .joinToString(" · ")
-        buzz(context, event.camera, title, picture)
+        return buzz(context, event.camera, title, picture)
     }
 
     /**
      * One review, with the picture of the first thing it saw. Its title is what
      * the review saw, which can be more than one thing.
      */
-    fun review(context: Context, review: FrigateReview, picture: ByteArray?) {
+    fun review(context: Context, review: FrigateReview, picture: ByteArray?): Int {
         val title = review.data.objects
             .map { it.replace('_', ' ').replaceFirstChar { first -> first.uppercase() } }
             .joinToString(" · ")
             .ifBlank { "Alert" }
-        buzz(context, review.camera, title, picture)
+        return buzz(context, review.camera, title, picture)
     }
+
+    /**
+     * Rewrites a notification with what the server made of the clip once it had
+     * looked at it, in place of the bare "something was seen".
+     *
+     * It is the same notification, so it takes the first one's place rather than
+     * stacking a second, and it stays quiet: the buzz has been and gone by the
+     * time the description is written.
+     */
+    fun describe(context: Context, id: Int, review: FrigateReview, picture: ByteArray?) {
+        val metadata = review.data.metadata ?: return
+        val title = metadata.title.trim()
+        val said = metadata.shortSummary.trim()
+        if (title.isEmpty() || said.isEmpty()) return
+        if (!showing(context, id)) return
+
+        NotificationManagerCompat.from(context)
+            .notify(
+                id,
+                build(context, id, review.camera, title, said, picture)
+                    // The summary takes the line the camera name had, so the camera
+                    // moves to the corner rather than going missing.
+                    .setSubText(prettyCameraName(review.camera))
+                    .build(),
+            )
+    }
+
+    /**
+     * Whether that notification is still in the shade. If it has been swiped
+     * away, putting it back would buzz a second time over something you have
+     * already dealt with.
+     */
+    private fun showing(context: Context, id: Int): Boolean =
+        runCatching {
+            context.getSystemService(NotificationManager::class.java)
+                ?.activeNotifications
+                ?.any { it.id == id }
+        }.getOrNull() ?: true
 
     /**
      * Posts one buzz, and every buzz takes the next id, so two in the shade do
      * not become one.
      */
-    private fun buzz(context: Context, cameraName: String, title: String, picture: ByteArray?) {
+    private fun buzz(context: Context, cameraName: String, title: String, picture: ByteArray?): Int {
         val id = nextEventId++
+        val camera = prettyCameraName(cameraName)
+
+        NotificationManagerCompat.from(context)
+            .notify(id, build(context, id, cameraName, title, "$camera. Tap to watch it.", picture).build())
+        return id
+    }
+
+    /** The one shape a buzz takes, whether it is new or being filled in. */
+    private fun build(
+        context: Context,
+        id: Int,
+        cameraName: String,
+        title: String,
+        text: String,
+        picture: ByteArray?,
+    ): NotificationCompat.Builder {
         val camera = prettyCameraName(cameraName)
 
         // One request code per alert: Android treats two intents with the same
@@ -103,9 +159,12 @@ object Alerts {
         val builder = NotificationCompat.Builder(context, CHANNEL_EVENTS)
             .setSmallIcon(R.drawable.ic_stat_watch)
             .setContentTitle(title)
-            .setContentText("$camera. Tap to watch it.")
+            .setContentText(text)
             .setContentIntent(open)
             .setAutoCancel(true)
+            // The first one buzzes. Anything after it, such as the description
+            // filling in the same notification, only changes what it says.
+            .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
         val bitmap = picture?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
@@ -119,8 +178,7 @@ object Alerts {
                     .setSummaryText(camera)
             )
         }
-
-        NotificationManagerCompat.from(context).notify(id, builder.build())
+        return builder
     }
 }
 

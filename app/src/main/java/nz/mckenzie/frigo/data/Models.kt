@@ -156,6 +156,22 @@ data class ReviewData(
     @SerialName("sub_labels") val subLabels: List<String> = emptyList(),
     val zones: List<String> = emptyList(),
     val detections: List<String> = emptyList(),
+    val metadata: ReviewMetadata? = null,
+)
+
+/**
+ * What the server made of a review once it had looked at the clip, which it
+ * writes a few seconds after the review starts.
+ *
+ * The title is a short name for what happened and the summary is a sentence
+ * about it. [threatLevel] is 0 for ordinary, 1 for suspicious and 2 for a
+ * critical threat.
+ */
+@Serializable
+data class ReviewMetadata(
+    val title: String = "",
+    val shortSummary: String = "",
+    @SerialName("potential_threat_level") val threatLevel: Int = 0,
 )
 
 /**
