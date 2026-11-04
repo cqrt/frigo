@@ -68,6 +68,10 @@ class FrigoRepository(
     private val mutex = Mutex()
     @Volatile private var stored: ServerPrefs.Stored? = null
 
+    /** Every server saved on the phone, in the order they were added. */
+    private val _servers = MutableStateFlow<List<ServerPrefs.Stored>>(emptyList())
+    val servers: StateFlow<List<ServerPrefs.Stored>> = _servers.asStateFlow()
+
     /** The last answer on what each camera can give, and on what they are all doing. */
     private val limits = mutableMapOf<String, Pair<Long, StreamLimits>>()
     private var statsAt: Pair<Long, FrigateStats>? = null
@@ -110,7 +114,8 @@ class FrigoRepository(
      */
     suspend fun loadAlerts() {
         if (alertsLoaded) return
-        _alerts.value = prefs.readAlerts()
+        val server = activeServer()
+        _alerts.value = server?.let { prefs.readAlerts(it.baseUrl) } ?: ServerPrefs.Alerts()
         alertsLoaded = true
     }
 
@@ -120,7 +125,8 @@ class FrigoRepository(
      */
     suspend fun loadAlertRules() {
         if (alertRulesLoaded) return
-        _alertRules.value = prefs.readAlertRules() ?: AlertRules()
+        val server = activeServer()
+        _alertRules.value = server?.let { prefs.readAlertRules(it.baseUrl) } ?: AlertRules()
         alertRulesLoaded = true
     }
 
@@ -134,19 +140,81 @@ class FrigoRepository(
      * last answer alone rather than going quiet on a guess.
      */
     suspend fun refreshAlertRules() {
-        val rules = runCatching {
-            authorized { baseUrl, token -> api.config(baseUrl, token).alertRules() }
-        }.getOrNull() ?: return
-        prefs.writeAlertRules(rules)
+        val url = activeServer()?.baseUrl ?: return
+        val settings = try {
+            fetchSettings().also { prefs.writeSettings(url, it) }
+        } catch (failure: Throwable) {
+            return
+        }
+        val rules = settings.config.alertRules()
+        prefs.writeAlertRules(url, rules)
         _alertRules.value = rules
         alertRulesLoaded = true
     }
 
+    /**
+     * The server the app is on, read off the phone when this process has not
+     * loaded it yet. The alert service starts on its own after a phone restart,
+     * before any screen has run, and would otherwise find nothing.
+     */
+    private suspend fun activeServer(): ServerPrefs.Stored? {
+        stored?.let { return it }
+        val saved = prefs.readServers()
+        _servers.value = saved.servers
+        return saved.active?.also { stored = it }
+    }
+
+    private suspend fun persist(servers: List<ServerPrefs.Stored>, active: String?) {
+        _servers.value = servers
+        prefs.writeServers(servers, active)
+    }
+
+    /** The servers on the phone, read once if this process hasn't looked yet. */
+    private suspend fun known(): List<ServerPrefs.Stored> {
+        if (_servers.value.isNotEmpty()) return _servers.value
+        return prefs.readServers().servers.also { _servers.value = it }
+    }
+
+    /** Reads the phone's copy of the active server's choices, over what was there. */
+    private suspend fun loadChoices() {
+        val url = stored?.baseUrl
+        _alerts.value = url?.let { prefs.readAlerts(it) } ?: ServerPrefs.Alerts()
+        _alertRules.value = url?.let { prefs.readAlertRules(it) } ?: AlertRules()
+        alertsLoaded = true
+        alertRulesLoaded = true
+    }
+
+    /** The server's own two answers the settings pages are built from. */
+    private suspend fun fetchSettings(): ServerSettings = authorized { baseUrl, token ->
+        val profile = api.profile(baseUrl, token)
+        val config = api.config(baseUrl, token)
+        ServerSettings(config = config, profile = profile, readAt = System.currentTimeMillis())
+    }
+
+    /** A settings answer, and how old it is when it came off the phone instead. */
+    private data class SettingsAnswer(val settings: ServerSettings, val copiedAt: Long?)
+
+    /**
+     * What the server's settings say, or the copy on the phone when it can't be
+     * reached at all. Anything the server actually answered - a session that has
+     * run out, a certificate the phone won't take - is passed on, because the copy
+     * is not the same answer.
+     */
+    private suspend fun settingsAnswer(): SettingsAnswer? {
+        val url = activeServer()?.baseUrl ?: return null
+        return try {
+            SettingsAnswer(fetchSettings().also { prefs.writeSettings(url, it) }, copiedAt = null)
+        } catch (failure: Throwable) {
+            if (!failure.isUnreachable()) throw failure
+            prefs.readSettings(url)?.let { SettingsAnswer(it, copiedAt = it.readAt) }
+        }
+    }
+
     /** Called once on launch. Keeps you signed in if the token still works. */
     suspend fun restore() {
+        val saved = activeServer()
         loadAlerts()
         loadAlertRules()
-        val saved = prefs.read()
         // The first launch after the walkthrough arrived settles the question once
         // and writes the answer down. A phone with a server already saved is one
         // that was set up before the walkthrough existed, so it is not owed it.
@@ -166,7 +234,6 @@ class FrigoRepository(
             )
             return
         }
-        stored = saved
 
         val result = runCatching {
             withContext(Dispatchers.IO) { api.checkToken(saved.baseUrl, saved.token) }
@@ -192,22 +259,82 @@ class FrigoRepository(
         }
     }
 
+    /**
+     * Signs in to a server, adding it to the list if it isn't there and making it
+     * the one the app is on. Signing in to a server you already have replaces its
+     * token and leaves the rest of the list alone.
+     */
     suspend fun signIn(address: String, username: String, password: String) {
         val baseUrl = normalizeBaseUrl(address)
         val token = withContext(Dispatchers.IO) { api.login(baseUrl, username, password) }
         val saved = ServerPrefs.Stored(baseUrl = baseUrl, username = username, token = token)
-        stored = saved
-        prefs.write(saved)
+        mutex.withLock {
+            val servers = known()
+                .filterNot { it.baseUrl == baseUrl } + saved
+            stored = saved
+            persist(servers, baseUrl)
+        }
+        // The phone's choices for this server are read before the gate moves, so the
+        // screens that replace this one never see the last server's.
+        loadChoices()
         _gate.value = Gate.SignedIn(baseUrl, username)
         refreshAlertRules()
     }
 
-    suspend fun signOut() {
+    /**
+     * Switches to another server on the list. Its sign-in, its alerts switch and
+     * its camera layout come back with it, because each server keeps its own.
+     *
+     * A server whose session has aged out shows the sign-in page with its address
+     * filled in, rather than pretending to be signed in to it.
+     */
+    suspend fun switchTo(baseUrl: String) {
+        val next = known().firstOrNull { it.baseUrl == baseUrl } ?: return
         mutex.withLock {
-            stored = null
-            prefs.clear()
+            stored = next
+            persist(_servers.value, next.baseUrl)
         }
-        _gate.value = Gate.SignedOut()
+        // The picture sizes and the census came from the server that was on before.
+        limits.clear()
+        statsAt = null
+        loadChoices()
+        _gate.value = if (next.token.isNullOrBlank()) {
+            Gate.SignedOut(address = next.baseUrl, username = next.username)
+        } else {
+            Gate.SignedIn(next.baseUrl, next.username)
+        }
+    }
+
+    /**
+     * Signing out forgets the server you are on, and what this phone kept for it.
+     * If you have another it takes over; otherwise the sign-in page comes up with
+     * the address you left filled in.
+     */
+    suspend fun signOut() {
+        val gone = stored ?: activeServer()
+        var leaving: ServerPrefs.Stored? = null
+        mutex.withLock {
+            val kept = known().filterNot { it.baseUrl == gone?.baseUrl }
+            // Whatever is left takes over, preferring one that can still talk to
+            // its server so a stale entry doesn't hide a working one.
+            leaving = kept.firstOrNull { !it.token.isNullOrBlank() } ?: kept.firstOrNull()
+            stored = leaving
+            persist(kept, leaving?.baseUrl)
+        }
+        gone?.baseUrl?.let { prefs.forget(it) }
+        limits.clear()
+        statsAt = null
+        loadChoices()
+
+        val next = leaving
+        _gate.value = if (next == null || next.token.isNullOrBlank()) {
+            Gate.SignedOut(
+                address = next?.baseUrl ?: gone?.baseUrl.orEmpty(),
+                username = next?.username ?: gone?.username.orEmpty(),
+            )
+        } else {
+            Gate.SignedIn(next.baseUrl, next.username)
+        }
     }
 
     /**
@@ -235,15 +362,17 @@ class FrigoRepository(
 
     /**
      * What Frigate flags, the cameras to offer on that page, and whether this
-     * account may change any of it. One trip, because a round trip is felt.
+     * account may change any of it. One trip, because a round trip is felt, and
+     * the phone's copy when the server doesn't answer.
      */
-    suspend fun reviewPage(): ReviewPage = authorized { baseUrl, token ->
-        val profile = api.profile(baseUrl, token)
-        val config = api.config(baseUrl, token)
-        ReviewPage(
-            settings = config.reviewSettings(),
-            cameras = config.visibleCameras(profile.allowedCameras),
-            admin = profile.role == "admin",
+    suspend fun reviewPage(): ReviewPage {
+        val answer = settingsAnswer() ?: throw FrigateException(0, NotSignedIn)
+        val settings = answer.settings
+        return ReviewPage(
+            settings = settings.config.reviewSettings(),
+            cameras = settings.config.visibleCameras(settings.profile.allowedCameras),
+            admin = settings.profile.role == "admin",
+            readAt = answer.copiedAt,
         )
     }
 
@@ -255,20 +384,22 @@ class FrigoRepository(
     /**
      * The cameras to offer on the switches page, what each switch is set to, and
      * whether this account may change any of it. One trip, because a round trip
-     * is felt.
+     * is felt, and the phone's copy when the server doesn't answer.
      */
-    suspend fun cameraSwitchPage(): CameraSwitchPage = authorized { baseUrl, token ->
-        val profile = api.profile(baseUrl, token)
-        val config = api.config(baseUrl, token)
-        val cameras = config.visibleCameras(profile.allowedCameras)
-        CameraSwitchPage(
+    suspend fun cameraSwitchPage(): CameraSwitchPage {
+        val answer = settingsAnswer() ?: throw FrigateException(0, NotSignedIn)
+        val settings = answer.settings
+        val config = settings.config
+        val cameras = config.visibleCameras(settings.profile.allowedCameras)
+        return CameraSwitchPage(
             cameras = cameras,
             switches = cameras.associate { camera ->
                 camera.name to (config.cameras[camera.name]?.switches() ?: CameraSwitches())
             },
             faceRecognitionOff = !config.faceRecognition.enabled,
             licensePlateOff = !config.lpr.enabled,
-            admin = profile.role == "admin",
+            admin = settings.profile.role == "admin",
+            readAt = answer.copiedAt,
         )
     }
 
@@ -372,7 +503,8 @@ class FrigoRepository(
     }.getOrDefault(emptyList()).distinct().sorted()
 
     suspend fun setAlerts(next: ServerPrefs.Alerts) {
-        prefs.writeAlerts(next)
+        val url = activeServer()?.baseUrl ?: return
+        prefs.writeAlerts(url, next)
         _alerts.value = next
         alertsLoaded = true
     }
@@ -383,9 +515,15 @@ class FrigoRepository(
     suspend fun setShowReviewed(on: Boolean) = prefs.writeShowReviewed(on)
 
     /** Which way the cameras are laid out, remembered between launches. */
-    suspend fun readCameraLayout(): Int = prefs.readCameraLayout()
+    suspend fun readCameraLayout(): Int {
+        val url = activeServer()?.baseUrl ?: return 0
+        return prefs.readCameraLayout(url)
+    }
 
-    suspend fun setCameraLayout(layout: Int) = prefs.writeCameraLayout(layout)
+    suspend fun setCameraLayout(layout: Int) {
+        val url = activeServer()?.baseUrl ?: return
+        prefs.writeCameraLayout(url, layout)
+    }
 
     /** Whether the home page tiles play live. A flow, so Settings is felt at once. */
     val liveTiles: Flow<Boolean> get() = prefs.liveTiles
@@ -717,7 +855,7 @@ class FrigoRepository(
      * and without this it would find nothing and give up.
      */
     suspend fun streamSource(): StreamSource? {
-        val current = stored ?: prefs.read()?.also { stored = it } ?: return null
+        val current = activeServer() ?: return null
         val token = current.token ?: return null
         return StreamSource(url = "${current.baseUrl}/ws", token = token)
     }
@@ -727,7 +865,7 @@ class FrigoRepository(
      * ask the server whether it has a fresh one before giving up on the session.
      */
     private suspend fun <T> authorized(block: suspend (baseUrl: String, token: String) -> T): T {
-        val current = stored ?: throw FrigateException(401, "Not signed in")
+        val current = activeServer() ?: throw FrigateException(401, "Not signed in")
         val token = current.token ?: throw FrigateException(401, "Not signed in")
         return try {
             withContext(Dispatchers.IO) { block(current.baseUrl, token) }
@@ -766,7 +904,7 @@ class FrigoRepository(
         val current = stored ?: return
         val next = current.copy(token = token)
         stored = next
-        prefs.write(next)
+        keep(next)
     }
 
     /** Keeps the address and username, drops the token that no longer works. */
@@ -774,10 +912,23 @@ class FrigoRepository(
         val current = stored ?: return
         val next = current.copy(token = null)
         stored = next
-        prefs.write(next)
+        keep(next)
+    }
+
+    /** Writes a changed copy of one server back into the list. */
+    private suspend fun keep(server: ServerPrefs.Stored) {
+        val servers = known().map { if (it.baseUrl == server.baseUrl) server else it }
+        persist(servers, stored?.baseUrl)
     }
 
     companion object {
+        /**
+         * Said when a page is asked for with nothing to build it from: no server
+         * signed in, or one that hasn't been reached and has no copy on the phone.
+         */
+        private const val NotSignedIn =
+            "Your server isn't answering, and this phone hasn't read its settings yet."
+
         /** Clips are named after the review or event they belong to. */
         private val NOT_IN_A_FILENAME = Regex("[^A-Za-z0-9._-]")
 

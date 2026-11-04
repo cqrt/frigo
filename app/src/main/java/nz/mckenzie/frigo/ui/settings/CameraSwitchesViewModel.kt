@@ -66,6 +66,9 @@ class CameraSwitchesViewModel(
     fun set(switch: CameraSwitch, on: Boolean) {
         val current = _state.value
         val camera = current.camera
+        // Nothing goes to a server this phone couldn't reach: the page is the last
+        // answer it read, and a change would be sent when the screen says otherwise.
+        if (current.page?.readAt != null) return
         val before = current.page?.switches?.get(camera) ?: return
         if (before[switch] == on) return
 

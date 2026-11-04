@@ -46,6 +46,8 @@ import nz.mckenzie.frigo.ui.components.CardDivider
 import nz.mckenzie.frigo.ui.components.Group
 import nz.mckenzie.frigo.ui.components.Item
 import nz.mckenzie.frigo.ui.components.OpenMark
+import nz.mckenzie.frigo.ui.components.attention
+import nz.mckenzie.frigo.ui.relativeTime
 
 /**
  * The page behind the tune icon on Review: which objects make an alert, which
@@ -131,7 +133,7 @@ fun ReviewSettingsScreen(
             }
 
             else -> {
-                val changeable = page.admin && !state.busy
+                val changeable = page.admin && !state.busy && page.readAt == null
 
                 Column(
                     modifier = Modifier
@@ -140,6 +142,21 @@ fun ReviewSettingsScreen(
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
+                    // The phone's own copy, so the page still opens while the server
+                    // is away. Nothing can be sent, so nothing can be tapped.
+                    page.readAt?.let { at ->
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                text = "Your server isn't answering. These are the settings " +
+                                    "your phone last read, ${relativeTime(at).lowercase()}. " +
+                                    "They can't be changed until it's back.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = attention(),
+                            )
+                            TextButton(onClick = viewModel::load) { Text("Try again") }
+                        }
+                    }
+
                     CameraMenu(
                         cameras = page.cameras,
                         chosen = state.scope,

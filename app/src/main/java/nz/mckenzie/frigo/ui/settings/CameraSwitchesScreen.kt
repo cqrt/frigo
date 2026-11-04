@@ -39,6 +39,8 @@ import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.components.CardDivider
 import nz.mckenzie.frigo.ui.components.Group
 import nz.mckenzie.frigo.ui.components.Item
+import nz.mckenzie.frigo.ui.components.attention
+import nz.mckenzie.frigo.ui.relativeTime
 
 /**
  * What one camera does: whether it looks for objects, records, keeps snapshots,
@@ -103,6 +105,22 @@ fun CameraSwitchesScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                // The phone's own copy, so you can see what is set while the server
+                // is away. Nothing can be sent, so nothing can be tapped.
+                val stale = page.readAt
+                if (stale != null) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = "Your server isn't answering. These are the settings your " +
+                                "phone last read, ${relativeTime(stale).lowercase()}. They can't " +
+                                "be changed until it's back.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = attention(),
+                        )
+                        TextButton(onClick = viewModel::load) { Text("Try again") }
+                    }
+                }
+
                 if (!page.admin) {
                     Text(
                         text = "Only an admin can change these.",
@@ -127,7 +145,7 @@ fun CameraSwitchesScreen(
                             SwitchRow(
                                 switch = switch,
                                 on = switches?.get(switch) ?: false,
-                                changeable = page.admin && off == null,
+                                changeable = page.admin && off == null && stale == null,
                                 note = off,
                                 onToggle = { wanted ->
                                     // Recording is the one that loses something when it
@@ -143,12 +161,14 @@ fun CameraSwitchesScreen(
                     }
                 }
 
-                Text(
-                    text = "Changes save on the server as you tap.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp),
-                )
+                if (stale == null) {
+                    Text(
+                        text = "Changes save on the server as you tap.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                }
             }
         }
     }

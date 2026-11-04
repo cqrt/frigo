@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.5
+
+- Settings, Alerts and detections, and a camera's page open with the server away, showing the settings your phone last read.
+- More than one server, each with its own sign-in, alerts switch and camera layout, switched from Settings.
+- Settings has an Add a server row.
+
 ## 0.10.4
 
 - Alerts follow your server's own settings now, instead of a list kept on the phone.

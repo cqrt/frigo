@@ -87,14 +87,18 @@ when it's done. Pull the list down to ask again.
 of what it saw. Tap the alert and that camera opens. The back arrow goes to the
 camera grid.
 
-**Settings.** Shows which server you are signed in to, signs you out, and holds
-two switches: one for notifications, and one that plays the home page tiles live.
-Under Alerts and detections you reach the server's own pages for what makes an
-alert and what makes a detection. There's a link to the phone's battery settings,
-because that's where you stop Android shutting Frigo down. Under Appearance you
-choose the colours: System follows the phone, Day stays light, and Night stays
-dark. Under Updates it says which version you're on, and whether there's a newer
-one to install.
+**Settings.** Holds the servers you've signed in to, one under the other, with the
+one you're on ticked. Tap another and the app switches to it, with its own
+sign-in, its own alerts switch and its own camera layout. **Add a server** signs
+in to one more, which becomes the one you're on. **Sign out** forgets the server
+you're on, and the next one takes over. Under those sit two switches: one for
+notifications, and one that plays the home page tiles live. Under Alerts and
+detections you reach the server's own pages for what makes an alert and what
+makes a detection. There's a link to the phone's battery settings, because that's
+where you stop Android shutting Frigo down. Under Appearance you choose the
+colours: System follows the phone, Day stays light, and Night stays dark. Under
+Updates it says which version you're on, and whether there's a newer one to
+install.
 
 ## The first time you open it
 
@@ -124,6 +128,33 @@ proxy serves, which has a certificate from a real authority.
 Frigate's session lasts a day, and it is lengthened every time you open the app.
 Leave it longer than that and you sign in again, with your address and username
 already filled in.
+
+## More than one server
+
+You add a server from Settings, under Servers. It asks for an address, a username
+and a password, the same as the first one, and then becomes the server you're on.
+
+Each server keeps its own sign-in, so switching is one tap and nothing to type.
+Its alert switch and its camera layout come back with it. The colours, the
+walkthrough and the picture size you picked for a camera stay with the phone,
+because they're about how you use it rather than which box it's looking at.
+
+Sign out forgets the server you're on, along with what the phone kept for it.
+Another server takes over if you have one. Otherwise you land on the sign-in page
+with that address filled in.
+
+## When the server isn't answering
+
+Your phone keeps a copy of the server's settings the last time it read them. If
+the server is away, Alerts and detections and each camera's page still open and
+show that copy. A line at the top says when it was read, and nothing on the page
+can be changed until the server is back.
+
+The settings that belong to the phone work either way: the colours, the live
+tiles, the walkthrough and the list of servers.
+
+The rest of the app needs the server. Cameras, Review, Explore and Clips say it
+isn't answering.
 
 ## How live view works
 
@@ -363,6 +394,7 @@ is ever committed. Backup: there's a copy of the key and its password at
 
 - `data/FrigateApi.kt` - the Frigate endpoints this app uses, written against OkHttp.
 - `data/FrigoRepository.kt` - tokens, renewal, and the calls the screens make.
+- `data/ServerPrefs.kt` - what the phone keeps: the servers and their sign-ins, each one's choices, and the copy of its settings.
 - `data/MjpegReader.kt` - pulls JPEG frames out of the live stream.
 - `data/Updates.kt` - asks GitHub for the newest release, fetches its APK, and hands it to Android's installer.
 - `alerts/` - the service that holds the message feed and the notifications it posts.

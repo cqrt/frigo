@@ -2161,3 +2161,45 @@ cameras.
 
 Turning notifications off on the server, or off on every camera, would otherwise look like a broken app.
 The quiet notification and the Settings row both say which switch is doing it.
+
+## The settings pages read a copy when the server is away, and one phone holds several servers
+
+Two things that arrived together. The settings pages had to open while a server wasn't answering, and a
+phone with two servers needs that twice over.
+
+Every settings page used to be a round trip: `/api/config` and `/api/profile`, or no page. The pages are
+now built from those two answers, and the answers are kept on the phone as one block whenever they arrive.
+A live answer is used as it is. The copy only stands in when the call failed in a way that means the server
+was never reached: no network, a name that doesn't resolve, or a proxy saying 502, 503 or 504. Anything the
+server actually answered is passed on as before, so an aged-out session still lands on the sign-in page and
+a certificate the phone won't take still says what it is. Reading a copy in those two cases would hide a
+problem with a stale page.
+
+The copy is read-only. Each page says when it was read and turns its switches and rows off. Changing a
+setting against a stale answer would be a guess about what the server has now, and sending that guess when
+the server came back is how a phone ends up disagreeing with the box. Queuing the changes was the other
+option and it was turned down for the same reason as the last release's per-phone alert list: a second
+opinion about settings is the thing being removed, not added.
+
+The page shapes are not new. `CameraSwitchPage` and `ReviewPage` are still what the screens read, built from
+the copy instead of from a call, and each carries a `readAt` that is null when the answer is live. That is
+what the banner and the disabled switches turn on, and it keeps the screens free of any knowledge of where
+the answer came from.
+
+Servers are a list with one active. Each entry keeps its own token, so a switch is one tap and no signing in
+again. What a server decides for itself is keyed by its address in DataStore: its alerts switch, the copy of
+its rules, its camera layout, and the cached settings. The theme, the live tile switch, the walkthrough and
+the per-camera picture sizes stay with the phone, because they are about how this phone is used rather than
+whose box it is looking at.
+
+A phone from 0.10.4 has one server under keys of its own. The first read turns those into a list of one,
+hands its alerts switch, rules and layout over to it, and removes the old keys.
+
+Signing out forgets the server rather than only dropping its token. The alternative, leaving a row behind
+for every server you signed out of, fills the list with servers you said goodbye to, and there is no second
+use for that row.
+
+Switching resets the tabs. `MainScaffold` is keyed on the active address, so the navigation controller and
+the view models above it start again rather than showing what the last server answered. The alert socket is
+restarted with an action of its own, because leaving a connection to the old server open while the settings
+copy is the new one is the one state that would buzz about the wrong cameras.

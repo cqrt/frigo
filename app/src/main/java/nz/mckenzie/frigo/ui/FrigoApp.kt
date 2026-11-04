@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -33,6 +34,7 @@ import nz.mckenzie.frigo.ui.cameras.CamerasScreen
 import nz.mckenzie.frigo.ui.cameras.PlayerScreen
 import nz.mckenzie.frigo.ui.clips.ClipsScreen
 import nz.mckenzie.frigo.ui.explore.ExploreScreen
+import nz.mckenzie.frigo.ui.login.AddServerScreen
 import nz.mckenzie.frigo.ui.login.LoginScreen
 import nz.mckenzie.frigo.ui.onboarding.OnboardingScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewSettingsScreen
@@ -50,9 +52,11 @@ fun FrigoApp(container: AppContainer, openCamera: String? = null, onCameraOpened
     LaunchedEffect(Unit) { container.repository.restore() }
 
     // The switch in Settings says what should happen, and this makes it true
-    // whenever the app opens: watching while signed in, nothing otherwise.
+    // whenever the app opens: watching while signed in, nothing otherwise. A
+    // different server is a different feed, so the connection is made again
+    // rather than left pointing at the last one.
     LaunchedEffect(gate, alerts.on) {
-        if (gate is Gate.SignedIn && alerts.on) AlertService.start(context)
+        if (gate is Gate.SignedIn && alerts.on) AlertService.restart(context)
         else AlertService.stop(context)
     }
 
@@ -75,7 +79,11 @@ fun FrigoApp(container: AppContainer, openCamera: String? = null, onCameraOpened
             initialUsername = state.username,
         )
 
-        is Gate.SignedIn -> MainScaffold(container, state, openCamera, onCameraOpened)
+        // A different server is a different app: the tabs and the screens they
+        // hold start again rather than showing what the last server answered.
+        is Gate.SignedIn -> key(state.baseUrl) {
+            MainScaffold(container, state, openCamera, onCameraOpened)
+        }
     }
 }
 
@@ -168,7 +176,6 @@ private fun MainScaffold(
                     repository = container.repository,
                     updater = container.updater,
                     baseUrl = server.baseUrl,
-                    username = server.username,
                     modifier = Modifier.padding(padding),
                     onOpenCamera = { camera ->
                         navController.navigate("camera-switches/$camera") { launchSingleTop = true }
@@ -176,6 +183,16 @@ private fun MainScaffold(
                     onOpenAlerts = {
                         navController.navigate("review-settings") { launchSingleTop = true }
                     },
+                    onAddServer = {
+                        navController.navigate("add-server") { launchSingleTop = true }
+                    },
+                )
+            }
+            composable("add-server") {
+                AddServerScreen(
+                    repository = container.repository,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable("camera-switches/{camera}") { entry ->

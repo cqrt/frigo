@@ -111,6 +111,15 @@ class AlertService : Service() {
         // Android wants the notification up within a few seconds of the start, so
         // it goes first and the connection work happens after it.
         showWatching()
+
+        // The feed belongs to the server you are on, so switching to another closes
+        // this connection and opens one to that server.
+        if (intent?.action == ACTION_RESTART) {
+            job?.cancel()
+            job = scope.launch { listen() }
+            return START_STICKY
+        }
+
         // A finished job means the last attempt gave up on an expired session. If
         // you sign in again the app starts this service again, and it tries once more.
         if (job?.isActive != true) job = scope.launch { listen() }
@@ -373,6 +382,7 @@ class AlertService : Service() {
     companion object {
         private const val ACTION_START = "nz.mckenzie.frigo.START_WATCHING"
         private const val ACTION_STOP = "nz.mckenzie.frigo.STOP_WATCHING"
+        private const val ACTION_RESTART = "nz.mckenzie.frigo.RESTART_WATCHING"
         private const val NORMAL_CLOSURE = 1000
         private const val TAG = "AlertService"
 
@@ -385,6 +395,15 @@ class AlertService : Service() {
         /** Turns the service on. Safe to call when it is already running. */
         fun start(context: Context) {
             val intent = Intent(context, AlertService::class.java).setAction(ACTION_START)
+            context.startForegroundService(intent)
+        }
+
+        /**
+         * Turns the service on, or points the one already running at the server you
+         * are on now. Safe to call either way.
+         */
+        fun restart(context: Context) {
+            val intent = Intent(context, AlertService::class.java).setAction(ACTION_RESTART)
             context.startForegroundService(intent)
         }
 

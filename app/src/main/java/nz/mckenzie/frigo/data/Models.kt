@@ -49,6 +49,21 @@ data class FrigateProfile(
     @SerialName("allowed_cameras") val allowedCameras: List<String>? = null,
 )
 
+/**
+ * A server's own settings as this phone last read them.
+ *
+ * The settings pages are built out of this, so they still open when the server
+ * doesn't answer. [readAt] is when the copy was taken, and it is what the pages
+ * say out loud so you know you are looking at the last answer rather than now.
+ */
+@Serializable
+data class ServerSettings(
+    val config: FrigateConfig = FrigateConfig(),
+    val profile: FrigateProfile = FrigateProfile(),
+    /** Epoch milliseconds, or 0 for a copy written before the phone kept one. */
+    val readAt: Long = 0L,
+)
+
 @Serializable
 data class CameraConfig(
     val enabled: Boolean = true,
@@ -309,6 +324,21 @@ class FrigateException(val status: Int, override val message: String) : Exceptio
 }
 
 /**
+ * True when the server couldn't be asked at all, rather than turning the answer
+ * down: no network, no such host, or a proxy that says the box behind it is out.
+ *
+ * A certificate the phone won't accept is deliberately not one of these. It is a
+ * wrong address rather than a server that is away, and the sign-in page says so
+ * in its own words.
+ */
+fun Throwable.isUnreachable(): Boolean = when (this) {
+    is FrigateException -> status == 502 || status == 503 || status == 504
+    is javax.net.ssl.SSLException -> false
+    is java.io.IOException -> true
+    else -> false
+}
+
+/**
  * The server turned the change down because this account isn't an admin.
  *
  * Kept apart from [FrigateException] on purpose: a 403 there is read as an aged-out
@@ -347,6 +377,11 @@ data class ReviewPage(
     val settings: ReviewSettings,
     val cameras: List<Camera>,
     val admin: Boolean,
+    /**
+     * When this came from the phone's own copy rather than the server, that copy's
+     * age in epoch milliseconds. Null means it is the server's answer, now.
+     */
+    val readAt: Long? = null,
 )
 
 /**
@@ -573,6 +608,11 @@ data class CameraSwitchPage(
     val faceRecognitionOff: Boolean = false,
     val licensePlateOff: Boolean = false,
     val admin: Boolean = false,
+    /**
+     * When this came from the phone's own copy rather than the server, that copy's
+     * age in epoch milliseconds. Null means it is the server's answer, now.
+     */
+    val readAt: Long? = null,
 ) {
     /** Why a switch can't be moved, or null when it can. */
     fun blocked(switch: CameraSwitch): String? = when {

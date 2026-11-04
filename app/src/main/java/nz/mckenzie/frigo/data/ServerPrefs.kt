@@ -12,12 +12,14 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "frigo")
 
 /**
- * Remembers which server you signed in to and keeps the session between
+ * Remembers the servers you signed in to and keeps each session between
  * launches, so the app opens straight to your cameras.
  *
  * The address and username outlive the token. When Frigate expires the session
@@ -28,10 +30,17 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
  */
 class ServerPrefs(private val context: Context) {
 
+    @Serializable
     data class Stored(
         val baseUrl: String,
         val username: String,
-        val token: String?,
+        val token: String? = null,
+    )
+
+    /** Every server on the phone, and the one the app is on. */
+    data class Saved(
+        val servers: List<Stored> = emptyList(),
+        val active: Stored? = null,
     )
 
     /**
@@ -48,37 +57,83 @@ class ServerPrefs(private val context: Context) {
         val perHappening: Boolean = false,
     )
 
-    suspend fun read(): Stored? {
+    /**
+     * The servers saved on the phone, with the active one picked out.
+     *
+     * A phone from before this list existed has the one server written under keys
+     * of its own, and that is turned into a list of one the first time this runs.
+     */
+    suspend fun readServers(): Saved {
         val prefs = context.dataStore.data.first()
-        val baseUrl = prefs[Keys.baseUrl] ?: return null
-        val username = prefs[Keys.username] ?: return null
-        return Stored(
-            baseUrl = baseUrl,
-            username = username,
-            token = prefs[Keys.token],
-        )
+        val servers = prefs[Keys.servers]?.let(::decodeServers).orEmpty()
+        if (servers.isNotEmpty()) {
+            val active = prefs[Keys.active]
+            return Saved(servers, servers.firstOrNull { it.baseUrl == active } ?: servers.first())
+        }
+        return migrate(prefs) ?: Saved()
     }
 
-    suspend fun write(stored: Stored) {
+    suspend fun writeServers(servers: List<Stored>, active: String?) {
         context.dataStore.edit { prefs ->
-            prefs[Keys.baseUrl] = stored.baseUrl
-            prefs[Keys.username] = stored.username
-            if (stored.token != null) prefs[Keys.token] = stored.token else prefs.remove(Keys.token)
+            prefs[Keys.servers] = BlockJson.encodeToString(ListSerializer(Stored.serializer()), servers)
+            if (active != null) prefs[Keys.active] = active else prefs.remove(Keys.active)
         }
     }
 
-    suspend fun readAlerts(): Alerts {
+    /**
+     * Turns the one server of an older version into the first in the list, and
+     * hands its choices over to it. The rest of the phone's settings - the theme,
+     * the tile switch, the walkthrough, the per-camera picture sizes - belong to
+     * the phone rather than to a server, so they stay where they are.
+     */
+    private suspend fun migrate(prefs: Preferences): Saved? {
+        val baseUrl = prefs[Keys.baseUrl] ?: return null
+        val username = prefs[Keys.username] ?: return null
+        val server = Stored(baseUrl = baseUrl, username = username, token = prefs[Keys.token])
+        val saved = Saved(servers = listOf(server), active = server)
+
+        context.dataStore.edit { next ->
+            next[Keys.servers] = BlockJson.encodeToString(ListSerializer(Stored.serializer()), saved.servers)
+            next[Keys.active] = baseUrl
+            prefs[Keys.alertsOn]?.let { next[alertsOnKey(baseUrl)] = it }
+            prefs[Keys.alertsPerHappening]?.let { next[alertsPerHappeningKey(baseUrl)] = it }
+            prefs[Keys.alertRules]?.let { next[alertRulesKey(baseUrl)] = it }
+            prefs[Keys.cameraLayout]?.let { next[cameraLayoutKey(baseUrl)] = it }
+            // The one server's keys are not read again, so they go.
+            next.remove(Keys.baseUrl)
+            next.remove(Keys.username)
+            next.remove(Keys.token)
+            next.remove(Keys.alertsOn)
+            next.remove(Keys.alertsPerHappening)
+            next.remove(Keys.alertRules)
+            next.remove(Keys.cameraLayout)
+        }
+        return saved
+    }
+
+    /** Drops everything this phone kept for a server it no longer holds. */
+    suspend fun forget(baseUrl: String) {
+        context.dataStore.edit { prefs ->
+            prefs.remove(alertsOnKey(baseUrl))
+            prefs.remove(alertsPerHappeningKey(baseUrl))
+            prefs.remove(alertRulesKey(baseUrl))
+            prefs.remove(cameraLayoutKey(baseUrl))
+            prefs.remove(settingsKey(baseUrl))
+        }
+    }
+
+    suspend fun readAlerts(baseUrl: String): Alerts {
         val prefs = context.dataStore.data.first()
         return Alerts(
-            on = prefs[Keys.alertsOn] ?: false,
-            perHappening = prefs[Keys.alertsPerHappening] ?: false,
+            on = prefs[alertsOnKey(baseUrl)] ?: false,
+            perHappening = prefs[alertsPerHappeningKey(baseUrl)] ?: false,
         )
     }
 
-    suspend fun writeAlerts(alerts: Alerts) {
+    suspend fun writeAlerts(baseUrl: String, alerts: Alerts) {
         context.dataStore.edit { prefs ->
-            prefs[Keys.alertsOn] = alerts.on
-            prefs[Keys.alertsPerHappening] = alerts.perHappening
+            prefs[alertsOnKey(baseUrl)] = alerts.on
+            prefs[alertsPerHappeningKey(baseUrl)] = alerts.perHappening
         }
     }
 
@@ -86,15 +141,31 @@ class ServerPrefs(private val context: Context) {
      * The server's rules as they stood the last time the app looked, so the
      * service can start after a restart with nothing to ask.
      */
-    suspend fun readAlertRules(): AlertRules? {
-        val stored = context.dataStore.data.first()[Keys.alertRules] ?: return null
-        return runCatching { AlertJson.decodeFromString(AlertRules.serializer(), stored) }
+    suspend fun readAlertRules(baseUrl: String): AlertRules? {
+        val stored = context.dataStore.data.first()[alertRulesKey(baseUrl)] ?: return null
+        return runCatching { BlockJson.decodeFromString(AlertRules.serializer(), stored) }
             .getOrNull()
     }
 
-    suspend fun writeAlertRules(rules: AlertRules) {
-        val stored = AlertJson.encodeToString(AlertRules.serializer(), rules)
-        context.dataStore.edit { prefs -> prefs[Keys.alertRules] = stored }
+    suspend fun writeAlertRules(baseUrl: String, rules: AlertRules) {
+        val stored = BlockJson.encodeToString(AlertRules.serializer(), rules)
+        context.dataStore.edit { prefs -> prefs[alertRulesKey(baseUrl)] = stored }
+    }
+
+    /**
+     * The server's own settings, kept whole so the settings pages open when it
+     * doesn't answer. It is one block for the same reason the rules are: Frigate
+     * adding a key can't break the read.
+     */
+    suspend fun readSettings(baseUrl: String): ServerSettings? {
+        val stored = context.dataStore.data.first()[settingsKey(baseUrl)] ?: return null
+        return runCatching { BlockJson.decodeFromString(ServerSettings.serializer(), stored) }
+            .getOrNull()
+    }
+
+    suspend fun writeSettings(baseUrl: String, settings: ServerSettings) {
+        val stored = BlockJson.encodeToString(ServerSettings.serializer(), settings)
+        context.dataStore.edit { prefs -> prefs[settingsKey(baseUrl)] = stored }
     }
 
     /** Whether the reviews list shows the ones you've already watched. */
@@ -105,10 +176,11 @@ class ServerPrefs(private val context: Context) {
     }
 
     /** Which way the cameras are laid out: a grid, a list, or one picture to a row. */
-    suspend fun readCameraLayout(): Int = context.dataStore.data.first()[Keys.cameraLayout] ?: 0
+    suspend fun readCameraLayout(baseUrl: String): Int =
+        context.dataStore.data.first()[cameraLayoutKey(baseUrl)] ?: 0
 
-    suspend fun writeCameraLayout(layout: Int) {
-        context.dataStore.edit { prefs -> prefs[Keys.cameraLayout] = layout }
+    suspend fun writeCameraLayout(baseUrl: String, layout: Int) {
+        context.dataStore.edit { prefs -> prefs[cameraLayoutKey(baseUrl)] = layout }
     }
 
     /**
@@ -165,27 +237,34 @@ class ServerPrefs(private val context: Context) {
             prefs[Keys.streamChoices] = (kept + "$camera=${height}x$rate").toSet()        }
     }
 
-    /**
-     * Signing out drops the server and the token. The alert choices stay, so
-     * signing back in to the same server does not mean ticking everything again.
-     */
-    suspend fun clear() {
-        context.dataStore.edit { prefs ->
-            prefs.remove(Keys.baseUrl)
-            prefs.remove(Keys.username)
-            prefs.remove(Keys.token)
-        }
-    }
+    private fun decodeServers(stored: String): List<Stored>? =
+        runCatching { BlockJson.decodeFromString(ListSerializer(Stored.serializer()), stored) }
+            .getOrNull()
+
+    // Everything that belongs to one server is named after it, so two of them can
+    // hold two different answers to the same question.
+    private fun alertsOnKey(baseUrl: String) = booleanPreferencesKey("alerts_on:$baseUrl")
+    private fun alertsPerHappeningKey(baseUrl: String) =
+        booleanPreferencesKey("alerts_per_happening:$baseUrl")
+
+    private fun alertRulesKey(baseUrl: String) = stringPreferencesKey("alert_rules:$baseUrl")
+    private fun cameraLayoutKey(baseUrl: String) = intPreferencesKey("camera_layout:$baseUrl")
+    private fun settingsKey(baseUrl: String) = stringPreferencesKey("settings:$baseUrl")
 
     private object Keys {
+        val servers = stringPreferencesKey("servers")
+        val active = stringPreferencesKey("active")
+
+        // What a phone with a single server wrote. Read once, then removed.
         val baseUrl = stringPreferencesKey("base_url")
         val username = stringPreferencesKey("username")
         val token = stringPreferencesKey("token")
         val alertsOn = booleanPreferencesKey("alerts_on")
         val alertsPerHappening = booleanPreferencesKey("alerts_per_happening")
         val alertRules = stringPreferencesKey("alert_rules")
-        val showReviewed = booleanPreferencesKey("show_reviewed")
         val cameraLayout = intPreferencesKey("camera_layout")
+
+        val showReviewed = booleanPreferencesKey("show_reviewed")
         val liveTiles = booleanPreferencesKey("live_tiles")
         val theme = intPreferencesKey("theme")
         val onboarded = booleanPreferencesKey("onboarded")
@@ -193,7 +272,10 @@ class ServerPrefs(private val context: Context) {
     }
 
     private companion object {
-        /** The rules go in as one block, so a key Frigate adds can't break the read. */
-        val AlertJson = Json { ignoreUnknownKeys = true }
+        /**
+         * The rules, the server's settings and the list of servers all go in as one
+         * block, so a key Frigate adds can't break the read.
+         */
+        val BlockJson = Json { ignoreUnknownKeys = true }
     }
 }

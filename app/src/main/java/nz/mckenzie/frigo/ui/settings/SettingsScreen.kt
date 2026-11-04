@@ -16,12 +16,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -62,6 +66,7 @@ import nz.mckenzie.frigo.data.cameraState
 import nz.mckenzie.frigo.data.installUpdate
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.openBatterySettings
+import nz.mckenzie.frigo.ui.relativeTime
 import nz.mckenzie.frigo.ui.components.CardDivider
 import nz.mckenzie.frigo.ui.components.Group
 import nz.mckenzie.frigo.ui.components.Item
@@ -80,15 +85,16 @@ fun SettingsScreen(
     repository: FrigoRepository,
     updater: Updater,
     baseUrl: String,
-    username: String,
     modifier: Modifier = Modifier,
     onOpenCamera: (String) -> Unit = {},
     onOpenAlerts: () -> Unit = {},
+    onAddServer: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val alerts by repository.alerts.collectAsStateWithLifecycle()
     val rules by repository.alertRules.collectAsStateWithLifecycle()
+    val servers by repository.servers.collectAsStateWithLifecycle()
     val liveTiles by repository.liveTiles.collectAsStateWithLifecycle(initialValue = false)
     val theme by repository.theme.collectAsStateWithLifecycle(
         initialValue = ThemeMode.System.ordinal,
@@ -97,6 +103,8 @@ fun SettingsScreen(
     var cameras by remember { mutableStateOf<List<Camera>>(emptyList()) }
     var switches by remember { mutableStateOf<CameraSwitchPage?>(null) }
     var blocked by remember { mutableStateOf(false) }
+    // The server couldn't be asked, so the list below is nothing rather than empty.
+    var offline by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         // One trip answers both: the cameras to list, and what each camera has
@@ -107,6 +115,7 @@ fun SettingsScreen(
                 cameras = page.cameras
             }
             .onFailure {
+                offline = true
                 runCatching { repository.cameras() }.onSuccess { cameras = it }
             }
     }
@@ -207,25 +216,51 @@ fun SettingsScreen(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Group("Server") {
+            Group("Servers") {
+                servers.forEachIndexed { index, server ->
+                    if (index > 0) CardDivider()
+                    val here = server.baseUrl == baseUrl
+                    Item(
+                        icon = FrigoIcons.Server,
+                        title = server.baseUrl.shortName(),
+                        value = server.username,
+                        // Tapping the one you are on does nothing, so it isn't a tap.
+                        onClick = if (here) {
+                            null
+                        } else {
+                            { scope.launch { repository.switchTo(server.baseUrl) } }
+                        },
+                        trailing = {
+                            if (here) {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    contentDescription = "Signed in",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            } else {
+                                OpenMark()
+                            }
+                        },
+                    )
+                }
+
+                if (servers.isNotEmpty()) CardDivider()
+
                 Item(
-                    icon = FrigoIcons.Server,
-                    title = "Address",
-                    value = baseUrl,
+                    icon = Icons.Filled.Add,
+                    title = "Add a server",
+                    onClick = onAddServer,
                 )
+
                 CardDivider()
-                Item(
-                    icon = FrigoIcons.Person,
-                    title = "Signed in as",
-                    value = username,
-                )
-                CardDivider()
+
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
                     horizontalArrangement = Arrangement.End,
                 ) {
                     TextButton(onClick = { scope.launch { repository.signOut() } }) {
-                        Text("Sign out")
+                        Text(if (servers.size > 1) "Sign out of this server" else "Sign out")
                     }
                 }
             }
@@ -347,8 +382,15 @@ fun SettingsScreen(
             }
 
             Group("Cameras") {
-                if (cameras.isEmpty()) {
-                    Note("No camera this account can see.")
+                val stale = switches?.readAt
+                when {
+                    stale != null -> Note(
+                        "Your server isn't answering. These are the cameras your phone " +
+                            "last read, ${relativeTime(stale).lowercase()}.",
+                    )
+
+                    offline -> Note("Your server isn't answering, so the cameras can't be read.")
+                    cameras.isEmpty() -> Note("No camera this account can see.")
                 }
                 cameras.forEachIndexed { index, camera ->
                     if (index > 0) CardDivider()
@@ -569,3 +611,7 @@ private fun ThemeMode.label(): String = when (this) {
     ThemeMode.Day -> "Day"
     ThemeMode.Night -> "Night"
 }
+
+/** The address without the scheme, which is the part that tells two servers apart. */
+private fun String.shortName(): String =
+    removePrefix("https://").removePrefix("http://").trimEnd('/')

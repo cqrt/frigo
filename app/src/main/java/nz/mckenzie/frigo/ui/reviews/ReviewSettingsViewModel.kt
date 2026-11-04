@@ -86,6 +86,8 @@ class ReviewSettingsViewModel(private val repository: FrigoRepository) : ViewMod
     private fun write(transform: (ReviewFlags) -> ReviewFlags) {
         val current = _state.value
         if (current.busy) return
+        // A page read off the phone can't send anything: the server wasn't there.
+        if (current.page?.readAt != null) return
 
         val before = current.shown ?: return
         val after = transform(before)
