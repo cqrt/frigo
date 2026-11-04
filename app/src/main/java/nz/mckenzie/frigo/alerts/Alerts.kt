@@ -88,7 +88,8 @@ object Alerts {
      * than stacking a second, and it stays quiet: the buzz has been and gone.
      *
      * The title stays as it was, because that names what the server saw. The
-     * sentence goes where the camera name was, and the camera moves to the corner.
+     * sentence goes into the line under it, so the same words are there whether the
+     * notification is open or closed.
      */
     fun say(context: Context, buzz: Buzz, sentence: String, picture: ByteArray?) {
         val said = sentence.trim()
@@ -123,8 +124,8 @@ object Alerts {
             .notify(
                 id,
                 build(context, id, review.camera, title, said, picture)
-                    // The summary takes the line the camera name had, so the camera
-                    // moves to the corner rather than going missing.
+                    // The sentence takes the line the camera name had, so the camera
+                    // moves up beside the time rather than going missing.
                     .setSubText(prettyCameraName(review.camera))
                     .build(),
             )
@@ -177,8 +178,6 @@ object Alerts {
         text: String,
         picture: ByteArray?,
     ): NotificationCompat.Builder {
-        val camera = prettyCameraName(cameraName)
-
         // One request code per alert: Android treats two intents with the same
         // action and component as the same pending intent, extras and all. Sharing
         // one would make every alert in the shade open the newest camera.
@@ -210,7 +209,10 @@ object Alerts {
                     .bigPicture(bitmap)
                     .bigLargeIcon(null as Bitmap?)
                     .setBigContentTitle(title)
-                    .setSummaryText(camera)
+                    // The line under the title, which used to carry the camera name.
+                    // Open or closed, the notification then says the same thing, and
+                    // the camera name is already up beside the time.
+                    .setSummaryText(text)
             )
         }
         return builder

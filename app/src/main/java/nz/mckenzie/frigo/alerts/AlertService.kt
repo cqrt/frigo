@@ -302,7 +302,7 @@ class AlertService : Service() {
                 picture = picture,
             )
             ledger.noteEvent(id, buzz.id, System.currentTimeMillis())
-            describeSoon(buzz, picture)
+            describeSoon(buzz, picture, listOfNotNull(event.text("sub_label")?.takeIf { it.isNotBlank() }), id)
         }
     }
 
@@ -325,7 +325,7 @@ class AlertService : Service() {
             val picture = container.repository.reviewThumbnail(review)
             val buzz = Alerts.review(context = this@AlertService, review = review, picture = picture)
             ledger.noteReview(review.id, buzz.id, System.currentTimeMillis())
-            describeSoon(buzz, picture)
+            describeSoon(buzz, picture, review.data.subLabels, review.detections.firstOrNull())
         }
     }
 
@@ -366,10 +366,11 @@ class AlertService : Service() {
      * that has already happened; nothing that comes after it, a camera that has
      * stopped sending or a model that is not set up, may change that.
      */
-    private fun describeSoon(buzz: Alerts.Buzz, picture: ByteArray?) {
+    private fun describeSoon(buzz: Alerts.Buzz, picture: ByteArray?, known: List<String>, eventId: String?) {
         quick[buzz.id] = scope.launch {
             try {
-                val sentence = container.repository.quickDescription(buzz.camera) ?: return@launch
+                val sentence = container.repository.quickDescription(buzz.camera, known, eventId)
+                    ?: return@launch
                 runCatching { Alerts.say(this@AlertService, buzz, sentence, picture) }
             } finally {
                 quick.remove(buzz.id)

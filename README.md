@@ -231,6 +231,10 @@ apart and asks for one short sentence. This is the quick answer, and it takes th
 place of the bare "something was seen" on the notification already in the shade. The
 buzz has already happened, so it stays quiet.
 
+The question carries any name your server has already recognised, so the sentence can
+say Matt rather than a man. Frigate's own description names people because the name
+is in the text it gets; pictures alone are all strangers.
+
 Frigate writes its own description of a review once the review has finished, which
 can be half a minute later. That one has the whole clip to go on, so it replaces the
 quick sentence on the same notification. Turn on Generative AI review descriptions

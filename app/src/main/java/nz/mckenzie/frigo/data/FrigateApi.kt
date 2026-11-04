@@ -397,16 +397,30 @@ class FrigateApi(
      * This is the quick answer. A review's own description waits for the clip to
      * end, which can be half a minute later; a handful of frames taken now answers
      * while you are still looking at your phone.
+     *
+     * The pictures are all the model is given, so [known] carries what Frigate has
+     * already worked out about them: the names its face recognition put on the
+     * people in them. Without it every person is a stranger.
      */
     fun describe(
         baseUrl: String,
         token: String,
         frames: List<ByteArray>,
+        known: List<String> = emptyList(),
     ): String? {
+        val ask = buildString {
+            if (known.isNotEmpty()) {
+                append("Frigate has identified ")
+                append(known.joinToString(" and "))
+                append(" in these frames. ")
+            }
+            append(ASK)
+        }
+
         val content = buildJsonArray {
             addJsonObject {
                 put("type", "text")
-                put("text", ASK)
+                put("text", ask)
             }
             frames.forEach { frame ->
                 addJsonObject {
@@ -570,6 +584,20 @@ class FrigateApi(
             .get()
             .build()
         return request.okBytes()
+    }
+
+    /**
+     * One event as the server holds it now, which is not how it looked when the
+     * phone first heard of it. Face recognition puts a name on the object a second
+     * or two after it appears, so this is how to ask what it ended up being called.
+     */
+    fun event(baseUrl: String, token: String, eventId: String): FrigateEvent {
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/events/$eventId"))
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return json.decodeFromString(FrigateEvent.serializer(), request.okBody())
     }
 
     /** Every clip kept on the server, newest first. */

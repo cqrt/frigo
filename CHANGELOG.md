@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.9
+
+- An alert reads the same open or closed: the sentence sits under the title, and the camera name stops repeating what is already up beside the time.
+- The quick sentence uses the name your server has put on the person, even when face recognition only matches a second after the buzz.
+
 ## 0.10.8
 
 - An alert picks up a short AI sentence about four seconds after it buzzes, from three pictures a second apart, instead of waiting half a minute for the review to end.

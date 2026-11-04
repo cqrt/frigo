@@ -558,10 +558,19 @@ class FrigoRepository(
      * the notification fills in while you are still looking at it. The server's own
      * sentence lands on the same notification later, if there is one.
      *
+     * [known] is what Frigate has already recognised, such as the name of the person
+     * in the picture. Given only pictures, the model would call every visitor a man.
+     * When nothing has been recognised yet, [eventId] is asked for, because face
+     * recognition names the object a second or two after it first appears.
+     *
      * Null means no sentence: the camera sent nothing, or the question got no answer.
      * A buzz never waits on this.
      */
-    suspend fun quickDescription(camera: String): String? = runCatching {
+    suspend fun quickDescription(
+        camera: String,
+        known: List<String> = emptyList(),
+        eventId: String? = null,
+    ): String? = runCatching {
         val frames = buildList {
             repeat(QuickFrames) { index ->
                 if (index > 0) delay(QuickGapMillis)
@@ -569,8 +578,22 @@ class FrigoRepository(
             }
         }
         if (frames.isEmpty()) return@runCatching null
-        authorized { baseUrl, token -> api.describe(baseUrl, token, frames) }
+
+        // Two seconds have gone by while those arrived, which is enough for the
+        // server to have matched a face. Asked for after the pictures, so a camera
+        // that sent nothing costs one request rather than two.
+        val names = known.ifEmpty { recognised(eventId) }
+        authorized { baseUrl, token -> api.describe(baseUrl, token, frames, names) }
     }.getOrNull()
+
+    /** The name face recognition gave the thing in that event, if it gave one. */
+    private suspend fun recognised(eventId: String?): List<String> {
+        if (eventId == null) return emptyList()
+        val found = runCatching {
+            authorized { baseUrl, token -> api.event(baseUrl, token, eventId) }
+        }.getOrNull() ?: return emptyList()
+        return listOfNotNull(found.subLabel?.takeIf { it.isNotBlank() })
+    }
 
     /**
      * What this camera can actually give: the size of the picture it sends, and the
