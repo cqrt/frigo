@@ -141,10 +141,7 @@ sealed interface WatchState {
         if (this is SignedOut) return Expired
 
         // The first of these that is true is the one worth saying: turning a
-        // camera on below it would change nothing until this one is dealt with.
-        if (!rules.notificationsOn) {
-            return "Notifications are off on your server, so nothing will buzz."
-        }
+        // camera on further down would change nothing until it is dealt with.
         val telling = rules.cameras.values.filter { it.notify }
         if (telling.isEmpty()) {
             return "Every camera is off on your server's notifications page, so nothing will buzz."

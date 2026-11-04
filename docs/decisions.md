@@ -2203,3 +2203,19 @@ Switching resets the tabs. `MainScaffold` is keyed on the active address, so the
 the view models above it start again rather than showing what the last server answered. The alert socket is
 restarted with an action of its own, because leaving a connection to the old server open while the settings
 copy is the new one is the one state that would buzz about the wrong cameras.
+
+## All Cameras is a batch, not a master switch
+
+The app read the top switch on the server's notifications page as a gate: with it off, nothing on any
+camera could buzz, and Settings said so in red. Someone running a server with that switch off and every
+camera on got a phone that reported itself silent and a page telling them nothing would buzz.
+
+The switch is a batch over the cameras. It turns them on and off together, and turning a camera on by
+itself afterwards is the state the server keeps, which is how Frigate's own page describes it: enable
+notifications for the desired cameras. So each camera's own answer decides a buzz, and the server-wide
+value is no longer asked. It is still read from `/api/config`, because the file has it, but nothing
+branches on it.
+
+The two places that said "Notifications are off on your server" are gone. What is left is the one state
+that really does silence every camera: every camera off. Both the banner on the settings page and the
+quiet notification say that, and the copy is unchanged, because a buzz still follows the server.

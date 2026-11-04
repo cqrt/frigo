@@ -20,7 +20,6 @@ class ReviewBuzzTest {
 
     /** A server telling you about people on the drive. */
     private val rules = AlertRules(
-        notificationsOn = true,
         cameras = mapOf(
             "drive" to CameraAlerts(notify = true, alertsOn = true, labels = listOf("person")),
             "quay" to CameraAlerts(notify = false, alertsOn = true, labels = listOf("person")),

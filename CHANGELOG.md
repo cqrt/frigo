@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.6
+
+- Turning cameras on one at a time on your server is enough for the app to buzz, even with the All Cameras switch off.
+
 ## 0.10.5
 
 - Settings, Alerts and detections, and a camera's page open with the server away, showing the settings your phone last read.

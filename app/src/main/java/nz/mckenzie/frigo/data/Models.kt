@@ -406,19 +406,21 @@ fun ReviewSettings.labelsFor(kind: ReviewKind, camera: String?): List<String> {
  * What the server says is worth telling you about, as one shape the service can
  * ask a single question of.
  *
- * Every part of it is set on the server: the notifications switch for everything,
- * the notifications switch for a camera, whether that camera's alerts are on, and
- * the objects that make an alert on it. The phone holds a copy rather than an
- * opinion, so a phone that restarts with no network still knows what to watch.
+ * Every part of it is set on the server: the notifications switch for a camera,
+ * whether that camera's alerts are on, and the objects that make an alert on it.
+ * The phone holds a copy rather than an opinion, so a phone that restarts with no
+ * network still knows what to watch.
+ *
+ * The switch at the top of the server's notifications page is not one of these.
+ * It turns the cameras on in a batch, and you can leave it off and turn them on
+ * one at a time, so each camera's own answer is the one that counts.
  */
 @Serializable
 data class AlertRules(
-    val notificationsOn: Boolean = false,
     val cameras: Map<String, CameraAlerts> = emptyMap(),
 ) {
     /** True when the server says this camera seeing this object is worth a buzz. */
     fun buzzes(camera: String, label: String): Boolean {
-        if (!notificationsOn) return false
         val found = cameras[camera] ?: return false
         return found.notify && found.alertsOn && label in found.labels
     }
@@ -436,7 +438,6 @@ data class CameraAlerts(
 fun FrigateConfig.alertRules(): AlertRules {
     val settings = reviewSettings()
     return AlertRules(
-        notificationsOn = notifications.enabled,
         cameras = cameras.mapValues { (name, camera) ->
             CameraAlerts(
                 notify = camera.notifications.enabled,

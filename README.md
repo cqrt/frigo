@@ -203,20 +203,24 @@ and whether the connection is up, and it is the app's way of saying it is still
 there. Switching alerts off in Settings stops the service and takes the
 notification away.
 
-Your server decides what buzzes, not the phone. Three things have to agree:
+Your server decides what buzzes, not the phone. Two things have to agree:
 
-1. Notifications are on for the server.
-2. Notifications are on for that camera.
-3. Its alerts are on, and the thing it saw is in its alert objects.
+1. Notifications are on for that camera.
+2. Its alerts are on, and the thing it saw is in its alert objects.
 
-The first two are on your server's notifications page, and the third is on its
-alerts page. Turn any of them off and the phone stays quiet. Frigate's own web
-page shows the same values, so a change made in a browser is picked up the next
-time the app opens or reconnects.
+Both are on your server's own pages: the cameras on the notifications page, the
+lists on the alerts page. Turn either off and the phone stays quiet.
+
+The switch at the top of the notifications page turns the cameras on in a batch.
+You can leave it off and turn cameras on one at a time, and those cameras still
+buzz this phone.
+
+Frigate's own web page shows the same values, so a change made in a browser is
+picked up the next time the app opens or reconnects.
 
 The app keeps a copy of those answers on the phone, so a restart with no signal
-still knows what to watch. The quiet notification says which of the three is
-keeping everything quiet, so it never goes silent without saying why.
+still knows what to watch. The quiet notification says which of them is keeping
+everything quiet, so it never goes silent without saying why.
 
 A camera that has just buzzed stays quiet for twenty seconds, so one visitor
 walking past is one notification.

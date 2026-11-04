@@ -334,15 +334,10 @@ fun SettingsScreen(
                     trailing = { OpenMark() },
                 )
 
-                // Quiet without saying why would look broken. Two switches on the
-                // server can silence everything, and both are reachable now.
-                when {
-                    !rules.notificationsOn -> Note(
-                        text = "Notifications are off on your server, so nothing will buzz.",
-                        colour = MaterialTheme.colorScheme.error,
-                    )
-
-                    rules.cameras.values.none { it.notify } -> Note(
+                // Quiet without saying why would look broken. Every camera off on
+                // the server is the one thing that can silence all of them.
+                if (rules.cameras.values.none { it.notify }) {
+                    Note(
                         text = "Every camera is off on your server's notifications page, " +
                             "so nothing will buzz.",
                         colour = MaterialTheme.colorScheme.error,

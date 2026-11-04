@@ -9,9 +9,10 @@ import org.junit.Test
 /**
  * What the server has to agree to before a camera's sighting buzzes the phone.
  *
- * The three answers are all on the server: the notifications switch for the whole
- * server, the camera's own notifications switch, and whether its alerts are on
- * with this object in their list. Turning any one of them off silences the phone.
+ * The answers are all on the server: the camera's own notifications switch, and
+ * whether its alerts are on with this object in their list. Turning either one
+ * off silences the phone. The switch at the top of the server's notifications
+ * page is a batch over the cameras, so it is not asked about here.
  */
 class AlertRulesTest {
 
@@ -67,10 +68,23 @@ class AlertRulesTest {
         assertFalse(rules.buzzes("back", "person"))
     }
 
+    /**
+     * The server's own switch is a batch over the cameras. Leave it off, turn the
+     * cameras on one at a time, and that camera still buzzes.
+     */
     @Test
-    fun aServerWithNotificationsOffBuzzesForNothing() {
-        val off = rules.copy(notificationsOn = false)
-        assertFalse(off.buzzes("drive", "person"))
+    fun aCameraOnWithTheServersOwnSwitchOffStillBuzzes() {
+        val batchOff = config.decodeFromString(
+            FrigateConfig.serializer(),
+            """
+            {
+              "notifications": { "enabled": false },
+              "cameras": { "drive": { "notifications": { "enabled": true } } }
+            }
+            """.trimIndent(),
+        ).alertRules()
+
+        assertTrue(batchOff.buzzes("drive", "person"))
     }
 
     @Test
