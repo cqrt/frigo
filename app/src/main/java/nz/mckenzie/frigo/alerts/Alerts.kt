@@ -14,7 +14,6 @@ import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory
 import nz.mckenzie.frigo.MainActivity
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AlertRules
-import nz.mckenzie.frigo.data.FrigateEvent
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.prettyCameraName
 
@@ -63,19 +62,9 @@ object Alerts {
     }
 
     /**
-     * One event, with its picture. Tapping it opens the camera it happened on,
-     * which is what you want to look at next anyway. What comes back is enough to
-     * find the notification again when there is more to say about it.
-     */
-    fun event(context: Context, event: FrigateEvent, picture: ByteArray?): Buzz {
-        val title = listOfNotNull(event.label.replaceFirstChar { it.uppercase() }, event.subLabel)
-            .joinToString(" · ")
-        return buzz(context, event.camera, title, picture)
-    }
-
-    /**
      * One review, with the picture of the first thing it saw. Its title is what
-     * the review saw, which can be more than one thing.
+     * the review saw, which can be more than one thing. What comes back is enough
+     * to find the notification again when there is more to say about it.
      */
     fun review(context: Context, review: FrigateReview, picture: ByteArray?): Buzz {
         val title = review.data.objects

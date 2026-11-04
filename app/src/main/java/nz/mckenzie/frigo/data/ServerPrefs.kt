@@ -53,8 +53,6 @@ class ServerPrefs(private val context: Context) {
      */
     data class Alerts(
         val on: Boolean = false,
-        /** One buzz per happening the server calls an alert, rather than per event. */
-        val perHappening: Boolean = false,
     )
 
     /**
@@ -96,7 +94,6 @@ class ServerPrefs(private val context: Context) {
             next[Keys.servers] = BlockJson.encodeToString(ListSerializer(Stored.serializer()), saved.servers)
             next[Keys.active] = baseUrl
             prefs[Keys.alertsOn]?.let { next[alertsOnKey(baseUrl)] = it }
-            prefs[Keys.alertsPerHappening]?.let { next[alertsPerHappeningKey(baseUrl)] = it }
             prefs[Keys.alertRules]?.let { next[alertRulesKey(baseUrl)] = it }
             prefs[Keys.cameraLayout]?.let { next[cameraLayoutKey(baseUrl)] = it }
             // The one server's keys are not read again, so they go.
@@ -115,7 +112,6 @@ class ServerPrefs(private val context: Context) {
     suspend fun forget(baseUrl: String) {
         context.dataStore.edit { prefs ->
             prefs.remove(alertsOnKey(baseUrl))
-            prefs.remove(alertsPerHappeningKey(baseUrl))
             prefs.remove(alertRulesKey(baseUrl))
             prefs.remove(cameraLayoutKey(baseUrl))
             prefs.remove(settingsKey(baseUrl))
@@ -126,14 +122,12 @@ class ServerPrefs(private val context: Context) {
         val prefs = context.dataStore.data.first()
         return Alerts(
             on = prefs[alertsOnKey(baseUrl)] ?: false,
-            perHappening = prefs[alertsPerHappeningKey(baseUrl)] ?: false,
         )
     }
 
     suspend fun writeAlerts(baseUrl: String, alerts: Alerts) {
         context.dataStore.edit { prefs ->
             prefs[alertsOnKey(baseUrl)] = alerts.on
-            prefs[alertsPerHappeningKey(baseUrl)] = alerts.perHappening
         }
     }
 
@@ -244,8 +238,6 @@ class ServerPrefs(private val context: Context) {
     // Everything that belongs to one server is named after it, so two of them can
     // hold two different answers to the same question.
     private fun alertsOnKey(baseUrl: String) = booleanPreferencesKey("alerts_on:$baseUrl")
-    private fun alertsPerHappeningKey(baseUrl: String) =
-        booleanPreferencesKey("alerts_per_happening:$baseUrl")
 
     private fun alertRulesKey(baseUrl: String) = stringPreferencesKey("alert_rules:$baseUrl")
     private fun cameraLayoutKey(baseUrl: String) = intPreferencesKey("camera_layout:$baseUrl")

@@ -28,7 +28,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import nz.mckenzie.frigo.FrigoApplication
 import nz.mckenzie.frigo.data.AppContainer
-import nz.mckenzie.frigo.data.FrigateEvent
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.StreamSource
 import okhttp3.OkHttpClient
@@ -62,9 +61,6 @@ class AlertService : Service() {
 
     /** True once Android has the foreground notification, so updates land on it. */
     private var shown = false
-
-    /** When each camera last buzzed, so one visitor does not set the phone off twice. */
-    private val lastBuzzed = mutableMapOf<String, Long>()
 
     /** The rule for reviews, and the ids of the ones already buzzed. */
     private val reviewBuzz = ReviewBuzz()
@@ -253,56 +249,11 @@ class AlertService : Service() {
         val message = runCatching { json.parseToJsonElement(payload) as? JsonObject }.getOrNull()
             ?: return
 
-        // The trial switch says which of the two paths is the one being tried.
-        // Both are filtered by the same rules, so only one of them can buzz.
-        val perHappening = container.repository.alerts.value.perHappening
+        // One buzz per alert the server reports. A description belongs to one of
+        // them too, and arrives later, so it is taken whatever else is going on.
         when {
-            // A description is written once the review has been running a while,
-            // and belongs to whichever path put the buzz out, so the switch has
-            // no say in it.
             topic == "reviews" && message.text("type") == "genai" -> onDescription(message)
-            topic == "events" && !perHappening -> onEvent(message)
-            topic == "reviews" && perHappening -> onReview(message)
-        }
-    }
-
-    /**
-     * One new event, when the buzz is per thing the server tracks.
-     *
-     * `new` is the moment an object first appears. `update` follows every time its
-     * details change, and `end` when it leaves, so only `new` buzzes. The twenty
-     * second hush per camera is here and not on the review path: this path buzzes
-     * per object, so one visitor crossing a zone can start several events.
-     */
-    private fun onEvent(message: JsonObject) {
-        if (message.text("type") != "new") return
-        val event = (message["after"] as? JsonObject) ?: return
-
-        val id = event.text("id") ?: return
-        val camera = event.text("camera") ?: return
-        val label = event.text("label") ?: return
-
-        if (!container.repository.alertRules.value.buzzes(camera, label)) return
-
-        val now = System.currentTimeMillis()
-        val last = lastBuzzed[camera] ?: 0L
-        if (now - last < BUZZ_GAP_MS) return
-        lastBuzzed[camera] = now
-
-        scope.launch {
-            val picture = container.repository.thumbnail(id)
-            val buzz = Alerts.event(
-                context = this@AlertService,
-                event = FrigateEvent(
-                    id = id,
-                    camera = camera,
-                    label = label,
-                    subLabel = event.text("sub_label"),
-                ),
-                picture = picture,
-            )
-            ledger.noteEvent(id, buzz.id, System.currentTimeMillis())
-            describeSoon(buzz, picture, listOfNotNull(event.text("sub_label")?.takeIf { it.isNotBlank() }), id)
+            topic == "reviews" -> onReview(message)
         }
     }
 
@@ -455,9 +406,6 @@ class AlertService : Service() {
 
         private const val RECONNECT_FIRST = 2_000L
         private const val RECONNECT_LONGEST = 60_000L
-
-        /** One visitor should be one buzz, even if Frigate starts a new event for them. */
-        private const val BUZZ_GAP_MS = 20_000L
 
         /** Turns the service on. Safe to call when it is already running. */
         fun start(context: Context) {

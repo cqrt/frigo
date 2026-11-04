@@ -305,27 +305,6 @@ fun SettingsScreen(
 
                 CardDivider()
 
-                // Temporary, while the two ways of buzzing are tried against your
-                // own cameras. It goes once one of them has won.
-                Item(
-                    icon = FrigoIcons.Reviews,
-                    title = "One buzz per happening",
-                    supporting = if (alerts.perHappening) {
-                        "Your server reports each alert once, so each one is one buzz."
-                    } else {
-                        "Every thing your server tracks is a buzz, as it happens."
-                    },
-                    onClick = { save(alerts.copy(perHappening = !alerts.perHappening)) },
-                    trailing = {
-                        Switch(
-                            checked = alerts.perHappening,
-                            onCheckedChange = null,
-                        )
-                    },
-                )
-
-                CardDivider()
-
                 Item(
                     icon = FrigoIcons.Tune,
                     title = "Alerts and detections",
