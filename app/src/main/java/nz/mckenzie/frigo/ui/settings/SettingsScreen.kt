@@ -70,6 +70,7 @@ import nz.mckenzie.frigo.ui.relativeTime
 import nz.mckenzie.frigo.ui.components.CardDivider
 import nz.mckenzie.frigo.ui.components.Group
 import nz.mckenzie.frigo.ui.components.Item
+import nz.mckenzie.frigo.ui.components.Note
 import nz.mckenzie.frigo.ui.components.OpenMark
 import nz.mckenzie.frigo.ui.components.attention
 import nz.mckenzie.frigo.ui.theme.ThemeMode
@@ -88,6 +89,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     onOpenCamera: (String) -> Unit = {},
     onOpenAlerts: () -> Unit = {},
+    onOpenAi: () -> Unit = {},
     onAddServer: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
@@ -302,6 +304,17 @@ fun SettingsScreen(
                         colour = MaterialTheme.colorScheme.error,
                     )
                 }
+
+                CardDivider()
+
+                Item(
+                    icon = FrigoIcons.Sparkle,
+                    title = "AI descriptions",
+                    supporting = "Using Artificial Intelligence, Frigo will describe what it " +
+                        "sees in your alerts",
+                    onClick = onOpenAi,
+                    trailing = { OpenMark() },
+                )
 
                 CardDivider()
 
@@ -552,17 +565,6 @@ private fun CameraRow(
         colour = if (state?.somethingOff == true) attention() else null,
         onClick = onClick,
         trailing = { OpenMark() },
-    )
-}
-
-/** A line of smaller print inside a card. */
-@Composable
-private fun Note(text: String, colour: Color? = null) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = colour ?: MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
     )
 }
 

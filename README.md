@@ -237,9 +237,12 @@ is in the text it gets; pictures alone are all strangers.
 
 Frigate writes its own description of a review once the review has finished, which
 can be half a minute later. That one has the whole clip to go on, so it replaces the
-quick sentence on the same notification. Turn on Generative AI review descriptions
-on your server for that one. Without them you keep the quick sentence, and without a
-model set up at all the notification keeps what it had.
+quick sentence on the same notification.
+
+AI descriptions in Settings is where this is set up. The page says whether your server
+has a model to describe with, turns it on and off, and points it at an Ollama model on
+your own network without leaving the app. Turn it off and the pictures stop going to
+the model, from the server and from the phone.
 
 Android can stop a background app to save battery, and it will do that after a
 while on its own. If alerts go quiet, open the app once and they start again.

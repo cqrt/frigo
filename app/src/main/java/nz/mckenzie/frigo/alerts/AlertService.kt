@@ -320,6 +320,9 @@ class AlertService : Service() {
     private fun describeSoon(buzz: Alerts.Buzz, picture: ByteArray?, known: List<String>, eventId: String?) {
         quick[buzz.id] = scope.launch {
             try {
+                // The switch on the AI page is the one switch. Part way through
+                // writing a picture is the wrong time to find out it was turned off.
+                if (!container.repository.describesAlerts()) return@launch
                 val sentence = container.repository.quickDescription(buzz.camera, known, eventId)
                     ?: return@launch
                 runCatching { Alerts.say(this@AlertService, buzz, sentence, picture) }

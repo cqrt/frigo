@@ -170,6 +170,17 @@ object FrigoIcons {
         }
     }
 
+    /** Two stars, for what the server works out about what it saw. */
+    val Sparkle: ImageVector by lazy {
+        vector("Sparkle") {
+            path(
+                "M10 4.2l1.5 3.6 3.6 1.5-3.6 1.5L10 14.4 8.5 10.8 4.9 9.3l3.6-1.5z",
+                strokeWidth = 1.6f,
+            )
+            path("M16.6 13.4l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z", strokeWidth = 1.5f)
+        }
+    }
+
     /** A camera on its side with a lens at the front, for a camera's switches. */
     val Camera: ImageVector by lazy {
         vector("Camera") {

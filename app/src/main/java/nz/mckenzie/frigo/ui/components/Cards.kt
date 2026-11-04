@@ -116,6 +116,17 @@ internal fun CardDivider() {
     )
 }
 
+/** A line of explanation inside a card, quieter than the rows around it. */
+@Composable
+internal fun Note(text: String, colour: Color? = null) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = colour ?: MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+    )
+}
+
 /** Amber, for something switched off that is worth noticing. */
 @Composable
 internal fun attention(): Color =

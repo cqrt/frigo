@@ -39,6 +39,8 @@ import nz.mckenzie.frigo.ui.login.LoginScreen
 import nz.mckenzie.frigo.ui.onboarding.OnboardingScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewSettingsScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewsScreen
+import nz.mckenzie.frigo.ui.settings.AiDescriptionsScreen
+import nz.mckenzie.frigo.ui.settings.AiModelScreen
 import nz.mckenzie.frigo.ui.settings.CameraSwitchesScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
 
@@ -183,9 +185,30 @@ private fun MainScaffold(
                     onOpenAlerts = {
                         navController.navigate("review-settings") { launchSingleTop = true }
                     },
+                    onOpenAi = {
+                        navController.navigate("ai-descriptions") { launchSingleTop = true }
+                    },
                     onAddServer = {
                         navController.navigate("add-server") { launchSingleTop = true }
                     },
+                )
+            }
+            composable("ai-descriptions") {
+                AiDescriptionsScreen(
+                    container = container,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
+                    onOpenModel = {
+                        navController.navigate("ai-model") { launchSingleTop = true }
+                    },
+                )
+            }
+            composable("ai-model") {
+                AiModelScreen(
+                    container = container,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() },
                 )
             }
             composable("add-server") {

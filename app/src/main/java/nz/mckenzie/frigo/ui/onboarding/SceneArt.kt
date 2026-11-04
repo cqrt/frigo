@@ -41,7 +41,7 @@ private const val High = 100f
  * at the edges rather than squashed, the way a camera picture is.
  */
 @Composable
-internal fun SceneArt(scene: Scene, modifier: Modifier = Modifier) {
+internal fun SceneArt(scene: Scene, modifier: Modifier = Modifier, figure: Boolean = false) {
     Canvas(modifier) {
         val scale = max(size.width / Wide, size.height / High)
         withTransform({
@@ -52,7 +52,7 @@ internal fun SceneArt(scene: Scene, modifier: Modifier = Modifier) {
             scale(scale, scale, pivot = Offset.Zero)
         }) {
             when (scene) {
-                Scene.FrontDoor -> frontDoor()
+                Scene.FrontDoor -> frontDoor(figure)
                 Scene.Driveway -> driveway()
                 Scene.BackYard -> backYard()
                 Scene.Garage -> garage()
@@ -82,7 +82,7 @@ internal fun NameScrim(height: Dp, modifier: Modifier = Modifier) {
 /* ------------------------------------------------------------- the scenes */
 
 /** A porch: a door under two lamps, a step, and a plant beside it. */
-private fun DrawScope.frontDoor() {
+private fun DrawScope.frontDoor(figure: Boolean = false) {
     val wall = Color(0xFFBFCFDF)
     val ground = Color(0xFFA9BACD)
     val siding = Color(0xFFB2C2D4)
@@ -106,6 +106,12 @@ private fun DrawScope.frontDoor() {
     dot(28f, 60f, 7f, Color(0xFF7E9B85))
     dot(38f, 62f, 6f, Color(0xFF6E8C78))
     dot(33f, 55f, 6f, Color(0xFF90AB94))
+
+    // Someone at the door, for the page about what the server makes of a visitor.
+    if (figure) {
+        dot(80f, 60f, 4f, Color(0xFFE3CDB4))
+        box(73f, 65f, 14f, 19f, Color(0xFF3D5D7D), 4f)
+    }
 }
 
 /** A house side: a garage, the drive running out to the road, a car on it. */

@@ -102,6 +102,16 @@ fun OnboardingScreen(container: AppContainer) {
     var alertsOn by remember { mutableStateOf(false) }
     var batteryFree by remember { mutableStateOf(context.batteryIsFree()) }
 
+    // Whether the server can describe what it sees, which is the one thing the
+    // tour offers to show only when it exists. Asked for once the sign-in is
+    // through, since there is no server to ask before that.
+    var describes by remember { mutableStateOf(false) }
+    LaunchedEffect(server?.baseUrl) {
+        if (server != null) {
+            describes = runCatching { repository.aiSetup() }.getOrNull()?.ready == true
+        }
+    }
+
     LaunchedEffect(Unit) {
         repository.loadAlerts()
         alertsOn = repository.alerts.value.on
@@ -192,7 +202,10 @@ fun OnboardingScreen(container: AppContainer) {
                     onNext = { step = Step.Tour },
                 )
 
-                Step.Tour -> TourStep(onDone = { step = Step.Ready })
+                Step.Tour -> TourStep(
+                    describes = describes,
+                    onDone = { step = Step.Ready },
+                )
 
                 Step.Ready -> ReadyStep(
                     address = server?.baseUrl.orEmpty(),
@@ -590,9 +603,20 @@ private val TourStops = listOf(
     ),
 )
 
+/**
+ * The last page, shown only when the server is already set up to describe what
+ * it sees. A tour is not the place to send someone into Frigate's settings.
+ */
+private val AiTourStop = TourStop(
+    title = "AI Generated Alerts",
+    tab = 4,
+    words = "Frigo uses Artificial Intelligence to describe what it sees in a notification.",
+)
+
 @Composable
-private fun TourStep(onDone: () -> Unit) {
-    val pager = rememberPagerState(pageCount = { TourStops.size })
+private fun TourStep(describes: Boolean, onDone: () -> Unit) {
+    val stops = remember(describes) { if (describes) TourStops + AiTourStop else TourStops }
+    val pager = rememberPagerState(pageCount = { stops.size })
     val scope = rememberCoroutineScope()
 
     Column(Modifier.fillMaxSize()) {
@@ -602,21 +626,30 @@ private fun TourStep(onDone: () -> Unit) {
             key = { it },
         ) { index ->
             TourPage(
-                stop = TourStops[index],
+                stop = stops[index],
                 index = index,
+                count = stops.size,
+                last = index == stops.lastIndex,
                 onSkip = onDone,
                 onNext = {
-                    if (index == TourStops.lastIndex) onDone()
+                    if (index == stops.lastIndex) onDone()
                     else scope.launch { pager.animateScrollToPage(index + 1) }
                 },
             )
         }
-        TourBar(active = TourStops[pager.currentPage].tab)
+        TourBar(active = stops[pager.currentPage].tab)
     }
 }
 
 @Composable
-private fun TourPage(stop: TourStop, index: Int, onSkip: () -> Unit, onNext: () -> Unit) {
+private fun TourPage(
+    stop: TourStop,
+    index: Int,
+    count: Int,
+    last: Boolean,
+    onSkip: () -> Unit,
+    onNext: () -> Unit,
+) {
     Column(
         Modifier
             .fillMaxSize()
@@ -673,7 +706,7 @@ private fun TourPage(stop: TourStop, index: Int, onSkip: () -> Unit, onNext: () 
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                TourStops.indices.forEach { page ->
+                (0 until count).forEach { page ->
                     Box(
                         Modifier
                             .height(6.dp)
@@ -687,7 +720,7 @@ private fun TourPage(stop: TourStop, index: Int, onSkip: () -> Unit, onNext: () 
                 }
             }
             TextButton(onClick = onNext) {
-                Text(if (index == TourStops.lastIndex) "Done" else "Next")
+                Text(if (last) "Done" else "Next")
             }
         }
     }

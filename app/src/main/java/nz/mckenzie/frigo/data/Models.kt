@@ -2,6 +2,7 @@ package nz.mckenzie.frigo.data
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -30,6 +31,13 @@ data class FrigateConfig(
      */
     @SerialName("face_recognition") val faceRecognition: SwitchConfig = SwitchConfig(),
     val lpr: SwitchConfig = SwitchConfig(),
+    /**
+     * The model services the server is set up with, by the name it files each one
+     * under. Kept as it came rather than as a fixed shape: a service is a bundle
+     * of fields this app only picks at, and a server set up before this app knew
+     * about it must not fail to parse.
+     */
+    val genai: JsonObject = JsonObject(emptyMap()),
 )
 
 /** Whether a feature is on. Frigate keeps a lot more beside it that this app doesn't read. */
@@ -94,6 +102,8 @@ data class TrackedObjects(val track: List<String> = emptyList())
 data class ReviewBlockConfig(
     val alerts: ReviewFlagConfig = ReviewFlagConfig(),
     val detections: ReviewFlagConfig = ReviewFlagConfig(),
+    /** Whether the server writes a description of what it saw. Off until someone turns it on. */
+    val genai: SwitchConfig = SwitchConfig(enabled = false),
 )
 
 @Serializable
@@ -673,6 +683,143 @@ fun CameraSwitchPage.cameraState(camera: String): CameraState {
 }
 
 private fun String.lowerFirst(): String = replaceFirstChar { it.lowercase() }
+
+/**
+ * A model service the server is set up with.
+ *
+ * [name] is the key the server files it under, which is how a change finds it
+ * again. [roles] says what it is used for: `descriptions` writes the sentence on
+ * a review, and `chat` answers the quick question this phone asks.
+ */
+data class GenaiService(
+    val name: String,
+    val provider: String,
+    val baseUrl: String,
+    val model: String,
+    val roles: List<String>,
+) {
+    val describes: Boolean get() = Roles.Descriptions in roles
+    val chats: Boolean get() = Roles.Chat in roles
+
+    /** Where it is, said the way a person would. */
+    val where: String
+        get() = when {
+            provider == "ollama" && baseUrl.isNotBlank() ->
+                "Ollama at ${baseUrl.removePrefix("http://").removePrefix("https://").trimEnd('/')}"
+            baseUrl.isNotBlank() -> baseUrl.trimEnd('/')
+            provider.isNotBlank() -> provider.replaceFirstChar { it.uppercase() }
+            else -> ""
+        }
+}
+
+/** What a model service is used for, in the words the server writes them in. */
+object Roles {
+    const val Descriptions = "descriptions"
+    const val Chat = "chat"
+}
+
+/**
+ * What a server is set up to describe alerts with, and whether it is doing it.
+ *
+ * [service] is the one holding the describing role, or null when the server has
+ * nothing set up for it. [chats] is whether any service answers the quick
+ * question this phone asks, which is how a new setup knows to lend the new
+ * service that role too. [readAt] is when this was read, or null for the
+ * server's answer just now.
+ */
+data class AiSetup(
+    val service: GenaiService?,
+    val on: Boolean,
+    val chats: Boolean,
+    val admin: Boolean,
+    val readAt: Long? = null,
+) {
+    val ready: Boolean get() = service != null
+}
+
+/**
+ * The model services a server is set up with, read out of its own settings file.
+ * A service the server keeps for something else, such as embeddings, is left out.
+ */
+fun FrigateConfig.genaiServices(): List<GenaiService> = genai.mapNotNull { (name, value) ->
+    val raw = value as? JsonObject ?: return@mapNotNull null
+    val provider = raw.textOf("provider") ?: return@mapNotNull null
+    GenaiService(
+        name = name,
+        provider = provider,
+        baseUrl = raw.textOf("base_url").orEmpty(),
+        model = raw.textOf("model").orEmpty(),
+        roles = (raw["roles"] as? JsonArray)
+            ?.mapNotNull { it.textOrNull() }
+            .orEmpty(),
+    )
+}
+
+private fun JsonObject.textOf(key: String): String? =
+    (this[key] as? JsonPrimitive)?.content?.takeIf { it.isNotEmpty() && it != "null" }
+
+private fun kotlinx.serialization.json.JsonElement.textOrNull(): String? =
+    (this as? JsonPrimitive)?.content?.takeIf { it.isNotEmpty() && it != "null" }
+
+/**
+ * Turns the server's own describing on or off. Only that one switch is sent, so
+ * the model services themselves and everything else are left as they are.
+ */
+fun describeAlertsChange(on: Boolean): ConfigChange =
+    ConfigChange(
+        updateTopic = "config/review/genai",
+        configData = buildJsonObject {
+            put(
+                "review",
+                buildJsonObject {
+                    put(
+                        "genai",
+                        buildJsonObject {
+                            put("enabled", on)
+                            // Turning it on is about alerts, which is the one thing
+                            // this app shows. Descriptions on detections are a
+                            // separate switch, and are left as they are.
+                            if (on) put("alerts", true)
+                        },
+                    )
+                },
+            )
+        },
+    )
+
+/**
+ * Points a model service at an address and a model.
+ *
+ * A service already on the server keeps everything else it had: its key, and what
+ * it is used for. Only a new one is given a provider and roles, and it takes the
+ * describing role, plus the chatting one when nothing else has it, so that both
+ * sentences can come from the model just set up.
+ */
+fun genaiModelChange(
+    name: String?,
+    baseUrl: String,
+    model: String,
+    giveChat: Boolean,
+): ConfigChange {
+    val body = buildJsonObject {
+        put("base_url", baseUrl.trim().trimEnd('/'))
+        put("model", model.trim())
+        if (name == null) {
+            put("provider", "ollama")
+            putJsonArray("roles") {
+                add(JsonPrimitive(Roles.Descriptions))
+                if (giveChat) add(JsonPrimitive(Roles.Chat))
+            }
+        }
+    }
+    val service = name ?: "ollama"
+    return ConfigChange(
+        updateTopic = "config/genai/$service",
+        configData = buildJsonObject {
+            put("genai", buildJsonObject { put(service, body) })
+        },
+    )
+}
 
 /**
  * One switch, turned on or off on one camera.

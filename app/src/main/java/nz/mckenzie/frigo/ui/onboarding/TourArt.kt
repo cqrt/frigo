@@ -153,13 +153,75 @@ internal fun TourArt(index: Int) {
             Bar(0.24f)
         }
 
-        else -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SettingsRow(switchOn = true, wide = true)
-            SettingsRow(switchOn = false)
-            SettingsRow(switchOn = false)
-            SettingsRow(switchOn = true)
-            SettingsRow(switchOn = false)
-            SettingsRow(switchOn = null)
+        else -> if (index == AiArtIndex) {
+            AiAlertArt()
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SettingsRow(switchOn = true, wide = true)
+                SettingsRow(switchOn = false)
+                SettingsRow(switchOn = false)
+                SettingsRow(switchOn = true)
+                SettingsRow(switchOn = false)
+                SettingsRow(switchOn = null)
+            }
+        }
+    }
+}
+
+/**
+ * Where the AI page sits once it is added: it is the sixth page after the five
+ * tabs, which is the last one the tour can show.
+ */
+private const val AiArtIndex = 6
+
+/**
+ * An alert as it arrives once the server has described it.
+ *
+ * Drawn in the app's own shapes rather than shown as a screen grab, the way the
+ * rest of the tour is: the picture in a real one is someone's own camera.
+ */
+@Composable
+private fun AiAlertArt() {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        Column(Modifier.fillMaxSize().padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(16.dp)
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(MaterialTheme.colorScheme.primary),
+                )
+                Spacer(Modifier.width(7.dp))
+                Text(
+                    text = "Frigo · Front door · 22:24",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(9.dp))
+            Text(
+                text = "Person at the front door",
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Spacer(Modifier.height(3.dp))
+            Text(
+                text = "A man is standing at the front door, looking at his phone.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(10.dp))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp)),
+            ) {
+                SceneArt(Scene.FrontDoor, Modifier.fillMaxSize(), figure = true)
+            }
         }
     }
 }

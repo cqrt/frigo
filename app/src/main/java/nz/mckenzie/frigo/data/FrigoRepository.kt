@@ -410,6 +410,54 @@ class FrigoRepository(
         authorized { baseUrl, token -> api.saveConfig(baseUrl, token, change) }
     }
 
+    /**
+     * What the server is set up to describe alerts with, and whether it is on.
+     *
+     * One trip, and the phone's copy when the server doesn't answer, which is how
+     * every settings page here works.
+     */
+    suspend fun aiSetup(): AiSetup {
+        val answer = settingsAnswer() ?: throw FrigateException(0, NotSignedIn)
+        val settings = answer.settings
+        val services = settings.config.genaiServices()
+        return AiSetup(
+            service = services.firstOrNull { it.describes },
+            on = settings.config.review.genai.enabled,
+            chats = services.any { it.chats },
+            admin = settings.profile.role == "admin",
+            readAt = answer.copiedAt,
+        )
+    }
+
+    /** Turns the server's own description of an alert on or off. */
+    suspend fun setDescribeAlerts(on: Boolean) {
+        authorized { baseUrl, token -> api.saveConfig(baseUrl, token, describeAlertsChange(on)) }
+    }
+
+    /**
+     * Points a model service at an address and a model. A null [name] makes a new
+     * one, which is what a server with nothing set up for describing needs.
+     */
+    suspend fun setGenaiModel(name: String?, baseUrl: String, model: String, giveChat: Boolean) {
+        authorized { baseUrl, token ->
+            api.saveConfig(baseUrl, token, genaiModelChange(name, baseUrl, model, giveChat))
+        }
+    }
+
+    /**
+     * Whether the server is set to describe its alerts, from the copy of its
+     * settings this phone already keeps.
+     *
+     * The alert service asks before it asks for a sentence of its own, so a switch
+     * turned off means the pictures stop going anywhere at all. Before the phone
+     * has read those settings the answer is yes, which is how it behaved while the
+     * setting was the server's alone.
+     */
+    suspend fun describesAlerts(): Boolean {
+        val url = activeServer()?.baseUrl ?: return false
+        return prefs.readSettings(url)?.config?.review?.genai?.enabled ?: true
+    }
+
     suspend fun events(
         camera: String? = null,
         labels: List<String> = emptyList(),

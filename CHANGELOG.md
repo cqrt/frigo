@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.12
+
+- Settings has an AI descriptions page: it says whether your server can describe what it sees, turns it on and off, and sets up an Ollama model without leaving the app.
+- The tour ends with what an alert looks like once your server has described it, shown only when your server is set up for it.
+- One buzz per alert, always. The switch between the two ways is gone.
+
 ## 0.10.11
 
 - An opened alert shows the picture and the whole sentence, instead of one or the other.
