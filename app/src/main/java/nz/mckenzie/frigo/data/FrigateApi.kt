@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.data
 
+import android.util.Base64
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
@@ -8,8 +9,11 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
@@ -387,6 +391,66 @@ class FrigateApi(
     }
 
     /**
+     * One sentence about what a few frames show, asked of the model your server
+     * already has set up. The key stays on the server, so the phone never holds one.
+     *
+     * This is the quick answer. A review's own description waits for the clip to
+     * end, which can be half a minute later; a handful of frames taken now answers
+     * while you are still looking at your phone.
+     */
+    fun describe(
+        baseUrl: String,
+        token: String,
+        frames: List<ByteArray>,
+    ): String? {
+        val content = buildJsonArray {
+            addJsonObject {
+                put("type", "text")
+                put("text", ASK)
+            }
+            frames.forEach { frame ->
+                addJsonObject {
+                    put("type", "image_url")
+                    putJsonObject("image_url") {
+                        put("url", "data:image/jpeg;base64," + Base64.encodeToString(frame, Base64.NO_WRAP))
+                    }
+                }
+            }
+        }
+
+        val body = buildJsonObject {
+            put(
+                "messages",
+                buildJsonArray {
+                    addJsonObject {
+                        put("role", "user")
+                        put("content", content)
+                    }
+                },
+            )
+            put("stream", false)
+            // Frigate's chat can look things up as well as look at pictures, and a
+            // looked-up answer is not what is wanted here.
+            put("max_tool_iterations", 1)
+        }.toString().toRequestBody(JSON)
+
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/chat/completion"))
+            .header("Authorization", "Bearer $token")
+            .post(body)
+            .build()
+
+        val answer = runCatching { json.parseToJsonElement(request.okBody()) as? JsonObject }
+            .getOrNull() ?: return null
+        val said = textOf((answer["message"] as? JsonObject)?.get("content"))
+            ?.trim()
+            ?.trim('"')
+            ?.replace(Regex("\\s+"), " ")
+            .orEmpty()
+        return said.takeIf { it.isNotEmpty() }
+    }
+
+    /**
      * The objects this server looks for: `person`, `car`, and whatever else is set
      * up. Explore's filter offers them.
      */
@@ -734,6 +798,14 @@ class FrigateApi(
 
     private companion object {
         val JSON = "application/json; charset=utf-8".toMediaType()
+
+        /**
+         * What a buzz asks for. The frames are the whole question, so the words only
+         * say what to look at and what shape the answer should be.
+         */
+        const val ASK = "These are frames from a security camera, one second apart. " +
+            "In one short sentence of at most twenty words, say what is happening. " +
+            "No preamble, no list, just the sentence."
 
         /** A clip is cut from recordings, so it goes when they do. */
         const val NO_CLIP = "Frigate has no clip for this one any more. It cuts clips out " +

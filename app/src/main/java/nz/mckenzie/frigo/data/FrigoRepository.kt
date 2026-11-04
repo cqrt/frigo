@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -549,6 +550,29 @@ class FrigoRepository(
     }.getOrNull()
 
     /**
+     * One sentence about what this camera is seeing right now, from three frames a
+     * second apart.
+     *
+     * Frigate writes its own description of a review once the review has finished,
+     * which can be half a minute after the buzz. This asks straight away instead, so
+     * the notification fills in while you are still looking at it. The server's own
+     * sentence lands on the same notification later, if there is one.
+     *
+     * Null means no sentence: the camera sent nothing, or the question got no answer.
+     * A buzz never waits on this.
+     */
+    suspend fun quickDescription(camera: String): String? = runCatching {
+        val frames = buildList {
+            repeat(QuickFrames) { index ->
+                if (index > 0) delay(QuickGapMillis)
+                latestFrame(camera, height = QuickFrameHeight)?.let { add(it) }
+            }
+        }
+        if (frames.isEmpty()) return@runCatching null
+        authorized { baseUrl, token -> api.describe(baseUrl, token, frames) }
+    }.getOrNull()
+
+    /**
      * What this camera can actually give: the size of the picture it sends, and the
      * frames a second it sends them at.
      *
@@ -947,6 +971,16 @@ class FrigoRepository(
 
         /** How long the server's census stands. Two calls in a row share one answer. */
         private const val StatsStandMillis = 15_000L
+
+        /** How many frames a quick description looks at, and how far apart they are. */
+        private const val QuickFrames = 3
+        private const val QuickGapMillis = 1_000L
+
+        /**
+         * The height those frames are asked for. A small picture is enough to see
+         * what a person is doing, and three of them go up to the server at once.
+         */
+        private const val QuickFrameHeight = 240
 
         /**
          * Takes what people actually type - `frigate.example.com`, a full URL, or

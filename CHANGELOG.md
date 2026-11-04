@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.8
+
+- An alert picks up a short AI sentence about four seconds after it buzzes, from three pictures a second apart, instead of waiting half a minute for the review to end.
+- Your server's own description still takes over when the review finishes.
+
 ## 0.10.7
 
 - An alert fills in with your server's AI description a few seconds after it buzzes, in the same notification.

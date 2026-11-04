@@ -225,12 +225,17 @@ everything quiet, so it never goes silent without saying why.
 A camera that has just buzzed stays quiet for twenty seconds, so one visitor
 walking past is one notification.
 
-When your server describes a review, the sentence it writes takes the place of
-the bare "something was seen" on the notification already in the shade. The
-description arrives a few seconds after the buzz, so the phone rewrites that
-notification rather than posting a second one, and it stays quiet because the
-buzz has already happened. Turn on Generative AI review descriptions on your
-server for this. Without them the notification keeps what it had.
+When something buzzes, the phone asks your server's model what it is looking at and
+fills the notification in about four seconds later. It takes three pictures a second
+apart and asks for one short sentence. This is the quick answer, and it takes the
+place of the bare "something was seen" on the notification already in the shade. The
+buzz has already happened, so it stays quiet.
+
+Frigate writes its own description of a review once the review has finished, which
+can be half a minute later. That one has the whole clip to go on, so it replaces the
+quick sentence on the same notification. Turn on Generative AI review descriptions
+on your server for that one. Without them you keep the quick sentence, and without a
+model set up at all the notification keeps what it had.
 
 Android can stop a background app to save battery, and it will do that after a
 while on its own. If alerts go quiet, open the app once and they start again.

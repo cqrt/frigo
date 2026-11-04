@@ -73,6 +73,13 @@ class AlertService : Service() {
     private val ledger = AlertLedger()
 
     /**
+     * The quick description being written for each buzz, by notification id. The
+     * server's own description is the better one, so when it turns up it stops the
+     * quick one rather than being overwritten by it.
+     */
+    private val quick = mutableMapOf<Int, Job>()
+
+    /**
      * A client of its own: the feed stays open with no read timeout, and a ping
      * every half minute both keeps the phone's network path open and notices a
      * connection that has quietly died.
@@ -284,7 +291,7 @@ class AlertService : Service() {
 
         scope.launch {
             val picture = container.repository.thumbnail(id)
-            val posted = Alerts.event(
+            val buzz = Alerts.event(
                 context = this@AlertService,
                 event = FrigateEvent(
                     id = id,
@@ -294,7 +301,8 @@ class AlertService : Service() {
                 ),
                 picture = picture,
             )
-            ledger.noteEvent(id, posted, System.currentTimeMillis())
+            ledger.noteEvent(id, buzz.id, System.currentTimeMillis())
+            describeSoon(buzz, picture)
         }
     }
 
@@ -315,8 +323,9 @@ class AlertService : Service() {
 
         scope.launch {
             val picture = container.repository.reviewThumbnail(review)
-            val posted = Alerts.review(context = this@AlertService, review = review, picture = picture)
-            ledger.noteReview(review.id, posted, System.currentTimeMillis())
+            val buzz = Alerts.review(context = this@AlertService, review = review, picture = picture)
+            ledger.noteReview(review.id, buzz.id, System.currentTimeMillis())
+            describeSoon(buzz, picture)
         }
     }
 
@@ -334,6 +343,10 @@ class AlertService : Service() {
 
         val notification = ledger.take(review, System.currentTimeMillis()) ?: return
 
+        // The server has now said what it saw, in more words than the quick answer
+        // had. The quick one has nothing left to add.
+        quick.remove(notification)?.cancel()
+
         scope.launch {
             val picture = container.repository.reviewThumbnail(review)
             Alerts.describe(
@@ -342,6 +355,25 @@ class AlertService : Service() {
                 review = review,
                 picture = picture,
             )
+        }
+    }
+
+    /**
+     * Asks the server what this camera is seeing and puts the answer into the buzz
+     * that has just gone out.
+     *
+     * This is in its own coroutine and swallows every failure. A buzz is a thing
+     * that has already happened; nothing that comes after it, a camera that has
+     * stopped sending or a model that is not set up, may change that.
+     */
+    private fun describeSoon(buzz: Alerts.Buzz, picture: ByteArray?) {
+        quick[buzz.id] = scope.launch {
+            try {
+                val sentence = container.repository.quickDescription(buzz.camera) ?: return@launch
+                runCatching { Alerts.say(this@AlertService, buzz, sentence, picture) }
+            } finally {
+                quick.remove(buzz.id)
+            }
         }
     }
 

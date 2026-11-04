@@ -61,10 +61,10 @@ object Alerts {
 
     /**
      * One event, with its picture. Tapping it opens the camera it happened on,
-     * which is what you want to look at next anyway. The id comes back so the
-     * notification can be rewritten when the server describes it.
+     * which is what you want to look at next anyway. What comes back is enough to
+     * find the notification again when there is more to say about it.
      */
-    fun event(context: Context, event: FrigateEvent, picture: ByteArray?): Int {
+    fun event(context: Context, event: FrigateEvent, picture: ByteArray?): Buzz {
         val title = listOfNotNull(event.label.replaceFirstChar { it.uppercase() }, event.subLabel)
             .joinToString(" · ")
         return buzz(context, event.camera, title, picture)
@@ -74,12 +74,34 @@ object Alerts {
      * One review, with the picture of the first thing it saw. Its title is what
      * the review saw, which can be more than one thing.
      */
-    fun review(context: Context, review: FrigateReview, picture: ByteArray?): Int {
+    fun review(context: Context, review: FrigateReview, picture: ByteArray?): Buzz {
         val title = review.data.objects
             .map { it.replace('_', ' ').replaceFirstChar { first -> first.uppercase() } }
             .joinToString(" · ")
             .ifBlank { "Alert" }
         return buzz(context, review.camera, title, picture)
+    }
+
+    /**
+     * Fills a buzz in with a sentence about what is happening, while it is still
+     * fresh. It is the same notification, so it takes the first one's place rather
+     * than stacking a second, and it stays quiet: the buzz has been and gone.
+     *
+     * The title stays as it was, because that names what the server saw. The
+     * sentence goes where the camera name was, and the camera moves to the corner.
+     */
+    fun say(context: Context, buzz: Buzz, sentence: String, picture: ByteArray?) {
+        val said = sentence.trim()
+        if (said.isEmpty()) return
+        if (!showing(context, buzz.id)) return
+
+        NotificationManagerCompat.from(context)
+            .notify(
+                buzz.id,
+                build(context, buzz.id, buzz.camera, buzz.title, said, picture)
+                    .setSubText(buzz.name)
+                    .build(),
+            )
     }
 
     /**
@@ -124,14 +146,27 @@ object Alerts {
      * Posts one buzz, and every buzz takes the next id, so two in the shade do
      * not become one.
      */
-    private fun buzz(context: Context, cameraName: String, title: String, picture: ByteArray?): Int {
+    private fun buzz(context: Context, cameraName: String, title: String, picture: ByteArray?): Buzz {
         val id = nextEventId++
         val camera = prettyCameraName(cameraName)
 
         NotificationManagerCompat.from(context)
             .notify(id, build(context, id, cameraName, title, "$camera. Tap to watch it.", picture).build())
-        return id
+        return Buzz(id, cameraName, title, camera)
     }
+
+    /**
+     * A buzz that went out, kept so the notification can be found and filled in.
+     *
+     * [camera] is the server's name for the camera, for asking it questions, and
+     * [name] is how that camera is said out loud.
+     */
+    data class Buzz(
+        val id: Int,
+        val camera: String,
+        val title: String,
+        val name: String,
+    )
 
     /** The one shape a buzz takes, whether it is new or being filled in. */
     private fun build(
