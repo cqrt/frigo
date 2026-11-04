@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.10
+
+- An opened alert shows its sentence in full, with the picture as a thumbnail beside it, instead of cutting the sentence to one line.
+
 ## 0.10.9
 
 - An alert reads the same open or closed: the sentence sits under the title, and the camera name stops repeating what is already up beside the time.

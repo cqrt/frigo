@@ -99,7 +99,7 @@ object Alerts {
         NotificationManagerCompat.from(context)
             .notify(
                 buzz.id,
-                build(context, buzz.id, buzz.camera, buzz.title, said, picture)
+                build(context, buzz.id, buzz.camera, buzz.title, said, picture, full = true)
                     .setSubText(buzz.name)
                     .build(),
             )
@@ -123,7 +123,7 @@ object Alerts {
         NotificationManagerCompat.from(context)
             .notify(
                 id,
-                build(context, id, review.camera, title, said, picture)
+                build(context, id, review.camera, title, said, picture, full = true)
                     // The sentence takes the line the camera name had, so the camera
                     // moves up beside the time rather than going missing.
                     .setSubText(prettyCameraName(review.camera))
@@ -177,6 +177,8 @@ object Alerts {
         title: String,
         text: String,
         picture: ByteArray?,
+        /** True once there is a sentence to read: it then gets the room, not the picture. */
+        full: Boolean = false,
     ): NotificationCompat.Builder {
         // One request code per alert: Android treats two intents with the same
         // action and component as the same pending intent, extras and all. Sharing
@@ -202,17 +204,26 @@ object Alerts {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
         val bitmap = picture?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
-        if (bitmap != null) {
-            builder.setLargeIcon(bitmap)
+        if (bitmap != null) builder.setLargeIcon(bitmap)
+
+        if (bitmap != null && !full) {
             builder.setStyle(
                 NotificationCompat.BigPictureStyle()
                     .bigPicture(bitmap)
                     .bigLargeIcon(null as Bitmap?)
                     .setBigContentTitle(title)
-                    // The line under the title, which used to carry the camera name.
-                    // Open or closed, the notification then says the same thing, and
-                    // the camera name is already up beside the time.
+                    // The picture takes the room here, so the line under the title is
+                    // all the text there is. It is short on a buzz: no sentence yet.
                     .setSummaryText(text)
+            )
+        } else {
+            // A big picture cuts the text to one line, and a sentence about what
+            // happened is worth more than the picture at that size. The picture
+            // stays as the icon beside it, and the sentence is shown to the end.
+            builder.setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(text)
+                    .setBigContentTitle(title)
             )
         }
         return builder
