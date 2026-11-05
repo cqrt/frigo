@@ -110,7 +110,7 @@ fun QuietTimesScreen(
             Group("When") {
                 Item(
                     icon = FrigoIcons.Quiet,
-                    title = "Quiet times",
+                    title = "Enable",
                     trailing = {
                         Switch(
                             checked = quiet.on,
