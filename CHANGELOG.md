@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.17
+
+- Frigo speaks English, Spanish, French, German and Portuguese. Language sits under Appearance in Settings, and Follow the phone is what it does until you pick one.
+- The whole app changes with it: the screens, the walkthrough, the days and months under a camera, and the words when something fails.
+- Your phone's own per-app language list has Frigo in it too, on Android 13 and later.
+
 ## 0.10.16
 
 - The Settings icon in the bar carries a small red dot while a newer Frigo is waiting.
