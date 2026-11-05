@@ -1,13 +1,18 @@
 package nz.mckenzie.frigo.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -16,10 +21,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -27,6 +38,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.alerts.AlertService
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.Gate
@@ -52,8 +64,19 @@ fun FrigoApp(container: AppContainer, openCamera: String? = null, onCameraOpened
     val alerts by container.repository.alerts.collectAsStateWithLifecycle()
     val onboarded by container.repository.onboarded.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) { container.repository.restore() }
+
+    // Opening the app and coming back to it are the two moments worth asking GitHub
+    // whether there is a newer Frigo. It asks only when the answer on the phone has
+    // gone stale, so this is at most one ask an hour however often you come back. It
+    // sits above the branches below so a phone on the welcome or sign-in page is told
+    // as well, and the dot is right the moment the tabs appear.
+    LifecycleResumeEffect(Unit) {
+        scope.launch { container.updateWatch.lookIfStale() }
+        onPauseOrDispose { }
+    }
 
     // The switch in Settings says what should happen, and this makes it true
     // whenever the app opens: watching while signed in, nothing otherwise. A
@@ -115,6 +138,7 @@ private fun MainScaffold(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val watching = currentRoute?.startsWith(PLAYER_PREFIX) == true
+    val updateWaiting by container.updateWatch.waiting.collectAsStateWithLifecycle()
 
     // A tapped alert asks for one camera, and it sits on top of the grid rather
     // than replacing it. Back from there lands on the grid with the tabs back,
@@ -133,7 +157,16 @@ private fun MainScaffold(
                         NavigationBarItem(
                             selected = currentRoute == tab.route,
                             onClick = { navController.switchTo(tab.route) },
-                            icon = { Icon(tab.icon, contentDescription = null) },
+                            icon = {
+                                // The dot lives only on Settings: it is where the
+                                // update is downloaded, and everywhere else would be
+                                // a mark with nothing behind it.
+                                if (tab.route == "settings" && updateWaiting) {
+                                    WithUpdateDot { Icon(tab.icon, contentDescription = null) }
+                                } else {
+                                    Icon(tab.icon, contentDescription = null)
+                                }
+                            },
                             label = { Text(tab.label) },
                         )
                     }
@@ -178,7 +211,7 @@ private fun MainScaffold(
             composable("settings") {
                 SettingsScreen(
                     repository = container.repository,
-                    updater = container.updater,
+                    updates = container.updateWatch,
                     baseUrl = server.baseUrl,
                     modifier = Modifier.padding(padding),
                     onOpenCamera = { camera ->
@@ -270,5 +303,28 @@ private fun NavController.switchTo(route: String) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
         restoreState = true
+    }
+}
+
+/**
+ * A tab's icon with a red dot on its corner, meaning a newer Frigo is waiting.
+ *
+ * Drawn here rather than taken from Material's badge because that dot is 6dp and this
+ * one is 12dp. The dot's middle sits on the corner of the icon, so half of it hangs
+ * outside, which is what makes it read as a mark on the tab rather than a smaller icon.
+ */
+@Composable
+private fun WithUpdateDot(content: @Composable () -> Unit) {
+    Box {
+        content()
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 6.dp, y = (-6).dp)
+                .size(12.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.error)
+                .semantics { contentDescription = "Update available" },
+        )
     }
 }

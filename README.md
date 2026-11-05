@@ -100,7 +100,8 @@ makes a detection. There's a link to the phone's battery settings, because that'
 where you stop Android shutting Frigo down. Under Appearance you choose the
 colours: System follows the phone, Day stays light, and Night stays dark. Under
 Updates it says which version you're on, and whether there's a newer one to
-install.
+install. A small red dot on the Settings icon in the bar means a newer version is
+waiting.
 
 ## The first time you open it
 
@@ -390,18 +391,22 @@ minute, alerts included. Recordings and settings are kept.
 Frigo isn't in a store. Each release is an APK on the GitHub release page, and the
 app fetches the next one itself.
 
-Open Settings and the Updates section asks GitHub what the newest release is. If
-there's a newer one it says so and offers **Download**, then **Install** once the
-file has arrived. Android asks once whether Frigo may install an app; turn on Allow
-from this source and the installer opens. From there it's the same install screen
-as any APK. Your server address, sign-in and settings stay where they are, because
-an update replaces the app and not its data.
+Frigo asks GitHub what the newest release is when it opens, and again when you come
+back to it after an hour. When there's a newer one, the Settings icon in the bar
+carries a small red dot. Open Settings and the dot goes.
+
+The Updates section there says which version you're on and offers **Download**, then
+**Install** once the file has arrived. Android asks once whether Frigo may install an
+app; turn on Allow from this source and the installer opens. From there it's the same
+install screen as any APK. Your server address, sign-in and settings stay where they
+are, because an update replaces the app and not its data.
 
 The APK is the same file as on the release page, so nothing is trusted that you
-couldn't have downloaded and checked yourself. A check happens when you open
-Settings and not in the background, and GitHub is asked at most once a minute, so
-flicking between tabs doesn't spend the hourly allowance GitHub gives an
-unauthenticated caller.
+couldn't have downloaded and checked yourself. Frigo asks at most once an hour on its
+own, and keeps the answer on the phone, so opening it ten times in a morning is one
+ask on the hourly allowance GitHub gives an unauthenticated caller. **Check again**
+asks whatever the hour says, because that's you asking. Nothing runs in the
+background.
 
 **What's new** opens the release page in a browser, which is where the notes are.
 
@@ -449,6 +454,7 @@ is ever committed. Backup: there's a copy of the key and its password at
 - `data/ServerPrefs.kt` - what the phone keeps: the servers and their sign-ins, each one's choices, and the copy of its settings.
 - `data/MjpegReader.kt` - pulls JPEG frames out of the live stream.
 - `data/Updates.kt` - asks GitHub for the newest release, fetches its APK, and hands it to Android's installer.
+- `data/UpdateWatch.kt` - keeps the answer across launches, decides when to ask again, and whether the Settings tab shows its dot.
 - `alerts/` - the service that holds the message feed and the notifications it posts.
 - `ui/` - one folder per screen, Compose throughout.
 - `ui/components/ClipViewer.kt` - the full screen clip player that an event, a review or a kept clip opens.

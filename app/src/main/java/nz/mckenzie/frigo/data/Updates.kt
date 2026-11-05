@@ -17,6 +17,7 @@ import java.io.File
 import java.io.IOException
 
 /** A release on GitHub, as far as this app needs to know about one. */
+@Serializable
 data class Update(
     /** The version without its `v`, so `0.7.28`. */
     val version: String,
@@ -30,6 +31,16 @@ data class Update(
     /** Whether this release is later than the version on the phone. */
     fun isNewerThan(current: String): Boolean = laterVersion(version, current)
 }
+
+/**
+ * The answer the phone is holding on to, and when it arrived. Kept between launches
+ * so the Settings tab knows about a newer release before GitHub has been asked again.
+ */
+@Serializable
+data class StoredAnswer(
+    val checkedAt: Long = 0L,
+    val update: Update? = null,
+)
 
 /**
  * Asks GitHub what the newest release of Frigo is, and fetches its APK.
@@ -52,27 +63,13 @@ class Updater(
     private val folder = File(cacheDir, "updates")
 
     /**
-     * The newest answer, and when it arrived. Opening Settings asks again each time,
-     * which would be several asks a minute for anyone flicking between tabs, and
-     * GitHub counts anonymous asks by the hour.
-     */
-    private var lastLook: Pair<Long, Update?>? = null
-
-    /**
      * The newest release, or null when GitHub has one without an APK attached.
      * Throws when GitHub can't be reached or doesn't answer sensibly.
      *
-     * [fresh] asks GitHub even if an answer arrived a moment ago, which is what the
-     * button that says Check again means.
+     * Every call asks. How often that is worth doing is [UpdateWatch]'s business, since
+     * it is the thing holding the answer the rest of the app reads.
      */
-    suspend fun latest(fresh: Boolean = false): Update? = withContext(Dispatchers.IO) {
-        val now = System.currentTimeMillis()
-        if (!fresh) {
-            lastLook?.let { (at, found) ->
-                if (now - at < LookAgainMillis) return@withContext found
-            }
-        }
-
+    suspend fun latest(): Update? = withContext(Dispatchers.IO) {
         val request = Request.Builder()
             .url("$ReleasesUrl/latest")
             .header("Accept", "application/vnd.github+json")
@@ -87,7 +84,6 @@ class Updater(
             val body = response.body?.string() ?: throw IOException("GitHub said nothing")
             json.decodeFromString(Release.serializer(), body).toUpdate()
         }
-        lastLook = now to found
         found
     }
 
@@ -154,14 +150,27 @@ class Updater(
 
     private companion object {
         const val ReleasesUrl = "https://api.github.com/repos/cqrt/frigo/releases"
-
-        /** How long an answer stands before GitHub is asked again. */
-        const val LookAgainMillis = 60_000L
     }
 }
 
+/** How old an answer can get before GitHub is asked again. */
+const val UpdateWindowMillis = 60L * 60L * 1000L
+
 /** Whether this version is later than that one. `v` and a suffix are ignored. */
 fun laterVersion(one: String, other: String): Boolean = compareVersions(one, other) > 0
+
+/**
+ * Whether a release is waiting to be noticed, which is what the dot on the Settings
+ * tab means. A version you have already seen is not news, so only one later than it
+ * brings the dot back.
+ */
+fun updateWaiting(release: Update?, current: String, seen: String?): Boolean =
+    release != null &&
+        release.isNewerThan(current) &&
+        (seen == null || compareVersions(release.version, seen) > 0)
+
+/** Whether the answer on the phone is old enough to be worth asking GitHub again. */
+fun answerStale(checkedAt: Long, now: Long): Boolean = now - checkedAt >= UpdateWindowMillis
 
 /**
  * The version parts counted as numbers rather than as text, so 0.7.100 is later than

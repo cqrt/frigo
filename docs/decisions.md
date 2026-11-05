@@ -1528,17 +1528,41 @@ The playhead follows now while the stream is up, so the bar shows what is happen
 ## The app updates itself from the release page
 
 There is no store listing, so a new version is an APK on the GitHub release page and
-nothing was going to tell you one existed. Settings now asks GitHub for the newest release
-each time it opens, and offers to fetch it.
+nothing was going to tell you one existed. Settings asks GitHub for the newest release,
+offers to fetch it, and the Settings icon in the bar carries a small red dot while there
+is something newer to install.
 
-The check is on opening Settings rather than at launch, which was a choice: a launch check
-would want a notification or a prompt on a screen you opened to look at a camera, and the
-one place you go when you want to change something is Settings. A check also costs nothing
-until you look.
+The dot is the reason the check moved. It used to run inside the Settings page, which was
+fine when the page was the only thing that cared: the answer was wanted only while you
+were looking at it. A dot on the bar is wanted everywhere, and a screen can only draw
+what it can read, so the answer now belongs to the app. `UpdateWatch` holds it, the bar
+draws the dot from it, and the Settings page reads the same answer instead of asking on
+its own.
 
-GitHub's unauthenticated allowance is 60 asks an hour per address, and a tab switch would
-otherwise be another ask, so an answer stands for a minute. The button that says Check
-again always asks, because it is you asking.
+The check happens when the app opens, and again when you come back to it. Nothing runs in
+the background. That is what the earlier version of this note argued against, and the
+dot is what changed the argument: a release nobody mentions is a release nobody installs,
+and a bar with a mark on it is quiet in a way a notification is not. There is no buzz and
+no prompt, so a screen you opened to watch a camera is still a screen you opened to watch
+a camera.
+
+GitHub's unauthenticated allowance is 60 asks an hour for the address you are on, and a
+launch check on every open would spend it. An answer therefore stands for an hour and is
+kept on the phone, so ten opens in a morning is one ask and the dot is already right on
+the first screen. A launch with no signal keeps the last answer rather than clearing it:
+silence is not news, and a dot that comes and goes with the wind is worse than one that
+lags a day. The button that says Check again always asks, because it is you asking.
+
+Opening Settings clears the dot, and the version you saw is what is remembered. A later
+release brings it back, because the dot means "there is something you have not seen".
+Tapping Download does not clear it: fetching a file is not the same as being rid of the
+news. Neither does looking at the page during a check, so a release that arrives while
+you are on it never puts a dot on the tab under it.
+
+The dot is drawn here rather than taken from Material's badge, which is fixed at 6dp. At
+12dp it reads as a mark on the tab rather than a speck, and its middle sits on the corner
+of the gear. It uses the theme's error red, which is the app's own red; in the night
+colours that is a pale red, which is what Material's dark scheme calls for.
 
 The APK is downloaded into the app's cache, beside the real name and renamed at the end, so
 a download that stops half way cannot be mistaken for a whole one. A file already there is

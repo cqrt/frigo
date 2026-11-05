@@ -2,6 +2,7 @@ package nz.mckenzie.frigo.data
 
 import android.content.Context
 import okhttp3.OkHttpClient
+import nz.mckenzie.frigo.BuildConfig
 import java.util.concurrent.TimeUnit
 
 /**
@@ -31,8 +32,17 @@ class AppContainer(context: Context) {
 
     private val api = FrigateApi(requestClient, streamClient, clipClient)
 
-    val repository = FrigoRepository(api, ServerPrefs(context), context.cacheDir)
+    /** What the phone keeps, shared between the repository and the release check. */
+    private val prefs = ServerPrefs(context)
+
+    val repository = FrigoRepository(api, prefs, context.cacheDir)
 
     /** Asks GitHub for a newer Frigo, and fetches it. */
     val updater = Updater(requestClient, context.cacheDir)
+
+    /**
+     * The answer on whether a newer Frigo is out, kept for the whole app: the
+     * Settings tab draws a dot from it, and the Updates card offers the download.
+     */
+    val updateWatch = UpdateWatch(updater, prefs, BuildConfig.VERSION_NAME)
 }

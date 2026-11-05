@@ -247,6 +247,33 @@ class ServerPrefs(private val context: Context) {
             prefs[Keys.streamChoices] = (kept + "$camera=${height}x$rate").toSet()        }
     }
 
+    /**
+     * The newest release GitHub named, and when it said so. Kept so the Settings tab
+     * can show a dot before GitHub has been asked again, and so a launch on a phone
+     * with no signal still knows what it knew last time.
+     *
+     * It belongs to the app rather than to a server: which version of Frigo is newest
+     * has nothing to do with which Frigate you are signed in to.
+     */
+    suspend fun readUpdateAnswer(): StoredAnswer {
+        val stored = context.dataStore.data.first()[Keys.updateAnswer] ?: return StoredAnswer()
+        return runCatching { BlockJson.decodeFromString(StoredAnswer.serializer(), stored) }
+            .getOrDefault(StoredAnswer())
+    }
+
+    suspend fun writeUpdateAnswer(answer: StoredAnswer) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.updateAnswer] = BlockJson.encodeToString(StoredAnswer.serializer(), answer)
+        }
+    }
+
+    /** The newest version whose dot has been cleared by opening Settings. */
+    suspend fun readSeenVersion(): String? = context.dataStore.data.first()[Keys.updateSeen]
+
+    suspend fun writeSeenVersion(version: String) {
+        context.dataStore.edit { prefs -> prefs[Keys.updateSeen] = version }
+    }
+
     private fun decodeServers(stored: String): List<Stored>? =
         runCatching { BlockJson.decodeFromString(ListSerializer(Stored.serializer()), stored) }
             .getOrNull()
@@ -278,6 +305,10 @@ class ServerPrefs(private val context: Context) {
         val theme = intPreferencesKey("theme")
         val onboarded = booleanPreferencesKey("onboarded")
         val streamChoices = stringSetPreferencesKey("stream_choices")
+
+        // The release check, which is about the app rather than any one server.
+        val updateAnswer = stringPreferencesKey("update_answer")
+        val updateSeen = stringPreferencesKey("update_seen")
     }
 
     private companion object {

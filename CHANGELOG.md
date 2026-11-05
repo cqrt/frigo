@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.16
+
+- The Settings icon in the bar carries a small red dot while a newer Frigo is waiting.
+- Frigo asks GitHub when it opens and when you come back after an hour, so the dot is right before you go looking.
+
 ## 0.10.15
 
 - Settings has a System page for an admin: what the server is running, how hard the box is working, each camera's health, the disks, and Frigate's own processes.

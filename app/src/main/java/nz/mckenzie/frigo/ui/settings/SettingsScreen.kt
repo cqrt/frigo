@@ -59,7 +59,7 @@ import nz.mckenzie.frigo.data.CameraSwitchPage
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.ServerPrefs
 import nz.mckenzie.frigo.data.Update
-import nz.mckenzie.frigo.data.Updater
+import nz.mckenzie.frigo.data.UpdateWatch
 import nz.mckenzie.frigo.data.askToInstallApps
 import nz.mckenzie.frigo.data.canInstallApps
 import nz.mckenzie.frigo.data.cameraState
@@ -84,7 +84,7 @@ import java.io.File
 @Composable
 fun SettingsScreen(
     repository: FrigoRepository,
-    updater: Updater,
+    updates: UpdateWatch,
     baseUrl: String,
     modifier: Modifier = Modifier,
     onOpenCamera: (String) -> Unit = {},
@@ -136,34 +136,22 @@ fun SettingsScreen(
         if (granted) save(alerts.copy(on = true))
     }
 
-    // What GitHub says about the newest Frigo, asked for each time this page is
-    // opened: the answer is only worth having while you are looking at it.
+    // What GitHub says about the newest Frigo, kept by the app rather than by this
+    // page: the tab draws its dot from the same answer. Opening Settings clears that
+    // dot, so this page marks what it found as seen.
     var release by remember { mutableStateOf<Update?>(null) }
-    var looking by remember { mutableStateOf(true) }
-    var looked by remember { mutableStateOf(false) }
-    var lookProblem by remember { mutableStateOf<String?>(null) }
     var fetching by remember { mutableStateOf(false) }
     var percent by remember { mutableIntStateOf(0) }
     var ready by remember { mutableStateOf<File?>(null) }
     var needsPermission by remember { mutableStateOf(false) }
+    var lookProblem by remember { mutableStateOf<String?>(null) }
+    val looking by updates.looking.collectAsStateWithLifecycle()
+    val answered by updates.answered.collectAsStateWithLifecycle()
 
-    fun look(fresh: Boolean = false) {
+    fun look() {
         scope.launch {
-            looking = true
             lookProblem = null
-            val asked = runCatching { updater.latest(fresh) }
-            looking = false
-            asked
-                .onSuccess { found ->
-                    lookProblem = null
-                    looked = true
-                    release = found
-                    // A file fetched on an earlier visit is still there, so a second
-                    // look does not fetch it again.
-                    ready = found
-                        ?.takeIf { it.isNewerThan(BuildConfig.VERSION_NAME) }
-                        ?.let { updater.downloaded(it.version) }
-                }
+            runCatching { updates.look() }
                 .onFailure {
                     lookProblem = "Couldn't reach GitHub. Check your connection and try again."
                 }
@@ -175,7 +163,7 @@ fun SettingsScreen(
             fetching = true
             percent = 0
             runCatching {
-                updater.download(wanted) { got, total ->
+                updates.download(wanted) { got, total ->
                     percent = if (total > 0) (got * 100 / total).toInt() else 0
                 }
             }
@@ -184,6 +172,33 @@ fun SettingsScreen(
                     lookProblem = "Couldn't fetch it. Check your connection and try again."
                 }
             fetching = false
+        }
+    }
+
+    // The page starts on the answer the app already has, which is usually there before
+    // this screen opens. A file fetched on an earlier visit is still on the phone, so
+    // it is offered again rather than fetched again.
+    LaunchedEffect(Unit) {
+        updates.load()
+        release = updates.release.value
+        ready = updates.release.value
+            ?.takeIf { it.isNewerThan(BuildConfig.VERSION_NAME) }
+            ?.let { updates.downloaded(it.version) }
+        // Opening this page is seeing the update, so the dot goes.
+        updates.markSeen()
+        // A phone that has never been asked gets its first answer here, rather than
+        // sitting empty because the launch check had no signal. If one is already in
+        // flight, that one is the answer.
+        if (!updates.answered.value && !updates.looking.value) updates.look()
+
+        updates.release.collect { found ->
+            release = found
+            ready = found
+                ?.takeIf { it.isNewerThan(BuildConfig.VERSION_NAME) }
+                ?.let { updates.downloaded(it.version) }
+            // A release that arrives while you are on this page is one you are
+            // watching arrive, so it must not put a dot on the tab under it.
+            updates.markSeen()
         }
     }
 
@@ -205,8 +220,6 @@ fun SettingsScreen(
         if (needsPermission && canInstallApps(context)) needsPermission = false
         onPauseOrDispose { }
     }
-
-    LaunchedEffect(Unit) { look() }
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
@@ -513,7 +526,7 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
 
-                        else -> if (looked) Text(
+                        else -> if (answered) Text(
                             text = "This is the newest version.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -541,7 +554,7 @@ fun SettingsScreen(
 
                     if (!looking && !fetching && (newer == null || apk != null)) {
                         TextButton(
-                            onClick = { look(fresh = true) },
+                            onClick = { look() },
                             modifier = Modifier.padding(start = 0.dp),
                         ) {
                             Text("Check again")
