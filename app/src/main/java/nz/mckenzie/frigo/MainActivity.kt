@@ -74,6 +74,21 @@ class MainActivity : AppCompatActivity() {
         cameraToWatch.value = intent.getStringExtra(EXTRA_CAMERA)
     }
 
+    /**
+     * Closed rather than left: swiped out of the recent apps list, or backed out
+     * of. The next open asks for the fingerprint again.
+     *
+     * The process outlives a swipe for a while, so waiting for it to die is not
+     * enough. Coming back from another app never comes through here, which is
+     * what keeps a glance at the cameras from asking every time.
+     */
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            (application as FrigoApplication).container.lock.relock()
+        }
+    }
+
     companion object {
         /** The camera an alert was about, carried by the notification's tap. */
         const val EXTRA_CAMERA = "nz.mckenzie.frigo.extra.CAMERA"

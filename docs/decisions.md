@@ -2331,16 +2331,24 @@ under Robolectric with the real strings. That also means a missing key fails a
 test rather than showing a blank line on a phone. It is a test-only dependency:
 none of it is in the APK.
 
-## The lock asks on a fresh start, not on every return
+## The lock asks on a fresh start or a close, not on every return
 
 A camera app is something you flick to for a look at the drive. Asking for a
 fingerprint every time you come back is the thing people switch off after a week,
-and then it is off for good. A fresh start is the moment someone else has the
-phone in their hand.
+and then it is off for good.
 
-So the answer lives for as long as the process does, on the container rather than
-in the activity. Coming back to the app is the same process, so it stays open; a
-cold start is a new one, so it asks again. A turn of the phone never reaches it,
+Two things count as opening it again: the process starting, and the app being
+closed rather than left. Swiping it out of the recent apps list, or backing out of
+it, is a close, and the next open asks. Coming back from another app is neither.
+
+The first version only looked at the process, and it was wrong in one direction.
+Swiping the app away leaves the process alive for a while, so the next open went
+straight to the cameras, and the lock only ever appeared after a force close.
+The close is now said rather than waited for: `onDestroy` with `isFinishing` is
+what tells a close from a screen being rebuilt.
+
+The answer lives on the container rather than in the activity, because the
+activity comes and goes with the screen. A turn of the phone never reaches it,
 because the manifest hands that to the activity rather than rebuilding it.
 
 Rejected: locking on every resume, and locking after a few minutes away. Both ask

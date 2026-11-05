@@ -14,6 +14,10 @@ explain, leave out.
 - Settings, Cameras is now the list of every camera, with a switch on each. Hold a row and drag it to put the cameras in your order.
 - A camera's own page can give it a name only this phone uses.
 
+## 0.10.20
+
+- Closing Frigo from the recent apps list now asks for your fingerprint the next time you open it. Before, only a force close did.
+
 ## 0.10.18
 
 - Frigo can ask for your fingerprint, or your phone's PIN, before it opens. It sits under Privacy in Settings, and the walkthrough offers it too.

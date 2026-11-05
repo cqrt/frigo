@@ -102,7 +102,8 @@ drag it to move it, and tap one for its own page, where its name here is set.
 There's a link to the phone's battery settings, because that's
 where you stop Android shutting Frigo down. Under Privacy, **Lock Frigo** asks
 for your fingerprint, or your phone's PIN, before the app opens. It asks each
-time the app starts, not every time you come back to it. While it's on, the app is
+time the app starts, and again after you close it from the recent apps list.
+Coming back from another app doesn't ask. While it's on, the app is
 a blank card in the recent apps list, and a screenshot comes out blank. Under
 Appearance you choose the
 colours: System follows the phone, Day stays light, and Night stays dark. The
