@@ -55,6 +55,12 @@
     <string name="settings_system">Système</string>
     <string name="settings_system_supporting">Mémoire, disques, caméras et les processus derrière</string>
 
+    <string name="settings_privacy">Confidentialité</string>
+    <string name="settings_lock">Verrouiller Frigo</string>
+    <string name="settings_lock_supporting">Frigo demande votre empreinte avant de s\'ouvrir.</string>
+    <string name="settings_lock_no_screen_lock">Configurez d\'abord un verrouillage d\'écran sur votre téléphone, puis activez ceci.</string>
+    <string name="settings_lock_gone">Votre téléphone n\'a plus de verrouillage d\'écran, donc Frigo s\'ouvre sans demander.</string>
+
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_note">Suit le téléphone sauf si vous en choisissez un.</string>
     <string name="settings_theme_system">Système</string>
@@ -90,6 +96,14 @@
     <string name="language_follow_phone">Suivre le téléphone</string>
     <string name="language_note">Frigo s\'ouvre dans la langue de votre téléphone sauf si vous en choisissez une.</string>
     <string name="language_chosen">Choisi</string>
+
+    <!-- La couverture sur l'app, et l'invite du téléphone par-dessus. -->
+    <string name="lock_locked">Verrouillé</string>
+    <string name="lock_unlock">Déverrouiller</string>
+    <string name="lock_prompt_title">Déverrouiller Frigo</string>
+    <string name="lock_prompt_subtitle">Touchez le capteur</string>
+    <string name="lock_use_pin">Utiliser mon code PIN</string>
+    <string name="lock_no_screen_lock">Votre téléphone n\'a pas de verrouillage d\'écran, donc ceci s\'ouvre sans demander.</string>
 
     <!-- La puce de jour sur Revue et Explorer. -->
     <string name="period_all_time">Tout le temps</string>
@@ -356,6 +370,12 @@
     <string name="onboard_battery_on">Activée pour Frigo</string>
     <string name="onboard_battery_android_screen">Cet écran appartient à Android. Revenez et Frigo vérifie lui-même.</string>
     <string name="onboard_battery_open_settings">Ouvrir les réglages de batterie</string>
+
+    <!-- Le verrouillage, proposé une fois. -->
+    <string name="onboard_lock_title">Verrouiller Frigo</string>
+    <string name="onboard_lock_lead">Demandez votre empreinte, ou le code PIN de votre téléphone, à chaque démarrage de Frigo. Rien ne s\'ouvre avant.</string>
+    <string name="onboard_lock_row">Empreinte, ou le code PIN de votre téléphone.</string>
+    <string name="onboard_lock_not_now">Pas maintenant</string>
 
     <!-- Les deux mots qui font avancer. -->
     <string name="onboard_next">Suivant</string>

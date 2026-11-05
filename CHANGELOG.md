@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.18
+
+- Frigo can ask for your fingerprint, or your phone's PIN, before it opens. It sits under Privacy in Settings, and the walkthrough offers it too.
+- It asks each time the app starts, not each time you come back to it.
+- While it's on, the app is a blank card in the recent apps list, and a screenshot comes out blank.
+
 ## 0.10.17
 
 - Frigo speaks English, Spanish, French, German and Portuguese. Language sits under Appearance in Settings, and Follow the phone is what it does until you pick one.

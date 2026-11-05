@@ -2330,3 +2330,75 @@ once; the glossary of Frigate's terms is the thing to keep consistent.
 under Robolectric with the real strings. That also means a missing key fails a
 test rather than showing a blank line on a phone. It is a test-only dependency:
 none of it is in the APK.
+
+## The lock asks on a fresh start, not on every return
+
+A camera app is something you flick to for a look at the drive. Asking for a
+fingerprint every time you come back is the thing people switch off after a week,
+and then it is off for good. A fresh start is the moment someone else has the
+phone in their hand.
+
+So the answer lives for as long as the process does, on the container rather than
+in the activity. Coming back to the app is the same process, so it stays open; a
+cold start is a new one, so it asks again. A turn of the phone never reaches it,
+because the manifest hands that to the activity rather than rebuilding it.
+
+Rejected: locking on every resume, and locking after a few minutes away. Both ask
+at a moment you did not choose.
+
+## The switch only turns on through the phone's own prompt
+
+Turning it on runs the prompt first, and only a success writes the switch. A lock
+you can switch on without being able to get back through is a brick with a
+switch on it.
+
+A phone with no screen lock at all cannot turn it on, and the row says why. If the
+screen lock is removed later, the cover opens on a tap and says so. Trapping
+someone out of their own app is worse than being unlocked for a while.
+
+Turning it off never asks. You are already inside, which means you already got
+through it.
+
+## Android 11 draws one sheet, and older versions need two paths
+
+The platform will not put a weak sensor and the PIN in one sheet before Android
+11, and asking for `BIOMETRIC_STRONG or DEVICE_CREDENTIAL` on Android 9 would
+refuse a phone whose face unlock is weak. So there are two shapes:
+
+- Android 11 and later: one sheet, `BIOMETRIC_WEAK or DEVICE_CREDENTIAL`. It
+  brings its own cancel and refuses a negative button, which is why there is none.
+- Android 8 to 10: `BIOMETRIC_WEAK` alone, with "Use my PIN" as the negative
+  button, opening `KeyguardManager`'s own credential screen.
+
+Both end in the same place, so the cover does not care which one ran.
+
+## The cover is drawn over the app, not instead of it
+
+The app is built under the cover rather than after it, so unlocking lands on
+cameras that have already loaded rather than on a spinner. The cost is a second
+or two of camera traffic while the cover is up, which is the time it takes to
+unlock.
+
+The cover itself is opaque. The first version was the app's background at 88%,
+which let the screen underneath read through: an error line and a Try again
+button sat across the padlock, and a camera picture would have been a smudge of
+the thing the lock exists to hide. What is left is the tab bar, drawn rather than
+shown, at 30%, which says where you are about to land without saying anything
+about what is behind.
+
+Rejected: pausing the screens' loops while covered. It would mean threading a
+flag through all five screens to save a second of traffic.
+
+## FLAG_SECURE for as long as the switch is on
+
+A lock that leaves the last camera picture in the recent apps card is half a
+lock. With the switch on, the app is a blank card there and a screenshot comes
+out blank.
+
+It reaches further than that: no screen recording, no casting, and no screenshot
+of anything in the app, camera views included. That is the same rule seen from
+another angle, and it is worth knowing before it is reported as a bug.
+
+Notifications keep their pictures. An alert's picture is the whole reason it is
+useful, and it is already on the lock screen. Hiding it would mean the
+notification says something happened without saying what.

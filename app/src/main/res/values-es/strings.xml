@@ -55,6 +55,12 @@
     <string name="settings_system">Sistema</string>
     <string name="settings_system_supporting">Memoria, discos, cámaras y los procesos que hay detrás</string>
 
+    <string name="settings_privacy">Privacidad</string>
+    <string name="settings_lock">Bloquear Frigo</string>
+    <string name="settings_lock_supporting">Frigo pide tu huella antes de abrirse.</string>
+    <string name="settings_lock_no_screen_lock">Configura un bloqueo de pantalla en el teléfono y luego activa esto.</string>
+    <string name="settings_lock_gone">Tu teléfono ya no tiene bloqueo de pantalla, así que Frigo se abre sin preguntar.</string>
+
     <string name="settings_appearance">Apariencia</string>
     <string name="settings_appearance_note">Sigue al teléfono, salvo que elijas uno.</string>
     <string name="settings_theme_system">Sistema</string>
@@ -90,6 +96,14 @@
     <string name="language_follow_phone">Seguir al teléfono</string>
     <string name="language_note">Frigo se abre en el idioma de tu teléfono, salvo que elijas uno.</string>
     <string name="language_chosen">Elegido</string>
+
+    <!-- La tapa sobre la app, y el aviso del teléfono sobre ella. -->
+    <string name="lock_locked">Bloqueado</string>
+    <string name="lock_unlock">Desbloquear</string>
+    <string name="lock_prompt_title">Desbloquear Frigo</string>
+    <string name="lock_prompt_subtitle">Toca el sensor</string>
+    <string name="lock_use_pin">Usar mi PIN</string>
+    <string name="lock_no_screen_lock">Tu teléfono no tiene bloqueo de pantalla, así que esto se abre sin preguntar.</string>
 
     <!-- El chip de día en Revisión y Explorar. -->
     <string name="period_all_time">Siempre</string>
@@ -356,6 +370,12 @@
     <string name="onboard_battery_on">Activada para Frigo</string>
     <string name="onboard_battery_android_screen">Esa pantalla es de Android. Vuelve y Frigo lo comprueba por su cuenta.</string>
     <string name="onboard_battery_open_settings">Abrir ajustes de batería</string>
+
+    <!-- El bloqueo, ofrecido una vez. -->
+    <string name="onboard_lock_title">Bloquear Frigo</string>
+    <string name="onboard_lock_lead">Pide tu huella, o el PIN del teléfono, cada vez que Frigo se abra. Nada se abre hasta que lo hagas.</string>
+    <string name="onboard_lock_row">Huella, o el PIN de tu teléfono.</string>
+    <string name="onboard_lock_not_now">Ahora no</string>
 
     <!-- Las dos palabras que te llevan adelante. -->
     <string name="onboard_next">Siguiente</string>

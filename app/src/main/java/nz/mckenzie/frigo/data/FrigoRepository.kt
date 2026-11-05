@@ -126,6 +126,17 @@ class FrigoRepository(
     val onboarded: StateFlow<Boolean?> = _onboarded.asStateFlow()
 
     /**
+     * Whether this phone asks for a fingerprint before the app opens, or null
+     * until the phone has been read.
+     *
+     * It is read before anything else on launch, so the cover is decided before
+     * a screen has been drawn: a phone with the switch on never shows a frame of
+     * its cameras on the way in.
+     */
+    private val _lock = MutableStateFlow<Boolean?>(null)
+    val lock: StateFlow<Boolean?> = _lock.asStateFlow()
+
+    /**
      * Whether the alert choices have been read off the phone yet. The service
      * starts by itself after a restart, before any screen has run, and it needs
      * the saved choices rather than a blank slate.
@@ -257,6 +268,9 @@ class FrigoRepository(
     /** Called once on launch. Keeps you signed in if the token still works. */
     suspend fun restore() {
         val saved = activeServer()
+        // Read first, and before the early return below, so a phone with the lock
+        // on is covered on its way to the sign-in page as well.
+        _lock.value = prefs.readLock()
         loadAlerts()
         loadAlertRules()
         loadQuietTimes()
@@ -389,6 +403,16 @@ class FrigoRepository(
     suspend fun setOnboarded(on: Boolean) {
         _onboarded.value = on
         prefs.writeOnboarded(on)
+    }
+
+    /**
+     * Whether this phone asks for a fingerprint before the app opens. The switch
+     * only reaches here once the phone has said it can ask, so nothing is written
+     * that the app could not get back through.
+     */
+    suspend fun setLock(on: Boolean) {
+        _lock.value = on
+        prefs.writeLock(on)
     }
 
     /**

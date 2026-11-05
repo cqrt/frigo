@@ -55,6 +55,12 @@
     <string name="settings_system">Sistema</string>
     <string name="settings_system_supporting">Memória, discos, câmeras e os processos por trás deles</string>
 
+    <string name="settings_privacy">Privacidade</string>
+    <string name="settings_lock">Bloquear o Frigo</string>
+    <string name="settings_lock_supporting">O Frigo pede sua digital antes de abrir.</string>
+    <string name="settings_lock_no_screen_lock">Configure um bloqueio de tela no celular primeiro e depois ligue isto.</string>
+    <string name="settings_lock_gone">Seu celular não tem mais bloqueio de tela, então o Frigo abre sem perguntar.</string>
+
     <string name="settings_appearance">Aparência</string>
     <string name="settings_appearance_note">Segue o celular, a menos que você escolha um.</string>
     <string name="settings_theme_system">Sistema</string>
@@ -90,6 +96,14 @@
     <string name="language_follow_phone">Seguir o celular</string>
     <string name="language_note">O Frigo abre no idioma do celular, a menos que você escolha um.</string>
     <string name="language_chosen">Escolhido</string>
+
+    <!-- A tampa sobre o app, e o aviso do celular por cima dela. -->
+    <string name="lock_locked">Bloqueado</string>
+    <string name="lock_unlock">Desbloquear</string>
+    <string name="lock_prompt_title">Desbloquear o Frigo</string>
+    <string name="lock_prompt_subtitle">Toque no sensor</string>
+    <string name="lock_use_pin">Usar meu PIN</string>
+    <string name="lock_no_screen_lock">Seu celular não tem bloqueio de tela, então isto abre sem perguntar.</string>
 
     <!-- The day chip on Review and Explore. -->
     <string name="period_all_time">Todo o período</string>
@@ -356,6 +370,12 @@
     <string name="onboard_battery_on">Ligada para o Frigo</string>
     <string name="onboard_battery_android_screen">Essa tela é do Android. Volte e o Frigo verifica sozinho.</string>
     <string name="onboard_battery_open_settings">Abrir ajustes de bateria</string>
+
+    <!-- O bloqueio, oferecido uma vez. -->
+    <string name="onboard_lock_title">Bloquear o Frigo</string>
+    <string name="onboard_lock_lead">Peça sua digital, ou o PIN do celular, sempre que o Frigo abrir. Nada abre até você fazer isso.</string>
+    <string name="onboard_lock_row">Digital, ou o PIN do seu celular.</string>
+    <string name="onboard_lock_not_now">Agora não</string>
 
     <!-- The two words that move you on. -->
     <string name="onboard_next">Próximo</string>

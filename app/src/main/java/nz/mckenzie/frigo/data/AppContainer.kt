@@ -45,4 +45,11 @@ class AppContainer(context: Context) {
      * Settings tab draws a dot from it, and the Updates card offers the download.
      */
     val updateWatch = UpdateWatch(updater, prefs, BuildConfig.VERSION_NAME)
+
+    /**
+     * Whether this launch is still behind the cover. It lives here rather than in
+     * the activity because the activity comes and goes with the screen, and being
+     * locked is about the launch.
+     */
+    val lock = AppLock()
 }

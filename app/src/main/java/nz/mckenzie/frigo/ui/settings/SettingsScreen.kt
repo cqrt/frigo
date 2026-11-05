@@ -68,6 +68,8 @@ import nz.mckenzie.frigo.data.canInstallApps
 import nz.mckenzie.frigo.data.cameraState
 import nz.mckenzie.frigo.data.installUpdate
 import nz.mckenzie.frigo.ui.FrigoIcons
+import nz.mckenzie.frigo.ui.lock.rememberAskForLock
+import nz.mckenzie.frigo.ui.lock.rememberLockAvailable
 import nz.mckenzie.frigo.ui.openBatterySettings
 import nz.mckenzie.frigo.ui.relativeTime
 import nz.mckenzie.frigo.ui.components.CardDivider
@@ -108,6 +110,17 @@ fun SettingsScreen(
     val theme by repository.theme.collectAsStateWithLifecycle(
         initialValue = ThemeMode.System.ordinal,
     )
+    val lockOn by repository.lock.collectAsStateWithLifecycle()
+
+    // Whether this phone can ask for anything, and the prompt itself. The switch
+    // only moves once the phone has said who is holding it, so nobody switches on
+    // a lock they have no way through.
+    var lockProblem by remember { mutableStateOf(false) }
+    val canLock = rememberLockAvailable()
+    val askForLock = rememberAskForLock {
+        lockProblem = false
+        scope.launch { repository.setLock(true) }
+    }
 
     var cameras by remember { mutableStateOf<List<Camera>>(emptyList()) }
     var switches by remember { mutableStateOf<CameraSwitchPage?>(null) }
@@ -430,6 +443,47 @@ fun SettingsScreen(
                         supporting = stringResource(R.string.settings_system_supporting),
                         onClick = onOpenSystem,
                         trailing = { OpenMark() },
+                    )
+                }
+            }
+
+            // The phone's own lock, above the colours because both are about this
+            // phone rather than about the server it is looking at.
+            Group(stringResource(R.string.settings_privacy)) {
+                Item(
+                    icon = FrigoIcons.Lock,
+                    title = stringResource(R.string.settings_lock),
+                    supporting = stringResource(R.string.settings_lock_supporting),
+                    trailing = {
+                        Switch(
+                            checked = lockOn == true,
+                            onCheckedChange = { on ->
+                                lockProblem = false
+                                when {
+                                    // Off never asks: you are already inside, which
+                                    // means you already got through it.
+                                    !on -> scope.launch { repository.setLock(false) }
+                                    !canLock -> lockProblem = true
+                                    else -> askForLock()
+                                }
+                            },
+                        )
+                    },
+                )
+
+                if (lockProblem) {
+                    Note(
+                        text = stringResource(R.string.settings_lock_no_screen_lock),
+                        colour = MaterialTheme.colorScheme.error,
+                    )
+                }
+
+                // Turned on, and the screen lock taken off since. The cover opens
+                // on a tap, and this is the line that says why.
+                if (lockOn == true && !canLock) {
+                    Note(
+                        text = stringResource(R.string.settings_lock_gone),
+                        colour = MaterialTheme.colorScheme.error,
                     )
                 }
             }

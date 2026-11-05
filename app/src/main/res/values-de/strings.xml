@@ -56,6 +56,12 @@
     <string name="settings_system">System</string>
     <string name="settings_system_supporting">Speicher, Platten, Kameras und die Prozesse dahinter</string>
 
+    <string name="settings_privacy">Privatsphäre</string>
+    <string name="settings_lock">Frigo sperren</string>
+    <string name="settings_lock_supporting">Frigo fragt nach deinem Fingerabdruck, bevor es sich öffnet.</string>
+    <string name="settings_lock_no_screen_lock">Richte zuerst eine Displaysperre auf deinem Handy ein und schalte das dann ein.</string>
+    <string name="settings_lock_gone">Dein Handy hat keine Displaysperre mehr, deshalb öffnet sich Frigo ohne Nachfrage.</string>
+
     <string name="settings_appearance">Darstellung</string>
     <string name="settings_appearance_note">Folgt dem Handy, solange du nichts wählst.</string>
     <string name="settings_theme_system">System</string>
@@ -91,6 +97,14 @@
     <string name="language_follow_phone">Wie das Handy</string>
     <string name="language_note">Frigo startet in der Sprache deines Handys, solange du keine wählst.</string>
     <string name="language_chosen">Gewählt</string>
+
+    <!-- Die Abdeckung über der App, und die Abfrage des Handys darüber. -->
+    <string name="lock_locked">Gesperrt</string>
+    <string name="lock_unlock">Entsperren</string>
+    <string name="lock_prompt_title">Frigo entsperren</string>
+    <string name="lock_prompt_subtitle">Sensor berühren</string>
+    <string name="lock_use_pin">PIN verwenden</string>
+    <string name="lock_no_screen_lock">Dein Handy hat keine Displaysperre, deshalb öffnet sich das ohne Nachfrage.</string>
 
     <!-- Der Tages-Chip in Prüfen und Entdecken. -->
     <string name="period_all_time">Gesamt</string>
@@ -357,6 +371,12 @@
     <string name="onboard_battery_on">An für Frigo</string>
     <string name="onboard_battery_android_screen">Der Bildschirm gehört zu Android. Komm zurück, dann prüft Frigo selbst.</string>
     <string name="onboard_battery_open_settings">Akku-Einstellungen öffnen</string>
+
+    <!-- Die Sperre, einmal angeboten. -->
+    <string name="onboard_lock_title">Frigo sperren</string>
+    <string name="onboard_lock_lead">Fragt bei jedem Start von Frigo nach deinem Fingerabdruck oder der PIN deines Handys. Bis dahin öffnet sich nichts.</string>
+    <string name="onboard_lock_row">Fingerabdruck oder die PIN deines Handys.</string>
+    <string name="onboard_lock_not_now">Jetzt nicht</string>
 
     <!-- Die zwei Wörter, die dich weiterbringen. -->
     <string name="onboard_next">Weiter</string>

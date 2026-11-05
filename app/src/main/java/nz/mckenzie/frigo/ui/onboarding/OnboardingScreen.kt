@@ -39,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -67,15 +68,18 @@ import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.FrigoTabs
 import nz.mckenzie.frigo.ui.components.CardDivider
 import nz.mckenzie.frigo.ui.components.Item
+import nz.mckenzie.frigo.ui.components.Note
 import nz.mckenzie.frigo.ui.components.attention
 import nz.mckenzie.frigo.ui.batteryIsFree
+import nz.mckenzie.frigo.ui.lock.rememberAskForLock
+import nz.mckenzie.frigo.ui.lock.rememberLockAvailable
 import nz.mckenzie.frigo.ui.notificationsAllowed
 import nz.mckenzie.frigo.ui.openBatterySettings
 import nz.mckenzie.frigo.ui.openNotificationSettings
 import nz.mckenzie.frigo.ui.login.SignInForm
 
 /** Where a new phone is in the walkthrough. */
-private enum class Step { Welcome, Server, Alerts, Battery, Tour, Ready }
+private enum class Step { Welcome, Server, Alerts, Battery, Lock, Tour, Ready }
 
 /** Whether Android lets Frigo put something in the shade. */
 private enum class Shade { Unknown, Allowed, Refused }
@@ -113,6 +117,16 @@ fun OnboardingScreen(container: AppContainer) {
         if (server != null) {
             describes = runCatching { repository.aiSetup() }.getOrNull()?.ready == true
         }
+    }
+
+    // The lock, offered on the same terms as the switch in Settings: the phone
+    // has to say who is holding it before it can be turned on.
+    val lockOn by repository.lock.collectAsStateWithLifecycle()
+    var lockProblem by remember { mutableStateOf(false) }
+    val canLock = rememberLockAvailable()
+    val askForLock = rememberAskForLock {
+        lockProblem = false
+        scope.launch { repository.setLock(true) }
     }
 
     LaunchedEffect(Unit) {
@@ -160,7 +174,8 @@ fun OnboardingScreen(container: AppContainer) {
             Step.Server -> Step.Welcome
             Step.Alerts -> Step.Server
             Step.Battery -> Step.Alerts
-            Step.Tour -> Step.Battery
+            Step.Lock -> Step.Battery
+            Step.Tour -> Step.Lock
             Step.Ready -> Step.Tour
             Step.Welcome -> Step.Welcome
         }
@@ -202,7 +217,23 @@ fun OnboardingScreen(container: AppContainer) {
                 Step.Battery -> BatteryStep(
                     free = batteryFree,
                     onOpenSettings = { context.openBatterySettings() },
+                    onNext = { step = Step.Lock },
+                )
+
+                Step.Lock -> LockStep(
+                    lockOn = lockOn == true,
+                    canLock = canLock,
+                    problem = lockProblem,
+                    onChange = { on ->
+                        lockProblem = false
+                        when {
+                            !on -> scope.launch { repository.setLock(false) }
+                            !canLock -> lockProblem = true
+                            else -> askForLock()
+                        }
+                    },
                     onNext = { step = Step.Tour },
+                    onNotNow = { step = Step.Tour },
                 )
 
                 Step.Tour -> TourStep(
@@ -557,6 +588,74 @@ private fun BatteryStep(
             TextButton(onClick = onNext, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.onboard_skip))
             }
+        }
+    }
+}
+
+/* ------------------------------------------------------------------- lock */
+
+/**
+ * The lock, offered once. It asks for the same fingerprint the switch in Settings
+ * does, so turning it on here and turning it on there are the same act.
+ */
+@Composable
+private fun LockStep(
+    lockOn: Boolean,
+    canLock: Boolean,
+    problem: Boolean,
+    onChange: (Boolean) -> Unit,
+    onNext: () -> Unit,
+    onNotNow: () -> Unit,
+) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(horizontal = 24.dp, vertical = 20.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.onboard_lock_title),
+            style = MaterialTheme.typography.headlineMedium,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.onboard_lock_lead),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(16.dp))
+
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column {
+                Item(
+                    icon = FrigoIcons.Lock,
+                    title = stringResource(R.string.onboard_lock_title),
+                    supporting = stringResource(R.string.onboard_lock_row),
+                    trailing = {
+                        Switch(checked = lockOn, onCheckedChange = onChange)
+                    },
+                )
+                if (problem) {
+                    CardDivider()
+                    Note(
+                        text = stringResource(R.string.settings_lock_no_screen_lock),
+                        colour = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        Button(onClick = onNext, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Text(stringResource(R.string.onboard_next))
+        }
+        TextButton(onClick = onNotNow, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.onboard_lock_not_now))
         }
     }
 }

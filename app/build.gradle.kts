@@ -118,6 +118,10 @@ dependencies {
     // The app's own language, on phones old and new.
     implementation(libs.androidx.appcompat)
 
+    // The lock's prompt, which asks for a fingerprint and a PIN on every version
+    // the app runs on.
+    implementation(libs.androidx.biometric)
+
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
 

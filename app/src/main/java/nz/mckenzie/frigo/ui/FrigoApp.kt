@@ -52,6 +52,7 @@ import nz.mckenzie.frigo.ui.clips.ClipsScreen
 import nz.mckenzie.frigo.ui.explore.ExploreScreen
 import nz.mckenzie.frigo.ui.login.AddServerScreen
 import nz.mckenzie.frigo.ui.login.LoginScreen
+import nz.mckenzie.frigo.ui.lock.LockScreen
 import nz.mckenzie.frigo.ui.onboarding.OnboardingScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewSettingsScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewsScreen
@@ -65,6 +66,28 @@ import nz.mckenzie.frigo.ui.settings.SystemScreen
 
 @Composable
 fun FrigoApp(container: AppContainer, openCamera: String? = null, onCameraOpened: () -> Unit = {}) {
+    val lockOn by container.repository.lock.collectAsStateWithLifecycle()
+    val locked by container.lock.locked.collectAsStateWithLifecycle()
+
+    Box(Modifier.fillMaxSize()) {
+        // The app is built under the cover rather than after it, so unlocking
+        // lands on cameras that are already there. It also means the sign-in
+        // check and the release check are done by the time the cover goes.
+        AppBody(container, openCamera, onCameraOpened)
+
+        // Only a launch that started covered, and only while the switch says so.
+        if (lockOn == true && locked) {
+            LockScreen(onUnlock = container.lock::unlock)
+        }
+    }
+}
+
+@Composable
+private fun AppBody(
+    container: AppContainer,
+    openCamera: String?,
+    onCameraOpened: () -> Unit,
+) {
     val gate by container.repository.gate.collectAsStateWithLifecycle()
     val alerts by container.repository.alerts.collectAsStateWithLifecycle()
     val onboarded by container.repository.onboarded.collectAsStateWithLifecycle()

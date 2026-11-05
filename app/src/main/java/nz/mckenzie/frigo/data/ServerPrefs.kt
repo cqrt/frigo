@@ -216,6 +216,20 @@ class ServerPrefs(private val context: Context) {
     }
 
     /**
+     * Whether this phone asks for a fingerprint before Frigo opens.
+     *
+     * It belongs to the phone rather than to a server, like the colours: it is
+     * about who is holding this phone, not about which box it is looking at.
+     * Signing out leaves it alone, so a phone left on the sign-in page is still
+     * one somebody has to unlock.
+     */
+    suspend fun readLock(): Boolean = context.dataStore.data.first()[Keys.lock] ?: false
+
+    suspend fun writeLock(on: Boolean) {
+        context.dataStore.edit { prefs -> prefs[Keys.lock] = on }
+    }
+
+    /**
      * Whether the walkthrough is done, or null if this phone has never had it
      * decided. Signing out leaves it alone, so the way back in is the plain
      * sign-in page rather than the tour again.
@@ -303,6 +317,7 @@ class ServerPrefs(private val context: Context) {
         val showReviewed = booleanPreferencesKey("show_reviewed")
         val liveTiles = booleanPreferencesKey("live_tiles")
         val theme = intPreferencesKey("theme")
+        val lock = booleanPreferencesKey("lock")
         val onboarded = booleanPreferencesKey("onboarded")
         val streamChoices = stringSetPreferencesKey("stream_choices")
 

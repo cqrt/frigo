@@ -55,6 +55,12 @@
     <string name="settings_system">System</string>
     <string name="settings_system_supporting">Memory, disks, cameras, and the processes behind them</string>
 
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_lock">Lock Frigo</string>
+    <string name="settings_lock_supporting">Frigo asks for your fingerprint before it opens.</string>
+    <string name="settings_lock_no_screen_lock">Set up a screen lock on your phone first, then turn this on.</string>
+    <string name="settings_lock_gone">Your phone no longer has a screen lock, so Frigo opens without asking.</string>
+
     <string name="settings_appearance">Appearance</string>
     <string name="settings_appearance_note">Follows the phone unless you pick one.</string>
     <string name="settings_theme_system">System</string>
@@ -90,6 +96,14 @@
     <string name="language_follow_phone">Follow the phone</string>
     <string name="language_note">Frigo opens in your phone\'s language unless you pick one.</string>
     <string name="language_chosen">Chosen</string>
+
+    <!-- The cover over the app, and the phone's prompt over that. -->
+    <string name="lock_locked">Locked</string>
+    <string name="lock_unlock">Unlock</string>
+    <string name="lock_prompt_title">Unlock Frigo</string>
+    <string name="lock_prompt_subtitle">Touch the sensor</string>
+    <string name="lock_use_pin">Use my PIN</string>
+    <string name="lock_no_screen_lock">Your phone has no screen lock, so this opens without asking.</string>
 
     <!-- The day chip on Review and Explore. -->
     <string name="period_all_time">All time</string>
@@ -356,6 +370,12 @@
     <string name="onboard_battery_on">On for Frigo</string>
     <string name="onboard_battery_android_screen">That screen belongs to Android. Come back and Frigo checks for itself.</string>
     <string name="onboard_battery_open_settings">Open battery settings</string>
+
+    <!-- The lock, offered once. -->
+    <string name="onboard_lock_title">Lock Frigo</string>
+    <string name="onboard_lock_lead">Ask for your fingerprint, or your phone\'s PIN, each time Frigo starts. Nothing opens until you do.</string>
+    <string name="onboard_lock_row">Fingerprint, or your phone\'s PIN.</string>
+    <string name="onboard_lock_not_now">Not now</string>
 
     <!-- The two words that move you on. -->
     <string name="onboard_next">Next</string>

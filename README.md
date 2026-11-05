@@ -97,7 +97,11 @@ notifications: the hours this phone keeps quiet, and the cameras it keeps quiet.
 Under Alerts and
 detections you reach the server's own pages for what makes an alert and what
 makes a detection. There's a link to the phone's battery settings, because that's
-where you stop Android shutting Frigo down. Under Appearance you choose the
+where you stop Android shutting Frigo down. Under Privacy, **Lock Frigo** asks
+for your fingerprint, or your phone's PIN, before the app opens. It asks each
+time the app starts, not every time you come back to it. While it's on, the app is
+a blank card in the recent apps list, and a screenshot comes out blank. Under
+Appearance you choose the
 colours: System follows the phone, Day stays light, and Night stays dark. The
 language sits there too: English, Spanish, French, German and Portuguese, or the
 phone's own. Under
@@ -112,8 +116,9 @@ Frigo opens on a welcome, then takes you through what it needs:
 1. **Your server** is the address you use in a browser and your Frigate sign-in.
 2. **Alerts** turns notifications on. Which cameras and objects buzz is set on your server, so there is nothing to tick here. Android asks about notifications once, and the page says so if you turned them down.
 3. **Battery** says whether Android is free to shut Frigo down, and opens the phone's settings if it isn't. Come back and the page checks again.
-4. **The tabs** is a page for each of the five, with a drawn picture of what it holds and the bar underneath lit on the one it's describing. Skip leaves at any point.
-5. **You're set** is the end of it, with the address you're signed in to.
+4. **Lock** offers to ask for your fingerprint each time Frigo starts. Not now leaves the app opening as it does now.
+5. **The tabs** is a page for each of the five, with a drawn picture of what it holds and the bar underneath lit on the one it's describing. Skip leaves at any point.
+6. **You're set** is the end of it, with the address you're signed in to.
 
 The walkthrough doesn't come back on its own. Signing out leaves it alone, and the way back in is the plain sign-in page. If you want to see it again, **Show the welcome again** under About in Settings puts it back on the list.
 

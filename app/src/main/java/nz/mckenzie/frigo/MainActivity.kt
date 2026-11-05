@@ -2,8 +2,10 @@ package nz.mckenzie.frigo
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,6 +44,20 @@ class MainActivity : AppCompatActivity() {
             val theme by container.repository.theme.collectAsStateWithLifecycle(
                 initialValue = ThemeMode.System.ordinal,
             )
+            val lockOn by container.repository.lock.collectAsStateWithLifecycle()
+
+            // While the lock is on, the app is a blank card in the recent apps
+            // list and refuses a screenshot, whether or not the cover is up. A
+            // lock that leaves the last camera picture in that card is half a
+            // lock.
+            LaunchedEffect(lockOn) {
+                if (lockOn == true) {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                } else {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                }
+            }
+
             FrigoTheme(ThemeMode.entries.getOrElse(theme) { ThemeMode.System }) {
                 FrigoApp(
                     container = container,
