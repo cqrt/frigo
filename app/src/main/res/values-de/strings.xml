@@ -1,0 +1,675 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Jedes Wort, das Frigo sagt, auf Deutsch. Die anderen Sprachen liegen neben
+  dieser Datei in values, values-es, values-fr und values-pt, mit denselben
+  Schlüsseln in derselben Reihenfolge.
+
+  Die Namen sind der Bildschirm und dann die Sache: settings_live_view,
+  reviews_title. Alles mit einer Zahl oder einem Namen darin ist eine
+  Format-Zeichenkette, und die Zahl, die über den Wortlaut entscheidet, ist ein
+  Plural.
+-->
+<resources>
+    <string name="app_name">Frigo</string>
+
+    <!-- Was ein Screenreader vorliest, und die zwei Wörter, die auf jeder Seite stehen. -->
+    <string name="action_back">Zurück</string>
+    <string name="action_enable">Aktivieren</string>
+    <string name="update_available">Update verfügbar</string>
+
+    <!-- Die fünf Tabs. -->
+    <string name="tab_cameras">Kameras</string>
+    <string name="tab_reviews">Prüfen</string>
+    <string name="tab_explore">Entdecken</string>
+    <string name="tab_clips">Clips</string>
+    <string name="tab_settings">Einstellungen</string>
+
+    <!-- Einstellungen. -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_servers">Server</string>
+    <string name="settings_add_server">Server hinzufügen</string>
+    <string name="settings_sign_out">Abmelden</string>
+    <string name="settings_sign_out_this">Von diesem Server abmelden</string>
+    <string name="settings_signed_in">Angemeldet</string>
+
+    <string name="settings_notifications">Benachrichtigungen</string>
+    <string name="settings_notifications_supporting">Du wirst gewarnt, wenn Frigate etwas sieht. Tippe auf die Benachrichtigung für das Livebild.</string>
+    <string name="settings_notifications_blocked">Benachrichtigungen sind für Frigo in Android aus.</string>
+    <string name="settings_ai">KI-Beschreibungen</string>
+    <string name="settings_ai_supporting">Mit KI beschreibt Frigo, was es in deinen Alarmen sieht</string>
+    <string name="settings_alerts_and_detections">Alarme und Erkennungen</string>
+    <string name="settings_alerts_supporting">Welche Kameras und Objekte piepen. Das sind die Einstellungen deines Servers.</string>
+    <string name="settings_all_cameras_off">Auf der Benachrichtigungsseite deines Servers ist jede Kamera aus, also piept nichts.</string>
+    <string name="settings_quiet_times">Ruhezeiten</string>
+    <string name="settings_battery_note">Frigo läuft im Hintergrund, damit die Alarme weiterkommen. Damit Android es nicht abschaltet, um Akku zu sparen, schalte die Akku-Optimierung für Frigo aus.</string>
+    <string name="settings_battery_settings">Akku-Einstellungen</string>
+
+    <string name="settings_live_view">Livebild</string>
+    <string name="settings_live_supporting">Spielt Video im Tab Kameras. Das kostet mehr Akku und Daten.</string>
+
+    <string name="settings_cameras">Kameras</string>
+    <string name="settings_cameras_stale">Dein Server antwortet nicht. Das sind die Kameras, die dein Handy zuletzt gelesen hat, %1$s.</string>
+    <string name="settings_cameras_offline">Dein Server antwortet nicht, also lassen sich die Kameras nicht lesen.</string>
+    <string name="settings_no_cameras">Keine Kamera für dieses Konto sichtbar.</string>
+
+    <string name="settings_server">Server</string>
+    <string name="settings_system">System</string>
+    <string name="settings_system_supporting">Speicher, Platten, Kameras und die Prozesse dahinter</string>
+
+    <string name="settings_appearance">Darstellung</string>
+    <string name="settings_appearance_note">Folgt dem Handy, solange du nichts wählst.</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_day">Tag</string>
+    <string name="settings_theme_night">Nacht</string>
+    <string name="settings_language">Sprache</string>
+
+    <string name="settings_updates">Updates</string>
+    <string name="settings_version_here">Frigo %1$s</string>
+    <string name="settings_downloading">Wird geladen… %1$d%%</string>
+    <string name="settings_ready_to_install">Frigo %1$s ist bereit zur Installation.</string>
+    <string name="settings_install">Installieren</string>
+    <string name="settings_is_out">Frigo %1$s ist da.</string>
+    <string name="settings_download">Herunterladen</string>
+    <string name="settings_whats_new">Was ist neu</string>
+    <string name="settings_looking">Suche nach einer neueren Version…</string>
+    <string name="settings_newest">Das ist die neueste Version.</string>
+    <string name="settings_install_permission">Android braucht deine Erlaubnis, um Frigo zu installieren. Schalte „Aus dieser Quelle zulassen“ ein und tippe dann wieder auf Installieren.</string>
+    <string name="settings_check_again">Nochmal prüfen</string>
+    <string name="settings_couldnt_reach_github">GitHub war nicht erreichbar. Prüfe deine Verbindung und versuch es nochmal.</string>
+    <string name="settings_couldnt_fetch">Konnte es nicht holen. Prüfe deine Verbindung und versuch es nochmal.</string>
+    <string name="settings_no_installer">Android hat den Installer nicht geöffnet.</string>
+
+    <string name="settings_about">Über</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_author">Autor</string>
+    <string name="settings_copyright">Copyright</string>
+    <string name="settings_show_welcome">Willkommen nochmal zeigen</string>
+
+    <!-- Die Sprache wählen. -->
+    <string name="language_title">Sprache</string>
+    <string name="language_heading">Sprache</string>
+    <string name="language_follow_phone">Wie das Handy</string>
+    <string name="language_note">Frigo startet in der Sprache deines Handys, solange du keine wählst.</string>
+    <string name="language_chosen">Gewählt</string>
+
+    <!-- Der Tages-Chip in Prüfen und Entdecken. -->
+    <string name="period_all_time">Gesamt</string>
+    <string name="period_today">Heute</string>
+    <string name="period_yesterday">Gestern</string>
+
+    <!-- Wie lange etwas her ist, in einer Liste von Ereignissen. -->
+    <string name="time_just_now">Gerade eben</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">vor %1$d Min.</item>
+        <item quantity="other">vor %1$d Min.</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">vor %1$d Std.</item>
+        <item quantity="other">vor %1$d Std.</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">vor %1$d Tag</item>
+        <item quantity="other">vor %1$d Tagen</item>
+    </plurals>
+
+    <!-- Was eine fehlgeschlagene Anfrage sagt, wenn der Fehler beim Handy oder im Netz liegt. -->
+    <string name="err_certificate_name">Die Adresse passt nicht zum Zertifikat des Servers. Prüfe sie, samt Port.</string>
+    <string name="err_certificate_untrusted">Dieses Handy traut dem Zertifikat des Servers nicht. Frigate macht sein eigenes, wenn es kein echtes bekommen hat. Melde dich über die Adresse an, die dein Proxy liefert.</string>
+    <string name="err_no_address">Die Adresse finde ich nicht. Prüfe sie und versuch es nochmal.</string>
+    <string name="err_timeout">Der Server hat zu lange gebraucht.</string>
+    <string name="err_unreachable">Der Server ist nicht erreichbar. Prüfe deine Verbindung.</string>
+    <string name="err_something_wrong">Da ist etwas schiefgelaufen.</string>
+    <string name="err_not_admin">Nur ein Admin kann das ändern.</string>
+
+    <!-- ===== ai ===== -->
+    <!-- Die Seite, und was sie sagt, wenn der Server gar nicht zu lesen ist. -->
+    <string name="ai_title">KI-Beschreibungen</string>
+    <string name="ai_cant_read_settings">Die KI-Einstellungen deines Servers lassen sich nicht lesen.</string>
+    <string name="ai_try_again">Nochmal</string>
+    <string name="ai_stale">Dein Server antwortet nicht. Das hat dein Handy zuletzt gelesen, %1$s.</string>
+    <string name="ai_only_admin">Nur ein Admin kann das ändern.</string>
+
+    <!-- Der Schalter, der Alarme beschreibt, mit und ohne Modell dahinter. -->
+    <string name="ai_alerts">Alarme</string>
+    <string name="ai_describe_alerts">Alarme beschreiben</string>
+    <string name="ai_describe_supporting">Zu jedem Alarm bekommst du einen Satz, was die Kamera gesehen hat.</string>
+    <string name="ai_describe_no_model">Leg ein Modell fest, dann kann jeder Alarm sagen, was passiert ist.</string>
+
+    <!-- Die Zeile, die zur Modellseite führt. -->
+    <string name="ai_model">Modell</string>
+    <string name="ai_set_up_model">Modell einrichten</string>
+    <string name="ai_no_model">Ollama oder ein Clouddienst über Frigate</string>
+    <string name="ai_pictures_note">Die Bilder gehen von deinem Server zu dem Modell, nie über dieses Handy.</string>
+
+    <!-- Die Modellseite: ihre zwei Felder, das Speichern und der Weg zum Clouddienst. -->
+    <string name="ai_ollama_heading">Ollama in deinem Netz</string>
+    <string name="ai_field_address">Adresse</string>
+    <string name="ai_save">Speichern</string>
+    <string name="ai_saving">Speichert…</string>
+    <string name="ai_ollama_note">Dein Server fragt, also geht das von überall. Nimm ein Modell, das Bilder sehen kann.</string>
+    <string name="ai_or">Oder</string>
+    <string name="ai_cloud">Clouddienst nutzen</string>
+    <string name="ai_cloud_supporting">Richte ihn in Frigate ein und komm zurück. Der Schlüssel bleibt auf deinem Server.</string>
+
+    <!-- Was ein Speichern sagt, bevor es rausgeht, wenn ein Feld leer ist. -->
+    <string name="ai_error_address">Gib die Adresse deines Ollama-Servers ein.</string>
+    <string name="ai_error_model">Gib den Namen eines Modells ein.</string>
+
+    <!-- ===== alerts ===== -->
+    <!-- Die stille Benachrichtigung und das Piepen. -->
+    <string name="alerts_watching_title">Wartet auf Alarme</string>
+    <string name="alerts_fallback_title">Alarm</string>
+    <string name="alerts_tap_to_watch">%1$s. Tippe, um es anzusehen.</string>
+
+    <!-- Was die stille Benachrichtigung sagt, wenn nichts piept. -->
+    <string name="alerts_all_cameras_off">Auf der Benachrichtigungsseite deines Servers ist jede Kamera aus, also piept nichts.</string>
+    <string name="alerts_no_alerts_on">Keine Kamera hat Alarme an, also piept nichts.</string>
+    <string name="alerts_no_alert_objects">Keine Kamera hat Alarm-Objekte, also piept nichts.</string>
+
+    <!-- Was sie sagt, wenn etwas piept: die Kameras, die Objekte und die Verbindung. -->
+    <plurals name="alerts_cameras">
+        <item quantity="one">Eine Kamera</item>
+        <item quantity="other">%1$d Kameras</item>
+    </plurals>
+    <string name="alerts_nothing">nichts</string>
+    <string name="alerts_two_objects">%1$s und %2$s</string>
+    <string name="alerts_more_objects">%1$s, %2$s und %3$d weitere</string>
+    <string name="alerts_watching_connecting">%1$s für %2$s. Verbinde mit deinem Server.</string>
+    <string name="alerts_watching_connected">%1$s für %2$s. Neue Ereignisse kommen, sobald sie passieren.</string>
+    <string name="alerts_watching_retrying">%1$s für %2$s. %3$s Neuer Versuch.</string>
+    <!-- In Anführungszeichen, damit das Leerzeichen nach dem Punkt bleibt: der Satz läuft weiter. -->
+    <string name="alerts_quiet_until">"Ruhe bis %1$s. "</string>
+    <string name="alerts_session_expired">Deine Sitzung ist abgelaufen. Öffne Frigo und melde dich neu an.</string>
+
+    <!-- Warum die Verbindung fehlt. -->
+    <string name="alerts_cant_reach">Dein Server ist nicht erreichbar.</string>
+
+    <!-- Die zwei Kanäle, die Android in seinen Benachrichtigungseinstellungen zeigt. -->
+    <string name="alerts_channel_watching">Wartet</string>
+    <string name="alerts_channel_watching_description">Sagt, dass Frigo verbunden ist und auf Alarme wartet.</string>
+    <string name="alerts_channel_events">Alarme</string>
+    <string name="alerts_channel_events_description">Sagt dir, wenn Frigate eines der Dinge sieht, die du gewählt hast.</string>
+
+    <!-- ===== api ===== -->
+    <!-- Anmelden, und die Sitzung, die dabei bleibt. -->
+    <string name="api_sign_in_rejected">Benutzername und Passwort wurden nicht angenommen</string>
+    <string name="api_no_token">Dein Server hat die Anmeldung angenommen, aber kein Token geschickt</string>
+    <string name="api_session_expired">Deine Sitzung ist abgelaufen. Melde dich neu an.</string>
+    <string name="api_not_signed_in">Nicht angemeldet</string>
+    <string name="api_no_settings_yet">Dein Server antwortet nicht, und dieses Handy hat seine Einstellungen noch nicht gelesen.</string>
+
+    <!-- Was eine fehlgeschlagene Anfrage sagt, wenn der Fehler beim Server liegt. -->
+    <string name="api_no_endpoint">Der Server hat keinen solchen Endpunkt. Ist das die Frigate-Adresse?</string>
+    <string name="api_request_not_understood">Der Server hat die Anfrage nicht verstanden</string>
+    <string name="api_request_not_understood_said">Der Server hat die Anfrage nicht verstanden: %1$s</string>
+    <string name="api_server_not_answering">Der Server antwortet gerade nicht</string>
+    <string name="api_server_returned">Der Server hat %1$d zurückgegeben</string>
+    <string name="api_server_sent_nothing">Der Server hat nichts geschickt.</string>
+    <string name="api_change_refused">Frigate hat die Änderung nicht angenommen.</string>
+    <string name="api_bad_address">Die Serveradresse sieht nicht richtig aus</string>
+    <string name="api_enter_address">Gib deine Serveradresse ein</string>
+    <string name="api_not_a_web_address">Das sieht nicht nach einer Webadresse aus</string>
+
+    <!-- Eine Kamera ansehen. -->
+    <string name="api_live_view_returned">Das Livebild gab %1$d zurück</string>
+
+    <!-- Clips. -->
+    <string name="api_wouldnt_keep">Frigate wollte den Abschnitt nicht behalten.</string>
+    <string name="api_no_recording">Frigate hat keine Aufnahme von dem Abschnitt.</string>
+    <string name="api_no_clip">Frigate hat keinen Clip mehr dafür. Es schneidet Clips aus deinen Aufnahmen, also verschwindet ein alter, wenn die Aufnahmen gehen.</string>
+    <string name="api_clip_gone">Der Clip ist nicht mehr auf dem Server.</string>
+    <string name="api_clip_too_big">Der Clip ist zu lang zum Holen, über 400 MB. Eine Prüfung bleibt offen, solange etwas gesehen wird, also kann eine alte Prüfung Stunden Aufnahme umfassen.</string>
+    <string name="api_empty_clip">Der Server hat einen leeren Clip geschickt. Seine Aufnahmen decken den Moment vielleicht noch nicht ab, versuch es gleich nochmal.</string>
+    <string name="api_clip_not_moved">Der Clip ließ sich nicht an seinen Platz legen</string>
+
+    <!-- ===== cam ===== -->
+    <!-- Die Seite und der Knopf, der das Raster gegen eine Reihe tauscht. -->
+    <string name="cam_title">Kameras</string>
+    <string name="cam_show_one_to_a_row">Eins pro Reihe</string>
+    <string name="cam_show_as_grid">Als Raster</string>
+
+    <!-- Wenn es nichts zu zeigen gibt. -->
+    <string name="cam_no_cameras">In Frigate ist keine Kamera an.</string>
+    <string name="cam_try_again">Nochmal</string>
+
+    <!-- ===== lists ===== -->
+    <!-- Entdecken: die Seite und die Chips, die die Liste eingrenzen. -->
+    <string name="explore_title">Entdecken</string>
+    <string name="explore_labels">Labels</string>
+    <string name="explore_no_labels">Der Server hat keine Labels aufgelistet.</string>
+    <string name="explore_people">Personen</string>
+    <string name="explore_no_people">Frigate hat noch kein Gesicht erkannt.</string>
+    <string name="explore_clear">Leeren</string>
+
+    <!-- Entdecken: wenn die Liste leer ist oder der Server nicht antwortet. -->
+    <string name="explore_try_again">Nochmal</string>
+    <string name="explore_nothing_yet">Noch nichts aufgenommen.</string>
+    <string name="explore_nothing_for_filters">Für diese Filter ist nichts aufgenommen.</string>
+    <string name="explore_clear_filters">Filter leeren</string>
+    <string name="explore_load_older">Ältere laden</string>
+
+    <!-- Entdecken: ein Ereignis, in der Liste und im Vollbild. -->
+    <string name="explore_has_clip">Hat einen Clip</string>
+    <string name="explore_no_clip">Frigate hat keinen Clip dafür behalten.</string>
+
+    <!-- Clips: die Seite und die Zeile, die einen Fehler meldet. -->
+    <string name="clips_title">Gespeicherte Clips</string>
+    <string name="clips_dismiss">Schließen</string>
+
+    <!-- Clips: wenn die Liste leer ist oder der Server nicht antwortet. -->
+    <string name="clips_try_again">Nochmal</string>
+    <string name="clips_nothing_saved">Noch nichts gespeichert.</string>
+    <string name="clips_nothing_saved_supporting">Wenn eine Aufnahme auf dem Bild ist, fragt Speichern, wohin sie soll: auf dieses Handy oder auf den Server. Was der Server behält, wartet hier, und Frigate hält es fest, wenn seine Aufräumung die Aufnahmen nimmt.</string>
+
+    <!-- Clips: was eine Zeile sagt, während ein Clip zum Handy unterwegs ist. -->
+    <string name="clips_cutting">Frigate schneidet ihn aus.</string>
+    <string name="clips_saving">Speichert…</string>
+    <string name="clips_saving_bytes">Speichert %1$s</string>
+    <string name="clips_saved">Auf diesem Handy gespeichert</string>
+
+    <!-- Clips: das Menü einer Zeile. -->
+    <string name="clips_menu">Was damit geht</string>
+    <string name="clips_save_to_phone">Auf dieses Handy</string>
+    <string name="clips_rename">Umbenennen</string>
+    <string name="clips_delete">Löschen</string>
+    <string name="clips_cancel">Abbrechen</string>
+
+    <!-- Clips: einem Clip einen anderen Namen geben und einen löschen. -->
+    <string name="clips_rename_title">Clip benennen</string>
+    <string name="clips_rename_label">Name</string>
+    <string name="clips_delete_title">Diesen Clip löschen?</string>
+    <string name="clips_delete_body">Er geht vom Server. Eine Kopie, die du aufs Handy gespeichert hast, bleibt, wo sie ist. Das lässt sich nicht rückgängig machen.</string>
+
+    <!-- ===== login ===== -->
+    <!-- Anmelden, und bei einem anderen Server anmelden. -->
+    <string name="login_lead">Melde dich bei deinem Frigate-Server an.</string>
+    <string name="login_sign_in">Anmelden</string>
+    <string name="login_address">Serveradresse</string>
+    <!-- Das Beispiel unter dem Feld. In jeder Sprache dieselbe Adresse. -->
+    <string name="login_address_placeholder">https://frigate.example.com</string>
+    <string name="login_address_note">Die Adresse, die du im Browser nimmst. Gib den Port an, wenn es einen gibt, etwa :8971.</string>
+    <string name="login_username">Benutzername</string>
+    <string name="login_password">Passwort</string>
+    <string name="login_show_password">Passwort zeigen</string>
+    <string name="login_hide_password">Passwort verbergen</string>
+    <string name="login_keeps_sign_in">Frigo behält deine Anmeldung nur auf diesem Handy. Es spricht mit deinem Server und sonst niemandem.</string>
+
+    <string name="login_add_server">Server hinzufügen</string>
+    <string name="login_add_server_note">Melde dich bei einem anderen Frigate-Server an. Der aktuelle behält seine Anmeldung, du kannst in den Einstellungen zurückwechseln.</string>
+    <string name="login_add">Hinzufügen</string>
+
+    <!-- Die Filter-Chips und der Haken, der die getroffene Wahl zeigt. -->
+    <string name="comp_all_cameras">Alle Kameras</string>
+    <string name="comp_chosen">Gewählt</string>
+    <string name="comp_pick_a_day">Tag wählen…</string>
+    <string name="comp_chip_more">%1$s +%2$d</string>
+
+    <!-- Der Kalender, der die Sprache der App spricht, nicht die des Handys. -->
+    <string name="comp_month_before">Monat zurück</string>
+    <string name="comp_month_after">Monat vor</string>
+    <string name="comp_cancel">Abbrechen</string>
+
+    <!-- Der Clip-Player: der Weg hinaus, das Warten und warum ein Clip nicht lief. -->
+    <string name="comp_close">Schließen</string>
+    <string name="comp_try_again">Nochmal</string>
+    <string name="comp_clip_getting">Clip wird geholt…</string>
+    <string name="comp_clip_detail_status">der Server antwortete %1$d</string>
+    <string name="comp_clip_cant_play">Dieses Handy kann das Video des Clips nicht abspielen. Frigate kopiert, was die Kamera aufgenommen hat, statt es umzuwandeln, also sind diese Clips H.265, und nicht jedes Handy kann das dekodieren.</string>
+    <string name="comp_clip_gone">Der Clip ist vom Handy weg. Hol ihn nochmal.</string>
+    <string name="comp_clip_incomplete">Der Clip kam unvollständig an. Hol ihn nochmal.</string>
+    <string name="comp_clip_unfinished">Frigate hat den Clip nicht fertig geschrieben, also bricht er mittendrin ab. Nochmal holen gäbe dieselbe kaputte Datei.</string>
+    <string name="comp_clip_wouldnt_play">Der Clip ließ sich nicht abspielen.</string>
+
+    <!-- ===== onboard ===== -->
+    <!-- Die Willkommensseite. -->
+    <string name="onboard_welcome_lead">Deine Frigate-Kameras auf deinem Handy.</string>
+    <string name="onboard_welcome_note">Es spricht mit dem Server, den du schon hast. Deine Anmeldung bleibt auf diesem Handy.</string>
+    <string name="onboard_get_started">Los geht\'s</string>
+
+    <!-- Dein Server. -->
+    <string name="onboard_server_title">Dein Server</string>
+    <string name="onboard_server_lead">Die Adresse, die du im Browser nimmst, und deine Frigate-Anmeldung.</string>
+    <string name="onboard_server_address">Adresse</string>
+    <string name="onboard_server_signed_in_as">Angemeldet als</string>
+
+    <!-- Alarme. -->
+    <string name="onboard_alerts_title">Alarme</string>
+    <string name="onboard_alerts_lead">Dein Handy sagt dir, wenn dein Server einen Alarm meldet.</string>
+    <string name="onboard_alerts_allowed">Benachrichtigungen erlaubt</string>
+    <string name="onboard_alerts_notifications">Benachrichtigungen</string>
+    <string name="onboard_alerts_where">Welche Kameras und Objekte piepen, steht auf deinem Server. Seine Benachrichtigungsseite und seine Alarmseite entscheiden das.</string>
+    <string name="onboard_alerts_asks_once">Android fragt nur einmal nach Benachrichtigungen.</string>
+    <string name="onboard_alerts_turn_on">Alarme einschalten</string>
+    <string name="onboard_alerts_not_now">Später</string>
+    <string name="onboard_alerts_change_later">Du kannst das später in den Einstellungen ändern.</string>
+
+    <!-- Was die Seite sagt, wenn Android die Benachrichtigungen abgelehnt hat. -->
+    <string name="onboard_alerts_off_in_android">Benachrichtigungen sind in Android aus</string>
+    <string name="onboard_alerts_refused_card">Alarme bleiben aus, bis du sie in den Einstellungen des Handys erlaubst.</string>
+    <string name="onboard_alerts_refused_note">Alarme bleiben aus, bis du sie in Androids Einstellungen erlaubst.</string>
+    <string name="onboard_alerts_open_settings">Benachrichtigungen öffnen</string>
+
+    <!-- Akku. -->
+    <string name="onboard_battery_title">Akku</string>
+    <string name="onboard_battery_lead">Android stoppt Apps, um Akku zu sparen, und damit die Alarme. Schalte die Akku-Optimierung für Frigo aus.</string>
+    <string name="onboard_battery_optimization">Akku-Optimierung</string>
+    <string name="onboard_battery_off">Aus für Frigo</string>
+    <string name="onboard_battery_on">An für Frigo</string>
+    <string name="onboard_battery_android_screen">Der Bildschirm gehört zu Android. Komm zurück, dann prüft Frigo selbst.</string>
+    <string name="onboard_battery_open_settings">Akku-Einstellungen öffnen</string>
+
+    <!-- Die zwei Wörter, die dich weiterbringen. -->
+    <string name="onboard_next">Weiter</string>
+    <string name="onboard_done">Fertig</string>
+    <string name="onboard_skip">Überspringen</string>
+
+    <!-- Die Tour: eine Seite für jeden Tab. -->
+    <string name="onboard_tour_cameras">Kameras</string>
+    <string name="onboard_tour_cameras_words">Alle vier Kameras auf einmal, ein Blick sagt dir, ob jemand da ist. Tippe eine an für das Livebild.</string>
+    <string name="onboard_tour_live">Live und Wiedergabe</string>
+    <string name="onboard_tour_live_words">Tippe eine Kamera an, und das Bild geht live. Der Balken darunter ist der Tag; zieh ihn, um darin zurückzugehen. Dreh das Handy auf die Seite für den ganzen Bildschirm.</string>
+    <string name="onboard_tour_review">Prüfen</string>
+    <string name="onboard_tour_review_words">Die Momente, die Frigate ansehenswert fand, das Neueste zuerst. Tippe einen an, um ihn anzusehen, und er verlässt die Liste, sobald du ihn gesehen hast.</string>
+    <string name="onboard_tour_explore">Entdecken</string>
+    <string name="onboard_tour_explore_words">Alles, was Frigate aufgenommen hat. Grenze es ein nach Kamera, nach dem, was gesehen wurde, oder nach Tag.</string>
+    <string name="onboard_tour_clips">Clips</string>
+    <string name="onboard_tour_clips_words">Die Clips, die du behalten hast. Sieh einen an, speichere ihn aufs Handy oder lösch ihn vom Server.</string>
+    <string name="onboard_tour_settings">Einstellungen</string>
+    <string name="onboard_tour_settings_words">Dein Server, deine Alarme und wie die App aussieht.</string>
+    <string name="onboard_tour_ai">KI-Alarme</string>
+    <string name="onboard_tour_ai_words">Frigo nutzt KI, um zu beschreiben, was es in einer Benachrichtigung sieht.</string>
+
+    <!-- Die letzte Seite. -->
+    <string name="onboard_ready_title">Alles klar.</string>
+    <string name="onboard_ready_signed_in_to">Frigo ist bei %1$s angemeldet.</string>
+    <string name="onboard_ready_signed_in">Frigo ist angemeldet.</string>
+    <string name="onboard_ready_change_later">Du kannst das alles in den Einstellungen ändern.</string>
+    <string name="onboard_ready_open">Frigo öffnen</string>
+
+    <!-- Was die Bilder zeichnen. -->
+    <string name="onboard_live">Live</string>
+    <string name="onboard_chip_alerts">Alarme %1$d</string>
+    <string name="onboard_chip_detections">Erkennungen %1$d</string>
+    <string name="onboard_day_mon">M</string>
+    <string name="onboard_day_tue">D</string>
+    <string name="onboard_day_wed">M</string>
+    <string name="onboard_day_thu">D</string>
+    <string name="onboard_day_fri">F</string>
+    <string name="onboard_day_sat">S</string>
+    <string name="onboard_day_sun">S</string>
+    <string name="onboard_ai_notification_title">Frigo · %1$s · %2$s</string>
+    <string name="onboard_ai_heading">Person an der Haustür</string>
+    <string name="onboard_ai_description">Ein Mann steht an der Haustür und schaut auf sein Handy.</string>
+
+    <!-- ===== playback ===== -->
+    <!-- Was das Bild ist: der Stream, eine Aufnahme oder eine Kamera, die steht. -->
+    <string name="playback_mode_live">Live</string>
+    <string name="playback_mode_playback">Wiedergabe</string>
+    <string name="playback_mode_offline">Offline</string>
+
+    <!-- Die Tage zur Wahl, über dem Balken. -->
+    <string name="playback_day_today">Heute</string>
+    <string name="playback_day_yesterday">Gestern</string>
+
+    <!-- Die anderen Kameras unter dem Bild. Der Name darin ist der Name der Kamera. -->
+    <string name="playback_show_camera">%1$s zeigen</string>
+
+    <!-- Einen Abschnitt als Datei aufs Handy speichern, und wie es läuft. -->
+    <string name="playback_save">Speichern</string>
+    <string name="playback_save_this_clip">Clip speichern</string>
+    <string name="playback_saving">Speichert…</string>
+    <string name="playback_saving_size">Speichert %1$s</string>
+    <string name="playback_saved">Gespeichert</string>
+    <string name="playback_couldnt_save">Nicht gespeichert</string>
+
+    <!-- Das Blatt, das fragt, wohin ein Abschnitt soll. -->
+    <string name="playback_this_stretch">Dieser Abschnitt</string>
+    <string name="playback_save_to_phone">Auf dieses Handy</string>
+    <string name="playback_save_to_phone_note">Eine Datei, die du verschieben oder teilen kannst, wie jede andere.</string>
+    <string name="playback_keep_on_server">Auf dem Server behalten</string>
+    <string name="playback_keep_note">Frigate hält ihn fest, wenn seine Aufräumung die Aufnahmen nimmt.</string>
+    <string name="playback_keeping">Frigate schneidet ihn aus.</string>
+    <string name="playback_kept">Behalten. Er wartet im Tab Clips.</string>
+    <string name="playback_clips_kept">Bereits behaltene Clips</string>
+
+    <!-- Eine Aufnahme abspielen: was schiefgeht, und der Tempo-Knopf. -->
+    <string name="playback_recording_failed">Die Aufnahme kam nicht.</string>
+    <string name="playback_nothing_to_play">Von hier gibt es keine Aufnahme zum Abspielen.</string>
+    <string name="playback_speed">%1$d×</string>
+    <string name="playback_change_speed">Tempo ändern</string>
+
+    <!-- ===== player ===== -->
+    <!-- Das Bild, während es geholt wird und wenn es ein Ersatz ist. -->
+    <string name="player_connecting">Verbinde…</string>
+    <string name="player_retrying">Neuer Versuch</string>
+    <string name="player_stream_stopped">Der Stream ist stehengeblieben.</string>
+    <string name="player_small_picture">Der eigene Stream der Kamera hat nicht geantwortet, das hier ist das kleine Bild.</string>
+
+    <!-- Der Ton und der Knopf, der ihn ein- und ausschaltet. -->
+    <string name="player_sound_on">Ton einschalten</string>
+    <string name="player_sound_off">Ton ausschalten</string>
+    <string name="player_no_sound">Es kam kein Ton durch.</string>
+
+    <!-- Das Menü des Standbild-Streams: seine Größe und seine Bildrate. -->
+    <string name="player_stream_quality">Stream-Qualität</string>
+    <string name="player_resolution">Auflösung</string>
+    <string name="player_frames_per_second">Bilder pro Sekunde</string>
+
+    <!-- Der Weg zurück zum Stream, und was der Balken unter dem Bild sagt. -->
+    <string name="player_return_to_live">Zurück zu Live</string>
+    <string name="player_go_back_to_stream">Zurück zum Stream</string>
+    <string name="player_stretch">%1$s bis %2$s</string>
+    <string name="player_nothing_recorded">Damals nichts aufgenommen.</string>
+
+    <!-- Wenn die Aufnahmen des Tages nicht zu lesen sind. -->
+    <string name="player_no_recordings">Frigate hat keine Aufnahmen dieser Kamera behalten.</string>
+    <string name="player_try_again">Nochmal</string>
+
+    <!-- ===== quiet ===== -->
+    <!-- Die Seite Ruhezeiten und die zwei Zeiten, die sie hält. -->
+    <string name="quiet_title">Ruhezeiten</string>
+    <string name="quiet_when">Wann</string>
+    <string name="quiet_time_from">Von</string>
+    <string name="quiet_time_until">Bis</string>
+    <string name="quiet_same_times">Von und Bis sind gleich, also ist es den ganzen Tag ruhig.</string>
+    <string name="quiet_cancel">Abbrechen</string>
+    <string name="quiet_set">Setzen</string>
+
+    <!-- Die Stunde Ruhe, die von selbst endet. -->
+    <string name="quiet_for_an_hour">Eine Stunde ruhig</string>
+    <string name="quiet_hush_supporting">Jede Kamera ist bis dahin still.</string>
+    <string name="quiet_hour_supporting">Jede Kamera, für die nächste Stunde.</string>
+    <string name="quiet_stop">Stopp</string>
+
+    <!-- Die Kameras, die es still hält, und was es sagt, wenn es keine gibt. -->
+    <string name="quiet_cameras_heading">Kameras</string>
+    <string name="quiet_offline">Dein Server antwortet nicht, das ist die Liste, die dein Handy zuletzt gelesen hat.</string>
+    <string name="quiet_no_picked">Keine Kamera gewählt, also wird nichts still.</string>
+
+    <!-- Die Seite einer Kamera und die zwei Dinge, die sie sagt, wenn sie nicht zu lesen ist. -->
+    <string name="camsw_cant_read">Die Einstellungen dieser Kamera lassen sich nicht lesen.</string>
+    <string name="camsw_try_again">Nochmal</string>
+    <string name="camsw_stale">Dein Server antwortet nicht. Das sind die Einstellungen, die dein Handy zuletzt gelesen hat, %1$s. Ändern lässt sich nichts, bis er zurück ist.</string>
+    <string name="camsw_changes_save">Änderungen werden beim Tippen auf dem Server gespeichert.</string>
+
+    <!-- Die vier Gruppen, in denen die acht Schalter sitzen. -->
+    <string name="camsw_group_detection">Erkennung</string>
+    <string name="camsw_group_recording">Aufnahme</string>
+    <string name="camsw_group_live_view">Livebild</string>
+    <string name="camsw_group_recognition">Wiedererkennung</string>
+
+    <!-- Nachfragen, bevor die Aufnahme stoppt. -->
+    <string name="camsw_stop_question">Aufnahme stoppen?</string>
+    <string name="camsw_stop_detail">%1$s speichert kein Video mehr. Was schon gespeichert ist, bleibt.</string>
+    <string name="camsw_stop">Stopp</string>
+    <string name="camsw_cancel">Abbrechen</string>
+
+    <!-- ===== reviews ===== -->
+    <!-- Die Liste: ihr Titel und die Reihe Chips, die sie eingrenzt. -->
+    <string name="reviews_title">Prüfen</string>
+    <string name="reviews_labels">Labels</string>
+    <string name="reviews_no_labels">In diesem Tab gibt es nichts zum Eingrenzen.</string>
+    <string name="reviews_show_reviewed">Gesehene zeigen</string>
+    <string name="reviews_clear">Leeren</string>
+
+    <!-- Was eine leere Liste sagt, und der Ausweg aus jeder. -->
+    <string name="reviews_try_again">Nochmal</string>
+    <string name="reviews_nothing_filtered">Für diese Filter ist nichts da.</string>
+    <string name="reviews_clear_filters">Filter leeren</string>
+    <string name="reviews_hidden_reviewed">Was du gesehen hast, ist ausgeblendet. Schalte Gesehene zeigen ein, um es wieder zu sehen.</string>
+    <string name="reviews_put_back">Wieder einblenden</string>
+
+    <!-- Eine ganze Liste mit einem Tipp leeren, und weiter zurückgreifen. -->
+    <string name="reviews_marking">Werden als gesehen markiert</string>
+    <string name="reviews_mark_all">Alle als gesehen</string>
+    <string name="reviews_load_older">Ältere laden</string>
+
+    <!-- Eine Zeile: was gesehen wurde, wenn es nur Bewegung ist, und wie lange her. -->
+    <string name="reviews_motion">Bewegung</string>
+    <string name="reviews_reviewed_at">%1$s · Gesehen</string>
+
+    <!-- Die Bildunterschrift: die Kamera, dann wie lange her. -->
+    <string name="reviews_player_subtitle">%1$s · %2$s</string>
+
+    <!-- Alarme und Erkennungen: die Seite und was sie sagt, wenn sie nicht lädt. -->
+    <string name="revset_title">Alarme und Erkennungen</string>
+    <string name="revset_cant_read">Diese Einstellungen lassen sich nicht lesen.</string>
+    <string name="revset_try_again">Nochmal</string>
+    <string name="revset_camera_own">Diese Kamera hat eigene Einstellungen, die diese App nicht lesen kann.</string>
+    <string name="revset_stale">Dein Server antwortet nicht. Das sind die Einstellungen, die dein Handy zuletzt gelesen hat, %1$s. Ändern lässt sich nichts, bis er zurück ist.</string>
+
+    <!-- Die zwei Gruppen und die Objekte, die jede abdeckt. -->
+    <string name="revset_objects">Objekte</string>
+    <string name="revset_nothing">Nichts</string>
+    <string name="revset_everything_else">Alles andere</string>
+    <string name="revset_all_cameras">Das gilt für jede Kamera. Wähle oben eine, um ihre eigenen zu setzen.</string>
+
+    <!-- Die Objekte wählen, und was die Auswahl sagt. -->
+    <string name="revset_alert_labels">Alarm-Labels</string>
+    <string name="revset_detection_labels">Erkennungs-Labels</string>
+    <string name="revset_done">Fertig</string>
+    <string name="revset_search">Suchen</string>
+    <string name="revset_alerts_hint">Wähle mindestens eins, oder schalte Alarme aus.</string>
+    <string name="revset_detections_hint">Keins angehakt heißt jedes andere Objekt.</string>
+    <string name="revset_no_match">Hier heißt nichts so.</string>
+    <string name="revset_tracked">Verfolgt</string>
+
+    <!-- ===== sys ===== -->
+    <!-- Die Systemseite: ein Stand der Serverwerte, in Worten. -->
+    <string name="sys_not_said">Nicht genannt</string>
+    <string name="sys_processor">Prozessor</string>
+    <string name="sys_memory">Speicher</string>
+    <string name="sys_computing">%1$s rechnen</string>
+    <string name="sys_decoding">%1$s dekodieren</string>
+    <string name="sys_detector">Detektor %1$s</string>
+    <string name="sys_inference">eine Inferenz</string>
+    <string name="sys_memory_of">%1$s Speicher</string>
+    <string name="sys_processor_of">%1$s Prozessor</string>
+    <string name="sys_ms">%1$s ms</string>
+    <string name="sys_percent">%1$s%%</string>
+    <string name="sys_gb">%1$s GB</string>
+    <string name="sys_mb">%1$d MB</string>
+    <string name="sys_nothing">nichts</string>
+
+    <!-- Die Platten und wie voll sie sind. -->
+    <string name="sys_storage_used">%1$s von %2$s</string>
+    <string name="sys_storage_free">%1$s frei</string>
+    <plurals name="sys_storage_frames">
+        <item quantity="one">Platz für %1$d Bild</item>
+        <item quantity="other">Platz für %1$d Bilder</item>
+    </plurals>
+    <plurals name="sys_storage_wanted">
+        <item quantity="one">%1$d gewünscht</item>
+        <item quantity="other">%1$d gewünscht</item>
+    </plurals>
+    <string name="sys_mount_recordings">Aufnahmen</string>
+    <string name="sys_mount_clips">Clips</string>
+    <string name="sys_mount_cache">Cache</string>
+    <string name="sys_mount_shm">Gemeinsamer Speicher</string>
+
+    <!-- Wie lange der Server läuft und wie schnell eine Kamera geht. -->
+    <plurals name="sys_day">
+        <item quantity="one">%1$d Tag</item>
+        <item quantity="other">%1$d Tage</item>
+    </plurals>
+    <plurals name="sys_hour">
+        <item quantity="one">%1$d Stunde</item>
+        <item quantity="other">%1$d Stunden</item>
+    </plurals>
+    <plurals name="sys_minute">
+        <item quantity="one">%1$d Minute</item>
+        <item quantity="other">%1$d Minuten</item>
+    </plurals>
+    <string name="sys_less_than_a_minute">weniger als eine Minute</string>
+    <plurals name="sys_frames_a_second">
+        <item quantity="one">1 Bild pro Sekunde</item>
+        <item quantity="other">%1$s Bilder pro Sekunde</item>
+    </plurals>
+    <string name="sys_being_detected">%1$s erkannt</string>
+    <string name="sys_nothing_detected">nichts erkannt</string>
+
+    <!-- Die acht Schalter einer Kamera und die Zeile, die ihren Stand sagt. -->
+    <string name="camera_switch_object_detection">Objekterkennung</string>
+    <string name="camera_switch_motion_detection">Bewegungserkennung</string>
+    <string name="camera_switch_recording">Aufnahme</string>
+    <string name="camera_switch_snapshots">Schnappschüsse</string>
+    <string name="camera_switch_audio_detection">Tonerkennung</string>
+    <string name="camera_switch_birdseye">Birdseye</string>
+    <string name="camera_switch_face_recognition">Gesichtserkennung</string>
+    <string name="camera_switch_license_plate">Kennzeichenerkennung</string>
+    <string name="camera_off_for_server">Für den ganzen Server aus.</string>
+    <string name="camera_all_on">Alles an</string>
+    <string name="camera_one_off">%1$s aus</string>
+    <string name="camera_two_off">%1$s und %2$s aus</string>
+    <plurals name="camera_more_off">
+        <item quantity="one">%1$s, %2$s und %3$d weitere aus</item>
+        <item quantity="other">%1$s, %2$s und %3$d weitere aus</item>
+    </plurals>
+
+    <!-- Alarme und Erkennungen, so heißen die zwei Arten von Prüfung. -->
+    <string name="review_kind_alerts">Alarme</string>
+    <string name="review_kind_detections">Erkennungen</string>
+
+    <!-- Wo das Modell steht, das Beschreibungen schreibt. -->
+    <string name="ai_ollama_at">Ollama auf %1$s</string>
+
+    <!-- Ruhezeiten, wie die Zeile in den Einstellungen sie sagt. -->
+    <string name="quiet_until">Ruhig bis %1$s</string>
+    <string name="quiet_off">Aus</string>
+    <string name="quiet_all_day">Ganzer Tag</string>
+    <string name="quiet_window">%1$s bis %2$s</string>
+    <string name="quiet_no_cameras">keine Kameras</string>
+    <plurals name="quiet_cameras">
+        <item quantity="one">eine Kamera</item>
+        <item quantity="other">%1$d Kameras</item>
+    </plurals>
+    <string name="quiet_window_cameras">%1$s, %2$s</string>
+
+    <!-- ===== system ===== -->
+    <!-- Die Seite und die zwei Dinge, die sie sagt, wenn sie nicht zu lesen ist. -->
+    <string name="system_title">System</string>
+    <string name="system_cant_read_stats">Die Werte deines Servers lassen sich nicht lesen.</string>
+    <string name="system_try_again">Nochmal</string>
+
+    <!-- Nachfragen vor dem Neustart, und das Warten währenddessen. -->
+    <string name="system_restart_question">Frigate neu starten?</string>
+    <string name="system_restart_detail">Alles steht etwa eine halbe Minute, die Alarme auch. Aufnahmen und Einstellungen bleiben.</string>
+    <string name="system_restart">Neustart</string>
+    <string name="system_cancel">Abbrechen</string>
+    <string name="system_restarting">Neustart. In etwa einer halben Minute ist er zurück.</string>
+
+    <!-- Die Karten, in der Reihenfolge, in der sie auf der Seite stehen. -->
+    <string name="system_server">Server</string>
+    <string name="system_version">Version</string>
+    <string name="system_up_for">Läuft seit</string>
+    <string name="system_update_out">%1$s ist da. Aktualisiert wird auf dem Server, nicht von hier.</string>
+    <string name="system_load">Last</string>
+    <string name="system_cameras">Kameras</string>
+    <string name="system_storage">Speicher</string>
+    <string name="system_processes">Prozesse</string>
+
+    <!-- Die Zeile, die den Server neu startet, für einen Admin. -->
+    <string name="system_this_server">Dieser Server</string>
+    <string name="system_restart_frigate">Frigate neu starten</string>
+    <string name="system_restart_supporting">Alarme stehen etwa eine halbe Minute</string>
+</resources>

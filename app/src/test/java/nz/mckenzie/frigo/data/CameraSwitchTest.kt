@@ -4,6 +4,9 @@ import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 
 /**
  * The switches page: what it reads and what it sends.
@@ -12,7 +15,11 @@ import org.junit.Test
  * wrong key leaves a camera following the server's default while the page shows
  * it as changed.
  */
+@RunWith(RobolectricTestRunner::class)
 class CameraSwitchTest {
+
+    /** The sentence about a switch the server holds off comes from the app's resources. */
+    private val context = RuntimeEnvironment.getApplication()
 
     /** The server's file has far more in it than this app reads, so extra keys are ignored. */
     private val config = Json { ignoreUnknownKeys = true }
@@ -108,9 +115,9 @@ class CameraSwitchTest {
             licensePlateOff = true,
         )
 
-        assertEquals("Off for the whole server.", page.blocked(CameraSwitch.FaceRecognition))
-        assertEquals("Off for the whole server.", page.blocked(CameraSwitch.LicensePlate))
-        assertNull(page.blocked(CameraSwitch.Recording))
+        assertEquals("Off for the whole server.", page.blocked(context, CameraSwitch.FaceRecognition))
+        assertEquals("Off for the whole server.", page.blocked(context, CameraSwitch.LicensePlate))
+        assertNull(page.blocked(context, CameraSwitch.Recording))
     }
 
     /** The server's own settings are read from its answer, on means a camera can use the feature. */

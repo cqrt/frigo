@@ -2,8 +2,8 @@ package nz.mckenzie.frigo
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -11,7 +11,12 @@ import nz.mckenzie.frigo.ui.FrigoApp
 import nz.mckenzie.frigo.ui.theme.FrigoTheme
 import nz.mckenzie.frigo.ui.theme.ThemeMode
 
-class MainActivity : ComponentActivity() {
+/**
+ * AppCompatActivity rather than the plain one, because that is what carries the
+ * app's own language choice on a phone older than Android 13. Everything on the
+ * screen is Compose; the activity itself adds nothing else.
+ */
+class MainActivity : AppCompatActivity() {
 
     /**
      * The camera an alert you tapped is about, until the app opens it.

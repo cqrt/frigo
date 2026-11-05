@@ -2,6 +2,7 @@ package nz.mckenzie.frigo.ui.cameras
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -72,7 +73,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -86,6 +89,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.FrigoRepository
@@ -101,6 +105,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
 /** How much of the recording one press of Play fetches. */
@@ -373,9 +379,9 @@ internal fun ModePill(
         )
         Text(
             text = when {
-                offline -> "Offline"
-                live -> "Live"
-                else -> "Playback"
+                offline -> stringResource(R.string.playback_mode_offline)
+                live -> stringResource(R.string.playback_mode_live)
+                else -> stringResource(R.string.playback_mode_playback)
             },
             color = Color.White,
             style = MaterialTheme.typography.labelMedium,
@@ -477,7 +483,10 @@ internal fun SaveClipButton(
             .clip(RoundedCornerShape(50))
             .background(ink.copy(alpha = 0.06f))
             .border(1.dp, tone.copy(alpha = if (ready) 0.45f else 0.15f), RoundedCornerShape(50))
-            .clickable(enabled = ready, onClickLabel = "Save this clip") {
+            .clickable(
+                enabled = ready,
+                onClickLabel = stringResource(R.string.playback_save_this_clip),
+            ) {
                 saved = false
                 failed = false
                 keepProblem = null
@@ -502,11 +511,12 @@ internal fun SaveClipButton(
         }
         Text(
             text = when {
-                saving && received > 0 -> "Saving ${megabytes(received)}"
-                saving -> "Saving"
-                saved -> "Saved"
-                failed -> "Couldn't save"
-                else -> "Save"
+                saving && received > 0 ->
+                    stringResource(R.string.playback_saving_size, megabytes(received))
+                saving -> stringResource(R.string.playback_saving)
+                saved -> stringResource(R.string.playback_saved)
+                failed -> stringResource(R.string.playback_couldnt_save)
+                else -> stringResource(R.string.playback_save)
             },
             color = tone,
             style = MaterialTheme.typography.labelLarge,
@@ -534,7 +544,7 @@ internal fun SaveClipButton(
                     val outcome = runCatching { keep() }
                     keeping = false
                     kept = outcome.isSuccess
-                    keepProblem = outcome.exceptionOrNull()?.friendlyMessage()
+                    keepProblem = outcome.exceptionOrNull()?.friendlyMessage(context)
                 }
             },
             onOpenClips = {
@@ -571,7 +581,7 @@ private fun SaveSheet(
     ) {
         Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp)) {
             Text(
-                text = "This stretch",
+                text = stringResource(R.string.playback_this_stretch),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -584,20 +594,20 @@ private fun SaveSheet(
 
             SaveChoice(
                 icon = FrigoIcons.Save,
-                title = "Save to this phone",
-                note = "A file you can move or share, like any other.",
+                title = stringResource(R.string.playback_save_to_phone),
+                note = stringResource(R.string.playback_save_to_phone_note),
                 enabled = !keeping,
                 onClick = onSave,
             )
 
             SaveChoice(
                 icon = FrigoIcons.Clips,
-                title = "Keep on the server",
+                title = stringResource(R.string.playback_keep_on_server),
                 note = when {
                     problem != null -> problem
-                    kept -> "Kept. It waits on the Clips tab."
-                    keeping -> "Frigate is cutting it out."
-                    else -> "Frigate holds it after its clean-up takes the recordings."
+                    kept -> stringResource(R.string.playback_kept)
+                    keeping -> stringResource(R.string.playback_keeping)
+                    else -> stringResource(R.string.playback_keep_note)
                 },
                 noteIsProblem = problem != null,
                 busy = keeping,
@@ -606,7 +616,7 @@ private fun SaveSheet(
             )
 
             TextButton(onClick = onOpenClips, modifier = Modifier.padding(top = 6.dp)) {
-                Text("Clips kept already")
+                Text(stringResource(R.string.playback_clips_kept))
             }
         }
     }
@@ -818,6 +828,9 @@ private fun ScrubBar(
     // stretches kept read the same in the night colours and in the day.
     val ink = MaterialTheme.colorScheme.onBackground
     val labelStyle = TextStyle(fontSize = 10.sp, color = ink.copy(alpha = 0.55f))
+    // The hours are written in the language the app is being read in, which is not
+    // always the phone's.
+    val locale = LocalConfiguration.current.locales[0]
     // The kept hours are a wash of the page's ink. On the light page the same wash
     // as the night one reads as a solid block, so it goes lighter there.
     val keptWash = if (ink.luminance() > 0.5f) 0.7f else 0.45f
@@ -929,7 +942,7 @@ private fun ScrubBar(
 
             var mark = (from / 600).toLong() * 600
             while (mark <= to) {
-                val laid = measurer.measure(clock(dayStart + mark, zone), labelStyle)
+                val laid = measurer.measure(clock(dayStart + mark, zone, locale), labelStyle)
                 drawText(
                     textLayoutResult = laid,
                     topLeft = Offset(at(mark.toDouble()) - laid.size.width / 2f, LabelTop.toPx()),
@@ -1070,7 +1083,9 @@ private fun CameraStrip(
                 Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(8.dp))
-                    .clickable(onClickLabel = "Show ${other.title}") { onPick(other.name) },
+                    .clickable(
+                        onClickLabel = stringResource(R.string.playback_show_camera, other.title),
+                    ) { onPick(other.name) },
             ) {
                 picture(other)
                 Text(
@@ -1251,19 +1266,27 @@ internal fun quantise(moment: Double): Double = (moment / ScrubStep).toLong() * 
 internal fun startOfDay(day: String, zone: ZoneId): Double =
     LocalDate.parse(day).atStartOfDay(zone).toEpochSecond().toDouble()
 
-/** "09:41", where the phone is. */
-internal fun clock(moment: Double, zone: ZoneId): String =
-    Instant.ofEpochSecond(moment.toLong()).atZone(zone).format(TimeOfDay)
+/** "09:41", where the phone is, in the language the app is being read in. */
+internal fun clock(moment: Double, zone: ZoneId, locale: Locale = appLanguage()): String =
+    Instant.ofEpochSecond(moment.toLong()).atZone(zone).format(timeIn(locale))
 
 /**
- * "Sun 1 Nov 09:41", where the phone is. The big readout above the bar, so the day
- * is there while you drag across one and the burned-in timestamp in the picture is
- * not the only thing telling you when you are.
+ * "Sun 1 Nov 09:41", where the phone is, in the language the app is being read in.
+ * The big readout above the bar, so the day is there while you drag across one and
+ * the burned-in timestamp in the picture is not the only thing telling you when you
+ * are.
  */
-internal fun stamp(moment: Double, zone: ZoneId): String =
+internal fun stamp(moment: Double, zone: ZoneId, locale: Locale = appLanguage()): String =
     Instant.ofEpochSecond(moment.toLong()).atZone(zone).let { at ->
-        "${DayAndMonth.format(at)} ${TimeOfDay.format(at)}"
+        "${dayIn(locale).format(at)} ${timeIn(locale).format(at)}"
     }
+
+/**
+ * The language the app is being read in, for the callers with no screen to read it
+ * from: the app's own choice when one has been made, and the phone's when it has not.
+ */
+private fun appLanguage(): Locale =
+    AppCompatDelegate.getApplicationLocales()[0] ?: Locale.getDefault()
 
 /**
  * The last moment a camera recorded on a day, which is where the playhead starts:
@@ -1280,15 +1303,30 @@ internal fun lastRecorded(spans: List<RecordingSpan>, dayStart: Double): Double 
 }
 
 /** "Today", "Yesterday", or the day and month. */
+@Composable
 private fun dayLabel(day: String, zone: ZoneId): String {
     val date = LocalDate.parse(day)
     val today = LocalDate.now(zone)
+    val locale = LocalConfiguration.current.locales[0]
     return when (date) {
-        today -> "Today"
-        today.minusDays(1) -> "Yesterday"
-        else -> date.format(DayAndMonth)
+        today -> stringResource(R.string.playback_day_today)
+        today.minusDays(1) -> stringResource(R.string.playback_day_yesterday)
+        else -> date.format(dayIn(locale))
     }
 }
 
-private val TimeOfDay: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-private val DayAndMonth: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM")
+/**
+ * The bar's two formats, made for the language the app is being read in rather than
+ * the phone's, so a screen is never in one language with its days of the week in
+ * another. Kept per language rather than made each time: a drag asks for a label
+ * sixty times a second, and a formatter made each time would be made thousands of
+ * times over.
+ */
+private val TimesByLocale = ConcurrentHashMap<Locale, DateTimeFormatter>()
+private val DaysByLocale = ConcurrentHashMap<Locale, DateTimeFormatter>()
+
+private fun timeIn(locale: Locale): DateTimeFormatter =
+    TimesByLocale.getOrPut(locale) { DateTimeFormatter.ofPattern("HH:mm", locale) }
+
+private fun dayIn(locale: Locale): DateTimeFormatter =
+    DaysByLocale.getOrPut(locale) { DateTimeFormatter.ofPattern("EEE d MMM", locale) }

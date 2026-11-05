@@ -10,9 +10,16 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 
 /** What the quiet notification says while the app is watching. */
+@RunWith(RobolectricTestRunner::class)
 class WatchStateTest {
+
+    /** The sentences come from the app's own resources, so they need a Context. */
+    private val context = RuntimeEnvironment.getApplication()
 
     /** A moment on one autumn day, in the phone's own time zone. */
     private fun at(hour: Int, minute: Int = 0): Long =
@@ -39,7 +46,7 @@ class WatchStateTest {
 
         assertEquals(
             "One camera for person. New events arrive as they happen.",
-            WatchState.Connected.text(rules),
+            WatchState.Connected.text(context, rules),
         )
     }
 
@@ -54,7 +61,7 @@ class WatchStateTest {
 
         assertEquals(
             "Every camera is off on your server's notifications page, so nothing will buzz.",
-            WatchState.Connected.text(rules),
+            WatchState.Connected.text(context, rules),
         )
     }
 
@@ -68,7 +75,7 @@ class WatchStateTest {
             cameras = setOf("drive"),
         )
 
-        val text = WatchState.Connected.text(buzzesForPerson, quiet, at(23))
+        val text = WatchState.Connected.text(context, buzzesForPerson, quiet, at(23))
 
         assertTrue(text.startsWith("Quiet until "))
         assertTrue(text.endsWith("One camera for person. New events arrive as they happen."))
@@ -90,7 +97,7 @@ class WatchStateTest {
             cameras = setOf("drive"),
         )
 
-        val text = WatchState.Connected.text(rules, quiet, at(23))
+        val text = WatchState.Connected.text(context, rules, quiet, at(23))
 
         assertFalse(text.contains("Quiet"))
         assertEquals("2 cameras for person. New events arrive as they happen.", text)

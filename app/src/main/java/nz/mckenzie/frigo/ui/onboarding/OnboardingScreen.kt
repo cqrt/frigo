@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,10 +54,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.Gate
@@ -229,15 +232,15 @@ private fun WelcomeStep(onStart: () -> Unit) {
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             PictureTile(name = "Front door")
         }
-        Text("Frigo", style = MaterialTheme.typography.headlineLarge)
+        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineLarge)
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "Your Frigate cameras on your phone.",
+            text = stringResource(R.string.onboard_welcome_lead),
             style = MaterialTheme.typography.bodyLarge,
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            text = "It talks to the server you already run. Your sign-in stays on this phone.",
+            text = stringResource(R.string.onboard_welcome_note),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -246,7 +249,7 @@ private fun WelcomeStep(onStart: () -> Unit) {
             onClick = onStart,
             modifier = Modifier.fillMaxWidth().height(52.dp),
         ) {
-            Text("Get started")
+            Text(stringResource(R.string.onboard_get_started))
         }
     }
 }
@@ -286,10 +289,13 @@ private fun ServerStep(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 20.dp),
     ) {
-        Text("Your server", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            text = stringResource(R.string.onboard_server_title),
+            style = MaterialTheme.typography.headlineMedium,
+        )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "The address you use in a browser, and your Frigate sign-in.",
+            text = stringResource(R.string.onboard_server_lead),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -308,20 +314,20 @@ private fun ServerStep(
                 Column {
                     Item(
                         icon = FrigoIcons.Server,
-                        title = "Address",
+                        title = stringResource(R.string.onboard_server_address),
                         value = server.baseUrl,
                     )
                     CardDivider()
                     Item(
                         icon = FrigoIcons.Person,
-                        title = "Signed in as",
+                        title = stringResource(R.string.onboard_server_signed_in_as),
                         value = server.username,
                     )
                 }
             }
             Spacer(Modifier.height(24.dp))
             Button(onClick = onNext, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                Text("Next")
+                Text(stringResource(R.string.onboard_next))
             }
         }
     }
@@ -344,10 +350,13 @@ private fun AlertsStep(
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 24.dp, vertical = 20.dp),
     ) {
-        Text("Alerts", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            text = stringResource(R.string.onboard_alerts_title),
+            style = MaterialTheme.typography.headlineMedium,
+        )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "Your phone tells you when your server reports an alert.",
+            text = stringResource(R.string.onboard_alerts_lead),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -385,13 +394,13 @@ private fun AlertsStep(
                             }
                         }
                         Text(
-                            text = if (alertsOn) "Notifications allowed" else "Notifications",
+                            text = if (alertsOn) stringResource(R.string.onboard_alerts_allowed)
+                            else stringResource(R.string.onboard_alerts_notifications),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
                     Text(
-                        text = "Which cameras and objects buzz is set on your server. " +
-                            "Its notifications page and its alerts page decide.",
+                        text = stringResource(R.string.onboard_alerts_where),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -404,37 +413,37 @@ private fun AlertsStep(
         when {
             shade == Shade.Refused -> {
                 Text(
-                    text = "Alerts stay off until you allow them in Android's settings.",
+                    text = stringResource(R.string.onboard_alerts_refused_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(10.dp))
                 Button(onClick = onNext, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                    Text("Next")
+                    Text(stringResource(R.string.onboard_next))
                 }
                 TextButton(
                     onClick = onOpenNotificationSettings,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Open notification settings")
+                    Text(stringResource(R.string.onboard_alerts_open_settings))
                 }
             }
 
             alertsOn -> {
                 Text(
-                    text = "You can change this later in Settings.",
+                    text = stringResource(R.string.onboard_alerts_change_later),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(10.dp))
                 Button(onClick = onNext, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                    Text("Next")
+                    Text(stringResource(R.string.onboard_next))
                 }
             }
 
             else -> {
                 Text(
-                    text = "Android asks about notifications once.",
+                    text = stringResource(R.string.onboard_alerts_asks_once),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -443,13 +452,13 @@ private fun AlertsStep(
                     onClick = onTurnOn,
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                 ) {
-                    Text("Turn on alerts")
+                    Text(stringResource(R.string.onboard_alerts_turn_on))
                 }
                 TextButton(
                     onClick = onNotNow,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Not now")
+                    Text(stringResource(R.string.onboard_alerts_not_now))
                 }
             }
         }
@@ -461,12 +470,12 @@ private fun AlertsStep(
 private fun RefusedCard() {
     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
-            text = "Notifications are off in Android",
+            text = stringResource(R.string.onboard_alerts_off_in_android),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.error,
         )
         Text(
-            text = "Alerts stay off until you allow them in the phone's settings.",
+            text = stringResource(R.string.onboard_alerts_refused_card),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -487,11 +496,13 @@ private fun BatteryStep(
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 24.dp, vertical = 20.dp),
     ) {
-        Text("Battery", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            text = stringResource(R.string.onboard_battery_title),
+            style = MaterialTheme.typography.headlineMedium,
+        )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "Android stops apps to save battery, which stops the alerts. Turn " +
-                "battery optimization off for Frigo.",
+            text = stringResource(R.string.onboard_battery_lead),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -514,12 +525,13 @@ private fun BatteryStep(
                     modifier = Modifier.size(22.dp),
                 )
                 Text(
-                    text = "Battery optimization",
+                    text = stringResource(R.string.onboard_battery_optimization),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = if (free) "Off for Frigo" else "On for Frigo",
+                    text = if (free) stringResource(R.string.onboard_battery_off)
+                    else stringResource(R.string.onboard_battery_on),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (free) MaterialTheme.colorScheme.primary else attention(),
                 )
@@ -530,20 +542,20 @@ private fun BatteryStep(
 
         if (free) {
             Button(onClick = onNext, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                Text("Next")
+                Text(stringResource(R.string.onboard_next))
             }
         } else {
             Text(
-                text = "That screen belongs to Android. Come back and Frigo checks for itself.",
+                text = stringResource(R.string.onboard_battery_android_screen),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(10.dp))
             Button(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                Text("Open battery settings")
+                Text(stringResource(R.string.onboard_battery_open_settings))
             }
             TextButton(onClick = onNext, modifier = Modifier.fillMaxWidth()) {
-                Text("Skip")
+                Text(stringResource(R.string.onboard_skip))
             }
         }
     }
@@ -553,9 +565,9 @@ private fun BatteryStep(
 
 /** One page of the walkthrough: its heading, its words, and the tab it lights. */
 private data class TourStop(
-    val title: String,
+    @StringRes val title: Int,
     val tab: Int,
-    val words: String,
+    @StringRes val words: Int,
     /** True on the page that draws a camera picture, which keeps its own shape. */
     val camera: Boolean = false,
 )
@@ -567,39 +579,35 @@ private data class TourStop(
  */
 private val TourStops = listOf(
     TourStop(
-        title = "Cameras",
+        title = R.string.onboard_tour_cameras,
         tab = 0,
-        words = "All four cameras at once, so a glance tells you whether anyone is " +
-            "about. Tap one for live view.",
+        words = R.string.onboard_tour_cameras_words,
     ),
     TourStop(
-        title = "Live and playback",
+        title = R.string.onboard_tour_live,
         tab = 0,
-        words = "Tap a camera and the picture goes live. The bar underneath is the day; " +
-            "drag it to go back through it. Turn the phone on its side for the whole screen.",
+        words = R.string.onboard_tour_live_words,
         camera = true,
     ),
     TourStop(
-        title = "Review",
+        title = R.string.onboard_tour_review,
         tab = 1,
-        words = "The moments Frigate thought were worth a look, newest first. Tap one to " +
-            "watch it, and it leaves the list once you've seen it.",
+        words = R.string.onboard_tour_review_words,
     ),
     TourStop(
-        title = "Explore",
+        title = R.string.onboard_tour_explore,
         tab = 2,
-        words = "Everything Frigate recorded. Narrow it by camera, by what was seen, or by day.",
+        words = R.string.onboard_tour_explore_words,
     ),
     TourStop(
-        title = "Clips",
+        title = R.string.onboard_tour_clips,
         tab = 3,
-        words = "The clips you kept. Watch one, save it to your phone, or delete it " +
-            "from the server.",
+        words = R.string.onboard_tour_clips_words,
     ),
     TourStop(
-        title = "Settings",
+        title = R.string.onboard_tour_settings,
         tab = 4,
-        words = "Your server, your alerts, and how the app looks.",
+        words = R.string.onboard_tour_settings_words,
     ),
 )
 
@@ -608,9 +616,9 @@ private val TourStops = listOf(
  * it sees. A tour is not the place to send someone into Frigate's settings.
  */
 private val AiTourStop = TourStop(
-    title = "AI Generated Alerts",
+    title = R.string.onboard_tour_ai,
     tab = 4,
-    words = "Frigo uses Artificial Intelligence to describe what it sees in a notification.",
+    words = R.string.onboard_tour_ai_words,
 )
 
 @Composable
@@ -661,7 +669,7 @@ private fun TourPage(
             .padding(horizontal = 24.dp),
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onSkip) { Text("Skip") }
+            TextButton(onClick = onSkip) { Text(stringResource(R.string.onboard_skip)) }
         }
 
         Column(
@@ -691,10 +699,10 @@ private fun TourPage(
                 }
             }
             Spacer(Modifier.height(24.dp))
-            Text(stop.title, style = MaterialTheme.typography.headlineMedium)
+            Text(stringResource(stop.title), style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(8.dp))
             Text(
-                text = stop.words,
+                text = stringResource(stop.words),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -720,7 +728,10 @@ private fun TourPage(
                 }
             }
             TextButton(onClick = onNext) {
-                Text(if (last) "Done" else "Next")
+                Text(
+                    if (last) stringResource(R.string.onboard_done)
+                    else stringResource(R.string.onboard_next),
+                )
             }
         }
     }
@@ -761,7 +772,7 @@ private fun TourBar(active: Int) {
                         )
                     }
                     Text(
-                        text = tab.label,
+                        text = stringResource(tab.label),
                         style = MaterialTheme.typography.labelSmall,
                         color = if (chosen) MaterialTheme.colorScheme.onSurface
                         else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -799,22 +810,28 @@ private fun ReadyStep(address: String, onOpen: () -> Unit) {
                 )
             }
         }
-        Text("You're set.", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            text = stringResource(R.string.onboard_ready_title),
+            style = MaterialTheme.typography.headlineMedium,
+        )
         Spacer(Modifier.height(10.dp))
         Text(
-            text = if (address.isNotBlank()) "Frigo is signed in to $address."
-            else "Frigo is signed in.",
+            text = if (address.isNotBlank()) {
+                stringResource(R.string.onboard_ready_signed_in_to, address)
+            } else {
+                stringResource(R.string.onboard_ready_signed_in)
+            },
             style = MaterialTheme.typography.bodyLarge,
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            text = "You can change all of this in Settings.",
+            text = stringResource(R.string.onboard_ready_change_later),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(28.dp))
         Button(onClick = onOpen, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-            Text("Open Frigo")
+            Text(stringResource(R.string.onboard_ready_open))
         }
     }
 }

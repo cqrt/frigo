@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.data
 
+import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -14,6 +15,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Response
+import nz.mckenzie.frigo.R
 import java.io.File
 import java.io.IOException
 import java.util.Locale
@@ -58,6 +60,11 @@ data class StreamSource(val url: String, val token: String)
  * one, and when it finally does expire you sign in again.
  */
 class FrigoRepository(
+    /**
+     * The app's own context, which the messages it builds are read through: a
+     * failure is said in the app's language, not the phone's.
+     */
+    val context: Context,
     private val api: FrigateApi,
     private val prefs: ServerPrefs,
     /** Where fetched clips are kept, so watching one twice costs one download. */
@@ -65,6 +72,17 @@ class FrigoRepository(
 ) {
 
     private val clipDir = File(cacheDir, "clips")
+
+    /** Said when there is no session to send a request with. */
+    private val notSignedIn: String
+        get() = context.words(R.string.api_not_signed_in)
+
+    /**
+     * Said when a page is asked for with nothing to build it from: no server
+     * signed in, or one that hasn't been reached and has no copy on the phone.
+     */
+    private val noSettingsYet: String
+        get() = context.words(R.string.api_no_settings_yet)
 
     private val mutex = Mutex()
     @Volatile private var stored: ServerPrefs.Stored? = null
@@ -276,7 +294,7 @@ class FrigoRepository(
             if (error is FrigateException && error.isAuthFailure) {
                 forgetToken()
                 _gate.value = Gate.SignedOut(
-                    message = "Your session has expired. Sign in again.",
+                    message = context.words(R.string.api_session_expired),
                     address = saved.baseUrl,
                     username = saved.username,
                 )
@@ -393,7 +411,7 @@ class FrigoRepository(
      * the phone's copy when the server doesn't answer.
      */
     suspend fun reviewPage(): ReviewPage {
-        val answer = settingsAnswer() ?: throw FrigateException(0, NotSignedIn)
+        val answer = settingsAnswer() ?: throw FrigateException(0, noSettingsYet)
         val settings = answer.settings
         return ReviewPage(
             settings = settings.config.reviewSettings(),
@@ -414,7 +432,7 @@ class FrigoRepository(
      * is felt, and the phone's copy when the server doesn't answer.
      */
     suspend fun cameraSwitchPage(): CameraSwitchPage {
-        val answer = settingsAnswer() ?: throw FrigateException(0, NotSignedIn)
+        val answer = settingsAnswer() ?: throw FrigateException(0, noSettingsYet)
         val settings = answer.settings
         val config = settings.config
         val cameras = config.visibleCameras(settings.profile.allowedCameras)
@@ -442,7 +460,7 @@ class FrigoRepository(
      * One trip, and the phone's copy when the server doesn't answer, which is how
      * every settings page here works.
      */
-    suspend fun aiSetup(): AiSetup {        val answer = settingsAnswer() ?: throw FrigateException(0, NotSignedIn)
+    suspend fun aiSetup(): AiSetup {        val answer = settingsAnswer() ?: throw FrigateException(0, noSettingsYet)
         val settings = answer.settings
         val services = settings.config.genaiServices()
         return AiSetup(
@@ -495,7 +513,7 @@ class FrigoRepository(
         // failing only ever costs the restart row.
         val admin = runCatching { api.profile(baseUrl, token).role == "admin" }
             .getOrDefault(false)
-        stats.systemPage(admin = admin)
+        stats.systemPage(context, admin = admin)
     }
 
     /** Restarts the server. Everything stops for about half a minute after it answers. */
@@ -799,8 +817,8 @@ class FrigoRepository(
      * downloaded here.
      */
     fun clipSource(eventId: String): ClipSource {
-        val current = stored ?: throw FrigateException(401, "Not signed in")
-        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        val current = stored ?: throw FrigateException(401, notSignedIn)
+        val token = current.token ?: throw FrigateException(401, notSignedIn)
         return ClipSource(url = "${current.baseUrl}/api/events/$eventId/clip.mp4", token = token)
     }
 
@@ -812,8 +830,8 @@ class FrigoRepository(
      * until it is closed.
      */
     fun soundSource(camera: String): ClipSource {
-        val current = stored ?: throw FrigateException(401, "Not signed in")
-        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        val current = stored ?: throw FrigateException(401, notSignedIn)
+        val token = current.token ?: throw FrigateException(401, notSignedIn)
         return ClipSource(url = "${current.baseUrl}/api/stream.aac?src=$camera", token = token)
     }
 
@@ -826,8 +844,8 @@ class FrigoRepository(
      * for detection, so this is the only way to see what the camera actually sees.
      */
     fun liveSource(camera: String): ClipSource {
-        val current = stored ?: throw FrigateException(401, "Not signed in")
-        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        val current = stored ?: throw FrigateException(401, notSignedIn)
+        val token = current.token ?: throw FrigateException(401, notSignedIn)
         return ClipSource(url = "${current.baseUrl}/api/stream.mp4?src=$camera", token = token)
     }
 
@@ -836,8 +854,8 @@ class FrigoRepository(
      * one, so the period it covers is the review's start and end.
      */
     fun reviewClipSource(reviewId: String): ClipSource {
-        val current = stored ?: throw FrigateException(401, "Not signed in")
-        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        val current = stored ?: throw FrigateException(401, notSignedIn)
+        val token = current.token ?: throw FrigateException(401, notSignedIn)
         return ClipSource(url = "${current.baseUrl}/api/review/$reviewId/clip.mp4", token = token)
     }
 
@@ -848,8 +866,8 @@ class FrigoRepository(
      * of a second.
      */
     fun recordingClipSource(camera: String, start: Double, end: Double): ClipSource {
-        val current = stored ?: throw FrigateException(401, "Not signed in")
-        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        val current = stored ?: throw FrigateException(401, notSignedIn)
+        val token = current.token ?: throw FrigateException(401, notSignedIn)
         return ClipSource(
             url = "${current.baseUrl}/api/$camera/start/${moment(start)}/end/${moment(end)}/clip.mp4",
             token = token,
@@ -891,8 +909,8 @@ class FrigoRepository(
      * can be scrubbed.
      */
     fun exportSource(export: Export): ClipSource {
-        val current = stored ?: throw FrigateException(401, "Not signed in")
-        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        val current = stored ?: throw FrigateException(401, notSignedIn)
+        val token = current.token ?: throw FrigateException(401, notSignedIn)
         return ClipSource(url = "${current.baseUrl}${export.videoUrlPath}", token = token)
     }
 
@@ -902,7 +920,7 @@ class FrigoRepository(
             source = exportSource(export),
             key = "kept-${export.id}",
             onProgress = onProgress,
-            notThere = "That clip isn't on the server any more.",
+            notThere = context.words(R.string.api_clip_gone),
         )
 
     /** The picture Frigate made for a kept clip, or null when it made none. */
@@ -969,7 +987,7 @@ class FrigoRepository(
             // player holding the first frame for hours. Straightening it costs a
             // moment and changes nothing on a clip that is already sound.
             if (ClipRepair.repair(part)) android.util.Log.i("Frigo", "clip timing repaired")
-            if (!part.renameTo(clip)) throw IOException("The clip couldn't be moved into place")
+            if (!part.renameTo(clip)) throw IOException(context.words(R.string.api_clip_not_moved))
             clip
         } catch (failure: Throwable) {
             part.delete()
@@ -1016,8 +1034,8 @@ class FrigoRepository(
      * ask the server whether it has a fresh one before giving up on the session.
      */
     private suspend fun <T> authorized(block: suspend (baseUrl: String, token: String) -> T): T {
-        val current = activeServer() ?: throw FrigateException(401, "Not signed in")
-        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        val current = activeServer() ?: throw FrigateException(401, notSignedIn)
+        val token = current.token ?: throw FrigateException(401, notSignedIn)
         return try {
             withContext(Dispatchers.IO) { block(current.baseUrl, token) }
         } catch (e: FrigateException) {
@@ -1032,19 +1050,19 @@ class FrigoRepository(
      * only recovery is asking /api/auth and keeping whatever token comes back.
      */
     private suspend fun renewSession(): String = mutex.withLock {
-        val current = stored ?: throw FrigateException(401, "Not signed in")
-        val token = current.token ?: throw FrigateException(401, "Not signed in")
+        val current = stored ?: throw FrigateException(401, notSignedIn)
+        val token = current.token ?: throw FrigateException(401, notSignedIn)
 
         val fresh = runCatching {
             withContext(Dispatchers.IO) { api.checkToken(current.baseUrl, token) }
         }.getOrElse {
             forgetToken()
             _gate.value = Gate.SignedOut(
-                message = "Your session has expired. Sign in again.",
+                message = context.words(R.string.api_session_expired),
                 address = current.baseUrl,
                 username = current.username,
             )
-            throw FrigateException(401, "Your session has expired. Sign in again.")
+            throw FrigateException(401, context.words(R.string.api_session_expired))
         }
 
         if (fresh != null && fresh != token) saveToken(fresh)
@@ -1072,14 +1090,28 @@ class FrigoRepository(
         persist(servers, stored?.baseUrl)
     }
 
-    companion object {
-        /**
-         * Said when a page is asked for with nothing to build it from: no server
-         * signed in, or one that hasn't been reached and has no copy on the phone.
-         */
-        private const val NotSignedIn =
-            "Your server isn't answering, and this phone hasn't read its settings yet."
+    /**
+     * Takes what people actually type - `frigate.example.com`, a full URL, or
+     * one that already ends in /api - and returns a clean base.
+     */
+    fun normalizeBaseUrl(input: String): String {
+        var value = input.trim()
+        if (value.isEmpty()) throw FrigateException(0, context.words(R.string.api_enter_address))
+        if (!value.startsWith("http://", ignoreCase = true) &&
+            !value.startsWith("https://", ignoreCase = true)
+        ) {
+            value = "https://$value"
+        }
+        value = value.trimEnd('/')
+        if (value.endsWith("/api", ignoreCase = true)) {
+            value = value.dropLast(4).trimEnd('/')
+        }
+        val parsed = value.toHttpUrlOrNull()
+            ?: throw FrigateException(0, context.words(R.string.api_not_a_web_address))
+        return parsed.toString().trimEnd('/')
+    }
 
+    companion object {
         /** Clips are named after the review or event they belong to. */
         private val NOT_IN_A_FILENAME = Regex("[^A-Za-z0-9._-]")
 
@@ -1108,27 +1140,6 @@ class FrigoRepository(
          * what a person is doing, and three of them go up to the server at once.
          */
         private const val QuickFrameHeight = 240
-
-        /**
-         * Takes what people actually type - `frigate.example.com`, a full URL, or
-         * one that already ends in /api - and returns a clean base.
-         */
-        fun normalizeBaseUrl(input: String): String {
-            var value = input.trim()
-            if (value.isEmpty()) throw FrigateException(0, "Enter your server address")
-            if (!value.startsWith("http://", ignoreCase = true) &&
-                !value.startsWith("https://", ignoreCase = true)
-            ) {
-                value = "https://$value"
-            }
-            value = value.trimEnd('/')
-            if (value.endsWith("/api", ignoreCase = true)) {
-                value = value.dropLast(4).trimEnd('/')
-            }
-            val parsed = value.toHttpUrlOrNull()
-                ?: throw FrigateException(0, "That doesn't look like a web address")
-            return parsed.toString().trimEnd('/')
-        }
     }
 }
 

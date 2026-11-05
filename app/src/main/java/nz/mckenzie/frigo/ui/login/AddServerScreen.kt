@@ -19,7 +19,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.FrigoRepository
 
 /**
@@ -38,10 +40,13 @@ fun AddServerScreen(
 ) {
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Add a server") },
+            title = { Text(stringResource(R.string.login_add_server)) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.action_back),
+                    )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -54,8 +59,7 @@ fun AddServerScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
             Text(
-                text = "Sign in to another Frigate server. The one you are on keeps its sign-in, " +
-                    "so you can switch back from Settings.",
+                text = stringResource(R.string.login_add_server_note),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -64,7 +68,7 @@ fun AddServerScreen(
 
             SignInForm(
                 repository = repository,
-                buttonLabel = "Add",
+                buttonLabel = stringResource(R.string.login_add),
             )
         }
     }

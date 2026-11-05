@@ -22,13 +22,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.annotation.StringRes
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,6 +42,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.alerts.AlertService
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.Gate
@@ -54,6 +58,7 @@ import nz.mckenzie.frigo.ui.reviews.ReviewsScreen
 import nz.mckenzie.frigo.ui.settings.AiDescriptionsScreen
 import nz.mckenzie.frigo.ui.settings.AiModelScreen
 import nz.mckenzie.frigo.ui.settings.CameraSwitchesScreen
+import nz.mckenzie.frigo.ui.settings.LanguageScreen
 import nz.mckenzie.frigo.ui.settings.QuietTimesScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
 import nz.mckenzie.frigo.ui.settings.SystemScreen
@@ -114,15 +119,19 @@ fun FrigoApp(container: AppContainer, openCamera: String? = null, onCameraOpened
     }
 }
 
-internal data class FrigoTab(val route: String, val label: String, val icon: ImageVector)
+internal data class FrigoTab(
+    val route: String,
+    @StringRes val label: Int,
+    val icon: ImageVector,
+)
 
 /** The five tabs, in the order the bar shows them. The walkthrough lights them up. */
 internal val FrigoTabs = listOf(
-    FrigoTab("cameras", "Cameras", Icons.Filled.Home),
-    FrigoTab("reviews", "Review", FrigoIcons.Reviews),
-    FrigoTab("explore", "Explore", FrigoIcons.Search),
-    FrigoTab("clips", "Clips", FrigoIcons.Clips),
-    FrigoTab("settings", "Settings", Icons.Filled.Settings),
+    FrigoTab("cameras", R.string.tab_cameras, Icons.Filled.Home),
+    FrigoTab("reviews", R.string.tab_reviews, FrigoIcons.Reviews),
+    FrigoTab("explore", R.string.tab_explore, FrigoIcons.Search),
+    FrigoTab("clips", R.string.tab_clips, FrigoIcons.Clips),
+    FrigoTab("settings", R.string.tab_settings, Icons.Filled.Settings),
 )
 
 private const val PLAYER_PREFIX = "player/"
@@ -167,7 +176,18 @@ private fun MainScaffold(
                                     Icon(tab.icon, contentDescription = null)
                                 }
                             },
-                            label = { Text(tab.label) },
+                            label = {
+                                Text(
+                                    text = stringResource(tab.label),
+                                    // A language with longer words keeps the bar one line
+                                    // tall: German's "Einstellungen" is the one that would
+                                    // otherwise wrap under its own icon.
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
                         )
                     }
                 }
@@ -226,6 +246,9 @@ private fun MainScaffold(
                     onOpenQuiet = {
                         navController.navigate("quiet-times") { launchSingleTop = true }
                     },
+                    onOpenLanguage = {
+                        navController.navigate("language") { launchSingleTop = true }
+                    },
                     onOpenSystem = {
                         navController.navigate("system") { launchSingleTop = true }
                     },
@@ -244,6 +267,12 @@ private fun MainScaffold(
             composable("quiet-times") {
                 QuietTimesScreen(
                     repository = container.repository,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable("language") {
+                LanguageScreen(
                     modifier = Modifier.padding(padding),
                     onBack = { navController.popBackStack() },
                 )
@@ -315,6 +344,7 @@ private fun NavController.switchTo(route: String) {
  */
 @Composable
 private fun WithUpdateDot(content: @Composable () -> Unit) {
+    val updateAvailable = stringResource(R.string.update_available)
     Box {
         content()
         Box(
@@ -324,7 +354,7 @@ private fun WithUpdateDot(content: @Composable () -> Unit) {
                 .size(12.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.error)
-                .semantics { contentDescription = "Update available" },
+                .semantics { contentDescription = updateAvailable },
         )
     }
 }

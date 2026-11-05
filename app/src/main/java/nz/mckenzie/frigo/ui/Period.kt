@@ -1,8 +1,10 @@
 package nz.mckenzie.frigo.ui
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import nz.mckenzie.frigo.R
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /** The stretch of time a list covers. */
 sealed interface Period {
@@ -33,12 +35,11 @@ fun Period.range(): Pair<Double?, Double?> = when (this) {
     is Period.On -> day.startSeconds() to day.plusDays(1).startSeconds()
 }
 
-private val dayFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM")
-
 /** How the day chip says it. */
+@Composable
 fun Period.said(): String = when (this) {
-    Period.All -> "All time"
-    Period.Today -> "Today"
-    Period.Yesterday -> "Yesterday"
-    is Period.On -> day.format(dayFormat)
+    Period.All -> stringResource(R.string.period_all_time)
+    Period.Today -> stringResource(R.string.period_today)
+    Period.Yesterday -> stringResource(R.string.period_yesterday)
+    is Period.On -> dateFormat("EEE d MMM").format(day)
 }

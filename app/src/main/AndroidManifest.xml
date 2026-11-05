@@ -20,6 +20,7 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.Frigo"
         android:usesCleartextTraffic="true">
@@ -54,6 +55,19 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!-- Remembers the language picked in Settings, and puts it on before the
+             first screen is built, so the app never opens in one language and
+             turns into another. AppCompat reads this on the phones that have no
+             per-app language of their own. -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
 
         <!-- Hands the downloaded APK to Android's installer. Not exported: nothing
              but the app's own install intent may read from it. -->

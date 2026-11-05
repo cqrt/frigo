@@ -17,7 +17,9 @@ import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.QuietTimes
 import nz.mckenzie.frigo.data.clockTime
+import nz.mckenzie.frigo.data.counted
 import nz.mckenzie.frigo.data.prettyCameraName
+import nz.mckenzie.frigo.data.words
 
 /**
  * The two notifications this app posts: the quiet one that says it is watching,
@@ -45,7 +47,7 @@ object Alerts {
         rules: AlertRules,
         quiet: QuietTimes,
     ): NotificationCompat.Builder {
-        val text = state.text(rules, quiet, System.currentTimeMillis())
+        val text = state.text(context, rules, quiet, System.currentTimeMillis())
         val open = PendingIntent.getActivity(
             context,
             0,
@@ -54,7 +56,7 @@ object Alerts {
         )
         return NotificationCompat.Builder(context, CHANNEL_WATCHING)
             .setSmallIcon(R.drawable.ic_stat_watch)
-            .setContentTitle("Watching for alerts")
+            .setContentTitle(context.words(R.string.alerts_watching_title))
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setContentIntent(open)
@@ -73,7 +75,7 @@ object Alerts {
         val title = review.data.objects
             .map { it.replace('_', ' ').replaceFirstChar { first -> first.uppercase() } }
             .joinToString(" · ")
-            .ifBlank { "Alert" }
+            .ifBlank { context.words(R.string.alerts_fallback_title) }
         return buzz(context, review.camera, title, picture)
     }
 
@@ -145,9 +147,10 @@ object Alerts {
     private fun buzz(context: Context, cameraName: String, title: String, picture: ByteArray?): Buzz {
         val id = nextEventId++
         val camera = prettyCameraName(cameraName)
+        val text = context.words(R.string.alerts_tap_to_watch, camera)
 
         NotificationManagerCompat.from(context)
-            .notify(id, build(context, id, cameraName, title, "$camera. Tap to watch it.", picture).build())
+            .notify(id, build(context, id, cameraName, title, text, picture).build())
         return Buzz(id, cameraName, title, camera)
     }
 
@@ -277,51 +280,60 @@ sealed interface WatchState {
      * the line stays as it was rather than claiming more silence than there is.
      */
     fun text(
+        context: Context,
         rules: AlertRules,
         quiet: QuietTimes? = null,
         now: Long = System.currentTimeMillis(),
     ): String {
-        if (this is SignedOut) return Expired
+        if (this is SignedOut) return context.words(R.string.alerts_session_expired)
 
         // The first of these that is true is the one worth saying: turning a
         // camera on further down would change nothing until it is dealt with.
         val telling = rules.cameras.filterValues { it.notify }
         if (telling.isEmpty()) {
-            return "Every camera is off on your server's notifications page, so nothing will buzz."
+            return context.words(R.string.alerts_all_cameras_off)
         }
         val alerting = telling.filterValues { it.alertsOn }
-        if (alerting.isEmpty()) return "No camera has alerts on, so nothing will buzz."
+        if (alerting.isEmpty()) return context.words(R.string.alerts_no_alerts_on)
 
         val buzzing = alerting.filterValues { it.labels.isNotEmpty() }
-        if (buzzing.isEmpty()) return "No camera has any alert objects, so nothing will buzz."
+        if (buzzing.isEmpty()) return context.words(R.string.alerts_no_alert_objects)
 
         val count = buzzing.size
-        val watching = if (count == 1) "One camera" else "$count cameras"
-        val labels = said(buzzing.values.flatMap { it.labels }.distinct())
+        val watching = context.counted(R.plurals.alerts_cameras, count, count)
+        val labels = said(context, buzzing.values.flatMap { it.labels }.distinct())
 
         val silence = if (quiet != null && buzzing.keys.all { quiet.quiets(it, now) }) {
-            quiet.quietUntil(now)?.let { "Quiet until ${clockTime(it)}. " }.orEmpty()
+            quiet.quietUntil(now)
+                ?.let { context.words(R.string.alerts_quiet_until, clockTime(it)) }
+                .orEmpty()
         } else {
             ""
         }
 
         val state = when (this) {
-            Connecting -> "$watching for $labels. Connecting to your server."
-            Connected -> "$watching for $labels. New events arrive as they happen."
-            is NotReaching -> "$watching for $labels. $detail Trying again."
-            SignedOut -> Expired
+            Connecting -> context.words(R.string.alerts_watching_connecting, watching, labels)
+            Connected -> context.words(R.string.alerts_watching_connected, watching, labels)
+            is NotReaching ->
+                context.words(R.string.alerts_watching_retrying, watching, labels, detail)
+            SignedOut -> context.words(R.string.alerts_session_expired)
         }
         return silence + state
     }
 
     private companion object {
-        const val Expired = "Your session has expired. Open Frigo and sign in again."
-
         /** Two at most, then a count, so the line stays a line. */
-        fun said(labels: List<String>): String = when {
-            labels.isEmpty() -> "nothing"
-            labels.size <= 2 -> labels.joinToString(" and ")
-            else -> "${labels[0]}, ${labels[1]} and ${labels.size - 2} more"
+        fun said(context: Context, labels: List<String>): String = when {
+            labels.isEmpty() -> context.words(R.string.alerts_nothing)
+            labels.size == 1 -> labels[0]
+            labels.size == 2 ->
+                context.words(R.string.alerts_two_objects, labels[0], labels[1])
+            else -> context.words(
+                R.string.alerts_more_objects,
+                labels[0],
+                labels[1],
+                labels.size - 2,
+            )
         }
     }
 }

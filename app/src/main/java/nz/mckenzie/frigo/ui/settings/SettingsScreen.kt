@@ -47,16 +47,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.BuildConfig
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.CameraState
 import nz.mckenzie.frigo.data.CameraSwitchPage
 import nz.mckenzie.frigo.data.FrigoRepository
+import nz.mckenzie.frigo.data.Language
 import nz.mckenzie.frigo.data.ServerPrefs
 import nz.mckenzie.frigo.data.Update
 import nz.mckenzie.frigo.data.UpdateWatch
@@ -91,6 +94,7 @@ fun SettingsScreen(
     onOpenAlerts: () -> Unit = {},
     onOpenAi: () -> Unit = {},
     onOpenQuiet: () -> Unit = {},
+    onOpenLanguage: () -> Unit = {},
     onOpenSystem: () -> Unit = {},
     onAddServer: () -> Unit = {},
 ) {
@@ -153,7 +157,7 @@ fun SettingsScreen(
             lookProblem = null
             runCatching { updates.look() }
                 .onFailure {
-                    lookProblem = "Couldn't reach GitHub. Check your connection and try again."
+                    lookProblem = context.getString(R.string.settings_couldnt_reach_github)
                 }
         }
     }
@@ -169,7 +173,7 @@ fun SettingsScreen(
             }
                 .onSuccess { ready = it }
                 .onFailure {
-                    lookProblem = "Couldn't fetch it. Check your connection and try again."
+                    lookProblem = context.getString(R.string.settings_couldnt_fetch)
                 }
             fetching = false
         }
@@ -211,7 +215,7 @@ fun SettingsScreen(
         }
         needsPermission = false
         runCatching { installUpdate(context, apk) }
-            .onFailure { lookProblem = "Android wouldn't open the installer." }
+            .onFailure { lookProblem = context.getString(R.string.settings_no_installer) }
     }
 
     // Android keeps the switch itself, so the note about it goes away by itself once
@@ -223,7 +227,7 @@ fun SettingsScreen(
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Settings") },
+            title = { Text(stringResource(R.string.settings_title)) },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         )
 
@@ -234,7 +238,7 @@ fun SettingsScreen(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Group("Servers") {
+            Group(stringResource(R.string.settings_servers)) {
                 servers.forEachIndexed { index, server ->
                     if (index > 0) CardDivider()
                     val here = server.baseUrl == baseUrl
@@ -252,7 +256,7 @@ fun SettingsScreen(
                             if (here) {
                                 Icon(
                                     imageVector = Icons.Filled.Check,
-                                    contentDescription = "Signed in",
+                                    contentDescription = stringResource(R.string.settings_signed_in),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp),
                                 )
@@ -267,7 +271,7 @@ fun SettingsScreen(
 
                 Item(
                     icon = Icons.Filled.Add,
-                    title = "Add a server",
+                    title = stringResource(R.string.settings_add_server),
                     onClick = onAddServer,
                 )
 
@@ -278,17 +282,22 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.End,
                 ) {
                     TextButton(onClick = { scope.launch { repository.signOut() } }) {
-                        Text(if (servers.size > 1) "Sign out of this server" else "Sign out")
+                        Text(
+                            if (servers.size > 1) {
+                                stringResource(R.string.settings_sign_out_this)
+                            } else {
+                                stringResource(R.string.settings_sign_out)
+                            },
+                        )
                     }
                 }
             }
 
-            Group("Notifications") {
+            Group(stringResource(R.string.settings_notifications)) {
                 Item(
                     icon = FrigoIcons.Bell,
-                    title = "Enable",
-                    supporting = "You'll be alerted when Frigate spots something. Tap the " +
-                        "notification for live view.",
+                    title = stringResource(R.string.action_enable),
+                    supporting = stringResource(R.string.settings_notifications_supporting),
                     trailing = {
                         Switch(
                             checked = alerts.on,
@@ -316,7 +325,7 @@ fun SettingsScreen(
 
                 if (blocked) {
                     Note(
-                        text = "Notifications are off for Frigo in Android.",
+                        text = stringResource(R.string.settings_notifications_blocked),
                         colour = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -325,9 +334,8 @@ fun SettingsScreen(
 
                 Item(
                     icon = FrigoIcons.Sparkle,
-                    title = "AI descriptions",
-                    supporting = "Using Artificial Intelligence, Frigo will describe what it " +
-                        "sees in your alerts",
+                    title = stringResource(R.string.settings_ai),
+                    supporting = stringResource(R.string.settings_ai_supporting),
                     onClick = onOpenAi,
                     trailing = { OpenMark() },
                 )
@@ -336,8 +344,8 @@ fun SettingsScreen(
 
                 Item(
                     icon = FrigoIcons.Tune,
-                    title = "Alerts and detections",
-                    supporting = "Which cameras and objects buzz. These are your server's settings.",
+                    title = stringResource(R.string.settings_alerts_and_detections),
+                    supporting = stringResource(R.string.settings_alerts_supporting),
                     onClick = onOpenAlerts,
                     trailing = { OpenMark() },
                 )
@@ -346,8 +354,7 @@ fun SettingsScreen(
                 // the server is the one thing that can silence all of them.
                 if (rules.cameras.values.none { it.notify }) {
                     Note(
-                        text = "Every camera is off on your server's notifications page, " +
-                            "so nothing will buzz.",
+                        text = stringResource(R.string.settings_all_cameras_off),
                         colour = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -356,33 +363,29 @@ fun SettingsScreen(
 
                 Item(
                     icon = FrigoIcons.Quiet,
-                    title = "Quiet times",
-                    supporting = quiet.said(System.currentTimeMillis()),
+                    title = stringResource(R.string.settings_quiet_times),
+                    supporting = quiet.said(context, System.currentTimeMillis()),
                     onClick = onOpenQuiet,
                     trailing = { OpenMark() },
                 )
 
                 CardDivider()
 
-                Note(
-                    text = "Frigo runs in the background to keep the alerts coming. So that " +
-                        "Android doesn't shut it down to save battery, turn off battery " +
-                        "optimization for Frigo.",
-                )
+                Note(text = stringResource(R.string.settings_battery_note))
 
                 TextButton(
                     onClick = { context.openBatterySettings() },
                     modifier = Modifier.padding(start = 8.dp, bottom = 6.dp),
                 ) {
-                    Text("Battery settings")
+                    Text(stringResource(R.string.settings_battery_settings))
                 }
             }
 
-            Group("Live view") {
+            Group(stringResource(R.string.settings_live_view)) {
                 Item(
                     icon = Icons.Filled.PlayArrow,
-                    title = "Enable",
-                    supporting = "Plays video on the Cameras tab. It uses more battery and data.",
+                    title = stringResource(R.string.action_enable),
+                    supporting = stringResource(R.string.settings_live_supporting),
                     trailing = {
                         Switch(
                             checked = liveTiles,
@@ -394,22 +397,24 @@ fun SettingsScreen(
                 )
             }
 
-            Group("Cameras") {
+            Group(stringResource(R.string.settings_cameras)) {
                 val stale = switches?.readAt
                 when {
                     stale != null -> Note(
-                        "Your server isn't answering. These are the cameras your phone " +
-                            "last read, ${relativeTime(stale).lowercase()}.",
+                        stringResource(
+                            R.string.settings_cameras_stale,
+                            relativeTime(stale).lowercase(),
+                        ),
                     )
 
-                    offline -> Note("Your server isn't answering, so the cameras can't be read.")
-                    cameras.isEmpty() -> Note("No camera this account can see.")
+                    offline -> Note(stringResource(R.string.settings_cameras_offline))
+                    cameras.isEmpty() -> Note(stringResource(R.string.settings_no_cameras))
                 }
                 cameras.forEachIndexed { index, camera ->
                     if (index > 0) CardDivider()
                     CameraRow(
                         title = camera.title,
-                        state = switches?.cameraState(camera.name),
+                        state = switches?.cameraState(context, camera.name),
                         onClick = { onOpenCamera(camera.name) },
                     )
                 }
@@ -418,18 +423,18 @@ fun SettingsScreen(
             // Only an admin may see what the box is doing, and only an admin can
             // restart it, so the row is not there for anyone else.
             if (switches?.admin == true) {
-                Group("Server") {
+                Group(stringResource(R.string.settings_server)) {
                     Item(
                         icon = FrigoIcons.Gauge,
-                        title = "System",
-                        supporting = "Memory, disks, cameras, and the processes behind them",
+                        title = stringResource(R.string.settings_system),
+                        supporting = stringResource(R.string.settings_system_supporting),
                         onClick = onOpenSystem,
                         trailing = { OpenMark() },
                     )
                 }
             }
 
-            Group("Appearance") {
+            Group(stringResource(R.string.settings_appearance)) {
                 Column(Modifier.padding(16.dp)) {
                     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                         ThemeMode.entries.forEachIndexed { index, mode ->
@@ -446,15 +451,33 @@ fun SettingsScreen(
                         }
                     }
                     Text(
-                        text = "Follows the phone unless you pick one.",
+                        text = stringResource(R.string.settings_appearance_note),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 10.dp, start = 4.dp),
                     )
                 }
+
+                CardDivider()
+
+                // The language sits with the colours: both are about how the app
+                // looks to you rather than about the server it is looking at.
+                Item(
+                    icon = FrigoIcons.Globe,
+                    title = stringResource(R.string.settings_language),
+                    value = Language.current().let { picked ->
+                        if (picked == Language.System) {
+                            stringResource(R.string.language_follow_phone)
+                        } else {
+                            picked.ownName
+                        }
+                    },
+                    onClick = onOpenLanguage,
+                    trailing = { OpenMark() },
+                )
             }
 
-            Group("Updates") {
+            Group(stringResource(R.string.settings_updates)) {
                 // Worked out before the branches below, so each of them is one value
                 // the screen can hold on to rather than something that can change
                 // under it.
@@ -466,20 +489,23 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(
-                        text = "Frigo ${BuildConfig.VERSION_NAME}",
+                        text = stringResource(R.string.settings_version_here, BuildConfig.VERSION_NAME),
                         style = MaterialTheme.typography.bodyLarge,
                     )
 
                     when {
                         fetching -> Text(
-                            text = "Downloading… $percent%",
+                            text = stringResource(R.string.settings_downloading, percent),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
 
                         newer != null && apk != null -> {
                             Text(
-                                text = "Frigo ${newer.version} is ready to install.",
+                                text = stringResource(
+                                    R.string.settings_ready_to_install,
+                                    newer.version,
+                                ),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -487,13 +513,13 @@ fun SettingsScreen(
                                 onClick = { install(apk) },
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text("Install")
+                                Text(stringResource(R.string.settings_install))
                             }
                         }
 
                         newer != null -> {
                             Text(
-                                text = "Frigo ${newer.version} is out.",
+                                text = stringResource(R.string.settings_is_out, newer.version),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -501,7 +527,7 @@ fun SettingsScreen(
                                 onClick = { fetch(newer) },
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text("Download")
+                                Text(stringResource(R.string.settings_download))
                             }
                             if (newer.page.isNotEmpty()) {
                                 TextButton(
@@ -515,19 +541,19 @@ fun SettingsScreen(
                                     },
                                     modifier = Modifier.padding(start = 0.dp),
                                 ) {
-                                    Text("What's new")
+                                    Text(stringResource(R.string.settings_whats_new))
                                 }
                             }
                         }
 
                         looking -> Text(
-                            text = "Looking for a newer version…",
+                            text = stringResource(R.string.settings_looking),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
 
                         else -> if (answered) Text(
-                            text = "This is the newest version.",
+                            text = stringResource(R.string.settings_newest),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -545,8 +571,7 @@ fun SettingsScreen(
 
                     if (needsPermission) {
                         Text(
-                            text = "Android needs your permission to install Frigo. Turn on " +
-                                "Allow from this source, then tap Install again.",
+                            text = stringResource(R.string.settings_install_permission),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -557,25 +582,25 @@ fun SettingsScreen(
                             onClick = { look() },
                             modifier = Modifier.padding(start = 0.dp),
                         ) {
-                            Text("Check again")
+                            Text(stringResource(R.string.settings_check_again))
                         }
                     }
                 }
             }
 
-            Group("About") {
+            Group(stringResource(R.string.settings_about)) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Fact("Version", BuildConfig.VERSION_NAME)
-                    Fact("Author", "Matt Mckenzie")
-                    Fact("Copyright", "© 2026 Matt Mckenzie")
+                    Fact(stringResource(R.string.settings_version), BuildConfig.VERSION_NAME)
+                    Fact(stringResource(R.string.settings_author), "Matt Mckenzie")
+                    Fact(stringResource(R.string.settings_copyright), "© 2026 Matt Mckenzie")
                     TextButton(
                         onClick = { scope.launch { repository.setOnboarded(false) } },
                         modifier = Modifier.padding(start = 0.dp),
                     ) {
-                        Text("Show the welcome again")
+                        Text(stringResource(R.string.settings_show_welcome))
                     }
                 }
             }
@@ -617,10 +642,11 @@ private fun Fact(label: String, value: String) {
 }
 
 /** What the chip says. */
+@Composable
 private fun ThemeMode.label(): String = when (this) {
-    ThemeMode.System -> "System"
-    ThemeMode.Day -> "Day"
-    ThemeMode.Night -> "Night"
+    ThemeMode.System -> stringResource(R.string.settings_theme_system)
+    ThemeMode.Day -> stringResource(R.string.settings_theme_day)
+    ThemeMode.Night -> stringResource(R.string.settings_theme_night)
 }
 
 /** The address without the scheme, which is the part that tells two servers apart. */

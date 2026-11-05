@@ -36,10 +36,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.QuietTimes
@@ -91,10 +93,13 @@ fun QuietTimesScreen(
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Quiet times") },
+            title = { Text(stringResource(R.string.quiet_title)) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.action_back),
+                    )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -107,10 +112,10 @@ fun QuietTimesScreen(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Group("When") {
+            Group(stringResource(R.string.quiet_when)) {
                 Item(
                     icon = FrigoIcons.Quiet,
-                    title = "Enable",
+                    title = stringResource(R.string.action_enable),
                     trailing = {
                         Switch(
                             checked = quiet.on,
@@ -123,19 +128,19 @@ fun QuietTimesScreen(
                     CardDivider()
                     Item(
                         icon = FrigoIcons.Clock,
-                        title = "From",
+                        title = stringResource(R.string.quiet_time_from),
                         value = clockTime(quiet.from),
                         onClick = { editing = Edit.From },
                     )
                     CardDivider()
                     Item(
                         icon = FrigoIcons.Clock,
-                        title = "Until",
+                        title = stringResource(R.string.quiet_time_until),
                         value = clockTime(quiet.until),
                         onClick = { editing = Edit.Until },
                     )
                     if (quiet.from == quiet.until) {
-                        Note("From and Until are the same, so this is quiet all day.")
+                        Note(stringResource(R.string.quiet_same_times))
                     }
                 }
 
@@ -145,11 +150,15 @@ fun QuietTimesScreen(
                 // an hour of silence that ends by itself.
                 Item(
                     icon = FrigoIcons.Quiet,
-                    title = if (hushing) "Quiet until ${clockTime(quiet.hushUntil)}" else "Quiet for an hour",
-                    supporting = if (hushing) {
-                        "Every camera is silent until then."
+                    title = if (hushing) {
+                        stringResource(R.string.quiet_until, clockTime(quiet.hushUntil))
                     } else {
-                        "Every camera, for the next hour."
+                        stringResource(R.string.quiet_for_an_hour)
+                    },
+                    supporting = if (hushing) {
+                        stringResource(R.string.quiet_hush_supporting)
+                    } else {
+                        stringResource(R.string.quiet_hour_supporting)
                     },
                     onClick = if (hushing) {
                         null
@@ -159,20 +168,20 @@ fun QuietTimesScreen(
                     trailing = {
                         if (hushing) {
                             TextButton(onClick = { save(quiet.copy(hushUntil = 0L)) }) {
-                                Text("Stop")
+                                Text(stringResource(R.string.quiet_stop))
                             }
                         }
                     },
                 )
             }
 
-            Group("Cameras") {
+            Group(stringResource(R.string.quiet_cameras_heading)) {
                 when {
                     offline -> Note(
-                        "Your server isn't answering, so this is the list your phone last read."
+                        stringResource(R.string.quiet_offline),
                     )
 
-                    cameras.isEmpty() -> Note("No camera this account can see.")
+                    cameras.isEmpty() -> Note(stringResource(R.string.settings_no_cameras))
                 }
 
                 cameras.forEachIndexed { index, camera ->
@@ -200,7 +209,7 @@ fun QuietTimesScreen(
                 }
 
                 if (cameras.isNotEmpty() && quiet.cameras.isEmpty()) {
-                    Note("No camera is picked, so nothing will go quiet.")
+                    Note(stringResource(R.string.quiet_no_picked))
                 }
             }
 
@@ -263,9 +272,9 @@ private fun TimeDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.quiet_cancel)) }
                     TextButton(onClick = { onPick(state.hour * 60 + state.minute) }) {
-                        Text("Set")
+                        Text(stringResource(R.string.quiet_set))
                     }
                 }
             }

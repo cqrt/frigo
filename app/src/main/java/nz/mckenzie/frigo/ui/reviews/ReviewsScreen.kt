@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.FrigoRepository
@@ -82,10 +84,13 @@ fun ReviewsScreen(
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Review") },
+            title = { Text(stringResource(R.string.reviews_title)) },
             actions = {
                 IconButton(onClick = onOpenSettings) {
-                    Icon(FrigoIcons.Tune, contentDescription = "Alerts and detections")
+                    Icon(
+                        FrigoIcons.Tune,
+                        contentDescription = stringResource(R.string.revset_title),
+                    )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -103,9 +108,10 @@ fun ReviewsScreen(
                     shape = SegmentedButtonDefaults.itemShape(index, ReviewKind.entries.size),
                 ) {
                     val left = state.left(kind)
+                    val label = stringResource(kind.labelRes)
                     Text(
                         buildAnnotatedString {
-                            append(kind.label)
+                            append(label)
                             // How much of this half is left. Nothing is said when
                             // there's nothing left, so a cleared tab reads as
                             // plain words again.
@@ -134,12 +140,12 @@ fun ReviewsScreen(
             }
             item {
                 ChoiceChip(
-                    title = "Labels",
+                    title = stringResource(R.string.reviews_labels),
                     choices = state.labelsOn,
                     chosen = state.chosenLabels,
                     name = ::prettyLabel,
                     onToggle = viewModel::toggleLabel,
-                    empty = "Nothing to narrow by on this tab.",
+                    empty = stringResource(R.string.reviews_no_labels),
                 )
             }
             item {
@@ -153,12 +159,14 @@ fun ReviewsScreen(
                 FilterChip(
                     selected = state.showReviewed,
                     onClick = { viewModel.setShowReviewed(!state.showReviewed) },
-                    label = { Text("Show reviewed") },
+                    label = { Text(stringResource(R.string.reviews_show_reviewed)) },
                 )
             }
             if (state.narrowed) {
                 item {
-                    TextButton(onClick = viewModel::clearFilters) { Text("Clear") }
+                    TextButton(onClick = viewModel::clearFilters) {
+                        Text(stringResource(R.string.reviews_clear))
+                    }
                 }
             }
         }
@@ -189,7 +197,9 @@ fun ReviewsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(state.error.orEmpty(), style = MaterialTheme.typography.bodyLarge)
-                    Button(onClick = viewModel::refresh) { Text("Try again") }
+                    Button(onClick = viewModel::refresh) {
+                        Text(stringResource(R.string.reviews_try_again))
+                    }
                 }
 
                 state.reviews.isEmpty() -> Column(
@@ -204,7 +214,7 @@ fun ReviewsScreen(
                             // would read like something went wrong.
                             state.justRead.isNotEmpty() -> state.kind.emptyLeft()
 
-                            state.narrowed -> "Nothing for these filters."
+                            state.narrowed -> stringResource(R.string.reviews_nothing_filtered)
 
                             state.showReviewed -> state.kind.emptyAll()
 
@@ -213,11 +223,12 @@ fun ReviewsScreen(
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     if (state.narrowed) {
-                        Button(onClick = viewModel::clearFilters) { Text("Clear filters") }
+                        Button(onClick = viewModel::clearFilters) {
+                            Text(stringResource(R.string.reviews_clear_filters))
+                        }
                     } else if (!state.showReviewed) {
                         Text(
-                            text = "Anything you've watched is hidden. Turn on Show reviewed " +
-                                "to see it again.",
+                            text = stringResource(R.string.reviews_hidden_reviewed),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -227,7 +238,7 @@ fun ReviewsScreen(
                             onClick = viewModel::undoMarkAll,
                             enabled = !state.marking,
                         ) {
-                            Text("Put them back")
+                            Text(stringResource(R.string.reviews_put_back))
                         }
                     }
                 }
@@ -256,11 +267,14 @@ fun ReviewsScreen(
                                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                                     ) {
                                         CircularProgressIndicator(Modifier.size(18.dp))
-                                        Text("Marking them as reviewed", style = MaterialTheme.typography.bodyMedium)
+                                        Text(
+                                            text = stringResource(R.string.reviews_marking),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                        )
                                     }
                                 } else {
                                     TextButton(onClick = viewModel::markAllRead) {
-                                        Text("Mark all as reviewed")
+                                        Text(stringResource(R.string.reviews_mark_all))
                                     }
                                 }
                             }
@@ -272,7 +286,9 @@ fun ReviewsScreen(
                                 if (state.loadingMore) {
                                     CircularProgressIndicator(Modifier.size(24.dp))
                                 } else {
-                                    Button(onClick = viewModel::loadMore) { Text("Load older") }
+                                    Button(onClick = viewModel::loadMore) {
+                                        Text(stringResource(R.string.reviews_load_older))
+                                    }
                                 }
                             }
                         }
@@ -344,10 +360,12 @@ private fun ReviewRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                val ago = relativeTime(review.startedAtMillis)
                 Text(
-                    text = buildString {
-                        append(relativeTime(review.startedAtMillis))
-                        if (review.hasBeenReviewed) append(" · Reviewed")
+                    text = if (review.hasBeenReviewed) {
+                        stringResource(R.string.reviews_reviewed_at, ago)
+                    } else {
+                        ago
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -358,11 +376,12 @@ private fun ReviewRow(
 }
 
 /** `person`, `person-verified` and the like, said the way a person would. */
+@Composable
 internal fun FrigateReview.title(): String {
     val seen = (data.objects + data.subLabels)
         .map { it.removeSuffix("-verified").replace('_', ' ') }
         .filter { it.isNotBlank() }
         .distinct()
-    if (seen.isEmpty()) return "Motion"
+    if (seen.isEmpty()) return stringResource(R.string.reviews_motion)
     return seen.joinToString(", ") { it.replaceFirstChar { first -> first.uppercase() } }
 }

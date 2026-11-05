@@ -115,7 +115,7 @@ class ExploreViewModel(private val repository: FrigoRepository) : ViewModel() {
                     }
                 }
                 .onFailure { error ->
-                    _state.update { it.copy(loading = false, error = error.friendlyMessage()) }
+                    _state.update { it.copy(loading = false, error = error.friendlyMessage(repository.context)) }
                 }
         }
     }
@@ -147,7 +147,7 @@ class ExploreViewModel(private val repository: FrigoRepository) : ViewModel() {
                     }
                 }
                 .onFailure { error ->
-                    _state.update { it.copy(loadingMore = false, error = error.friendlyMessage()) }
+                    _state.update { it.copy(loadingMore = false, error = error.friendlyMessage(repository.context)) }
                 }
         }
     }

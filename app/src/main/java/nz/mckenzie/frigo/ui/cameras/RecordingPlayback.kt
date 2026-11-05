@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
@@ -32,6 +33,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.RecordingSpan
 import java.io.File
@@ -153,6 +155,10 @@ internal fun RecordingRun(
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
+    // Said if a piece does not come, and if there is nothing to play at all. Read
+    // here rather than in the loop, which is not a place a screen can be read from.
+    val failedPiece = stringResource(R.string.playback_recording_failed)
+    val nothingToPlay = stringResource(R.string.playback_nothing_to_play)
     // Where in the day each queued piece starts and ends, so the playhead can say
     // where the picture has got to in the recordings rather than in the files.
     val pieces = remember(camera, from) { mutableStateListOf<RecordingSpan>() }
@@ -252,7 +258,7 @@ internal fun RecordingRun(
                 // A piece that does not come is not worth stopping the ones already
                 // queued for: they play out, and the run ends with them.
                 android.util.Log.w("Frigo", "playback piece failed: ${piece.startTime}", failure)
-                if (pieces.isEmpty()) sayProblem(failure.message ?: "That recording wouldn't come.")
+                if (pieces.isEmpty()) sayProblem(failure.message ?: failedPiece)
                 break
             }
 
@@ -280,7 +286,7 @@ internal fun RecordingRun(
         // Nothing to play at all, and nothing playing: say so rather than sit on a
         // black picture.
         if (pieces.isEmpty()) {
-            sayProblem("There's no recording to play from here.")
+            sayProblem(nothingToPlay)
             return@LaunchedEffect
         }
 
@@ -366,14 +372,14 @@ internal fun pieceFrom(
 @Composable
 internal fun SpeedButton(speed: Float, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Text(
-        text = "${speed.toInt()}×",
+        text = stringResource(R.string.playback_speed, speed.toInt()),
         style = MaterialTheme.typography.labelLarge,
         color = Color.White,
         modifier = modifier
             .clip(RoundedCornerShape(50))
             .background(Color.Black.copy(alpha = 0.55f))
             .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(50))
-            .clickable(onClickLabel = "Change the speed") { onClick() }
+            .clickable(onClickLabel = stringResource(R.string.playback_change_speed)) { onClick() }
             .padding(horizontal = 12.dp, vertical = 6.dp),
     )
 }

@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.data
 
+import android.content.Context
 import android.util.Base64
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
@@ -21,6 +22,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import nz.mckenzie.frigo.R
 import java.io.File
 import java.net.SocketTimeoutException
 import java.time.ZoneId
@@ -34,6 +36,7 @@ import java.util.concurrent.CancellationException
  * JWT handed back in a cookie header, which is then sent as a bearer token.
  */
 class FrigateApi(
+    private val context: Context,
     private val client: OkHttpClient,
     /** Same client settings but with no read timeout, for the endless MJPEG body. */
     private val streamClient: OkHttpClient = client,
@@ -46,6 +49,16 @@ class FrigateApi(
         isLenient = true
         coerceInputValues = true
     }
+
+    /** A clip is cut from recordings, so it goes when they do. */
+    private val noClip: String
+        get() = context.words(R.string.api_no_clip)
+
+    private val clipTooBig: String
+        get() = context.words(R.string.api_clip_too_big)
+
+    private val emptyClip: String
+        get() = context.words(R.string.api_empty_clip)
 
     /**
      * Signs in and returns the token. The fields are `user` and `password`;
@@ -65,7 +78,7 @@ class FrigateApi(
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw response.toException()
             return response.jwtFromCookies()
-                ?: throw FrigateException(0, "Your server accepted the sign-in but sent no token")
+                ?: throw FrigateException(0, context.words(R.string.api_no_token))
         }
     }
 
@@ -324,15 +337,17 @@ class FrigateApi(
             // endpoint" or "that username and password weren't accepted", neither
             // of which is what happened.
             if (response.code == 400 || response.code == 404) {
-                throw FrigateException(response.code, notThere ?: NO_CLIP)
+                throw FrigateException(response.code, notThere ?: noClip)
             }
             if (response.code == 401 || response.code == 403) {
-                throw FrigateException(response.code, "Your session has expired. Sign in again.")
+                throw FrigateException(response.code, context.words(R.string.api_session_expired))
             }
             if (!response.isSuccessful) throw response.toException()
 
-            val body = response.body
-                ?: throw FrigateException(response.code, "The server sent nothing.")
+            val body = response.body ?: throw FrigateException(
+                response.code,
+                context.words(R.string.api_server_sent_nothing),
+            )
 
             var total = 0L
             try {
@@ -344,7 +359,9 @@ class FrigateApi(
                             if (read == -1) break
                             out.write(buffer, 0, read)
                             total += read
-                            if (total > MAX_CLIP_BYTES) throw FrigateException(0, CLIP_TOO_BIG)
+                            if (total > MAX_CLIP_BYTES) {
+                                throw FrigateException(0, clipTooBig)
+                            }
                             if (!shouldKeepGoing()) throw CancellationException("clip download stopped")
                             onProgress(total)
                         }
@@ -356,7 +373,7 @@ class FrigateApi(
                 if (total == 0L) throw quiet
             }
 
-            if (total == 0L) throw FrigateException(0, EMPTY_CLIP)
+            if (total == 0L) throw FrigateException(0, emptyClip)
         }
     }
 
@@ -660,7 +677,7 @@ class FrigateApi(
 
         client.newCall(request).execute().use { response ->
             if (response.code == 401 || response.code == 403) {
-                throw FrigateException(response.code, "Your session has expired. Sign in again.")
+                throw FrigateException(response.code, context.words(R.string.api_session_expired))
             }
             val raw = runCatching { response.body?.string() }.getOrNull().orEmpty()
             val answer = runCatching {
@@ -711,8 +728,9 @@ class FrigateApi(
 
     /** Frigate's reason for turning an export down, in words rather than in its own. */
     private fun refusal(said: String?): String = when {
-        said == null -> "Frigate wouldn't keep that stretch."
-        said.contains("No recordings", ignoreCase = true) -> "Frigate has no recording of that stretch."
+        said == null -> context.words(R.string.api_wouldnt_keep)
+        said.contains("No recordings", ignoreCase = true) ->
+            context.words(R.string.api_no_recording)
         else -> said
     }
 
@@ -734,14 +752,14 @@ class FrigateApi(
         if (!response.isSuccessful) {
             val status = response.code
             response.close()
-            throw FrigateException(status, "Live view returned $status")
+            throw FrigateException(status, context.words(R.string.api_live_view_returned, status))
         }
         return response
     }
 
     private fun url(baseUrl: String, path: String): HttpUrl =
         (baseUrl.trimEnd('/') + path).toHttpUrlOrNull()
-            ?: throw FrigateException(0, "That server address doesn't look right")
+            ?: throw FrigateException(0, context.words(R.string.api_bad_address))
 
     /**
      * Reads the JWT out of Set-Cookie. The cookie's name is configurable on the
@@ -786,7 +804,10 @@ class FrigateApi(
 
             if (!response.isSuccessful) {
                 val said = answer?.let { serverMessageOf(it) }
-                throw FrigateException(response.code, said ?: "The server returned ${response.code}")
+                throw FrigateException(
+                    response.code,
+                    said ?: context.words(R.string.api_server_returned, response.code),
+                )
             }
 
             if (answer != null && textOf(answer["success"]) == "false") {
@@ -794,7 +815,7 @@ class FrigateApi(
                     ?.removePrefix("Error saving config: ")
                 throw FrigateException(
                     response.code,
-                    said ?: "Frigate didn't accept that change.",
+                    said ?: context.words(R.string.api_change_refused),
                 )
             }
             return raw
@@ -804,11 +825,15 @@ class FrigateApi(
     private fun Response.toException(): FrigateException {
         val serverSaid = serverMessage()
         val text = when (code) {
-            401, 403 -> "That username and password weren't accepted"
-            404 -> "The server has no such endpoint. Is that the Frigate address?"
-            422 -> "The server didn't understand the request" + (serverSaid?.let { ": $it" } ?: "")
-            502, 503, 504 -> "The server is not answering right now"
-            else -> serverSaid ?: "The server returned $code"
+            401, 403 -> context.words(R.string.api_sign_in_rejected)
+            404 -> context.words(R.string.api_no_endpoint)
+            422 -> if (serverSaid == null) {
+                context.words(R.string.api_request_not_understood)
+            } else {
+                context.words(R.string.api_request_not_understood_said, serverSaid)
+            }
+            502, 503, 504 -> context.words(R.string.api_server_not_answering)
+            else -> serverSaid ?: context.words(R.string.api_server_returned, code)
         }
         return FrigateException(code, text)
     }
@@ -852,18 +877,8 @@ class FrigateApi(
             "In one short sentence of at most twenty words, say what is happening. " +
             "No preamble, no list, just the sentence."
 
-        /** A clip is cut from recordings, so it goes when they do. */
-        const val NO_CLIP = "Frigate has no clip for this one any more. It cuts clips out " +
-            "of your recordings, so an old one goes when the recordings do."
-
         /** Beyond this a review covers hours and the phone runs out of room. */
         const val MAX_CLIP_BYTES = 400L * 1024 * 1024
-        const val CLIP_TOO_BIG = "This clip is too long to fetch, at over 400 MB. " +
-            "Reviews stay open while something keeps being seen, so an old one can " +
-            "cover hours of recording."
-
-        const val EMPTY_CLIP = "The server sent an empty clip. Its recordings may not " +
-            "cover that moment yet, so try again in a moment."
     }
 }
 

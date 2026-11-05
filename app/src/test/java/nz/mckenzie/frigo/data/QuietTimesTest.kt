@@ -8,9 +8,16 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 
 /** When the phone keeps quiet, and for which cameras. */
+@RunWith(RobolectricTestRunner::class)
 class QuietTimesTest {
+
+    /** The row's sentence comes from the app's own resources, so it needs a Context. */
+    private val context = RuntimeEnvironment.getApplication()
 
     /** A moment on one autumn day, in the phone's own time zone. */
     private fun at(hour: Int, minute: Int = 0): Long =
@@ -131,10 +138,10 @@ class QuietTimesTest {
 
     @Test
     fun theRowSaysWhatIsSet() {
-        assertEquals("Off", QuietTimes().said(at(23)))
-        assertTrue(night.said(at(12)).endsWith("one camera"))
-        assertTrue(night.copy(cameras = emptySet()).said(at(12)).endsWith("no cameras"))
-        assertTrue(night.said(at(23)).startsWith("Quiet until "))
+        assertEquals("Off", QuietTimes().said(context, at(23)))
+        assertTrue(night.said(context, at(12)).endsWith("one camera"))
+        assertTrue(night.copy(cameras = emptySet()).said(context, at(12)).endsWith("no cameras"))
+        assertTrue(night.said(context, at(23)).startsWith("Quiet until "))
     }
 
     private fun quietAbout(from: Int, until: Int) = QuietTimes(

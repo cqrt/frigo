@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Compose draws everything; the theme only sets the window background so
-         there is no white flash before the first frame. -->
-    <style name="Theme.Frigo" parent="android:Theme.Material.NoActionBar">
+         there is no white flash before the first frame.
+
+         The parent is AppCompat's rather than the platform's because
+         MainActivity is an AppCompatActivity: that is what lets the app pick its
+         own language on a phone older than Android 13. DayNight is here for the
+         window background alone, which follows the phone until Compose draws. -->
+    <style name="Theme.Frigo" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>

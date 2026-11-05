@@ -1,5 +1,7 @@
 package nz.mckenzie.frigo.data
 
+import android.content.Context
+import androidx.annotation.StringRes
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -10,6 +12,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlin.math.roundToInt
+import nz.mckenzie.frigo.R
 
 /**
  * Only the pieces of /api/config this app reads. Everything else in the file is
@@ -394,27 +397,41 @@ data class SystemLine(
 )
 
 /** The whole page, read off one `/api/stats` answer. */
-fun FrigateStats.systemPage(admin: Boolean, readAt: Long? = null): SystemPage {
+fun FrigateStats.systemPage(
+    context: Context,
+    admin: Boolean,
+    readAt: Long? = null,
+): SystemPage {
     val whole = cpuUsages["frigate.full_system"]
 
     return SystemPage(
-        version = service.version?.takeIf { it.isNotBlank() } ?: "Not said",
+        version = service.version?.takeIf { it.isNotBlank() }
+            ?: context.words(R.string.sys_not_said),
         newer = service.latestVersion
             ?.takeIf { it.isNotBlank() }
             ?.takeIf { latest -> latest != service.version?.trimEnd('-') },
-        uptime = service.uptime?.let(::uptimeText) ?: "Not said",
+        uptime = service.uptime?.let { uptimeText(context, it) }
+            ?: context.words(R.string.sys_not_said),
         processor = whole?.cpu?.toDoubleOrNull()?.let { percent ->
-            SystemMeter("Processor", percentText(percent), (percent / 100.0).toFloat())
+            SystemMeter(
+                context.words(R.string.sys_processor),
+                percentText(context, percent),
+                (percent / 100.0).toFloat(),
+            )
         },
         memory = whole?.mem?.toDoubleOrNull()?.let { percent ->
-            SystemMeter("Memory", percentText(percent), (percent / 100.0).toFloat())
+            SystemMeter(
+                context.words(R.string.sys_memory),
+                percentText(context, percent),
+                (percent / 100.0).toFloat(),
+            )
         },
         gpu = gpuUsages.map { (name, stats) ->
             SystemLine(
                 title = name,
                 said = listOfNotNull(
-                    stats.compute?.let { "$it computing" },
-                    stats.decode?.let { "$it decoding" },
+                    stats.compute?.let { context.words(R.string.sys_computing, it) },
+                    stats.decode?.let { context.words(R.string.sys_decoding, it) },
                 ).joinToString(" · ").ifBlank { stats.vendor.orEmpty() },
                 value = stats.gpu,
             )
@@ -425,22 +442,25 @@ fun FrigateStats.systemPage(admin: Boolean, readAt: Long? = null): SystemPage {
                 SystemLine(
                     title = prettyCameraName(name),
                     said = listOfNotNull(
-                        detectedText(stats.detectionFps),
+                        detectedText(context, stats.detectionFps),
                         stats.connectionQuality?.replaceFirstChar { it.uppercase() },
                     ).joinToString(" · "),
-                    value = rateText(stats.cameraFps),
+                    value = rateText(context, stats.cameraFps),
                     warn = stats.struggling,
                 )
             },
-        storage = storageMeters(service.storage),
+        storage = storageMeters(context, service.storage),
         detectors = detectors.map { (name, stats) ->
             SystemLine(
-                title = "Detector $name",
+                title = context.words(R.string.sys_detector, name),
                 said = listOfNotNull(
-                    stats.inferenceSpeed.takeIf { it > 0 }?.let { "an inference" },
-                    stats.mem?.takeIf { it != "-%"}?.let { "$it of memory" },
+                    stats.inferenceSpeed.takeIf { it > 0 }
+                        ?.let { context.words(R.string.sys_inference) },
+                    stats.mem?.takeIf { it != "-%"}
+                        ?.let { context.words(R.string.sys_memory_of, it) },
                 ).joinToString(" · "),
-                value = stats.inferenceSpeed.takeIf { it > 0 }?.let { oneDecimal(it) + " ms" },
+                value = stats.inferenceSpeed.takeIf { it > 0 }
+                    ?.let { context.words(R.string.sys_ms, oneDecimal(it)) },
             )
         },
         processes = processes.entries
@@ -448,8 +468,10 @@ fun FrigateStats.systemPage(admin: Boolean, readAt: Long? = null): SystemPage {
             .map { (name, stats) ->
                 SystemLine(
                     title = prettyProcessName(name),
-                    said = stats.mem?.takeIf { it != "-%"}?.let { "$it of memory" }.orEmpty(),
-                    value = stats.cpu?.let { "$it processor" },
+                    said = stats.mem?.takeIf { it != "-%"}
+                        ?.let { context.words(R.string.sys_memory_of, it) }
+                        .orEmpty(),
+                    value = stats.cpu?.let { context.words(R.string.sys_processor_of, it) },
                 )
             },
         restartable = admin,
@@ -461,7 +483,7 @@ fun FrigateStats.systemPage(admin: Boolean, readAt: Long? = null): SystemPage {
  * The disks, said in words. Two paths on the same disk are one line, because
  * recordings and clips live together and reading them twice says nothing twice.
  */
-private fun storageMeters(storage: Map<String, StorageStats>): List<SystemMeter> =
+private fun storageMeters(context: Context, storage: Map<String, StorageStats>): List<SystemMeter> =
     storage.entries
         .sortedBy { (path, _) ->
             val place = MountOrder.indexOfFirst { path.contains(it) }
@@ -472,31 +494,37 @@ private fun storageMeters(storage: Map<String, StorageStats>): List<SystemMeter>
             val shmShort = stats.shmFrameCount != null && stats.minShm != null &&
                 stats.shmFrameCount < stats.minShm
             SystemMeter(
-                title = mountName(path),
-                said = "${sizeText(stats.used)} of ${sizeText(stats.total)}",
+                title = mountName(context, path),
+                said = context.words(
+                    R.string.sys_storage_used,
+                    sizeText(context, stats.used),
+                    sizeText(context, stats.total),
+                ),
                 fraction = if (stats.total > 0) (stats.used / stats.total).toFloat() else 0f,
                 detail = listOfNotNull(
-                    "${sizeText(stats.free)} free",
+                    context.words(R.string.sys_storage_free, sizeText(context, stats.free)),
                     stats.shmFrameCount?.let { frames ->
-                        val wanted = stats.minShm
-                        if (wanted != null) {
-                            "room for ${frames.roundToInt()} frames, ${wanted.roundToInt()} wanted"
-                        } else {
-                            "room for ${frames.roundToInt()} frames"
-                        }
+                        framesText(context, frames.roundToInt(), stats.minShm?.roundToInt())
                     },
                 ).joinToString(" · "),
                 warn = (stats.total > 0 && stats.free / stats.total < 0.1) || shmShort,
             )
         }
 
+/** "room for 16 frames, 12 wanted", or "room for 16 frames" when nothing is wanted. */
+private fun framesText(context: Context, frames: Int, wanted: Int?): String {
+    val room = context.counted(R.plurals.sys_storage_frames, frames, frames)
+    if (wanted == null) return room
+    return room + ", " + context.counted(R.plurals.sys_storage_wanted, wanted, wanted)
+}
+
 private val MountOrder = listOf("recordings", "clips", "cache", "shm")
 
-private fun mountName(path: String): String = when {
-    path.contains("recordings") -> "Recordings"
-    path.contains("clips") -> "Clips"
-    path.contains("cache") -> "Cache"
-    path.contains("shm") -> "Shared memory"
+private fun mountName(context: Context, path: String): String = when {
+    path.contains("recordings") -> context.words(R.string.sys_mount_recordings)
+    path.contains("clips") -> context.words(R.string.sys_mount_clips)
+    path.contains("cache") -> context.words(R.string.sys_mount_cache)
+    path.contains("shm") -> context.words(R.string.sys_mount_shm)
     else -> path
 }
 
@@ -506,39 +534,49 @@ private fun prettyProcessName(name: String): String = name
     .replaceFirstChar { it.uppercase() }
 
 /** "16 hours 53 minutes", or "3 days 4 hours" once it is that long. */
-fun uptimeText(seconds: Double): String {
+fun uptimeText(context: Context, seconds: Double): String {
     val total = seconds.toLong().coerceAtLeast(0)
-    val days = total / 86_400
-    val hours = (total % 86_400) / 3_600
-    val minutes = (total % 3_600) / 60
+    val days = (total / 86_400).toInt()
+    val hours = ((total % 86_400) / 3_600).toInt()
+    val minutes = ((total % 3_600) / 60).toInt()
     return when {
-        days > 0 -> "$days ${plural(days, "day")} $hours ${plural(hours, "hour")}"
-        hours > 0 -> "$hours ${plural(hours, "hour")} $minutes ${plural(minutes, "minute")}"
-        minutes > 0 -> "$minutes ${plural(minutes, "minute")}"
-        else -> "less than a minute"
+        days > 0 -> context.counted(R.plurals.sys_day, days, days) + " " +
+            context.counted(R.plurals.sys_hour, hours, hours)
+        hours > 0 -> context.counted(R.plurals.sys_hour, hours, hours) + " " +
+            context.counted(R.plurals.sys_minute, minutes, minutes)
+        minutes > 0 -> context.counted(R.plurals.sys_minute, minutes, minutes)
+        else -> context.words(R.string.sys_less_than_a_minute)
     }
 }
 
-private fun plural(count: Long, word: String): String = if (count == 1L) word else "${word}s"
-
 /** Frigate counts storage in megabytes: 58669.1 becomes "58.7 GB". */
-fun sizeText(megabytes: Double): String = when {
-    megabytes >= 1_000 -> oneDecimal(megabytes / 1_000) + " GB"
-    else -> "${megabytes.roundToInt()} MB"
+fun sizeText(context: Context, megabytes: Double): String = when {
+    megabytes >= 1_000 -> context.words(R.string.sys_gb, oneDecimal(megabytes / 1_000))
+    else -> context.words(R.string.sys_mb, megabytes.roundToInt())
 }
 
-private fun percentText(percent: Double): String = oneDecimal(percent) + "%"
+private fun percentText(context: Context, percent: Double): String =
+    context.words(R.string.sys_percent, oneDecimal(percent))
 
 /** "10.1 frames a second", "1 frame a second", or "nothing" when it has stopped. */
-fun rateText(fps: Double): String = when {
-    fps <= 0.0 -> "nothing"
-    fps == 1.0 -> "1 frame a second"
-    else -> "${oneDecimal(fps)} frames a second"
+fun rateText(context: Context, fps: Double): String = when {
+    fps <= 0.0 -> context.words(R.string.sys_nothing)
+    fps == 1.0 -> context.counted(R.plurals.sys_frames_a_second, 1, oneDecimal(fps))
+    // Anything else is more than one frame, so the count never reads as one.
+    else -> context.counted(
+        R.plurals.sys_frames_a_second,
+        fps.roundToInt().coerceAtLeast(2),
+        oneDecimal(fps),
+    )
 }
 
 /** "2.0 being detected", or "nothing being detected". */
-private fun detectedText(fps: Double): String =
-    if (fps <= 0.0) "nothing being detected" else "${oneDecimal(fps)} being detected"
+private fun detectedText(context: Context, fps: Double): String =
+    if (fps <= 0.0) {
+        context.words(R.string.sys_nothing_detected)
+    } else {
+        context.words(R.string.sys_being_detected, oneDecimal(fps))
+    }
 
 /** One decimal place, with a dot whatever the phone's language is set to. */
 private fun oneDecimal(value: Double): String = String.format(java.util.Locale.US, "%.1f", value)
@@ -641,10 +679,13 @@ data class ReviewFlags(
 )
 
 /** The two kinds of review worth showing. Motion on its own is not one of them. */
-enum class ReviewKind(val apiValue: String, val label: String) {
-    Alerts("alert", "Alerts"),
-    Detections("detection", "Detections"),
+enum class ReviewKind(val apiValue: String, @StringRes val labelRes: Int) {
+    Alerts("alert", R.string.review_kind_alerts),
+    Detections("detection", R.string.review_kind_detections),
 }
+
+/** What this kind of review is called, in the app's language. */
+fun ReviewKind.label(context: Context): String = context.words(labelRes)
 
 /** Everything the Review settings page needs. */
 data class ReviewSettings(
@@ -850,16 +891,19 @@ fun reviewChange(camera: String?, before: ReviewFlags, after: ReviewFlags): Conf
 }
 
 /** The eight switches on a camera's page, in the order the page lists them. */
-enum class CameraSwitch(val label: String, val section: String) {
-    ObjectDetection("Object detection", "detect"),
-    MotionDetection("Motion detection", "motion"),
-    Recording("Recording", "record"),
-    Snapshots("Snapshots", "snapshots"),
-    AudioDetection("Audio detection", "audio"),
-    Birdseye("Birdseye", "birdseye"),
-    FaceRecognition("Face recognition", "face_recognition"),
-    LicensePlate("License plate recognition", "lpr"),
+enum class CameraSwitch(@StringRes val labelRes: Int, val section: String) {
+    ObjectDetection(R.string.camera_switch_object_detection, "detect"),
+    MotionDetection(R.string.camera_switch_motion_detection, "motion"),
+    Recording(R.string.camera_switch_recording, "record"),
+    Snapshots(R.string.camera_switch_snapshots, "snapshots"),
+    AudioDetection(R.string.camera_switch_audio_detection, "audio"),
+    Birdseye(R.string.camera_switch_birdseye, "birdseye"),
+    FaceRecognition(R.string.camera_switch_face_recognition, "face_recognition"),
+    LicensePlate(R.string.camera_switch_license_plate, "lpr"),
 }
+
+/** What this switch is called, in the app's language. */
+fun CameraSwitch.label(context: Context): String = context.words(labelRes)
 
 /** What the eight switches are set to on one camera. */
 data class CameraSwitches(
@@ -899,14 +943,12 @@ data class CameraSwitchPage(
     val readAt: Long? = null,
 ) {
     /** Why a switch can't be moved, or null when it can. */
-    fun blocked(switch: CameraSwitch): String? = when {
-        switch == CameraSwitch.FaceRecognition && faceRecognitionOff -> ServerOff
-        switch == CameraSwitch.LicensePlate && licensePlateOff -> ServerOff
+    fun blocked(context: Context, switch: CameraSwitch): String? = when {
+        switch == CameraSwitch.FaceRecognition && faceRecognitionOff ->
+            context.words(R.string.camera_off_for_server)
+        switch == CameraSwitch.LicensePlate && licensePlateOff ->
+            context.words(R.string.camera_off_for_server)
         else -> null
-    }
-
-    private companion object {
-        const val ServerOff = "Off for the whole server."
     }
 }
 
@@ -923,18 +965,24 @@ data class CameraState(
  * A switch the server holds off is left out. It is off on every camera, so
  * naming it under one would say nothing about that camera.
  */
-fun CameraSwitchPage.cameraState(camera: String): CameraState {
+fun CameraSwitchPage.cameraState(context: Context, camera: String): CameraState {
     val set = switches[camera] ?: CameraSwitches()
-    val movable = CameraSwitch.entries.filter { blocked(it) == null }
+    val movable = CameraSwitch.entries.filter { blocked(context, it) == null }
     val off = movable.filterNot { set[it] }
 
-    if (off.isEmpty()) return CameraState("Everything on")
+    if (off.isEmpty()) return CameraState(context.words(R.string.camera_all_on))
 
-    val names = off.take(2).map { it.label }
+    val names = off.take(2).map { it.label(context) }
     val said = when (off.size) {
-        1 -> "${names[0]} off"
-        2 -> "${names[0]} and ${names[1].lowerFirst()} off"
-        else -> "${names[0]}, ${names[1].lowerFirst()} and ${off.size - 2} more off"
+        1 -> context.words(R.string.camera_one_off, names[0])
+        2 -> context.words(R.string.camera_two_off, names[0], names[1].lowerFirst())
+        else -> context.counted(
+            R.plurals.camera_more_off,
+            off.size - 2,
+            names[0],
+            names[1].lowerFirst(),
+            off.size - 2,
+        )
     }
     return CameraState(said, somethingOff = true)
 }
@@ -959,14 +1007,15 @@ data class GenaiService(
     val chats: Boolean get() = Roles.Chat in roles
 
     /** Where it is, said the way a person would. */
-    val where: String
-        get() = when {
-            provider == "ollama" && baseUrl.isNotBlank() ->
-                "Ollama at ${baseUrl.removePrefix("http://").removePrefix("https://").trimEnd('/')}"
-            baseUrl.isNotBlank() -> baseUrl.trimEnd('/')
-            provider.isNotBlank() -> provider.replaceFirstChar { it.uppercase() }
-            else -> ""
-        }
+    fun where(context: Context): String = when {
+        provider == "ollama" && baseUrl.isNotBlank() -> context.words(
+            R.string.ai_ollama_at,
+            baseUrl.removePrefix("http://").removePrefix("https://").trimEnd('/'),
+        )
+        baseUrl.isNotBlank() -> baseUrl.trimEnd('/')
+        provider.isNotBlank() -> provider.replaceFirstChar { it.uppercase() }
+        else -> ""
+    }
 }
 
 /** What a model service is used for, in the words the server writes them in. */

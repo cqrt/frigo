@@ -86,6 +86,14 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    testOptions {
+        unitTests {
+            // The tests read the app's own strings, so they need the resources
+            // built the way the app has them.
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -107,6 +115,9 @@ dependencies {
 
     implementation(libs.datastore.preferences)
 
+    // The app's own language, on phones old and new.
+    implementation(libs.androidx.appcompat)
+
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
 
@@ -114,5 +125,6 @@ dependencies {
     implementation(libs.media3.ui)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
     androidTestImplementation(libs.androidx.junit)
 }

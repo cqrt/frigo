@@ -27,9 +27,11 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import nz.mckenzie.frigo.FrigoApplication
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.StreamSource
+import nz.mckenzie.frigo.data.words
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -222,7 +224,7 @@ class AlertService : Service() {
                     finish(
                         when {
                             status == 401 || status == 403 -> Session.Refused
-                            else -> Session.Failed("Can't reach your server.")
+                            else -> Session.Failed(words(R.string.alerts_cant_reach))
                         }
                     )
                 }
@@ -230,7 +232,7 @@ class AlertService : Service() {
 
             val socket = runCatching { socketClient.newWebSocket(request, listener) }
                 .getOrElse {
-                    finish(Session.Failed("Can't reach your server."))
+                    finish(Session.Failed(words(R.string.alerts_cant_reach)))
                     return@suspendCancellableCoroutine
                 }
 
@@ -412,10 +414,10 @@ class AlertService : Service() {
         manager.createNotificationChannel(
             NotificationChannel(
                 Alerts.CHANNEL_WATCHING,
-                "Watching",
+                words(R.string.alerts_channel_watching),
                 NotificationManager.IMPORTANCE_LOW,
             ).apply {
-                description = "Says Frigo is connected and waiting for alerts."
+                description = words(R.string.alerts_channel_watching_description)
                 setShowBadge(false)
             }
         )
@@ -424,10 +426,10 @@ class AlertService : Service() {
         manager.createNotificationChannel(
             NotificationChannel(
                 Alerts.CHANNEL_EVENTS,
-                "Alerts",
+                words(R.string.alerts_channel_events),
                 NotificationManager.IMPORTANCE_DEFAULT,
             ).apply {
-                description = "Tells you when Frigate sees one of the things you picked."
+                description = words(R.string.alerts_channel_events_description)
             }
         )
     }

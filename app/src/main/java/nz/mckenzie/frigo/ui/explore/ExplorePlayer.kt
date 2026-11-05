@@ -2,6 +2,8 @@ package nz.mckenzie.frigo.ui.explore
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.FrigateEvent
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.prettyCameraName
@@ -23,6 +25,11 @@ fun ExplorePlayerDialog(
     event: FrigateEvent,
     onDismiss: () -> Unit,
 ) {
+    // The line under the title, and the note for an event with no clip. Both are
+    // read here, in a composable body, so the strings come out in the app's language.
+    val subtitle = "${prettyCameraName(event.camera)} · ${relativeTime(event.startedAtMillis)}"
+    val note = if (event.hasClip) null else stringResource(R.string.explore_no_clip)
+
     // Frigate hands out the clip's address and the token it needs; the repository
     // fetches it into a file, and the viewer plays that.
     val subject = remember(event.id, event.hasClip) {
@@ -33,13 +40,13 @@ fun ExplorePlayerDialog(
         }
         ClipSubject(
             title = event.title(),
-            subtitle = "${prettyCameraName(event.camera)} · ${relativeTime(event.startedAtMillis)}",
+            subtitle = subtitle,
             clip = source?.let { clip ->
                 { onProgress -> repository.clipFile(clip, "event-${event.id}", onProgress) }
             },
             stillKey = "snapshot-${event.id}",
             still = { repository.snapshot(event.id) },
-            note = if (event.hasClip) null else "Frigate kept no clip for this one.",
+            note = note,
         )
     }
 

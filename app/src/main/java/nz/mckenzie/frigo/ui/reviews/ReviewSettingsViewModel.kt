@@ -62,7 +62,7 @@ class ReviewSettingsViewModel(private val repository: FrigoRepository) : ViewMod
                     }
                 }
                 .onFailure { failure ->
-                    _state.update { it.copy(loading = false, error = failure.friendlyMessage()) }
+                    _state.update { it.copy(loading = false, error = failure.friendlyMessage(repository.context)) }
                 }
         }
     }
@@ -112,7 +112,7 @@ class ReviewSettingsViewModel(private val repository: FrigoRepository) : ViewMod
                         it.copy(
                             page = it.page?.setting(current.scope, before),
                             busy = false,
-                            error = failure.friendlyMessage(),
+                            error = failure.friendlyMessage(repository.context),
                         )
                     }
                 }

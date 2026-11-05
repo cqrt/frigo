@@ -85,7 +85,7 @@ class SystemViewModel(private val repository: FrigoRepository) : ViewModel() {
                     wentDown = true
                     return@onFailure
                 }
-                _state.update { it.copy(loading = false, error = failure.friendlyMessage()) }
+                _state.update { it.copy(loading = false, error = failure.friendlyMessage(repository.context)) }
             }
     }
 
@@ -105,7 +105,7 @@ class SystemViewModel(private val repository: FrigoRepository) : ViewModel() {
         viewModelScope.launch {
             runCatching { repository.restartServer() }
                 .onFailure { failure ->
-                    _state.update { it.copy(restarting = false, error = failure.friendlyMessage()) }
+                    _state.update { it.copy(restarting = false, error = failure.friendlyMessage(repository.context)) }
                 }
         }
     }

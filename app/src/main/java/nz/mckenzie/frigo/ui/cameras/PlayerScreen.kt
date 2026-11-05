@@ -62,6 +62,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -72,6 +73,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.FrigateReview
@@ -95,6 +97,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
@@ -170,8 +173,12 @@ internal enum class LiveSource {
  * How a saved clip's moment is written into its name. Dashes and a dot rather than
  * colons, which a file system will not have, and in an order that sorts by date and
  * time in a folder listing.
+ *
+ * Built for a language rather than for the phone, so a name is read the way the rest
+ * of the screen is.
  */
-private val SaveStamp: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm")
+private fun saveStampFormat(locale: Locale): DateTimeFormatter =
+    DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm", locale)
 
 /**
  * One camera, live, with its timelines underneath.
@@ -198,6 +205,10 @@ fun PlayerScreen(
     var watching by rememberSaveable(cameraName) { mutableStateOf(cameraName) }
     var cameras by remember { mutableStateOf<List<Camera>>(emptyList()) }
     val zone = remember { ZoneId.systemDefault() }
+    // The name a saved clip is offered under follows the app's language rather than
+    // the phone's, so it is built for the language the screen is in.
+    val locale = LocalConfiguration.current.locales[0]
+    val saveStamp = remember(locale) { saveStampFormat(locale) }
 
     val title = cameras.firstOrNull { it.name == watching }?.title ?: prettyCameraName(watching)
 
@@ -363,6 +374,7 @@ fun PlayerScreen(
     // reading the choice out is what starts it. Keyed on them instead, a camera whose
     // choice happened to be 720p at five frames a second -- the same two numbers it
     // opens at while the choice is not yet known -- would never open at all.
+    val streamStopped = stringResource(R.string.player_stream_stopped)
     val stillsOnScreen = source == LiveSource.Stills || (standingIn && !ownFrame)
     LaunchedEffect(watching, choice, streaming, stillsOnScreen) {
         val wanted = choice
@@ -390,11 +402,11 @@ fun PlayerScreen(
                             }
                         }
                     }
-                    problem = "The stream stopped."
+                    problem = streamStopped
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Throwable) {
-                    problem = error.friendlyMessage()
+                    problem = error.friendlyMessage(repository.context)
                 }
                 connecting = true
                 delay(2_000)
@@ -430,6 +442,7 @@ fun PlayerScreen(
     }
 
     // The days this camera kept, and the day to open on.
+    val noRecordings = stringResource(R.string.player_no_recordings)
     LaunchedEffect(watching, attempt) {
         barProblem = null
         runCatching { repository.recordingDays(watching, zone.id) }
@@ -439,12 +452,12 @@ fun PlayerScreen(
                 if (found.none { it.day == day }) day = found.firstOrNull()?.day
                 if (found.isEmpty()) {
                     barReady = false
-                    barProblem = "Frigate has kept no recordings of this camera."
+                    barProblem = noRecordings
                 }
             }
             .onFailure {
                 barReady = false
-                barProblem = it.friendlyMessage()
+                barProblem = it.friendlyMessage(repository.context)
             }
     }
 
@@ -598,7 +611,7 @@ fun PlayerScreen(
     // so a folder of them sorts itself by date and time.
     fun saveName(): String {
         val at = LocalDateTime.ofInstant(Instant.ofEpochSecond(clipStart.toLong()), zone)
-        return "frigo-$watching-${at.format(SaveStamp)}.mp4"
+        return "frigo-$watching-${at.format(saveStamp)}.mp4"
     }
 
     // The name a clip kept on the server carries there: the camera and when the
@@ -640,14 +653,21 @@ fun PlayerScreen(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = { sound = !sound; noSound = false }) {
                         Icon(
                             imageVector = if (sound) FrigoIcons.Sound else FrigoIcons.SoundOff,
-                            contentDescription = if (sound) "Turn the sound off" else "Turn the sound on",
+                            contentDescription = if (sound) {
+                                stringResource(R.string.player_sound_off)
+                            } else {
+                                stringResource(R.string.player_sound_on)
+                            },
                         )
                     }
                     // Size and frame rate are the stills stream's, so they are not
@@ -655,7 +675,10 @@ fun PlayerScreen(
                     // the camera's own stream, which decides its own picture.
                     if (live && source == LiveSource.Stills) {
                         IconButton(onClick = { menuOpen = true }) {
-                            Icon(Icons.Filled.MoreVert, contentDescription = "Stream quality")
+                            Icon(
+                                Icons.Filled.MoreVert,
+                                contentDescription = stringResource(R.string.player_stream_quality),
+                            )
                         }
                         StreamMenu(
                             expanded = menuOpen,
@@ -725,13 +748,13 @@ fun PlayerScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
-                            text = problem ?: "Connecting…",
+                            text = problem ?: stringResource(R.string.player_connecting),
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         if (problem != null) {
                             Text(
-                                text = "Retrying",
+                                text = stringResource(R.string.player_retrying),
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                                 style = MaterialTheme.typography.bodySmall,
                             )
@@ -822,12 +845,14 @@ fun PlayerScreen(
                         .clip(RoundedCornerShape(50))
                         .background(Color.Black.copy(alpha = 0.55f))
                         .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(50))
-                        .clickable(onClickLabel = "Go back to the stream") { watchLive() }
+                        .clickable(
+                            onClickLabel = stringResource(R.string.player_go_back_to_stream),
+                        ) { watchLive() }
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Return to Live",
+                        text = stringResource(R.string.player_return_to_live),
                         color = Color.White,
                         style = MaterialTheme.typography.labelLarge,
                     )
@@ -849,7 +874,7 @@ fun PlayerScreen(
 
             if (noSound) {
                 Text(
-                    text = "No sound came through.",
+                    text = stringResource(R.string.player_no_sound),
                     color = Color.White.copy(alpha = 0.6f),
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier
@@ -873,7 +898,11 @@ fun PlayerScreen(
                 ) {
                     Icon(
                         imageVector = if (sound) FrigoIcons.Sound else FrigoIcons.SoundOff,
-                        contentDescription = if (sound) "Turn the sound off" else "Turn the sound on",
+                        contentDescription = if (sound) {
+                            stringResource(R.string.player_sound_off)
+                        } else {
+                            stringResource(R.string.player_sound_on)
+                        },
                         tint = Color.White,
                     )
                 }
@@ -885,7 +914,7 @@ fun PlayerScreen(
         // leaving to be noticed.
         if (live && source == LiveSource.Stills) {
             Text(
-                text = "The camera's own stream didn't answer, so this is the small picture.",
+                text = stringResource(R.string.player_small_picture),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -932,9 +961,13 @@ fun PlayerScreen(
                         null
                     } else {
                         playProblem ?: if (recorded) {
-                            "${clock(clipStart, zone)} to ${clock(clipEnd, zone)}"
+                            stringResource(
+                                R.string.player_stretch,
+                                clock(clipStart, zone),
+                                clock(clipEnd, zone),
+                            )
                         } else {
-                            "Nothing recorded then."
+                            stringResource(R.string.player_nothing_recorded)
                         }
                     },
                     captionIsWarning = playProblem != null || !recorded,
@@ -964,7 +997,11 @@ fun PlayerScreen(
                     if (!live) {
                         SaveClipButton(
                             name = saveName(),
-                            stretch = "${clock(clipStart, zone)} to ${clock(clipEnd, zone)}",
+                            stretch = stringResource(
+                                R.string.player_stretch,
+                                clock(clipStart, zone),
+                                clock(clipEnd, zone),
+                            ),
                             enabled = canPlay,
                             fetch = { onProgress ->
                                 repository.clipFile(
@@ -1003,7 +1040,10 @@ fun PlayerScreen(
                         modifier = Modifier.weight(1f),
                     )
                     TextButton(onClick = { attempt++ }) {
-                        Text("Try again", color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            stringResource(R.string.player_try_again),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
                     }
                 }
             }
@@ -1038,7 +1078,7 @@ private fun StreamMenu(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
     ) {
         Column(Modifier.width(228.dp).padding(vertical = 6.dp)) {
-            MenuHeading("Resolution")
+            MenuHeading(stringResource(R.string.player_resolution))
             heights.forEach { option ->
                 MenuChoice(text = "${option}p", chosen = option == height) { onHeight(option) }
             }
@@ -1046,7 +1086,7 @@ private fun StreamMenu(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
             )
-            MenuHeading("Frames per second")
+            MenuHeading(stringResource(R.string.player_frames_per_second))
             rates.forEach { option ->
                 MenuChoice(text = "$option", chosen = option == rate) { onRate(option) }
             }

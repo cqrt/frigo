@@ -1,11 +1,13 @@
 package nz.mckenzie.frigo.data
 
+import android.content.Context
 import kotlinx.serialization.Serializable
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import nz.mckenzie.frigo.R
 
 /**
  * The stretch of the day this phone keeps quiet, and the cameras it keeps quiet.
@@ -73,16 +75,20 @@ data class QuietTimes(
     }
 
     /** One line for the Settings row: what is set, in the fewest words that are still true. */
-    fun said(now: Long): String {
-        quietUntil(now)?.let { return "Quiet until ${clockTime(it)}" }
-        if (!on) return "Off"
-        val window = if (from == until) "All day" else "${clockTime(from)} to ${clockTime(until)}"
-        val which = when (cameras.size) {
-            0 -> "no cameras"
-            1 -> "one camera"
-            else -> "${cameras.size} cameras"
+    fun said(context: Context, now: Long): String {
+        quietUntil(now)?.let { return context.words(R.string.quiet_until, clockTime(it)) }
+        if (!on) return context.words(R.string.quiet_off)
+        val window = if (from == until) {
+            context.words(R.string.quiet_all_day)
+        } else {
+            context.words(R.string.quiet_window, clockTime(from), clockTime(until))
         }
-        return "$window, $which"
+        val which = when (cameras.size) {
+            0 -> context.words(R.string.quiet_no_cameras)
+            1 -> context.counted(R.plurals.quiet_cameras, 1)
+            else -> context.counted(R.plurals.quiet_cameras, cameras.size, cameras.size)
+        }
+        return context.words(R.string.quiet_window_cameras, window, which)
     }
 
     private fun insideWindow(now: Long): Boolean {

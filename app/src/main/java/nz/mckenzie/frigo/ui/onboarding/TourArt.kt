@@ -32,7 +32,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import nz.mckenzie.frigo.R
 
 /*
  * The pictures the tour draws: each one the shape of what the tab holds, in the
@@ -83,7 +85,7 @@ internal fun TourArt(index: Int) {
                         .padding(horizontal = 7.dp, vertical = 2.dp),
                 ) {
                     Text(
-                        text = "Live",
+                        text = stringResource(R.string.onboard_live),
                         style = MaterialTheme.typography.labelSmall,
                         color = Color(0xFFF2F7FC),
                     )
@@ -95,8 +97,8 @@ internal fun TourArt(index: Int) {
 
         2 -> Column {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MiniChip("Alerts 4")
-                MiniChip("Detections 12")
+                MiniChip(stringResource(R.string.onboard_chip_alerts, 4))
+                MiniChip(stringResource(R.string.onboard_chip_detections, 12))
             }
             Spacer(Modifier.height(12.dp))
             MiniRow(Scene.FrontDoor, tag = true)
@@ -112,8 +114,12 @@ internal fun TourArt(index: Int) {
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("M", "T", "W", "T", "F", "S", "S").forEachIndexed { day, letter ->
-                    DayCell(letter = letter, chosen = day == 4)
+                listOf(
+                    R.string.onboard_day_mon, R.string.onboard_day_tue, R.string.onboard_day_wed,
+                    R.string.onboard_day_thu, R.string.onboard_day_fri, R.string.onboard_day_sat,
+                    R.string.onboard_day_sun,
+                ).forEachIndexed { day, letter ->
+                    DayCell(letter = stringResource(letter), chosen = day == 4)
                 }
             }
             Spacer(Modifier.height(10.dp))
@@ -197,19 +203,23 @@ private fun AiAlertArt() {
                 )
                 Spacer(Modifier.width(7.dp))
                 Text(
-                    text = "Frigo · Front door · 22:24",
+                    text = stringResource(
+                        R.string.onboard_ai_notification_title,
+                        "Front door",
+                        "22:24",
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Spacer(Modifier.height(9.dp))
             Text(
-                text = "Person at the front door",
+                text = stringResource(R.string.onboard_ai_heading),
                 style = MaterialTheme.typography.titleSmall,
             )
             Spacer(Modifier.height(3.dp))
             Text(
-                text = "A man is standing at the front door, looking at his phone.",
+                text = stringResource(R.string.onboard_ai_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

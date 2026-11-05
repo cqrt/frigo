@@ -35,12 +35,15 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.friendlyMessage
@@ -56,7 +59,7 @@ fun SignInForm(
     notice: String? = null,
     initialAddress: String = "",
     initialUsername: String = "",
-    buttonLabel: String = "Sign in",
+    buttonLabel: String = stringResource(R.string.login_sign_in),
     onSignedIn: () -> Unit = {},
 ) {
     var address by rememberSaveable { mutableStateOf(initialAddress) }
@@ -66,6 +69,7 @@ fun SignInForm(
     var busy by remember { mutableStateOf(false) }
     var error by remember(notice) { mutableStateOf(notice) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val ready = address.isNotBlank() && username.isNotBlank() && password.isNotBlank() && !busy
 
@@ -76,7 +80,7 @@ fun SignInForm(
             error = null
             runCatching { repository.signIn(address, username, password) }
                 .onSuccess { onSignedIn() }
-                .onFailure { error = it.friendlyMessage() }
+                .onFailure { error = it.friendlyMessage(context) }
             busy = false
         }
     }
@@ -85,10 +89,10 @@ fun SignInForm(
         Field(
             value = address,
             onValueChange = { address = it },
-            label = "Server address",
+            label = stringResource(R.string.login_address),
             icon = FrigoIcons.Server,
-            placeholder = "https://frigate.example.com",
-            supporting = "The address you use in a browser. Add the port if there is one, such as :8971.",
+            placeholder = stringResource(R.string.login_address_placeholder),
+            supporting = stringResource(R.string.login_address_note),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Uri,
                 imeAction = ImeAction.Next,
@@ -98,7 +102,7 @@ fun SignInForm(
         Field(
             value = username,
             onValueChange = { username = it },
-            label = "Username",
+            label = stringResource(R.string.login_username),
             icon = FrigoIcons.Person,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
         )
@@ -106,7 +110,7 @@ fun SignInForm(
         Field(
             value = password,
             onValueChange = { password = it },
-            label = "Password",
+            label = stringResource(R.string.login_password),
             icon = FrigoIcons.Lock,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
@@ -121,7 +125,11 @@ fun SignInForm(
                 IconButton(onClick = { shown = !shown }, modifier = Modifier.size(40.dp)) {
                     Icon(
                         imageVector = if (shown) FrigoIcons.EyeOff else FrigoIcons.Eye,
-                        contentDescription = if (shown) "Hide the password" else "Show the password",
+                        contentDescription = if (shown) {
+                            stringResource(R.string.login_hide_password)
+                        } else {
+                            stringResource(R.string.login_show_password)
+                        },
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(22.dp),
                     )
@@ -157,7 +165,7 @@ fun SignInForm(
 
         Spacer(Modifier.height(2.dp))
         Text(
-            text = "Frigo keeps your sign-in on this phone only. It talks to your server and nothing else.",
+            text = stringResource(R.string.login_keeps_sign_in),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

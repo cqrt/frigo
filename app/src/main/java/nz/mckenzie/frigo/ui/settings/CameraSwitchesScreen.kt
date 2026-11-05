@@ -30,9 +30,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.CameraSwitch
 import nz.mckenzie.frigo.ui.FrigoIcons
@@ -66,13 +69,17 @@ fun CameraSwitchesScreen(
     val page = state.page
     val switches = state.switches
     var stopping by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(state.title) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.action_back),
+                    )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -92,10 +99,12 @@ fun CameraSwitchesScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = state.error ?: "Can't read this camera's settings.",
+                    text = state.error ?: stringResource(R.string.camsw_cant_read),
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                Button(onClick = viewModel::load) { Text("Try again") }
+                Button(onClick = viewModel::load) {
+                    Text(stringResource(R.string.camsw_try_again))
+                }
             }
 
             else -> Column(
@@ -111,19 +120,22 @@ fun CameraSwitchesScreen(
                 if (stale != null) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
-                            text = "Your server isn't answering. These are the settings your " +
-                                "phone last read, ${relativeTime(stale).lowercase()}. They can't " +
-                                "be changed until it's back.",
+                            text = stringResource(
+                                R.string.camsw_stale,
+                                relativeTime(stale).lowercase(),
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = attention(),
                         )
-                        TextButton(onClick = viewModel::load) { Text("Try again") }
+                        TextButton(onClick = viewModel::load) {
+                            Text(stringResource(R.string.camsw_try_again))
+                        }
                     }
                 }
 
                 if (!page.admin) {
                     Text(
-                        text = "Only an admin can change these.",
+                        text = stringResource(R.string.err_not_admin),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -138,10 +150,10 @@ fun CameraSwitchesScreen(
                 }
 
                 groups.forEach { (heading, listed) ->
-                    Group(heading) {
+                    Group(stringResource(heading)) {
                         listed.forEachIndexed { index, switch ->
                             if (index > 0) CardDivider()
-                            val off = page.blocked(switch)
+                            val off = page.blocked(context, switch)
                             SwitchRow(
                                 switch = switch,
                                 on = switches?.get(switch) ?: false,
@@ -163,7 +175,7 @@ fun CameraSwitchesScreen(
 
                 if (stale == null) {
                     Text(
-                        text = "Changes save on the server as you tap.",
+                        text = stringResource(R.string.camsw_changes_save),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 4.dp),
@@ -176,8 +188,8 @@ fun CameraSwitchesScreen(
     if (stopping) {
         AlertDialog(
             onDismissRequest = { stopping = false },
-            title = { Text("Stop recording?") },
-            text = { Text("${state.title} stops saving video. What's already saved stays.") },
+            title = { Text(stringResource(R.string.camsw_stop_question)) },
+            text = { Text(stringResource(R.string.camsw_stop_detail, state.title)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -185,26 +197,31 @@ fun CameraSwitchesScreen(
                         viewModel.set(CameraSwitch.Recording, false)
                     },
                 ) {
-                    Text("Stop")
+                    Text(stringResource(R.string.camsw_stop))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { stopping = false }) { Text("Cancel") }
+                TextButton(onClick = { stopping = false }) {
+                    Text(stringResource(R.string.camsw_cancel))
+                }
             },
         )
     }
 }
 
-/** The eight switches, in the order they sit on the page. */
-private val groups: List<Pair<String, List<CameraSwitch>>> = listOf(
-    "Detection" to listOf(
+/** The eight switches, in the order they sit on the page, and each group's heading. */
+private val groups: List<Pair<Int, List<CameraSwitch>>> = listOf(
+    R.string.camsw_group_detection to listOf(
         CameraSwitch.ObjectDetection,
         CameraSwitch.MotionDetection,
         CameraSwitch.AudioDetection,
     ),
-    "Recording" to listOf(CameraSwitch.Recording, CameraSwitch.Snapshots),
-    "Live view" to listOf(CameraSwitch.Birdseye),
-    "Recognition" to listOf(CameraSwitch.FaceRecognition, CameraSwitch.LicensePlate),
+    R.string.camsw_group_recording to listOf(CameraSwitch.Recording, CameraSwitch.Snapshots),
+    R.string.camsw_group_live_view to listOf(CameraSwitch.Birdseye),
+    R.string.camsw_group_recognition to listOf(
+        CameraSwitch.FaceRecognition,
+        CameraSwitch.LicensePlate,
+    ),
 )
 
 /** One setting, its switch on the right, and a line under it when it can't be moved. */
@@ -218,7 +235,7 @@ private fun SwitchRow(
 ) {
     Item(
         icon = switch.icon,
-        title = switch.label,
+        title = stringResource(switch.labelRes),
         supporting = note,
         onClick = if (changeable) ({ onToggle(!on) }) else null,
         trailing = {

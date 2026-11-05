@@ -86,7 +86,7 @@ class CamerasViewModel(private val repository: FrigoRepository) : ViewModel() {
             _error.value = null
             runCatching { repository.cameras() }
                 .onSuccess { _cameras.value = it }
-                .onFailure { _error.value = it.friendlyMessage() }
+                .onFailure { _error.value = it.friendlyMessage(repository.context) }
             _loading.value = false
             _refreshing.value = false
         }

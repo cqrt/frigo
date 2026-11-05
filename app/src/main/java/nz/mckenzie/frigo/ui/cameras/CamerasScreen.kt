@@ -36,10 +36,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.FrigoRepository
@@ -64,7 +66,7 @@ fun CamerasScreen(
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Cameras") },
+            title = { Text(stringResource(R.string.cam_title)) },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             actions = {
                 LayoutButton(layout, viewModel::cycleLayout)
@@ -87,11 +89,13 @@ fun CamerasScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(error.orEmpty(), style = MaterialTheme.typography.bodyLarge)
-                    Button(onClick = viewModel::refresh) { Text("Try again") }
+                    Button(onClick = viewModel::refresh) {
+                        Text(stringResource(R.string.cam_try_again))
+                    }
                 }
 
                 cameras.isEmpty() -> Text(
-                    text = "No cameras are turned on in Frigate.",
+                    text = stringResource(R.string.cam_no_cameras),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.align(Alignment.Center).padding(32.dp),
                 )
@@ -137,11 +141,11 @@ private fun LayoutButton(layout: CameraLayout, onClick: () -> Unit) {
     when (layout) {
         CameraLayout.Grid -> {
             icon = FrigoIcons.Wide
-            said = "Show one to a row"
+            said = stringResource(R.string.cam_show_one_to_a_row)
         }
         CameraLayout.Wide -> {
             icon = FrigoIcons.Grid
-            said = "Show as a grid"
+            said = stringResource(R.string.cam_show_as_grid)
         }
     }
     IconButton(onClick = onClick) {

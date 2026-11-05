@@ -204,6 +204,19 @@ object FrigoIcons {
         }
     }
 
+    /** A globe, for the language the app speaks. */
+    val Globe: ImageVector by lazy {
+        vector("Globe") {
+            path("M12 3.4a8.6 8.6 0 1 0 0 17.2 8.6 8.6 0 1 0 0-17.2z", strokeWidth = 1.7f)
+            path("M3.6 12h16.8", strokeWidth = 1.7f)
+            path(
+                "M12 3.4c2.4 2.3 3.7 5.3 3.7 8.6s-1.3 6.3-3.7 8.6c-2.4-2.3-3.7-5.3-3.7-8.6" +
+                    "S9.6 5.7 12 3.4z",
+                strokeWidth = 1.7f,
+            )
+        }
+    }
+
     /** A camera on its side with a lens at the front, for a camera's switches. */
     val Camera: ImageVector by lazy {
         vector("Camera") {

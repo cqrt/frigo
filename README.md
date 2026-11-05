@@ -98,7 +98,9 @@ Under Alerts and
 detections you reach the server's own pages for what makes an alert and what
 makes a detection. There's a link to the phone's battery settings, because that's
 where you stop Android shutting Frigo down. Under Appearance you choose the
-colours: System follows the phone, Day stays light, and Night stays dark. Under
+colours: System follows the phone, Day stays light, and Night stays dark. The
+language sits there too: English, Spanish, French, German and Portuguese, or the
+phone's own. Under
 Updates it says which version you're on, and whether there's a newer one to
 install. A small red dot on the Settings icon in the bar means a newer version is
 waiting.
@@ -145,6 +147,23 @@ because they're about how you use it rather than which box it's looking at.
 Sign out forgets the server you're on, along with what the phone kept for it.
 Another server takes over if you have one. Otherwise you land on the sign-in page
 with that address filled in.
+
+## In another language
+
+Frigo speaks English, Spanish, French, German and Portuguese. Under Settings,
+Appearance, **Language** picks one, and Follow the phone is what the app does
+until you do.
+
+The whole app changes: the screens, the walkthrough, the days and months under a
+camera, the line when something fails, and the notification that says an alert
+arrived.
+
+Two things stay as they are. Your cameras are named by your server, and so are the
+objects Frigate reports, so those read the same whatever the app is set to. And a
+refusal from Frigate comes back in the words the server wrote it in.
+
+On Android 13 and later, Frigo is in the phone's own per-app language list as
+well, so the two agree whichever one you use.
 
 ## When the server isn't answering
 
@@ -451,6 +470,7 @@ is ever committed. Backup: there's a copy of the key and its password at
 
 - `data/FrigateApi.kt` - the Frigate endpoints this app uses, written against OkHttp.
 - `data/FrigoRepository.kt` - tokens, renewal, and the calls the screens make.
+- `data/Language.kt` - the languages the app speaks, and the words for the places that aren't a screen.
 - `data/ServerPrefs.kt` - what the phone keeps: the servers and their sign-ins, each one's choices, and the copy of its settings.
 - `data/MjpegReader.kt` - pulls JPEG frames out of the live stream.
 - `data/Updates.kt` - asks GitHub for the newest release, fetches its APK, and hands it to Android's installer.

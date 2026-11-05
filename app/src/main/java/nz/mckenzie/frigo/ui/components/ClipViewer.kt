@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.ui.components
 
+import android.content.Context
 import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -41,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,7 +58,9 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.FrigateException
+import nz.mckenzie.frigo.data.words
 import nz.mckenzie.frigo.ui.friendlyMessage
 import java.io.File
 
@@ -102,6 +106,7 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
         LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     val clip = subject.clip
+    val context = LocalContext.current
 
     // Keyed on the attempt so "Try again" asks the server again. Closing the
     // viewer cancels this, which stops the download where it got to.
@@ -120,7 +125,7 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
         } catch (stop: kotlinx.coroutines.CancellationException) {
             throw stop
         } catch (failure: Throwable) {
-            problem = problemFrom(failure)
+            problem = problemFrom(failure, context)
         }
     }
 
@@ -183,7 +188,11 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
                             )
                         }
                         IconButton(onClick = onDismiss) {
-                            Icon(Icons.Filled.Close, contentDescription = "Close", tint = Color.White)
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.comp_close),
+                                tint = Color.White,
+                            )
                         }
                     }
                 }
@@ -234,7 +243,7 @@ fun ClipViewer(subject: ClipSubject, onDismiss: () -> Unit) {
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "Close",
+                        contentDescription = stringResource(R.string.comp_close),
                         tint = Color.White,
                     )
                 }
@@ -252,7 +261,7 @@ private fun GettingClip(received: Long) {
     ) {
         CircularProgressIndicator(color = Color.White)
         Text(
-            text = "Getting the clip…",
+            text = stringResource(R.string.comp_clip_getting),
             color = Color.White,
             style = MaterialTheme.typography.bodyLarge,
         )
@@ -294,9 +303,11 @@ private fun ProblemPanel(problem: Problem, onRetry: () -> Unit, onClose: () -> U
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (problem.canRetry) {
-                Button(onClick = onRetry) { Text("Try again") }
+                Button(onClick = onRetry) { Text(stringResource(R.string.comp_try_again)) }
             }
-            TextButton(onClick = onClose) { Text("Close", color = Color.White) }
+            TextButton(onClick = onClose) {
+                Text(stringResource(R.string.comp_close), color = Color.White)
+            }
         }
     }
 }
@@ -350,7 +361,7 @@ private fun ClipPlayer(
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                currentProblem(playbackProblemFrom(error))
+                currentProblem(playbackProblemFrom(error, context))
             }
         }
         player.addListener(listener)
@@ -405,10 +416,10 @@ private fun ClipPlayer(
 }
 
 /** Why the fetch failed, in a sentence with something to do about it. */
-private fun problemFrom(failure: Throwable): Problem {
+private fun problemFrom(failure: Throwable, context: Context): Problem {
     val status = (failure as? FrigateException)?.status ?: 0
     val detail = buildString {
-        if (status > 0) append("the server answered ").append(status)
+        if (status > 0) append(context.words(R.string.comp_clip_detail_status, status))
         else append(failure.javaClass.simpleName)
         failure.message?.takeIf { it.isNotBlank() }?.let {
             append(": ").append(it.take(90))
@@ -417,7 +428,7 @@ private fun problemFrom(failure: Throwable): Problem {
     android.util.Log.w("Frigo", "clip fetch failed: $detail", failure)
 
     return Problem(
-        message = failure.friendlyMessage(),
+        message = failure.friendlyMessage(context),
         // A refused token needs a new sign-in, not another try.
         canRetry = status != 401 && status != 403,
         detail = detail,
@@ -425,7 +436,7 @@ private fun problemFrom(failure: Throwable): Problem {
 }
 
 /** Why a clip that was already on the phone didn't play. */
-private fun playbackProblemFrom(error: PlaybackException): Problem {
+private fun playbackProblemFrom(error: PlaybackException, context: Context): Problem {
     val detail = buildString {
         append(error.errorCodeName)
         error.cause?.let { append(" · ").append(it.javaClass.simpleName) }
@@ -442,21 +453,19 @@ private fun playbackProblemFrom(error: PlaybackException): Problem {
         PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
         PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED,
         -> Problem(
-            message = "This phone can't play this clip's video. Frigate copies what the " +
-                "camera recorded rather than converting it, so these clips are H.265, and " +
-                "not every phone can decode that.",
+            message = context.words(R.string.comp_clip_cant_play),
             canRetry = false,
             detail = detail,
         )
 
         PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND -> Problem(
-            message = "The clip has gone from the phone. Fetch it again.",
+            message = context.words(R.string.comp_clip_gone),
             canRetry = true,
             detail = detail,
         )
 
         PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED -> Problem(
-            message = "The clip arrived incomplete. Fetch it again.",
+            message = context.words(R.string.comp_clip_incomplete),
             canRetry = true,
             detail = detail,
         )
@@ -466,13 +475,16 @@ private fun playbackProblemFrom(error: PlaybackException): Problem {
         // way through and never closes the response. Fetching it again gives the
         // same short file, so there is nothing to try.
         PlaybackException.ERROR_CODE_IO_UNSPECIFIED if error.isAtEndOfFile() -> Problem(
-            message = "Frigate didn't finish writing this clip, so it stops part way " +
-                "through. Fetching it again would give the same broken file.",
+            message = context.words(R.string.comp_clip_unfinished),
             canRetry = false,
             detail = detail,
         )
 
-        else -> Problem(message = "That clip wouldn't play.", canRetry = true, detail = detail)
+        else -> Problem(
+            message = context.words(R.string.comp_clip_wouldnt_play),
+            canRetry = true,
+            detail = detail,
+        )
     }
 }
 

@@ -1,0 +1,674 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Every word Frigo says, in Portuguese. The other languages sit beside this file
+  in values-es, values-fr, values-de and values-pt, with the same keys in the
+  same order.
+
+  The names are the screen and then the thing: settings_live_view, reviews_title.
+  Anything with a number or a name in it is a format string, and the count that
+  decides the wording is a plural.
+-->
+<resources>
+    <string name="app_name">Frigo</string>
+
+    <!-- What a screen reader says, and the two words that are on every page. -->
+    <string name="action_back">Voltar</string>
+    <string name="action_enable">Ativar</string>
+    <string name="update_available">Atualização disponível</string>
+
+    <!-- The five tabs. -->
+    <string name="tab_cameras">Câmeras</string>
+    <string name="tab_reviews">Revisão</string>
+    <string name="tab_explore">Explorar</string>
+    <string name="tab_clips">Clipes</string>
+    <string name="tab_settings">Ajustes</string>
+
+    <!-- Settings. -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_servers">Servidores</string>
+    <string name="settings_add_server">Adicionar um servidor</string>
+    <string name="settings_sign_out">Sair</string>
+    <string name="settings_sign_out_this">Sair deste servidor</string>
+    <string name="settings_signed_in">Conectado</string>
+
+    <string name="settings_notifications">Notificações</string>
+    <string name="settings_notifications_supporting">O Frigo avisa quando o Frigate vê algo. Toque na notificação para ver ao vivo.</string>
+    <string name="settings_notifications_blocked">As notificações do Frigo estão desligadas no Android.</string>
+    <string name="settings_ai">Descrições com IA</string>
+    <string name="settings_ai_supporting">Com inteligência artificial, o Frigo descreve o que vê nos seus alertas</string>
+    <string name="settings_alerts_and_detections">Alertas e detecções</string>
+    <string name="settings_alerts_supporting">Quais câmeras e objetos avisam. São ajustes do seu servidor.</string>
+    <string name="settings_all_cameras_off">Todas as câmeras estão desligadas na página de notificações do seu servidor, então nada vai avisar.</string>
+    <string name="settings_quiet_times">Horários de silêncio</string>
+    <string name="settings_battery_note">O Frigo fica rodando em segundo plano para os alertas chegarem. O Android fecha apps para economizar bateria, então desligue a otimização de bateria do Frigo.</string>
+    <string name="settings_battery_settings">Ajustes de bateria</string>
+
+    <string name="settings_live_view">Visualização ao vivo</string>
+    <string name="settings_live_supporting">Reproduz vídeo na aba Câmeras. Usa mais bateria e dados.</string>
+
+    <string name="settings_cameras">Câmeras</string>
+    <string name="settings_cameras_stale">Seu servidor não está respondendo. Estas são as câmeras que o celular leu por último, %1$s.</string>
+    <string name="settings_cameras_offline">Seu servidor não está respondendo, então não dá para ler as câmeras.</string>
+    <string name="settings_no_cameras">Nenhuma câmera visível para esta conta.</string>
+
+    <string name="settings_server">Servidor</string>
+    <string name="settings_system">Sistema</string>
+    <string name="settings_system_supporting">Memória, discos, câmeras e os processos por trás deles</string>
+
+    <string name="settings_appearance">Aparência</string>
+    <string name="settings_appearance_note">Segue o celular, a menos que você escolha um.</string>
+    <string name="settings_theme_system">Sistema</string>
+    <string name="settings_theme_day">Dia</string>
+    <string name="settings_theme_night">Noite</string>
+    <string name="settings_language">Idioma</string>
+
+    <string name="settings_updates">Atualizações</string>
+    <string name="settings_version_here">Frigo %1$s</string>
+    <string name="settings_downloading">Baixando… %1$d%%</string>
+    <string name="settings_ready_to_install">O Frigo %1$s está pronto para instalar.</string>
+    <string name="settings_install">Instalar</string>
+    <string name="settings_is_out">O Frigo %1$s saiu.</string>
+    <string name="settings_download">Baixar</string>
+    <string name="settings_whats_new">Novidades</string>
+    <string name="settings_looking">Procurando uma versão mais nova…</string>
+    <string name="settings_newest">Esta é a versão mais nova.</string>
+    <string name="settings_install_permission">O Android precisa da sua permissão para instalar o Frigo. Ative Permitir desta fonte e toque em Instalar de novo.</string>
+    <string name="settings_check_again">Verificar de novo</string>
+    <string name="settings_couldnt_reach_github">Não foi possível acessar o GitHub. Verifique sua conexão e tente de novo.</string>
+    <string name="settings_couldnt_fetch">Não foi possível baixar. Verifique sua conexão e tente de novo.</string>
+    <string name="settings_no_installer">O Android não abriu o instalador.</string>
+
+    <string name="settings_about">Sobre</string>
+    <string name="settings_version">Versão</string>
+    <string name="settings_author">Autor</string>
+    <string name="settings_copyright">Copyright</string>
+    <string name="settings_show_welcome">Mostrar as boas-vindas de novo</string>
+
+    <!-- Choosing the language. -->
+    <string name="language_title">Idioma</string>
+    <string name="language_heading">Idioma</string>
+    <string name="language_follow_phone">Seguir o celular</string>
+    <string name="language_note">O Frigo abre no idioma do celular, a menos que você escolha um.</string>
+    <string name="language_chosen">Escolhido</string>
+
+    <!-- The day chip on Review and Explore. -->
+    <string name="period_all_time">Todo o período</string>
+    <string name="period_today">Hoje</string>
+    <string name="period_yesterday">Ontem</string>
+
+    <!-- How long ago something happened, on a list of events. -->
+    <string name="time_just_now">Agora mesmo</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">%1$d min atrás</item>
+        <item quantity="other">%1$d min atrás</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">%1$d h atrás</item>
+        <item quantity="other">%1$d h atrás</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">%1$d dia atrás</item>
+        <item quantity="other">%1$d dias atrás</item>
+    </plurals>
+
+    <!-- What a failed request says, where the failure is the phone's or the network's. -->
+    <string name="err_certificate_name">Esse endereço não corresponde ao certificado do servidor. Confira, incluindo a porta.</string>
+    <string name="err_certificate_untrusted">Este celular não confia no certificado do servidor. O Frigate cria o seu, a menos que receba um de verdade. Entre pelo endereço que o seu proxy usa.</string>
+    <string name="err_no_address">Não encontrei esse endereço. Confira e tente de novo.</string>
+    <string name="err_timeout">O servidor demorou demais para responder.</string>
+    <string name="err_unreachable">Não consigo falar com o servidor. Verifique sua conexão.</string>
+    <string name="err_something_wrong">Algo deu errado.</string>
+    <string name="err_not_admin">Só um administrador pode mudar isto.</string>
+
+    <!-- ===== ai ===== -->
+    <!-- The page, and what it says when the server can't be read at all. -->
+    <string name="ai_title">Descrições com IA</string>
+    <string name="ai_cant_read_settings">Não consigo ler os ajustes de IA do seu servidor.</string>
+    <string name="ai_try_again">Tentar de novo</string>
+    <string name="ai_stale">Seu servidor não está respondendo. Isto é o que o celular leu por último, %1$s.</string>
+    <string name="ai_only_admin">Só um administrador pode mudar isto.</string>
+
+    <!-- The switch that describes alerts, with and without a model behind it. -->
+    <string name="ai_alerts">Alertas</string>
+    <string name="ai_describe_alerts">Descrever alertas</string>
+    <string name="ai_describe_supporting">Você recebe uma frase com cada alerta, dizendo o que a câmera viu.</string>
+    <string name="ai_describe_no_model">Defina um modelo e cada alerta pode dizer o que aconteceu.</string>
+
+    <!-- The row that leads to the model page. -->
+    <string name="ai_model">Modelo</string>
+    <string name="ai_set_up_model">Configurar um modelo</string>
+    <string name="ai_no_model">Ollama ou um serviço na nuvem pelo Frigate</string>
+    <string name="ai_pictures_note">As imagens vão do seu servidor para esse modelo, nunca por este celular.</string>
+
+    <!-- The model page: its two fields, the save, and the way to a cloud service. -->
+    <string name="ai_ollama_heading">Ollama na sua rede</string>
+    <string name="ai_field_address">Endereço</string>
+    <string name="ai_save">Salvar</string>
+    <string name="ai_saving">Salvando</string>
+    <string name="ai_ollama_note">Quem pergunta é o seu servidor, então funciona de qualquer lugar. Escolha um modelo que enxerga imagens.</string>
+    <string name="ai_or">Ou</string>
+    <string name="ai_cloud">Usar um serviço na nuvem</string>
+    <string name="ai_cloud_supporting">Configure no Frigate e volte. A chave fica no seu servidor.</string>
+
+    <!-- What a save says before it is sent, when a field is empty. -->
+    <string name="ai_error_address">Digite o endereço do seu servidor Ollama.</string>
+    <string name="ai_error_model">Digite o nome de um modelo.</string>
+
+    <!-- ===== alerts ===== -->
+    <!-- The quiet notification, and the buzz. -->
+    <string name="alerts_watching_title">Aguardando alertas</string>
+    <string name="alerts_fallback_title">Alerta</string>
+    <string name="alerts_tap_to_watch">%1$s. Toque para assistir.</string>
+
+    <!-- What the quiet notification says when nothing will buzz. -->
+    <string name="alerts_all_cameras_off">Todas as câmeras estão desligadas na página de notificações do seu servidor, então nada vai avisar.</string>
+    <string name="alerts_no_alerts_on">Nenhuma câmera está com alertas ligados, então nada vai avisar.</string>
+    <string name="alerts_no_alert_objects">Nenhuma câmera tem objetos de alerta, então nada vai avisar.</string>
+
+    <!-- What it says when something will: the cameras, the objects, and the connection. -->
+    <plurals name="alerts_cameras">
+        <item quantity="one">Uma câmera</item>
+        <item quantity="other">%1$d câmeras</item>
+    </plurals>
+    <string name="alerts_nothing">nada</string>
+    <string name="alerts_two_objects">%1$s e %2$s</string>
+    <string name="alerts_more_objects">%1$s, %2$s e mais %3$d</string>
+    <string name="alerts_watching_connecting">%1$s para %2$s. Conectando ao seu servidor.</string>
+    <string name="alerts_watching_connected">%1$s para %2$s. Novos eventos chegam conforme acontecem.</string>
+    <string name="alerts_watching_retrying">%1$s para %2$s. %3$s Tentando de novo.</string>
+    <!-- Quoted, so the space after the full stop stays: the sentence runs on. -->
+    <string name="alerts_quiet_until">"Silêncio até %1$s. "</string>
+    <string name="alerts_session_expired">Sua sessão expirou. Abra o Frigo e entre de novo.</string>
+
+    <!-- Why the connection is not there. -->
+    <string name="alerts_cant_reach">Não consigo falar com seu servidor.</string>
+
+    <!-- The two channels Android lists in its own notification settings. -->
+    <string name="alerts_channel_watching">Aguardando</string>
+    <string name="alerts_channel_watching_description">Diz que o Frigo está conectado e aguardando alertas.</string>
+    <string name="alerts_channel_events">Alertas</string>
+    <string name="alerts_channel_events_description">Avisa quando o Frigate vê uma das coisas que você escolheu.</string>
+
+    <!-- ===== api ===== -->
+    <!-- Signing in, and the session it leaves behind. -->
+    <string name="api_sign_in_rejected">O servidor não aceitou esse usuário e essa senha</string>
+    <string name="api_no_token">Seu servidor aceitou o login, mas não enviou um token</string>
+    <string name="api_session_expired">Sua sessão expirou. Entre de novo.</string>
+    <string name="api_not_signed_in">Sem login</string>
+    <string name="api_no_settings_yet">Seu servidor não está respondendo, e este celular ainda não leu os ajustes dele.</string>
+
+    <!-- What a failed request says, where the failure is the server's. -->
+    <string name="api_no_endpoint">O servidor não tem esse endereço. É o endereço do Frigate?</string>
+    <string name="api_request_not_understood">O servidor não entendeu o pedido</string>
+    <string name="api_request_not_understood_said">O servidor não entendeu o pedido: %1$s</string>
+    <string name="api_server_not_answering">O servidor não está respondendo agora</string>
+    <string name="api_server_returned">O servidor retornou %1$d</string>
+    <string name="api_server_sent_nothing">O servidor não enviou nada.</string>
+    <string name="api_change_refused">O Frigate não aceitou essa mudança.</string>
+    <string name="api_bad_address">Esse endereço de servidor não parece certo</string>
+    <string name="api_enter_address">Digite o endereço do seu servidor</string>
+    <string name="api_not_a_web_address">Isso não parece um endereço da web</string>
+
+    <!-- Watching a camera. -->
+    <string name="api_live_view_returned">A visualização ao vivo retornou %1$d</string>
+
+    <!-- Clips. -->
+    <string name="api_wouldnt_keep">O Frigate não quis guardar esse trecho.</string>
+    <string name="api_no_recording">O Frigate não tem gravação desse trecho.</string>
+    <string name="api_no_clip">O Frigate não tem mais clipe deste evento. Ele corta clipes das suas gravações, então um antigo vai embora junto com elas.</string>
+    <string name="api_clip_gone">Esse clipe não está mais no servidor.</string>
+    <string name="api_clip_too_big">Este clipe é longo demais para baixar, com mais de 400 MB. Uma revisão fica aberta enquanto a câmera continua vendo algo, então uma antiga pode cobrir horas de gravação.</string>
+    <string name="api_empty_clip">O servidor enviou um clipe vazio. As gravações podem ainda não cobrir esse momento, então tente de novo em instantes.</string>
+    <string name="api_clip_not_moved">Não foi possível colocar o clipe no lugar</string>
+
+    <!-- ===== cam ===== -->
+    <!-- The page, and the button that swaps the grid for one to a row. -->
+    <string name="cam_title">Câmeras</string>
+    <string name="cam_show_one_to_a_row">Mostrar uma por linha</string>
+    <string name="cam_show_as_grid">Mostrar em grade</string>
+
+    <!-- When there is nothing to show. -->
+    <string name="cam_no_cameras">Nenhuma câmera está ligada no Frigate.</string>
+    <string name="cam_try_again">Tentar de novo</string>
+
+    <!-- ===== lists ===== -->
+    <!-- Explore: the page, and the chips that narrow the list. -->
+    <string name="explore_title">Explorar</string>
+    <string name="explore_labels">Rótulos</string>
+    <string name="explore_no_labels">O servidor não listou rótulos.</string>
+    <string name="explore_people">Pessoas</string>
+    <string name="explore_no_people">O Frigate ainda não reconheceu um rosto.</string>
+    <string name="explore_clear">Limpar</string>
+
+    <!-- Explore: when the list is empty, or the server didn't answer. -->
+    <string name="explore_try_again">Tentar de novo</string>
+    <string name="explore_nothing_yet">Nada gravado ainda.</string>
+    <string name="explore_nothing_for_filters">Nada gravado com esses filtros.</string>
+    <string name="explore_clear_filters">Limpar filtros</string>
+    <string name="explore_load_older">Carregar mais antigos</string>
+
+    <!-- Explore: one event, in the list and opened full screen. -->
+    <string name="explore_has_clip">Tem clipe</string>
+    <string name="explore_no_clip">O Frigate não guardou clipe deste evento.</string>
+
+    <!-- Clips: the page, and the line that says a request failed. -->
+    <string name="clips_title">Clipes salvos</string>
+    <string name="clips_dismiss">Dispensar</string>
+
+    <!-- Clips: when the list is empty, or the server didn't answer. -->
+    <string name="clips_try_again">Tentar de novo</string>
+    <string name="clips_nothing_saved">Nada salvo ainda.</string>
+    <string name="clips_nothing_saved_supporting">Com uma gravação na tela, Salvar pergunta onde guardar: neste celular ou no servidor. O que o servidor guarda aparece aqui, e o Frigate mantém quando a limpeza leva as gravações.</string>
+
+    <!-- Clips: what a row says while a clip is on its way to the phone. -->
+    <string name="clips_cutting">O Frigate está cortando.</string>
+    <string name="clips_saving">Salvando</string>
+    <string name="clips_saving_bytes">Salvando %1$s</string>
+    <string name="clips_saved">Salvo neste celular</string>
+
+    <!-- Clips: the menu on a row. -->
+    <string name="clips_menu">O que dá para fazer</string>
+    <string name="clips_save_to_phone">Salvar neste celular</string>
+    <string name="clips_rename">Renomear</string>
+    <string name="clips_delete">Excluir</string>
+    <string name="clips_cancel">Cancelar</string>
+
+    <!-- Clips: giving a clip another name, and deleting one. -->
+    <string name="clips_rename_title">Dê um nome a este clipe</string>
+    <string name="clips_rename_label">Nome</string>
+    <string name="clips_delete_title">Excluir este clipe?</string>
+    <string name="clips_delete_body">Ele sai do servidor. A cópia que você salvou no celular fica onde está. Não dá para desfazer.</string>
+
+    <!-- ===== login ===== -->
+    <!-- Signing in, and signing in to another server. -->
+    <string name="login_lead">Entre no seu servidor Frigate.</string>
+    <string name="login_sign_in">Entrar</string>
+    <string name="login_address">Endereço do servidor</string>
+    <!-- The example under the field. The same address in every language. -->
+    <string name="login_address_placeholder">https://frigate.example.com</string>
+    <string name="login_address_note">O endereço que você usa no navegador. Inclua a porta, se houver, como :8971.</string>
+    <string name="login_username">Usuário</string>
+    <string name="login_password">Senha</string>
+    <string name="login_show_password">Mostrar a senha</string>
+    <string name="login_hide_password">Ocultar a senha</string>
+    <string name="login_keeps_sign_in">O Frigo guarda seu login só neste celular. Ele fala com o seu servidor e mais nada.</string>
+
+    <string name="login_add_server">Adicionar um servidor</string>
+    <string name="login_add_server_note">Entre em outro servidor Frigate. O atual mantém seu login, então você pode voltar a ele pelos Ajustes.</string>
+    <string name="login_add">Adicionar</string>
+
+    <!-- The filter chips, and the tick that says which choice is on. -->
+    <string name="comp_all_cameras">Todas as câmeras</string>
+    <string name="comp_chosen">Escolhido</string>
+    <string name="comp_pick_a_day">Escolha um dia…</string>
+    <string name="comp_chip_more">%1$s +%2$d</string>
+
+    <!-- The calendar, which speaks the app's language rather than the phone's. -->
+    <string name="comp_month_before">Mês anterior</string>
+    <string name="comp_month_after">Próximo mês</string>
+    <string name="comp_cancel">Cancelar</string>
+
+    <!-- The clip viewer: the way out, the wait, and why a clip didn't play. -->
+    <string name="comp_close">Fechar</string>
+    <string name="comp_try_again">Tentar de novo</string>
+    <string name="comp_clip_getting">Baixando o clipe…</string>
+    <string name="comp_clip_detail_status">o servidor respondeu %1$d</string>
+    <string name="comp_clip_cant_play">Este celular não consegue reproduzir o vídeo deste clipe. O Frigate copia o que a câmera gravou em vez de converter, então os clipes são H.265, e nem todo celular decodifica isso.</string>
+    <string name="comp_clip_gone">O clipe saiu do celular. Baixe de novo.</string>
+    <string name="comp_clip_incomplete">O clipe chegou incompleto. Baixe de novo.</string>
+    <string name="comp_clip_unfinished">O Frigate não terminou de gravar este clipe, então ele para no meio. Baixar de novo daria o mesmo arquivo quebrado.</string>
+    <string name="comp_clip_wouldnt_play">Não foi possível reproduzir esse clipe.</string>
+
+    <!-- ===== onboard ===== -->
+    <!-- The welcome page. -->
+    <string name="onboard_welcome_lead">Suas câmeras Frigate no seu celular.</string>
+    <string name="onboard_welcome_note">Ele fala com o servidor que você já usa. Seu login fica neste celular.</string>
+    <string name="onboard_get_started">Começar</string>
+
+    <!-- Your server. -->
+    <string name="onboard_server_title">Seu servidor</string>
+    <string name="onboard_server_lead">O endereço que você usa no navegador e seu login do Frigate.</string>
+    <string name="onboard_server_address">Endereço</string>
+    <string name="onboard_server_signed_in_as">Conectado como</string>
+
+    <!-- Alerts. -->
+    <string name="onboard_alerts_title">Alertas</string>
+    <string name="onboard_alerts_lead">Seu celular avisa quando o servidor relata um alerta.</string>
+    <string name="onboard_alerts_allowed">Notificações permitidas</string>
+    <string name="onboard_alerts_notifications">Notificações</string>
+    <string name="onboard_alerts_where">Você escolhe no seu servidor quais câmeras e objetos avisam. A página de notificações e a de alertas definem.</string>
+    <string name="onboard_alerts_asks_once">O Android pergunta sobre notificações uma vez.</string>
+    <string name="onboard_alerts_turn_on">Ligar alertas</string>
+    <string name="onboard_alerts_not_now">Agora não</string>
+    <string name="onboard_alerts_change_later">Você pode mudar isso depois nos Ajustes.</string>
+
+    <!-- What the page says when Android turned the notifications down. -->
+    <string name="onboard_alerts_off_in_android">As notificações estão desligadas no Android</string>
+    <string name="onboard_alerts_refused_card">Os alertas ficam desligados até você permitir nos ajustes do celular.</string>
+    <string name="onboard_alerts_refused_note">Os alertas ficam desligados até você permitir nos ajustes do Android.</string>
+    <string name="onboard_alerts_open_settings">Abrir ajustes de notificações</string>
+
+    <!-- Battery. -->
+    <string name="onboard_battery_title">Bateria</string>
+    <string name="onboard_battery_lead">O Android fecha apps para economizar bateria, e com isso os alertas param. Desligue a otimização de bateria do Frigo.</string>
+    <string name="onboard_battery_optimization">Otimização de bateria</string>
+    <string name="onboard_battery_off">Desligada para o Frigo</string>
+    <string name="onboard_battery_on">Ligada para o Frigo</string>
+    <string name="onboard_battery_android_screen">Essa tela é do Android. Volte e o Frigo verifica sozinho.</string>
+    <string name="onboard_battery_open_settings">Abrir ajustes de bateria</string>
+
+    <!-- The two words that move you on. -->
+    <string name="onboard_next">Próximo</string>
+    <string name="onboard_done">Concluir</string>
+    <string name="onboard_skip">Pular</string>
+
+    <!-- The tour: a page for each tab. -->
+    <string name="onboard_tour_cameras">Câmeras</string>
+    <string name="onboard_tour_cameras_words">As quatro câmeras de uma vez, então um olhar mostra se tem alguém por aí. Toque em uma para ver ao vivo.</string>
+    <string name="onboard_tour_live">Ao vivo e gravação</string>
+    <string name="onboard_tour_live_words">Toque numa câmera e a imagem fica ao vivo. A barra embaixo é o dia; arraste para voltar nele. Vire o celular de lado para a tela toda.</string>
+    <string name="onboard_tour_review">Revisão</string>
+    <string name="onboard_tour_review_words">Os momentos que o Frigate achou que valiam a pena, mais novos primeiro. Toque em um para assistir, e ele sai da lista depois que você assiste.</string>
+    <string name="onboard_tour_explore">Explorar</string>
+    <string name="onboard_tour_explore_words">Tudo o que o Frigate gravou. Filtre por câmera, pelo que foi visto ou pelo dia.</string>
+    <string name="onboard_tour_clips">Clipes</string>
+    <string name="onboard_tour_clips_words">Os clipes que você guardou. Assista, salve no celular ou exclua do servidor.</string>
+    <string name="onboard_tour_settings">Ajustes</string>
+    <string name="onboard_tour_settings_words">Seu servidor, seus alertas e a aparência do app.</string>
+    <string name="onboard_tour_ai">Alertas gerados por IA</string>
+    <string name="onboard_tour_ai_words">O Frigo usa inteligência artificial para descrever o que vê numa notificação.</string>
+
+    <!-- The last page. -->
+    <string name="onboard_ready_title">Tudo pronto.</string>
+    <string name="onboard_ready_signed_in_to">O Frigo está conectado a %1$s.</string>
+    <string name="onboard_ready_signed_in">O Frigo está conectado.</string>
+    <string name="onboard_ready_change_later">Você pode mudar tudo isso nos Ajustes.</string>
+    <string name="onboard_ready_open">Abrir o Frigo</string>
+
+    <!-- What the pictures draw. -->
+    <string name="onboard_live">Ao vivo</string>
+    <string name="onboard_chip_alerts">Alertas %1$d</string>
+    <string name="onboard_chip_detections">Detecções %1$d</string>
+    <string name="onboard_day_mon">S</string>
+    <string name="onboard_day_tue">T</string>
+    <string name="onboard_day_wed">Q</string>
+    <string name="onboard_day_thu">Q</string>
+    <string name="onboard_day_fri">S</string>
+    <string name="onboard_day_sat">S</string>
+    <string name="onboard_day_sun">D</string>
+    <string name="onboard_ai_notification_title">Frigo · %1$s · %2$s</string>
+    <string name="onboard_ai_heading">Pessoa na porta da frente</string>
+    <string name="onboard_ai_description">Um homem está parado na porta da frente, olhando o celular.</string>
+
+    <!-- ===== playback ===== -->
+    <!-- What the picture is: the stream, a recording, or a camera that has stopped. -->
+    <string name="playback_mode_live">Ao vivo</string>
+    <string name="playback_mode_playback">Gravação</string>
+    <string name="playback_mode_offline">Offline</string>
+
+    <!-- The days to choose from, above the bar. -->
+    <string name="playback_day_today">Hoje</string>
+    <string name="playback_day_yesterday">Ontem</string>
+
+    <!-- The other cameras under the picture. The name in it is the camera's own. -->
+    <string name="playback_show_camera">Mostrar %1$s</string>
+
+    <!-- Saving a stretch as a file on the phone, and how the save is going. -->
+    <string name="playback_save">Salvar</string>
+    <string name="playback_save_this_clip">Salvar este clipe</string>
+    <string name="playback_saving">Salvando</string>
+    <string name="playback_saving_size">Salvando %1$s</string>
+    <string name="playback_saved">Salvo</string>
+    <string name="playback_couldnt_save">Não deu para salvar</string>
+
+    <!-- The sheet that asks where a stretch should go. -->
+    <string name="playback_this_stretch">Este trecho</string>
+    <string name="playback_save_to_phone">Salvar neste celular</string>
+    <string name="playback_save_to_phone_note">Um arquivo que você pode mover ou compartilhar, como qualquer outro.</string>
+    <string name="playback_keep_on_server">Guardar no servidor</string>
+    <string name="playback_keep_note">O Frigate o mantém depois que a limpeza leva as gravações.</string>
+    <string name="playback_keeping">O Frigate está cortando.</string>
+    <string name="playback_kept">Guardado. Ele espera na aba Clipes.</string>
+    <string name="playback_clips_kept">Clipes já guardados</string>
+
+    <!-- Playing a recording: what goes wrong, and the speed button. -->
+    <string name="playback_recording_failed">Não foi possível trazer essa gravação.</string>
+    <string name="playback_nothing_to_play">Não há gravação para tocar daqui.</string>
+    <string name="playback_speed">%1$d×</string>
+    <string name="playback_change_speed">Mudar a velocidade</string>
+
+    <!-- ===== player ===== -->
+    <!-- The picture, while it is being fetched and when it is a stand-in. -->
+    <string name="player_connecting">Conectando…</string>
+    <string name="player_retrying">Tentando de novo</string>
+    <string name="player_stream_stopped">A transmissão parou.</string>
+    <string name="player_small_picture">A transmissão da própria câmera não respondeu, então esta é a imagem pequena.</string>
+
+    <!-- The sound, and the button that turns it on and off. -->
+    <string name="player_sound_on">Ligar o som</string>
+    <string name="player_sound_off">Desligar o som</string>
+    <string name="player_no_sound">Nenhum som chegou.</string>
+
+    <!-- The menu on the stills stream: its size and its frame rate. -->
+    <string name="player_stream_quality">Qualidade da transmissão</string>
+    <string name="player_resolution">Resolução</string>
+    <string name="player_frames_per_second">Quadros por segundo</string>
+
+    <!-- The way back to the stream, and what the bar says under the picture. -->
+    <string name="player_return_to_live">Voltar ao vivo</string>
+    <string name="player_go_back_to_stream">Voltar à transmissão</string>
+    <string name="player_stretch">%1$s a %2$s</string>
+    <string name="player_nothing_recorded">Nada gravado nesse horário.</string>
+
+    <!-- When the day's recordings can't be read. -->
+    <string name="player_no_recordings">O Frigate não guardou gravações desta câmera.</string>
+    <string name="player_try_again">Tentar de novo</string>
+
+    <!-- ===== quiet ===== -->
+    <!-- The Quiet times page, and the two times it keeps. -->
+    <string name="quiet_title">Horários de silêncio</string>
+    <string name="quiet_when">Quando</string>
+    <string name="quiet_time_from">De</string>
+    <string name="quiet_time_until">Até</string>
+    <string name="quiet_same_times">De e Até são iguais, então o silêncio é o dia todo.</string>
+    <string name="quiet_cancel">Cancelar</string>
+    <string name="quiet_set">Definir</string>
+
+    <!-- The hour of silence that ends by itself. -->
+    <string name="quiet_for_an_hour">Silêncio por uma hora</string>
+    <string name="quiet_hush_supporting">Todas as câmeras ficam em silêncio até lá.</string>
+    <string name="quiet_hour_supporting">Todas as câmeras, pela próxima hora.</string>
+    <string name="quiet_stop">Parar</string>
+
+    <!-- The cameras it keeps quiet, and what it says when there are none. -->
+    <string name="quiet_cameras_heading">Câmeras</string>
+    <string name="quiet_offline">Seu servidor não está respondendo, então esta é a lista que o celular leu por último.</string>
+    <string name="quiet_no_picked">Nenhuma câmera escolhida, então nada vai ficar em silêncio.</string>
+
+    <!-- A camera's page, and the two things it says when it can't be read. -->
+    <string name="camsw_cant_read">Não consigo ler os ajustes desta câmera.</string>
+    <string name="camsw_try_again">Tentar de novo</string>
+    <string name="camsw_stale">Seu servidor não está respondendo. Estes são os ajustes que o celular leu por último, %1$s. Não dá para mudar até ele voltar.</string>
+    <string name="camsw_changes_save">Cada toque salva a mudança no servidor.</string>
+
+    <!-- The four groups the eight switches sit in. -->
+    <string name="camsw_group_detection">Detecção</string>
+    <string name="camsw_group_recording">Gravação</string>
+    <string name="camsw_group_live_view">Visualização ao vivo</string>
+    <string name="camsw_group_recognition">Reconhecimento</string>
+
+    <!-- Asking before recording stops. -->
+    <string name="camsw_stop_question">Parar a gravação?</string>
+    <string name="camsw_stop_detail">%1$s para de salvar vídeo. O que já foi salvo fica.</string>
+    <string name="camsw_stop">Parar</string>
+    <string name="camsw_cancel">Cancelar</string>
+
+    <!-- ===== reviews ===== -->
+    <!-- The list: its title, and the row of chips that narrows it. -->
+    <string name="reviews_title">Revisão</string>
+    <string name="reviews_labels">Rótulos</string>
+    <string name="reviews_no_labels">Nada para filtrar nesta aba.</string>
+    <string name="reviews_show_reviewed">Mostrar revisados</string>
+    <string name="reviews_clear">Limpar</string>
+
+    <!-- What a list with nothing in it says, and the way out of each one. -->
+    <string name="reviews_try_again">Tentar de novo</string>
+    <string name="reviews_nothing_filtered">Nada com esses filtros.</string>
+    <string name="reviews_clear_filters">Limpar filtros</string>
+    <string name="reviews_hidden_reviewed">O que você já assistiu fica oculto. Ligue Mostrar revisados para ver de novo.</string>
+    <string name="reviews_put_back">Colocar de volta</string>
+
+    <!-- Clearing a whole list in one tap, and reaching further back. -->
+    <string name="reviews_marking">Marcando como revisados</string>
+    <string name="reviews_mark_all">Marcar tudo como revisado</string>
+    <string name="reviews_load_older">Carregar mais antigos</string>
+
+    <!-- A row: what was seen when it is only motion, and how long ago. -->
+    <string name="reviews_motion">Movimento</string>
+    <string name="reviews_reviewed_at">%1$s · Revisado</string>
+
+    <!-- The player's caption: the camera, then how long ago. -->
+    <string name="reviews_player_subtitle">%1$s · %2$s</string>
+
+    <!-- Alerts and detections: the page, and what it says when it can't load. -->
+    <string name="revset_title">Alertas e detecções</string>
+    <string name="revset_cant_read">Não consigo ler estes ajustes.</string>
+    <string name="revset_try_again">Tentar de novo</string>
+    <string name="revset_camera_own">Essa câmera tem ajustes próprios que este app não consegue ler.</string>
+    <string name="revset_stale">Seu servidor não está respondendo. Estes são os ajustes que o celular leu por último, %1$s. Não dá para mudar até ele voltar.</string>
+
+    <!-- The two groups, and the objects each one covers. -->
+    <string name="revset_objects">Objetos</string>
+    <string name="revset_nothing">Nada</string>
+    <string name="revset_everything_else">Todo o resto</string>
+    <string name="revset_all_cameras">Isto vale para todas as câmeras. Escolha uma acima para definir a dela.</string>
+
+    <!-- Picking the objects, and what the picker says. -->
+    <string name="revset_alert_labels">Rótulos de alerta</string>
+    <string name="revset_detection_labels">Rótulos de detecção</string>
+    <string name="revset_done">Concluir</string>
+    <string name="revset_search">Buscar</string>
+    <string name="revset_alerts_hint">Escolha pelo menos um ou desligue Alertas.</string>
+    <string name="revset_detections_hint">Nenhum marcado significa todos os outros objetos.</string>
+    <string name="revset_no_match">Nada aqui tem esse nome.</string>
+    <string name="revset_tracked">Rastreado</string>
+
+    <!-- ===== sys ===== -->
+    <!-- The System page: one reading of the server's stats, said in words. -->
+    <string name="sys_not_said">Não informado</string>
+    <string name="sys_processor">Processador</string>
+    <string name="sys_memory">Memória</string>
+    <string name="sys_computing">%1$s calculando</string>
+    <string name="sys_decoding">%1$s decodificando</string>
+    <string name="sys_detector">Detector %1$s</string>
+    <string name="sys_inference">uma inferência</string>
+    <string name="sys_memory_of">%1$s de memória</string>
+    <string name="sys_processor_of">%1$s de processador</string>
+    <string name="sys_ms">%1$s ms</string>
+    <string name="sys_percent">%1$s%%</string>
+    <string name="sys_gb">%1$s GB</string>
+    <string name="sys_mb">%1$d MB</string>
+    <string name="sys_nothing">nada</string>
+
+    <!-- The disks, and how full they are. -->
+    <string name="sys_storage_used">%1$s de %2$s</string>
+    <string name="sys_storage_free">%1$s livres</string>
+    <plurals name="sys_storage_frames">
+        <item quantity="one">espaço para %1$d quadro</item>
+        <item quantity="other">espaço para %1$d quadros</item>
+    </plurals>
+    <plurals name="sys_storage_wanted">
+        <item quantity="one">%1$d desejado</item>
+        <item quantity="other">%1$d desejados</item>
+    </plurals>
+    <string name="sys_mount_recordings">Gravações</string>
+    <string name="sys_mount_clips">Clipes</string>
+    <string name="sys_mount_cache">Cache</string>
+    <string name="sys_mount_shm">Memória compartilhada</string>
+
+    <!-- How long the server has been up, and how fast a camera is going. -->
+    <plurals name="sys_day">
+        <item quantity="one">%1$d dia</item>
+        <item quantity="other">%1$d dias</item>
+    </plurals>
+    <plurals name="sys_hour">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
+    <plurals name="sys_minute">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
+    <string name="sys_less_than_a_minute">menos de um minuto</string>
+    <plurals name="sys_frames_a_second">
+        <item quantity="one">1 quadro por segundo</item>
+        <item quantity="other">%1$s quadros por segundo</item>
+    </plurals>
+    <string name="sys_being_detected">%1$s sendo detectado</string>
+    <string name="sys_nothing_detected">nada sendo detectado</string>
+
+    <!-- A camera's eight switches, and the line that says how they stand. -->
+    <string name="camera_switch_object_detection">Detecção de objetos</string>
+    <string name="camera_switch_motion_detection">Detecção de movimento</string>
+    <string name="camera_switch_recording">Gravação</string>
+    <string name="camera_switch_snapshots">Capturas</string>
+    <string name="camera_switch_audio_detection">Detecção de áudio</string>
+    <string name="camera_switch_birdseye">Birdseye</string>
+    <string name="camera_switch_face_recognition">Reconhecimento facial</string>
+    <string name="camera_switch_license_plate">Reconhecimento de placas</string>
+    <string name="camera_off_for_server">Desligado para o servidor inteiro.</string>
+    <string name="camera_all_on">Tudo ligado</string>
+    <string name="camera_one_off">Sem %1$s</string>
+    <string name="camera_two_off">Sem %1$s e %2$s</string>
+    <plurals name="camera_more_off">
+        <item quantity="one">Sem %1$s, %2$s e mais %3$d</item>
+        <item quantity="other">Sem %1$s, %2$s e mais %3$d</item>
+    </plurals>
+
+    <!-- Alerts and detections, which is how the two kinds of review are named. -->
+    <string name="review_kind_alerts">Alertas</string>
+    <string name="review_kind_detections">Detecções</string>
+
+    <!-- Where the model that writes descriptions is. -->
+    <string name="ai_ollama_at">Ollama em %1$s</string>
+
+    <!-- Quiet times, as the Settings row says them. -->
+    <string name="quiet_until">Silêncio até %1$s</string>
+    <string name="quiet_off">Desligado</string>
+    <string name="quiet_all_day">O dia todo</string>
+    <string name="quiet_window">%1$s a %2$s</string>
+    <string name="quiet_no_cameras">nenhuma câmera</string>
+    <plurals name="quiet_cameras">
+        <item quantity="one">uma câmera</item>
+        <item quantity="other">%1$d câmeras</item>
+    </plurals>
+    <string name="quiet_window_cameras">%1$s, %2$s</string>
+
+    <!-- ===== system ===== -->
+    <!-- The page, and the two things it says when it can't be read. -->
+    <string name="system_title">Sistema</string>
+    <string name="system_cant_read_stats">Não consigo ler as estatísticas do seu servidor.</string>
+    <string name="system_try_again">Tentar de novo</string>
+
+    <!-- Asking before the restart, and the wait while it happens. -->
+    <string name="system_restart_question">Reiniciar o Frigate?</string>
+    <string name="system_restart_detail">Tudo fica parado por cerca de meio minuto, e os alertas junto. As gravações e os ajustes continuam lá.</string>
+    <string name="system_restart">Reiniciar</string>
+    <string name="system_cancel">Cancelar</string>
+    <string name="system_restarting">Reiniciando. Volta em cerca de meio minuto.</string>
+
+    <!-- The cards, in the order they sit on the page. -->
+    <string name="system_server">Servidor</string>
+    <string name="system_version">Versão</string>
+    <string name="system_up_for">No ar há</string>
+    <string name="system_update_out">Saiu a versão %1$s. Atualize no servidor, não daqui.</string>
+    <string name="system_load">Carga</string>
+    <string name="system_cameras">Câmeras</string>
+    <string name="system_storage">Armazenamento</string>
+    <string name="system_processes">Processos</string>
+
+    <!-- The row that restarts the server, for an admin. -->
+    <string name="system_this_server">Este servidor</string>
+    <string name="system_restart_frigate">Reiniciar o Frigate</string>
+    <string name="system_restart_supporting">Os alertas param por cerca de meio minuto</string>
+</resources>

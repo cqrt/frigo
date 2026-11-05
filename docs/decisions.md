@@ -2277,3 +2277,56 @@ separate means a quick silence cannot quietly become the new schedule.
 Coverage is per camera because that is the case worth a setting: the street going quiet overnight while the
 front door still tells you. It also means a camera renamed on the server drops out of the set, which is why
 the page lists every camera rather than only the picked ones.
+
+## The app speaks five languages
+
+Every word the app says now lives in `values/strings.xml`, with Spanish, French,
+German and Portuguese beside it in `values-es`, `values-fr`, `values-de` and
+`values-pt`. Nothing in the Kotlin says anything to a person.
+
+**Why the standard files rather than a word list in the code.** A string file is
+what Android, translators and every tool already understand. The picker reads the
+same place it writes, so it agrees with Android's own per-app language screen on a
+phone that has one.
+
+**Why AppCompat.** Android 13 keeps a per-app language itself, and this app still
+runs on Android 8. `AppCompatDelegate` does the same job from API 21 up, and on 13
+and later it hands the choice to the platform rather than keeping a second copy.
+That is the only reason the app depends on it; `MainActivity` is an
+`AppCompatActivity` and the window theme is AppCompat's so it can be one.
+
+AppCompat stores the choice (`autoStoreLocales`) and puts it on before the first
+screen is built. Without that, a phone in French would open in English and turn
+over a moment later.
+
+`res/xml/locales_config.xml` is what puts Frigo in Android's own language list. It
+is the same list the picker shows, in the same order.
+
+**Dates follow the app, not the phone.** A screen in German with "Sun 1 Nov" under
+it is a mistake you notice at once. The readout under a camera's bar, the day
+chips, the calendar's month and weekday names, and "14 min ago" are all built with
+the app's language. The 12- or 24-hour clock stays the phone's, because that is a
+habit rather than a language.
+
+**What stays in English.** Frigate's own object labels (person, car), the names of
+your cameras, and anything the server sends back as a refusal. Frigate's web page
+shows the same words, and a phone that invented its own names for them would
+disagree with the server it is looking at. The question the app asks a model about
+a picture stays English too: it is written for the model, not for a person, and
+the sentence that comes back is the server's.
+
+**The words that aren't on a screen.** The alert notification, the "Watching for
+alerts" line and the messages the data layer builds are posted from a service,
+which is handed the phone's context rather than the app's. `Context.words(...)`
+and `Context.counted(...)` resolve a string in the app's language for those three
+places. Without them a phone in French would have a French app and an English
+buzz.
+
+**The cost.** AppCompat is in the APK for one job. The translations were written
+by the same hand as the English, so a wrong word is wrong in four languages at
+once; the glossary of Frigate's terms is the thing to keep consistent.
+
+**The tests.** Five of them read sentences that are now resources, so they run
+under Robolectric with the real strings. That also means a missing key fails a
+test rather than showing a blank line on a phone. It is a test-only dependency:
+none of it is in the APK.

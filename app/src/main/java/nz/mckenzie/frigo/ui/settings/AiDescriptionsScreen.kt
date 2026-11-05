@@ -38,11 +38,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.components.Group
@@ -82,10 +85,13 @@ fun AiDescriptionsScreen(
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("AI descriptions") },
+            title = { Text(stringResource(R.string.ai_title)) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.action_back),
+                    )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -105,10 +111,10 @@ fun AiDescriptionsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = state.error ?: "Can't read your server's AI settings.",
+                    text = state.error ?: stringResource(R.string.ai_cant_read_settings),
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                Button(onClick = viewModel::load) { Text("Try again") }
+                Button(onClick = viewModel::load) { Text(stringResource(R.string.ai_try_again)) }
             }
 
             else -> Column(
@@ -124,18 +130,22 @@ fun AiDescriptionsScreen(
                 if (stale != null) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
-                            text = "Your server isn't answering. This is what your phone last " +
-                                "read, ${relativeTime(stale).lowercase()}.",
+                            text = stringResource(
+                                R.string.ai_stale,
+                                relativeTime(stale).lowercase(),
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = attention(),
                         )
-                        TextButton(onClick = viewModel::load) { Text("Try again") }
+                        TextButton(onClick = viewModel::load) {
+                            Text(stringResource(R.string.ai_try_again))
+                        }
                     }
                 }
 
                 if (!setup.admin) {
                     Text(
-                        text = "Only an admin can change this.",
+                        text = stringResource(R.string.ai_only_admin),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -149,14 +159,14 @@ fun AiDescriptionsScreen(
                     )
                 }
 
-                Group("Alerts") {
+                Group(stringResource(R.string.ai_alerts)) {
                     Item(
                         icon = FrigoIcons.Sparkle,
-                        title = "Describe alerts",
+                        title = stringResource(R.string.ai_describe_alerts),
                         supporting = if (service != null) {
-                            "You get a sentence with each alert, saying what the camera saw."
+                            stringResource(R.string.ai_describe_supporting)
                         } else {
-                            "Set a model, and every alert can say what happened."
+                            stringResource(R.string.ai_describe_no_model)
                         },
                         // With nothing set up there is nothing to switch, so the
                         // line leads to the model instead.
@@ -177,19 +187,20 @@ fun AiDescriptionsScreen(
                     )
                 }
 
-                Group("Model") {
+                Group(stringResource(R.string.ai_model)) {
                     Item(
                         icon = FrigoIcons.Server,
-                        title = service?.model?.takeIf { it.isNotBlank() } ?: "Set up a model",
-                        value = service?.where?.takeIf { it.isNotBlank() }
-                            ?: "Ollama, or a cloud service through Frigate",
+                        title = service?.model?.takeIf { it.isNotBlank() }
+                            ?: stringResource(R.string.ai_set_up_model),
+                        value = service?.where(LocalContext.current)?.takeIf { it.isNotBlank() }
+                            ?: stringResource(R.string.ai_no_model),
                         onClick = onOpenModel,
                         trailing = { OpenMark() },
                     )
                 }
 
                 if (service != null) {
-                    Note("The pictures go from your server to that model, never through this phone.")
+                    Note(stringResource(R.string.ai_pictures_note))
                 }
             }
         }
@@ -219,10 +230,13 @@ fun AiModelScreen(
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Model") },
+            title = { Text(stringResource(R.string.ai_model)) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.action_back),
+                    )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -242,7 +256,7 @@ fun AiModelScreen(
             ) {
                 if (!state.editable) {
                     Text(
-                        text = "Only an admin can change this.",
+                        text = stringResource(R.string.ai_only_admin),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -256,7 +270,7 @@ fun AiModelScreen(
                     )
                 }
 
-                Group("Ollama on your network") {
+                Group(stringResource(R.string.ai_ollama_heading)) {
                     Column(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -264,7 +278,7 @@ fun AiModelScreen(
                         Field(
                             value = state.address,
                             onValueChange = viewModel::setAddress,
-                            label = "Address",
+                            label = stringResource(R.string.ai_field_address),
                             placeholder = "http://192.168.1.10:11434",
                             keyboardType = KeyboardType.Uri,
                             enabled = state.editable,
@@ -272,7 +286,7 @@ fun AiModelScreen(
                         Field(
                             value = state.model,
                             onValueChange = viewModel::setModel,
-                            label = "Model",
+                            label = stringResource(R.string.ai_model),
                             placeholder = "llava",
                             enabled = state.editable,
                         )
@@ -284,22 +298,24 @@ fun AiModelScreen(
                                 onClick = viewModel::save,
                                 enabled = state.editable && !state.saving,
                             ) {
-                                Text(if (state.saving) "Saving" else "Save")
+                                Text(
+                                    stringResource(
+                                        if (state.saving) R.string.ai_saving
+                                        else R.string.ai_save,
+                                    ),
+                                )
                             }
                         }
                     }
                 }
 
-                Note(
-                    "Your server does the asking, so this works from anywhere. " +
-                        "Pick a model that can see pictures.",
-                )
+                Note(stringResource(R.string.ai_ollama_note))
 
-                Group("Or") {
+                Group(stringResource(R.string.ai_or)) {
                     Item(
                         icon = FrigoIcons.Server,
-                        title = "Use a cloud service",
-                        supporting = "Set it up in Frigate, then come back. The key stays on your server.",
+                        title = stringResource(R.string.ai_cloud),
+                        supporting = stringResource(R.string.ai_cloud_supporting),
                     )
                 }
             }

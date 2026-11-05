@@ -16,7 +16,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.ui.Period
 import nz.mckenzie.frigo.ui.said
@@ -39,23 +41,24 @@ fun CameraMenu(
 ) {
     var open by remember { mutableStateOf(false) }
     val picked = cameras.firstOrNull { it.name == chosen }
+    val chosenWord = stringResource(R.string.comp_chosen)
 
     Box {
         FilterChip(
             selected = picked != null,
             onClick = { open = true },
-            label = { Text(picked?.title ?: "All cameras") },
+            label = { Text(picked?.title ?: stringResource(R.string.comp_all_cameras)) },
             trailingIcon = { Arrow() },
         )
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             DropdownMenuItem(
-                text = { Text("All cameras") },
+                text = { Text(stringResource(R.string.comp_all_cameras)) },
                 onClick = {
                     open = false
                     onChoose(null)
                 },
                 trailingIcon = if (chosen == null) {
-                    { Icon(Icons.Filled.Check, contentDescription = "Chosen") }
+                    { Icon(Icons.Filled.Check, contentDescription = chosenWord) }
                 } else {
                     null
                 },
@@ -68,7 +71,7 @@ fun CameraMenu(
                         onChoose(camera.name)
                     },
                     trailingIcon = if (chosen == camera.name) {
-                        { Icon(Icons.Filled.Check, contentDescription = "Chosen") }
+                        { Icon(Icons.Filled.Check, contentDescription = chosenWord) }
                     } else {
                         null
                     },
@@ -94,6 +97,7 @@ fun <T> ChoiceChip(
     empty: String,
 ) {
     var open by remember { mutableStateOf(false) }
+    val chosenWord = stringResource(R.string.comp_chosen)
     Box {
         FilterChip(
             selected = chosen.isNotEmpty(),
@@ -110,7 +114,7 @@ fun <T> ChoiceChip(
                         text = { Text(name(choice)) },
                         onClick = { onToggle(choice) },
                         trailingIcon = if (chosen.contains(choice)) {
-                            { Icon(Icons.Filled.Check, contentDescription = "Chosen") }
+                            { Icon(Icons.Filled.Check, contentDescription = chosenWord) }
                         } else {
                             null
                         },
@@ -125,6 +129,7 @@ fun <T> ChoiceChip(
 @Composable
 fun PeriodChip(period: Period, onChoose: (Period) -> Unit, onPickDay: () -> Unit) {
     var open by remember { mutableStateOf(false) }
+    val chosenWord = stringResource(R.string.comp_chosen)
     Box {
         FilterChip(
             selected = period != Period.All,
@@ -141,20 +146,20 @@ fun PeriodChip(period: Period, onChoose: (Period) -> Unit, onPickDay: () -> Unit
                         onChoose(choice)
                     },
                     trailingIcon = if (period == choice) {
-                        { Icon(Icons.Filled.Check, contentDescription = "Chosen") }
+                        { Icon(Icons.Filled.Check, contentDescription = chosenWord) }
                     } else {
                         null
                     },
                 )
             }
             DropdownMenuItem(
-                text = { Text("Pick a day…") },
+                text = { Text(stringResource(R.string.comp_pick_a_day)) },
                 onClick = {
                     open = false
                     onPickDay()
                 },
                 trailingIcon = if (period is Period.On) {
-                    { Icon(Icons.Filled.Check, contentDescription = "Chosen") }
+                    { Icon(Icons.Filled.Check, contentDescription = chosenWord) }
                 } else {
                     null
                 },
@@ -173,12 +178,13 @@ private fun Arrow() {
 }
 
 /** "Labels", or "Person +1" when a few are on, so the chip stays short. */
+@Composable
 private fun chosenSaid(title: String, names: List<String>): String {
     val sorted = names.sorted()
     return when (sorted.size) {
         0 -> title
         1 -> sorted.first()
-        else -> "${sorted.first()} +${sorted.size - 1}"
+        else -> stringResource(R.string.comp_chip_more, sorted.first(), sorted.size - 1)
     }
 }
 

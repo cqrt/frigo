@@ -36,11 +36,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.SystemLine
 import nz.mckenzie.frigo.data.SystemMeter
@@ -79,10 +81,13 @@ fun SystemScreen(
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("System") },
+            title = { Text(stringResource(R.string.system_title)) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.action_back),
+                    )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -102,10 +107,10 @@ fun SystemScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = state.error ?: "Can't read your server's stats.",
+                    text = state.error ?: stringResource(R.string.system_cant_read_stats),
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                Button(onClick = viewModel::load) { Text("Try again") }
+                Button(onClick = viewModel::load) { Text(stringResource(R.string.system_try_again)) }
             }
 
             else -> Numbers(
@@ -120,20 +125,22 @@ fun SystemScreen(
     if (state.asking) {
         AlertDialog(
             onDismissRequest = viewModel::cancelRestart,
-            title = { Text("Restart Frigate?") },
+            title = { Text(stringResource(R.string.system_restart_question)) },
             text = {
-                Text(
-                    "Everything stops for about half a minute, and alerts with it. " +
-                        "Recordings and settings are kept.",
-                )
+                Text(stringResource(R.string.system_restart_detail))
             },
             confirmButton = {
                 TextButton(onClick = viewModel::restart) {
-                    Text("Restart", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        stringResource(R.string.system_restart),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::cancelRestart) { Text("Cancel") }
+                TextButton(onClick = viewModel::cancelRestart) {
+                    Text(stringResource(R.string.system_cancel))
+                }
             },
         )
     }
@@ -154,7 +161,7 @@ private fun Numbers(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (restarting) {
-            Group("This server") {
+            Group(stringResource(R.string.system_this_server)) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -162,7 +169,7 @@ private fun Numbers(
                 ) {
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                     Text(
-                        text = "Restarting. It will be back in about half a minute.",
+                        text = stringResource(R.string.system_restarting),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
@@ -177,18 +184,18 @@ private fun Numbers(
             )
         }
 
-        Group("Server") {
-            Fact("Version", page.version)
+        Group(stringResource(R.string.system_server)) {
+            Fact(stringResource(R.string.system_version), page.version)
             LineDivider()
-            Fact("Up for", page.uptime)
+            Fact(stringResource(R.string.system_up_for), page.uptime)
             page.newer?.let {
                 LineDivider()
-                Note("$it is out. Updating is done on the server, not from here.")
+                Note(stringResource(R.string.system_update_out, it))
             }
         }
 
         if (page.processor != null || page.memory != null) {
-            Group("Load") {
+            Group(stringResource(R.string.system_load)) {
                 val meters = listOfNotNull(page.processor, page.memory)
                 meters.forEachIndexed { index, meter ->
                     if (index > 0) LineDivider()
@@ -202,13 +209,13 @@ private fun Numbers(
         }
 
         if (page.cameras.isNotEmpty()) {
-            Group("Cameras") {
+            Group(stringResource(R.string.system_cameras)) {
                 Lines(page.cameras)
             }
         }
 
         if (page.storage.isNotEmpty()) {
-            Group("Storage") {
+            Group(stringResource(R.string.system_storage)) {
                 page.storage.forEachIndexed { index, meter ->
                     if (index > 0) LineDivider()
                     MeterRow(meter)
@@ -217,17 +224,17 @@ private fun Numbers(
         }
 
         if (page.detectors.isNotEmpty() || page.processes.isNotEmpty()) {
-            Group("Processes") {
+            Group(stringResource(R.string.system_processes)) {
                 Lines(page.detectors + page.processes)
             }
         }
 
         if (page.restartable) {
-            Group("This server") {
+            Group(stringResource(R.string.system_this_server)) {
                 Item(
                     icon = FrigoIcons.Server,
-                    title = "Restart Frigate",
-                    supporting = "Alerts stop for about half a minute",
+                    title = stringResource(R.string.system_restart_frigate),
+                    supporting = stringResource(R.string.system_restart_supporting),
                     colour = MaterialTheme.colorScheme.error,
                     onClick = onRestart,
                     trailing = { OpenMark() },

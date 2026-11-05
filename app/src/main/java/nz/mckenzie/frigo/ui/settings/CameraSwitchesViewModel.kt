@@ -58,7 +58,7 @@ class CameraSwitchesViewModel(
                     _state.update { it.copy(loading = false, page = page) }
                 }
                 .onFailure { failure ->
-                    _state.update { it.copy(loading = false, error = failure.friendlyMessage()) }
+                    _state.update { it.copy(loading = false, error = failure.friendlyMessage(repository.context)) }
                 }
         }
     }
@@ -85,7 +85,7 @@ class CameraSwitchesViewModel(
                         val now = ui.page?.switches?.get(camera) ?: before
                         ui.copy(
                             page = ui.page?.setting(camera, now.with(switch, before[switch])),
-                            error = failure.friendlyMessage(),
+                            error = failure.friendlyMessage(repository.context),
                         )
                     }
                 }

@@ -40,10 +40,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.FrigateEvent
 import nz.mckenzie.frigo.data.FrigoRepository
@@ -72,7 +74,7 @@ fun ExploreScreen(container: AppContainer, modifier: Modifier = Modifier) {
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Explore") },
+            title = { Text(stringResource(R.string.explore_title)) },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         )
 
@@ -90,22 +92,22 @@ fun ExploreScreen(container: AppContainer, modifier: Modifier = Modifier) {
             }
             item {
                 ChoiceChip(
-                    title = "Labels",
+                    title = stringResource(R.string.explore_labels),
                     choices = state.labels,
                     chosen = state.chosenLabels,
                     name = ::prettyLabel,
                     onToggle = viewModel::toggleLabel,
-                    empty = "The server listed no labels.",
+                    empty = stringResource(R.string.explore_no_labels),
                 )
             }
             item {
                 ChoiceChip(
-                    title = "People",
+                    title = stringResource(R.string.explore_people),
                     choices = state.subLabels,
                     chosen = state.chosenSubLabels,
                     name = { it },
                     onToggle = viewModel::toggleSubLabel,
-                    empty = "Frigate hasn't recognised a face yet.",
+                    empty = stringResource(R.string.explore_no_people),
                 )
             }
             item {
@@ -117,7 +119,9 @@ fun ExploreScreen(container: AppContainer, modifier: Modifier = Modifier) {
             }
             if (state.narrowed) {
                 item {
-                    TextButton(onClick = viewModel::clearFilters) { Text("Clear") }
+                    TextButton(onClick = viewModel::clearFilters) {
+                        Text(stringResource(R.string.explore_clear))
+                    }
                 }
             }
         }
@@ -139,7 +143,9 @@ fun ExploreScreen(container: AppContainer, modifier: Modifier = Modifier) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(state.error.orEmpty(), style = MaterialTheme.typography.bodyLarge)
-                    Button(onClick = viewModel::refresh) { Text("Try again") }
+                    Button(onClick = viewModel::refresh) {
+                        Text(stringResource(R.string.explore_try_again))
+                    }
                 }
 
                 state.events.isEmpty() -> Column(
@@ -149,14 +155,16 @@ fun ExploreScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 ) {
                     Text(
                         text = if (state.narrowed) {
-                            "Nothing recorded for these filters."
+                            stringResource(R.string.explore_nothing_for_filters)
                         } else {
-                            "Nothing recorded yet."
+                            stringResource(R.string.explore_nothing_yet)
                         },
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     if (state.narrowed) {
-                        Button(onClick = viewModel::clearFilters) { Text("Clear filters") }
+                        Button(onClick = viewModel::clearFilters) {
+                            Text(stringResource(R.string.explore_clear_filters))
+                        }
                     }
                 }
 
@@ -178,7 +186,9 @@ fun ExploreScreen(container: AppContainer, modifier: Modifier = Modifier) {
                                 if (state.loadingMore) {
                                     CircularProgressIndicator(Modifier.size(24.dp))
                                 } else {
-                                    Button(onClick = viewModel::loadMore) { Text("Load older") }
+                                    Button(onClick = viewModel::loadMore) {
+                                        Text(stringResource(R.string.explore_load_older))
+                                    }
                                 }
                             }
                         }
@@ -240,7 +250,7 @@ private fun EventRow(
                     ) {
                         Icon(
                             Icons.Filled.PlayArrow,
-                            contentDescription = "Has a clip",
+                            contentDescription = stringResource(R.string.explore_has_clip),
                             tint = Color.White,
                             modifier = Modifier.size(18.dp),
                         )

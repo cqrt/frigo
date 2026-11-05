@@ -29,16 +29,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import nz.mckenzie.frigo.R
+import nz.mckenzie.frigo.ui.screenLocale
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
-import java.util.Locale
 
 /**
  * A month you walk back through, with a dot under each day that still has
@@ -55,7 +57,8 @@ fun DayDialog(
     onPick: (LocalDate) -> Unit,
 ) {
     val today = LocalDate.now()
-    val firstDay = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+    val locale = screenLocale()
+    val firstDay = WeekFields.of(locale).firstDayOfWeek
     var month by remember {
         mutableStateOf(YearMonth.from(initial ?: today))
     }
@@ -73,10 +76,13 @@ fun DayDialog(
                     IconButton(
                         onClick = { month = month.minusMonths(1) },
                     ) {
-                        Icon(Icons.Filled.KeyboardArrowLeft, contentDescription = "Month before")
+                        Icon(
+                            Icons.Filled.KeyboardArrowLeft,
+                            contentDescription = stringResource(R.string.comp_month_before),
+                        )
                     }
                     Text(
-                        text = month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
+                        text = month.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale)),
                         style = MaterialTheme.typography.titleMedium,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.weight(1f),
@@ -86,7 +92,10 @@ fun DayDialog(
                         onClick = { month = month.plusMonths(1) },
                         enabled = month.isBefore(YearMonth.from(today)),
                     ) {
-                        Icon(Icons.Filled.KeyboardArrowRight, contentDescription = "Month after")
+                        Icon(
+                            Icons.Filled.KeyboardArrowRight,
+                            contentDescription = stringResource(R.string.comp_month_after),
+                        )
                     }
                 }
 
@@ -94,7 +103,7 @@ fun DayDialog(
                     (0 until 7).forEach { offset ->
                         Text(
                             text = firstDay.plus(offset.toLong())
-                                .getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+                                .getDisplayName(TextStyle.NARROW, locale),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
@@ -121,7 +130,7 @@ fun DayDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.comp_cancel)) }
                 }
             }
         }
@@ -198,7 +207,7 @@ private val CellSize = 38.dp
 
 /**
  * A month in weeks, with nothing in the blanks before the first day and after
- * the last. [firstDay] is where a week starts, which is the phone's own.
+ * the last. [firstDay] is where a week starts, which is the app's own.
  */
 internal fun monthWeeks(month: YearMonth, firstDay: DayOfWeek = DayOfWeek.MONDAY): List<List<LocalDate?>> {
     val leading = (month.atDay(1).dayOfWeek.value - firstDay.value + 7) % 7

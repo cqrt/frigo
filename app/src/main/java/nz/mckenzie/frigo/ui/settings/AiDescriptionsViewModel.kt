@@ -8,10 +8,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AiSetup
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.GenaiService
+import nz.mckenzie.frigo.data.words
 import nz.mckenzie.frigo.ui.friendlyMessage
 
 data class AiDescriptionsUiState(
@@ -47,7 +49,7 @@ class AiDescriptionsViewModel(private val repository: FrigoRepository) : ViewMod
             runCatching { repository.aiSetup() }
                 .onSuccess { setup -> _state.update { it.copy(loading = false, setup = setup) } }
                 .onFailure { failure ->
-                    _state.update { it.copy(loading = false, error = failure.friendlyMessage()) }
+                    _state.update { it.copy(loading = false, error = failure.friendlyMessage(repository.context)) }
                 }
         }
     }
@@ -63,7 +65,7 @@ class AiDescriptionsViewModel(private val repository: FrigoRepository) : ViewMod
             runCatching { repository.setDescribeAlerts(on) }
                 .onFailure { failure ->
                     _state.update {
-                        it.copy(setup = setup.copy(on = setup.on), error = failure.friendlyMessage())
+                        it.copy(setup = setup.copy(on = setup.on), error = failure.friendlyMessage(repository.context))
                     }
                 }
         }
@@ -117,7 +119,7 @@ class AiModelViewModel(private val repository: FrigoRepository) : ViewModel() {
                     }
                 }
                 .onFailure { failure ->
-                    _state.update { it.copy(loading = false, error = failure.friendlyMessage()) }
+                    _state.update { it.copy(loading = false, error = failure.friendlyMessage(repository.context)) }
                 }
         }
     }
@@ -136,11 +138,15 @@ class AiModelViewModel(private val repository: FrigoRepository) : ViewModel() {
         }
         when {
             address.length <= "http://".length -> {
-                _state.update { it.copy(error = "Enter the address of your Ollama server.") }
+                _state.update {
+                    it.copy(error = repository.context.words(R.string.ai_error_address))
+                }
                 return
             }
             model.isEmpty() -> {
-                _state.update { it.copy(error = "Enter the name of a model.") }
+                _state.update {
+                    it.copy(error = repository.context.words(R.string.ai_error_model))
+                }
                 return
             }
         }
@@ -157,7 +163,7 @@ class AiModelViewModel(private val repository: FrigoRepository) : ViewModel() {
             }
                 .onSuccess { _state.update { it.copy(saving = false, saved = true) } }
                 .onFailure { failure ->
-                    _state.update { it.copy(saving = false, error = failure.friendlyMessage()) }
+                    _state.update { it.copy(saving = false, error = failure.friendlyMessage(repository.context)) }
                 }
         }
     }

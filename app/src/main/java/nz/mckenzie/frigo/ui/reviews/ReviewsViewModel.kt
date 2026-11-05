@@ -178,7 +178,7 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
                     }
                 }
                 .onFailure { error ->
-                    _state.update { it.copy(loading = false, error = error.friendlyMessage()) }
+                    _state.update { it.copy(loading = false, error = error.friendlyMessage(repository.context)) }
                 }
         }
     }
@@ -229,7 +229,7 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
                     count()
                 }
                 .onFailure { error ->
-                    _state.update { it.copy(error = error.friendlyMessage()) }
+                    _state.update { it.copy(error = error.friendlyMessage(repository.context)) }
                 }
         }
     }
@@ -272,7 +272,7 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
                     refresh()
                 }
                 .onFailure { error ->
-                    _state.update { it.copy(marking = false, error = error.friendlyMessage()) }
+                    _state.update { it.copy(marking = false, error = error.friendlyMessage(repository.context)) }
                 }
         }
     }
@@ -289,7 +289,7 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
                     refresh()
                 }
                 .onFailure { error ->
-                    _state.update { it.copy(marking = false, error = error.friendlyMessage()) }
+                    _state.update { it.copy(marking = false, error = error.friendlyMessage(repository.context)) }
                 }
         }
     }
@@ -347,7 +347,7 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
                     }
                 }
                 .onFailure { error ->
-                    _state.update { it.copy(loadingMore = false, error = error.friendlyMessage()) }
+                    _state.update { it.copy(loadingMore = false, error = error.friendlyMessage(repository.context)) }
                 }
         }
     }

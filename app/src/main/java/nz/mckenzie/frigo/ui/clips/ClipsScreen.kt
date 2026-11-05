@@ -54,6 +54,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -65,6 +66,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.Export
 import nz.mckenzie.frigo.data.FrigoRepository
@@ -136,7 +138,7 @@ fun ClipsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             savedBytes = 0L
             outcome
                 .onSuccess { savedId = export.id }
-                .onFailure { problem = it.friendlyMessage() }
+                .onFailure { problem = it.friendlyMessage(context) }
         }
     }
 
@@ -149,7 +151,7 @@ fun ClipsScreen(container: AppContainer, modifier: Modifier = Modifier) {
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Saved clips") },
+            title = { Text(stringResource(R.string.clips_title)) },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         )
 
@@ -171,7 +173,7 @@ fun ClipsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                         viewModel.dismissProblem()
                     },
                 ) {
-                    Text("Dismiss")
+                    Text(stringResource(R.string.clips_dismiss))
                 }
             }
         }
@@ -191,7 +193,9 @@ fun ClipsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(state.error.orEmpty(), style = MaterialTheme.typography.bodyLarge)
-                    Button(onClick = viewModel::refresh) { Text("Try again") }
+                    Button(onClick = viewModel::refresh) {
+                        Text(stringResource(R.string.clips_try_again))
+                    }
                 }
 
                 state.exports.isEmpty() -> Column(
@@ -199,12 +203,12 @@ fun ClipsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("Nothing saved yet.", style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        text = "With a recording on screen, Save asks where to put it: " +
-                            "on this phone, or on the server. Whatever the server keeps " +
-                            "waits here, and Frigate holds onto it when its clean-up " +
-                            "takes the recordings.",
+                        text = stringResource(R.string.clips_nothing_saved),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        text = stringResource(R.string.clips_nothing_saved_supporting),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -263,12 +267,9 @@ fun ClipsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     deleting?.let { export ->
         AlertDialog(
             onDismissRequest = { deleting = null },
-            title = { Text("Delete this clip?") },
+            title = { Text(stringResource(R.string.clips_delete_title)) },
             text = {
-                Text(
-                    "It goes from the server. A copy you saved to the phone stays " +
-                        "where it is. This can't be put back.",
-                )
+                Text(stringResource(R.string.clips_delete_body))
             },
             confirmButton = {
                 TextButton(
@@ -277,11 +278,16 @@ fun ClipsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                         deleting = null
                     },
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        stringResource(R.string.clips_delete),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { deleting = null }) { Text("Cancel") }
+                TextButton(onClick = { deleting = null }) {
+                    Text(stringResource(R.string.clips_cancel))
+                }
             },
         )
     }
@@ -369,10 +375,11 @@ private fun ClipRow(
                 // the app kept is named after the moment, and the row says it once.
                 val at = stamp(export.date, ZoneId.systemDefault())
                 val note = when {
-                    export.inProgress -> "Frigate is cutting it out."
-                    savingBytes != null && savingBytes > 0 -> "Saving ${megabytes(savingBytes)}"
-                    savingBytes != null -> "Saving"
-                    saved -> "Saved to this phone"
+                    export.inProgress -> stringResource(R.string.clips_cutting)
+                    savingBytes != null && savingBytes > 0 ->
+                        stringResource(R.string.clips_saving_bytes, megabytes(savingBytes))
+                    savingBytes != null -> stringResource(R.string.clips_saving)
+                    saved -> stringResource(R.string.clips_saved)
                     export.name.endsWith(at) -> null
                     else -> at
                 }
@@ -388,25 +395,33 @@ private fun ClipRow(
             if (!export.inProgress) {
                 Box {
                     IconButton(onClick = { menu = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "What can be done with it")
+                        Icon(
+                            Icons.Filled.MoreVert,
+                            contentDescription = stringResource(R.string.clips_menu),
+                        )
                     }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
-                            text = { Text("Save to this phone") },
+                            text = { Text(stringResource(R.string.clips_save_to_phone)) },
                             onClick = {
                                 menu = false
                                 onSave()
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Rename") },
+                            text = { Text(stringResource(R.string.clips_rename)) },
                             onClick = {
                                 menu = false
                                 onRename()
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                            text = {
+                                Text(
+                                    stringResource(R.string.clips_delete),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            },
                             onClick = {
                                 menu = false
                                 onDelete()
@@ -427,13 +442,13 @@ private fun RenameDialog(export: Export, onDismiss: () -> Unit, onRename: (Strin
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Name this clip") },
+        title = { Text(stringResource(R.string.clips_rename_title)) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it.take(120) },
                 singleLine = true,
-                label = { Text("Name") },
+                label = { Text(stringResource(R.string.clips_rename_label)) },
             )
         },
         confirmButton = {
@@ -441,11 +456,13 @@ private fun RenameDialog(export: Export, onDismiss: () -> Unit, onRename: (Strin
                 onClick = { onRename(name) },
                 enabled = name.isNotBlank() && name.trim() != export.name,
             ) {
-                Text("Rename")
+                Text(stringResource(R.string.clips_rename))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.clips_cancel))
+            }
         },
     )
 }

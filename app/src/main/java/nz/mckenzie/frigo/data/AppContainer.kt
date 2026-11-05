@@ -30,12 +30,12 @@ class AppContainer(context: Context) {
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val api = FrigateApi(requestClient, streamClient, clipClient)
+    private val api = FrigateApi(context, requestClient, streamClient, clipClient)
 
     /** What the phone keeps, shared between the repository and the release check. */
     private val prefs = ServerPrefs(context)
 
-    val repository = FrigoRepository(api, prefs, context.cacheDir)
+    val repository = FrigoRepository(context, api, prefs, context.cacheDir)
 
     /** Asks GitHub for a newer Frigo, and fetches it. */
     val updater = Updater(requestClient, context.cacheDir)

@@ -3,6 +3,8 @@ package nz.mckenzie.frigo.ui.reviews
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.res.stringResource
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.prettyCameraName
@@ -25,11 +27,17 @@ fun ReviewPlayerDialog(
     onHalfWatched: () -> Unit,
 ) {
     val watched = rememberUpdatedState(onHalfWatched)
+    val title = review.title()
+    val subtitle = stringResource(
+        R.string.reviews_player_subtitle,
+        prettyCameraName(review.camera),
+        relativeTime(review.startedAtMillis),
+    )
     val subject = remember(review.id) {
         val source = runCatching { repository.reviewClipSource(review.id) }.getOrNull()
         ClipSubject(
-            title = review.title(),
-            subtitle = "${prettyCameraName(review.camera)} · ${relativeTime(review.startedAtMillis)}",
+            title = title,
+            subtitle = subtitle,
             clip = source?.let { clip ->
                 { onProgress -> repository.clipFile(clip, "review-${review.id}", onProgress) }
             },

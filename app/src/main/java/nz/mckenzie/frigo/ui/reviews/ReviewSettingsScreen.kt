@@ -36,9 +36,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.components.CameraMenu
@@ -93,10 +95,13 @@ fun ReviewSettingsScreen(
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Alerts and detections") },
+            title = { Text(stringResource(R.string.revset_title)) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.action_back),
+                    )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -116,10 +121,12 @@ fun ReviewSettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = state.error ?: "Can't read these settings.",
+                    text = state.error ?: stringResource(R.string.revset_cant_read),
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                Button(onClick = viewModel::load) { Text("Try again") }
+                Button(onClick = viewModel::load) {
+                    Text(stringResource(R.string.revset_try_again))
+                }
             }
 
             shown == null -> Column(
@@ -127,7 +134,7 @@ fun ReviewSettingsScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "That camera has settings of its own this app can't read.",
+                    text = stringResource(R.string.revset_camera_own),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }
@@ -147,13 +154,16 @@ fun ReviewSettingsScreen(
                     page.readAt?.let { at ->
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
-                                text = "Your server isn't answering. These are the settings " +
-                                    "your phone last read, ${relativeTime(at).lowercase()}. " +
-                                    "They can't be changed until it's back.",
+                                text = stringResource(
+                                    R.string.revset_stale,
+                                    relativeTime(at).lowercase(),
+                                ),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = attention(),
                             )
-                            TextButton(onClick = viewModel::load) { Text("Try again") }
+                            TextButton(onClick = viewModel::load) {
+                                Text(stringResource(R.string.revset_try_again))
+                            }
                         }
                     }
 
@@ -165,7 +175,7 @@ fun ReviewSettingsScreen(
 
                     if (!page.admin) {
                         Text(
-                            text = "Only an admin can change these.",
+                            text = stringResource(R.string.err_not_admin),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -179,10 +189,10 @@ fun ReviewSettingsScreen(
                         )
                     }
 
-                    Group("Alerts") {
+                    Group(stringResource(R.string.review_kind_alerts)) {
                         Item(
                             icon = FrigoIcons.Bell,
-                            title = "Enable",
+                            title = stringResource(R.string.action_enable),
                             onClick = if (changeable) {
                                 { viewModel.setAlertsOn(!shown.alertsOn) }
                             } else {
@@ -199,10 +209,10 @@ fun ReviewSettingsScreen(
                         CardDivider()
                         Item(
                             icon = FrigoIcons.Tag,
-                            title = "Objects",
+                            title = stringResource(R.string.revset_objects),
                             value = shown.alertLabels.takeIf { it.isNotEmpty() }
                                 ?.joinToString(", ") { it.labelName() }
-                                ?: "Nothing",
+                                ?: stringResource(R.string.revset_nothing),
                             onClick = if (changeable) {
                                 { picking = ReviewLabels.Alerts }
                             } else {
@@ -212,10 +222,10 @@ fun ReviewSettingsScreen(
                         )
                     }
 
-                    Group("Detections") {
+                    Group(stringResource(R.string.review_kind_detections)) {
                         Item(
                             icon = FrigoIcons.Eye,
-                            title = "Enable",
+                            title = stringResource(R.string.action_enable),
                             onClick = if (changeable) {
                                 { viewModel.setDetectionsOn(!shown.detectionsOn) }
                             } else {
@@ -232,10 +242,14 @@ fun ReviewSettingsScreen(
                         CardDivider()
                         Item(
                             icon = FrigoIcons.Tag,
-                            title = "Objects",
+                            title = stringResource(R.string.revset_objects),
                             value = when {
-                                shown.detectionLabels == null -> "Everything else"
-                                shown.detectionLabels.isEmpty() -> "Nothing"
+                                shown.detectionLabels == null ->
+                                    stringResource(R.string.revset_everything_else)
+
+                                shown.detectionLabels.isEmpty() ->
+                                    stringResource(R.string.revset_nothing)
+
                                 else -> shown.detectionLabels.joinToString(", ") { it.labelName() }
                             },
                             onClick = if (changeable) {
@@ -249,7 +263,7 @@ fun ReviewSettingsScreen(
 
                     if (state.scope == null) {
                         Text(
-                            text = "These cover every camera. Pick one above to set its own.",
+                            text = stringResource(R.string.revset_all_cameras),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 4.dp),
@@ -292,10 +306,20 @@ private fun LabelPicker(
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(if (kind == ReviewLabels.Alerts) "Alert labels" else "Detection labels") },
+            title = {
+                val name = if (kind == ReviewLabels.Alerts) {
+                    R.string.revset_alert_labels
+                } else {
+                    R.string.revset_detection_labels
+                }
+                Text(stringResource(name))
+            },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.action_back),
+                    )
                 }
             },
             actions = {
@@ -303,7 +327,7 @@ private fun LabelPicker(
                     onClick = { onDone(objects.filter { it in chosen }) },
                     enabled = kind == ReviewLabels.Detections || !nothingTicked,
                 ) {
-                    Text("Done")
+                    Text(stringResource(R.string.revset_done))
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -312,15 +336,15 @@ private fun LabelPicker(
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            label = { Text("Search") },
+            label = { Text(stringResource(R.string.revset_search)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         )
 
         val hint = when {
             !nothingTicked -> null
-            kind == ReviewLabels.Alerts -> "Pick at least one, or turn Alerts off."
-            else -> "None ticked means every other object."
+            kind == ReviewLabels.Alerts -> stringResource(R.string.revset_alerts_hint)
+            else -> stringResource(R.string.revset_detections_hint)
         }
         if (hint != null) {
             Text(
@@ -337,7 +361,7 @@ private fun LabelPicker(
 
         if (listed.isEmpty()) {
             Text(
-                text = "Nothing here goes by that name.",
+                text = stringResource(R.string.revset_no_match),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -364,7 +388,7 @@ private fun LabelPicker(
                     )
                     if (label in tracked) {
                         Text(
-                            text = "Tracked",
+                            text = stringResource(R.string.revset_tracked),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                         )

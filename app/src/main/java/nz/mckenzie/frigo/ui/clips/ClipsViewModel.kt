@@ -66,7 +66,7 @@ class ClipsViewModel(private val repository: FrigoRepository) : ViewModel() {
                     }
                 }
                 .onFailure { failure ->
-                    _state.update { it.copy(problem = failure.friendlyMessage()) }
+                    _state.update { it.copy(problem = failure.friendlyMessage(repository.context)) }
                 }
         }
     }
@@ -83,7 +83,7 @@ class ClipsViewModel(private val repository: FrigoRepository) : ViewModel() {
         viewModelScope.launch {
             runCatching { repository.deleteExports(listOf(export.id)) }
                 .onFailure { failure ->
-                    _state.update { it.copy(exports = before, problem = failure.friendlyMessage()) }
+                    _state.update { it.copy(exports = before, problem = failure.friendlyMessage(repository.context)) }
                 }
         }
     }
@@ -105,8 +105,8 @@ class ClipsViewModel(private val repository: FrigoRepository) : ViewModel() {
                     _state.update {
                         it.copy(
                             loading = false,
-                            error = if (it.exports.isEmpty()) failure.friendlyMessage() else null,
-                            problem = if (it.exports.isEmpty()) null else failure.friendlyMessage(),
+                            error = if (it.exports.isEmpty()) failure.friendlyMessage(repository.context) else null,
+                            problem = if (it.exports.isEmpty()) null else failure.friendlyMessage(repository.context),
                         )
                     }
                 }

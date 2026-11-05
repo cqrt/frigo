@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The languages Frigo speaks. Android reads this for its own per-app language
+  screen, which is where a phone on Android 13 or later also offers the choice.
+  The order is the order that screen lists them in.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="es" />
+    <locale android:name="fr" />
+    <locale android:name="de" />
+    <locale android:name="pt" />
+</locale-config>
