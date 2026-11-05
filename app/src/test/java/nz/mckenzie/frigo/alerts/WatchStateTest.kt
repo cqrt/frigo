@@ -2,11 +2,31 @@ package nz.mckenzie.frigo.alerts
 
 import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.CameraAlerts
+import nz.mckenzie.frigo.data.QuietTimes
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** What the quiet notification says while the app is watching. */
 class WatchStateTest {
+
+    /** A moment on one autumn day, in the phone's own time zone. */
+    private fun at(hour: Int, minute: Int = 0): Long =
+        LocalDate.of(2026, 11, 5)
+            .atTime(LocalTime.of(hour, minute))
+            .atZone(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+
+    private val buzzesForPerson = AlertRules(
+        cameras = mapOf(
+            "drive" to CameraAlerts(notify = true, alertsOn = true, labels = listOf("person")),
+        ),
+    )
 
     @Test
     fun itCountsTheCamerasThatWillBuzzAndNamesTheirObjects() {
@@ -36,5 +56,43 @@ class WatchStateTest {
             "Every camera is off on your server's notifications page, so nothing will buzz.",
             WatchState.Connected.text(rules),
         )
+    }
+
+    /** Quiet on purpose looks the same as broken unless the line says why. */
+    @Test
+    fun itSaysWhenTheQuietEnds() {
+        val quiet = QuietTimes(
+            on = true,
+            from = 22 * 60,
+            until = 7 * 60,
+            cameras = setOf("drive"),
+        )
+
+        val text = WatchState.Connected.text(buzzesForPerson, quiet, at(23))
+
+        assertTrue(text.startsWith("Quiet until "))
+        assertTrue(text.endsWith("One camera for person. New events arrive as they happen."))
+    }
+
+    /** Half a window still buzzes, so the line must not claim more silence than there is. */
+    @Test
+    fun aCameraOutsideTheWindowLeavesTheLineAlone() {
+        val rules = AlertRules(
+            cameras = mapOf(
+                "drive" to CameraAlerts(notify = true, alertsOn = true, labels = listOf("person")),
+                "shed" to CameraAlerts(notify = true, alertsOn = true, labels = listOf("person")),
+            ),
+        )
+        val quiet = QuietTimes(
+            on = true,
+            from = 22 * 60,
+            until = 7 * 60,
+            cameras = setOf("drive"),
+        )
+
+        val text = WatchState.Connected.text(rules, quiet, at(23))
+
+        assertFalse(text.contains("Quiet"))
+        assertEquals("2 cameras for person. New events arrive as they happen.", text)
     }
 }

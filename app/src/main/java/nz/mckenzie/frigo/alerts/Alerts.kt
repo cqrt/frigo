@@ -15,6 +15,8 @@ import nz.mckenzie.frigo.MainActivity
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.FrigateReview
+import nz.mckenzie.frigo.data.QuietTimes
+import nz.mckenzie.frigo.data.clockTime
 import nz.mckenzie.frigo.data.prettyCameraName
 
 /**
@@ -41,8 +43,9 @@ object Alerts {
         context: Context,
         state: WatchState,
         rules: AlertRules,
+        quiet: QuietTimes,
     ): NotificationCompat.Builder {
-        val text = state.text(rules)
+        val text = state.text(rules, quiet, System.currentTimeMillis())
         val open = PendingIntent.getActivity(
             context,
             0,
@@ -268,31 +271,47 @@ sealed interface WatchState {
      * thing to change, because going quiet without saying why looks broken. When
      * something will, it counts the cameras the server has turned on and names
      * what they buzz for.
+     *
+     * With [quiet] set and every camera that would buzz inside it, the sentence
+     * starts with the time it comes back. Half a quiet window still buzzes, so
+     * the line stays as it was rather than claiming more silence than there is.
      */
-    fun text(rules: AlertRules): String {
+    fun text(
+        rules: AlertRules,
+        quiet: QuietTimes? = null,
+        now: Long = System.currentTimeMillis(),
+    ): String {
         if (this is SignedOut) return Expired
 
         // The first of these that is true is the one worth saying: turning a
         // camera on further down would change nothing until it is dealt with.
-        val telling = rules.cameras.values.filter { it.notify }
+        val telling = rules.cameras.filterValues { it.notify }
         if (telling.isEmpty()) {
             return "Every camera is off on your server's notifications page, so nothing will buzz."
         }
-        val alerting = telling.filter { it.alertsOn }
+        val alerting = telling.filterValues { it.alertsOn }
         if (alerting.isEmpty()) return "No camera has alerts on, so nothing will buzz."
 
-        val buzzing = alerting.filter { it.labels.isNotEmpty() }
+        val buzzing = alerting.filterValues { it.labels.isNotEmpty() }
         if (buzzing.isEmpty()) return "No camera has any alert objects, so nothing will buzz."
 
         val count = buzzing.size
         val watching = if (count == 1) "One camera" else "$count cameras"
-        val labels = said(buzzing.flatMap { it.labels }.distinct())
-        return when (this) {
+        val labels = said(buzzing.values.flatMap { it.labels }.distinct())
+
+        val silence = if (quiet != null && buzzing.keys.all { quiet.quiets(it, now) }) {
+            quiet.quietUntil(now)?.let { "Quiet until ${clockTime(it)}. " }.orEmpty()
+        } else {
+            ""
+        }
+
+        val state = when (this) {
             Connecting -> "$watching for $labels. Connecting to your server."
             Connected -> "$watching for $labels. New events arrive as they happen."
             is NotReaching -> "$watching for $labels. $detail Trying again."
             SignedOut -> Expired
         }
+        return silence + state
     }
 
     private companion object {

@@ -92,7 +92,9 @@ one you're on ticked. Tap another and the app switches to it, with its own
 sign-in, its own alerts switch and its own camera layout. **Add a server** signs
 in to one more, which becomes the one you're on. **Sign out** forgets the server
 you're on, and the next one takes over. Under those sit two switches: one for
-notifications, and one that plays the home page tiles live. Under Alerts and
+notifications, and one that plays the home page tiles live. Quiet times sits under
+notifications: the hours this phone keeps quiet, and the cameras it keeps quiet.
+Under Alerts and
 detections you reach the server's own pages for what makes an alert and what
 makes a detection. There's a link to the phone's battery settings, because that's
 where you stop Android shutting Frigo down. Under Appearance you choose the
@@ -224,6 +226,19 @@ everything quiet, so it never goes silent without saying why.
 
 A camera that has just buzzed stays quiet for twenty seconds, so one visitor
 walking past is one notification.
+
+Quiet times is this phone's own. Turn it on, pick two times, and pick the cameras
+to leave out, and none of them buzz between those times. A window from ten at
+night to seven in the morning runs through midnight, and the same two times keeps
+the whole day quiet. Nothing arrives while it runs: the review is still on your
+server, so it's in Review when you look in the morning. The "Watching for alerts"
+line says when it comes back, so silence never looks like a fault.
+
+**Quiet for an hour** on the same page is the one-off: every camera, from now,
+with the two times left as they are.
+
+None of this reaches your server. Its notifications page, and any other phone,
+are unchanged.
 
 When something buzzes, the phone asks your server's model what it is looking at and
 fills the notification in about four seconds later. It takes three pictures a second

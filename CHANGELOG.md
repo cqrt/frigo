@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.14
+
+- Quiet times in Settings: pick two times and the cameras to leave out, and nothing from them buzzes in between. The review is still in Review.
+- Quiet for an hour, for when you want silence now without changing the times.
+
 ## 0.10.13
 
 - The About card gets straight to the version and the author.

@@ -113,6 +113,7 @@ class ServerPrefs(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs.remove(alertsOnKey(baseUrl))
             prefs.remove(alertRulesKey(baseUrl))
+            prefs.remove(quietTimesKey(baseUrl))
             prefs.remove(cameraLayoutKey(baseUrl))
             prefs.remove(settingsKey(baseUrl))
         }
@@ -144,6 +145,21 @@ class ServerPrefs(private val context: Context) {
     suspend fun writeAlertRules(baseUrl: String, rules: AlertRules) {
         val stored = BlockJson.encodeToString(AlertRules.serializer(), rules)
         context.dataStore.edit { prefs -> prefs[alertRulesKey(baseUrl)] = stored }
+    }
+
+    /**
+     * The quiet hours this phone keeps for a server. One block for the same
+     * reason the rules are: a field added later can't break the read.
+     */
+    suspend fun readQuietTimes(baseUrl: String): QuietTimes? {
+        val stored = context.dataStore.data.first()[quietTimesKey(baseUrl)] ?: return null
+        return runCatching { BlockJson.decodeFromString(QuietTimes.serializer(), stored) }
+            .getOrNull()
+    }
+
+    suspend fun writeQuietTimes(baseUrl: String, quiet: QuietTimes) {
+        val stored = BlockJson.encodeToString(QuietTimes.serializer(), quiet)
+        context.dataStore.edit { prefs -> prefs[quietTimesKey(baseUrl)] = stored }
     }
 
     /**
@@ -240,6 +256,7 @@ class ServerPrefs(private val context: Context) {
     private fun alertsOnKey(baseUrl: String) = booleanPreferencesKey("alerts_on:$baseUrl")
 
     private fun alertRulesKey(baseUrl: String) = stringPreferencesKey("alert_rules:$baseUrl")
+    private fun quietTimesKey(baseUrl: String) = stringPreferencesKey("quiet_times:$baseUrl")
     private fun cameraLayoutKey(baseUrl: String) = intPreferencesKey("camera_layout:$baseUrl")
     private fun settingsKey(baseUrl: String) = stringPreferencesKey("settings:$baseUrl")
 

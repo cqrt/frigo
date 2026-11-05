@@ -92,6 +92,14 @@ class FrigoRepository(
     val alertRules: StateFlow<AlertRules> = _alertRules.asStateFlow()
 
     /**
+     * When this phone keeps quiet, and which cameras it keeps quiet. Its own
+     * setting rather than the server's: what it silences is this phone's
+     * notifications, and nobody else's.
+     */
+    private val _quietTimes = MutableStateFlow(QuietTimes())
+    val quietTimes: StateFlow<QuietTimes> = _quietTimes.asStateFlow()
+
+    /**
      * Whether the walkthrough is still to come, or null until the phone has been
      * read. The app shows its own spinner for the null, so a new phone never
      * flashes the tabs and an old one never flashes the tour.
@@ -108,6 +116,9 @@ class FrigoRepository(
 
     /** The same, for the server's rules. */
     @Volatile private var alertRulesLoaded = false
+
+    /** The same, for the phone's quiet hours. */
+    @Volatile private var quietTimesLoaded = false
 
     /**
      * Reads what should set your phone off, once. Safe to call from anywhere;
@@ -129,6 +140,18 @@ class FrigoRepository(
         val server = activeServer()
         _alertRules.value = server?.let { prefs.readAlertRules(it.baseUrl) } ?: AlertRules()
         alertRulesLoaded = true
+    }
+
+    /**
+     * Reads this phone's quiet hours for the server. Safe to call from anywhere,
+     * and what the service starts from after a restart, before any screen has
+     * run and before there is a connection to ask anything.
+     */
+    suspend fun loadQuietTimes() {
+        if (quietTimesLoaded) return
+        val server = activeServer()
+        _quietTimes.value = server?.let { prefs.readQuietTimes(it.baseUrl) } ?: QuietTimes()
+        quietTimesLoaded = true
     }
 
     /**
@@ -181,8 +204,10 @@ class FrigoRepository(
         val url = stored?.baseUrl
         _alerts.value = url?.let { prefs.readAlerts(it) } ?: ServerPrefs.Alerts()
         _alertRules.value = url?.let { prefs.readAlertRules(it) } ?: AlertRules()
+        _quietTimes.value = url?.let { prefs.readQuietTimes(it) } ?: QuietTimes()
         alertsLoaded = true
         alertRulesLoaded = true
+        quietTimesLoaded = true
     }
 
     /** The server's own two answers the settings pages are built from. */
@@ -216,6 +241,7 @@ class FrigoRepository(
         val saved = activeServer()
         loadAlerts()
         loadAlertRules()
+        loadQuietTimes()
         // The first launch after the walkthrough arrived settles the question once
         // and writes the answer down. A phone with a server already saved is one
         // that was set up before the walkthrough existed, so it is not owed it.
@@ -556,6 +582,17 @@ class FrigoRepository(
         prefs.writeAlerts(url, next)
         _alerts.value = next
         alertsLoaded = true
+    }
+
+    /**
+     * Keeps this phone's quiet hours. The service watches the same value, so a
+     * change here is felt by the notification line at once.
+     */
+    suspend fun setQuietTimes(next: QuietTimes) {
+        val url = activeServer()?.baseUrl ?: return
+        prefs.writeQuietTimes(url, next)
+        _quietTimes.value = next
+        quietTimesLoaded = true
     }
 
     /** Whether the reviews list shows the ones you've already watched. */

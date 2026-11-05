@@ -170,6 +170,21 @@ object FrigoIcons {
         }
     }
 
+    /** A crescent, for the hours the phone keeps quiet. */
+    val Quiet: ImageVector by lazy {
+        vector("Quiet") {
+            path("M16.4 3.8a8.6 8.6 0 1 0 0 16.4", strokeWidth = 1.7f)
+        }
+    }
+
+    /** A clock face, for a time of day. */
+    val Clock: ImageVector by lazy {
+        vector("Clock") {
+            path("M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 1 0 0-17z", strokeWidth = 1.7f)
+            path("M12 7.4V12l3.1 1.9", strokeWidth = 1.7f)
+        }
+    }
+
     /** Two stars, for what the server works out about what it saw. */
     val Sparkle: ImageVector by lazy {
         vector("Sparkle") {

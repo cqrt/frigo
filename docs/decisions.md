@@ -2219,3 +2219,37 @@ branches on it.
 The two places that said "Notifications are off on your server" are gone. What is left is the one state
 that really does silence every camera: every camera off. Both the banner on the settings page and the
 quiet notification say that, and the copy is unchanged, because a buzz still follows the server.
+
+## Quiet hours live on the phone
+
+Everything else about a buzz is the server's. Quiet hours cannot be, because there is nothing for the server to
+hold: Frigate publishes reviews whether or not any phone is listening, and what has to go quiet is one phone's
+notifications. A Frigo-only key in Frigate's config would make the server the owner of a setting it cannot act
+on, and Frigate's own page would neither show it nor keep it. So the window is kept in DataStore under the
+server's address, the way that server's alerts switch is, and the server is never asked about it.
+
+The rule that the phone cannot be louder than the server still holds. Quiet hours only ever take a buzz away.
+
+An alert inside the window is dropped rather than posted silently. A silent notification still lights some
+screens, still fills the shade, and still costs a thumbnail and a model call, and half the point is the night
+going by without a pile of them. Review keeps what the server saw, so nothing is lost beyond what the server
+had already lost. The review is marked as buzzed when it is dropped, so one that changes again does not get a
+second chance the moment the window ends.
+
+The window is half open: from the start minute up to it, and not the end minute itself. It wraps when the
+start is later than the end, which is the usual night. Two equal times mean all day, the one reading that
+makes a single pair of times mean a single stretch. A window with no camera picked silences nothing, so a
+half-finished setup fails towards still buzzing.
+
+The quiet notification has to say when it ends, for the same reason every other silence in this app says why:
+going quiet without a word reads as a fault. It is redrawn from a wait inside the service rather than from an
+alarm, because the service is already alive and a service Android has killed has nothing to redraw anyway. The
+wait is until the next boundary - the window opening or closing, or a hush running out - which also lets a
+clock change or a flight to another time zone correct itself within one boundary.
+
+The hush is an hour over every camera. It is the "be quiet now" that does not edit the times, and keeping it
+separate means a quick silence cannot quietly become the new schedule.
+
+Coverage is per camera because that is the case worth a setting: the street going quiet overnight while the
+front door still tells you. It also means a camera renamed on the server drops out of the set, which is why
+the page lists every camera rather than only the picked ones.

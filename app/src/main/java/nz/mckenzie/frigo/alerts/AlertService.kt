@@ -75,6 +75,9 @@ class AlertService : Service() {
      */
     private val quick = mutableMapOf<Int, Job>()
 
+    /** The wait until the phone's quiet answer next changes, so the line is redrawn. */
+    private var quietTick: Job? = null
+
     /**
      * A client of its own: the feed stays open with no read timeout, and a ping
      * every half minute both keeps the phone's network path open and notices a
@@ -101,10 +104,20 @@ class AlertService : Service() {
         scope.launch {
             container.repository.loadAlerts()
             container.repository.loadAlertRules()
+            container.repository.loadQuietTimes()
             container.repository.alerts.collect { showWatching() }
         }
         scope.launch {
             container.repository.alertRules.collect { showWatching() }
+        }
+        // Quiet hours change the line under the title, and so does the clock
+        // reaching a boundary. Nothing else happens at that moment, so the service
+        // has to say so itself.
+        scope.launch {
+            container.repository.quietTimes.collect {
+                showWatching()
+                watchForQuietChange()
+            }
         }
     }
 
@@ -268,7 +281,15 @@ class AlertService : Service() {
         }.getOrNull() ?: return
 
         val rules = container.repository.alertRules.value
-        if (!reviewBuzz.buzzes(review, message.text("type"), System.currentTimeMillis(), rules)) {
+        val now = System.currentTimeMillis()
+        if (!reviewBuzz.buzzes(review, message.text("type"), now, rules)) {
+            return
+        }
+
+        // A quiet window has the last word, and it is answered before anything is
+        // fetched or written: no notification, no picture, no sentence asked for.
+        // The review is still on the server, and still in Review.
+        if (container.repository.quietTimes.value.quiets(review.camera, now)) {
             return
         }
 
@@ -356,8 +377,33 @@ class AlertService : Service() {
         showWatching()
     }
 
+    /**
+     * Wakes up when the quiet answer next changes: a window opening or closing, or
+     * a hush running out. It re-arms each time and stops when there is nothing left
+     * to wait for, which is when a setting changes and this starts again.
+     *
+     * It is a wait rather than an alarm because the service is already alive. If
+     * Android stops it, nothing would buzz anyway.
+     */
+    private fun watchForQuietChange() {
+        quietTick?.cancel()
+        quietTick = scope.launch {
+            while (isActive) {
+                val now = System.currentTimeMillis()
+                val next = container.repository.quietTimes.value.nextChange(now) ?: return@launch
+                delay((next - now).coerceAtLeast(1_000))
+                showWatching()
+            }
+        }
+    }
+
     private fun watchingNotification(): Notification =
-        Alerts.watching(this, state, container.repository.alertRules.value).build()
+        Alerts.watching(
+            this,
+            state,
+            container.repository.alertRules.value,
+            container.repository.quietTimes.value,
+        ).build()
 
     private fun createChannels() {
         val manager = getSystemService(NotificationManager::class.java)

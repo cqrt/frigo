@@ -90,12 +90,14 @@ fun SettingsScreen(
     onOpenCamera: (String) -> Unit = {},
     onOpenAlerts: () -> Unit = {},
     onOpenAi: () -> Unit = {},
+    onOpenQuiet: () -> Unit = {},
     onAddServer: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val alerts by repository.alerts.collectAsStateWithLifecycle()
     val rules by repository.alertRules.collectAsStateWithLifecycle()
+    val quiet by repository.quietTimes.collectAsStateWithLifecycle()
     val servers by repository.servers.collectAsStateWithLifecycle()
     val liveTiles by repository.liveTiles.collectAsStateWithLifecycle(initialValue = false)
     val theme by repository.theme.collectAsStateWithLifecycle(
@@ -335,6 +337,16 @@ fun SettingsScreen(
                         colour = MaterialTheme.colorScheme.error,
                     )
                 }
+
+                CardDivider()
+
+                Item(
+                    icon = FrigoIcons.Quiet,
+                    title = "Quiet times",
+                    supporting = quiet.said(System.currentTimeMillis()),
+                    onClick = onOpenQuiet,
+                    trailing = { OpenMark() },
+                )
 
                 CardDivider()
 

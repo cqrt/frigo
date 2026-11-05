@@ -42,6 +42,7 @@ import nz.mckenzie.frigo.ui.reviews.ReviewsScreen
 import nz.mckenzie.frigo.ui.settings.AiDescriptionsScreen
 import nz.mckenzie.frigo.ui.settings.AiModelScreen
 import nz.mckenzie.frigo.ui.settings.CameraSwitchesScreen
+import nz.mckenzie.frigo.ui.settings.QuietTimesScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
 
 @Composable
@@ -188,9 +189,19 @@ private fun MainScaffold(
                     onOpenAi = {
                         navController.navigate("ai-descriptions") { launchSingleTop = true }
                     },
+                    onOpenQuiet = {
+                        navController.navigate("quiet-times") { launchSingleTop = true }
+                    },
                     onAddServer = {
                         navController.navigate("add-server") { launchSingleTop = true }
                     },
+                )
+            }
+            composable("quiet-times") {
+                QuietTimesScreen(
+                    repository = container.repository,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable("ai-descriptions") {
