@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -19,12 +20,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.CameraSwitch
@@ -42,6 +46,7 @@ import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.components.CardDivider
 import nz.mckenzie.frigo.ui.components.Group
 import nz.mckenzie.frigo.ui.components.Item
+import nz.mckenzie.frigo.ui.components.OpenMark
 import nz.mckenzie.frigo.ui.components.attention
 import nz.mckenzie.frigo.ui.relativeTime
 
@@ -69,11 +74,21 @@ fun CameraSwitchesScreen(
     val page = state.page
     val switches = state.switches
     var stopping by remember { mutableStateOf(false) }
+    var renaming by remember { mutableStateOf(false) }
+    var typed by remember { mutableStateOf("") }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // This phone's own name for the camera, where it has one, and the name the
+    // server gave it. The page says it the phone's way; every address behind it is
+    // still built from the server's name.
+    val list by container.repository.cameraList.collectAsStateWithLifecycle()
+    val serverName = state.title
+    val title = list.name(cameraName, serverName)
+    val ownName = list.names[cameraName].orEmpty()
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(state.title) },
+            title = { Text(title) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(
@@ -149,6 +164,22 @@ fun CameraSwitchesScreen(
                     )
                 }
 
+                // What this phone calls the camera. It sits above the server's own
+                // switches because it is what the page, and the rest of the app,
+                // says the camera is called.
+                Group(stringResource(R.string.camsw_name_heading)) {
+                    Item(
+                        icon = FrigoIcons.Tag,
+                        title = stringResource(R.string.camsw_name),
+                        value = title,
+                        onClick = {
+                            typed = title
+                            renaming = true
+                        },
+                        trailing = { OpenMark() },
+                    )
+                }
+
                 groups.forEach { (heading, listed) ->
                     Group(stringResource(heading)) {
                         listed.forEachIndexed { index, switch ->
@@ -189,7 +220,7 @@ fun CameraSwitchesScreen(
         AlertDialog(
             onDismissRequest = { stopping = false },
             title = { Text(stringResource(R.string.camsw_stop_question)) },
-            text = { Text(stringResource(R.string.camsw_stop_detail, state.title)) },
+            text = { Text(stringResource(R.string.camsw_stop_detail, title)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -202,6 +233,57 @@ fun CameraSwitchesScreen(
             },
             dismissButton = {
                 TextButton(onClick = { stopping = false }) {
+                    Text(stringResource(R.string.camsw_cancel))
+                }
+            },
+        )
+    }
+
+    if (renaming) {
+        AlertDialog(
+            onDismissRequest = { renaming = false },
+            title = { Text(stringResource(R.string.camsw_name_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = stringResource(R.string.camsw_name_detail),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TextField(
+                        value = typed,
+                        onValueChange = { typed = it },
+                        placeholder = { Text(serverName) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    // Only offered once there is a name of this phone's own to go
+                    // back from.
+                    if (ownName.isNotBlank()) {
+                        TextButton(
+                            onClick = {
+                                renaming = false
+                                scope.launch { container.repository.setCameraName(cameraName, "") }
+                            },
+                            modifier = Modifier.padding(start = 0.dp),
+                        ) {
+                            Text(stringResource(R.string.camsw_name_use_server))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        renaming = false
+                        scope.launch { container.repository.setCameraName(cameraName, typed) }
+                    },
+                ) {
+                    Text(stringResource(R.string.camsw_name_save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { renaming = false }) {
                     Text(stringResource(R.string.camsw_cancel))
                 }
             },

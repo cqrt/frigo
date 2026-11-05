@@ -65,6 +65,37 @@ class WatchStateTest {
         )
     }
 
+    /** Every camera turned off on this phone is the phone's own doing, so the line says so. */
+    @Test
+    fun everyCameraHiddenSaysSo() {
+        val text = WatchState.Connected.text(
+            context,
+            buzzesForPerson,
+            hidden = setOf("drive"),
+        )
+
+        assertEquals(
+            "Every camera that would buzz is turned off on this phone, so nothing will buzz. " +
+                "Turn one back on in Settings, Cameras.",
+            text,
+        )
+    }
+
+    /** One of two hidden still leaves a camera that will buzz, and the count says one. */
+    @Test
+    fun aCameraStillOnIsCountedAndTheHiddenOneIsNot() {
+        val rules = AlertRules(
+            cameras = mapOf(
+                "drive" to CameraAlerts(notify = true, alertsOn = true, labels = listOf("person")),
+                "shed" to CameraAlerts(notify = true, alertsOn = true, labels = listOf("person")),
+            ),
+        )
+
+        val text = WatchState.Connected.text(context, rules, hidden = setOf("drive"))
+
+        assertEquals("One camera for person. New events arrive as they happen.", text)
+    }
+
     /** Quiet on purpose looks the same as broken unless the line says why. */
     @Test
     fun itSaysWhenTheQuietEnds() {
@@ -83,8 +114,7 @@ class WatchStateTest {
 
     /** Half a window still buzzes, so the line must not claim more silence than there is. */
     @Test
-    fun aCameraOutsideTheWindowLeavesTheLineAlone() {
-        val rules = AlertRules(
+    fun aCameraOutsideTheWindowLeavesTheLineAlone() {        val rules = AlertRules(
             cameras = mapOf(
                 "drive" to CameraAlerts(notify = true, alertsOn = true, labels = listOf("person")),
                 "shed" to CameraAlerts(notify = true, alertsOn = true, labels = listOf("person")),

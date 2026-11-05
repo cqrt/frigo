@@ -314,9 +314,15 @@ object FrigoIcons {
         }
     }
 
+    /** Two short bars, for the grip that moves a camera up or down the list. */
+    val Grip: ImageVector by lazy {
+        vector("Grip") {
+            path("M5.6 9.4h12.8M5.6 14.6h12.8", strokeWidth = 2f)
+        }
+    }
+
     /** A page of dates, for a day to narrow to. */
-    val Calendar: ImageVector by lazy {
-        vector("Calendar") {
+    val Calendar: ImageVector by lazy {        vector("Calendar") {
             path(
                 "M5.8 5.4h12.4a2.2 2.2 0 0 1 2.2 2.2v10.6a2.2 2.2 0 0 1-2.2 2.2H5.8a2.2 2.2 0 0 1-2.2" +
                     "-2.2V7.6a2.2 2.2 0 0 1 2.2-2.2z",

@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -204,13 +205,19 @@ fun PlayerScreen(
     // from.
     var watching by rememberSaveable(cameraName) { mutableStateOf(cameraName) }
     var cameras by remember { mutableStateOf<List<Camera>>(emptyList()) }
+    // What this phone calls the cameras, and which of them it leaves out. The title
+    // and the strip underneath follow it, so a camera you opened from an alert
+    // carries the name you gave it here.
+    val list by repository.cameraList.collectAsStateWithLifecycle()
+    val named = list.all(cameras)
+    val others = list.shown(cameras).filterNot { it.name == watching }
     val zone = remember { ZoneId.systemDefault() }
     // The name a saved clip is offered under follows the app's language rather than
     // the phone's, so it is built for the language the screen is in.
     val locale = LocalConfiguration.current.locales[0]
     val saveStamp = remember(locale) { saveStampFormat(locale) }
 
-    val title = cameras.firstOrNull { it.name == watching }?.title ?: prettyCameraName(watching)
+    val title = named.firstOrNull { it.name == watching }?.title ?: prettyCameraName(watching)
 
     var frame by remember(watching) { mutableStateOf<ImageBitmap?>(null) }
     var problem by remember(watching) { mutableStateOf<String?>(null) }
@@ -925,8 +932,7 @@ fun PlayerScreen(
             // The other cameras underneath, so you can see what they have without
             // going back to the grid: the same moment while you are on a recording,
             // and their stream a moment ago while you are watching one.
-            if (cameras.size > 1) {
-                val others = cameras.filter { it.name != watching }
+            if (others.isNotEmpty()) {
                 if (live) {
                     LiveCameras(
                         repository = repository,

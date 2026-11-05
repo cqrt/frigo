@@ -114,6 +114,7 @@ class ServerPrefs(private val context: Context) {
             prefs.remove(alertsOnKey(baseUrl))
             prefs.remove(alertRulesKey(baseUrl))
             prefs.remove(quietTimesKey(baseUrl))
+            prefs.remove(cameraListKey(baseUrl))
             prefs.remove(cameraLayoutKey(baseUrl))
             prefs.remove(settingsKey(baseUrl))
         }
@@ -145,6 +146,22 @@ class ServerPrefs(private val context: Context) {
     suspend fun writeAlertRules(baseUrl: String, rules: AlertRules) {
         val stored = BlockJson.encodeToString(AlertRules.serializer(), rules)
         context.dataStore.edit { prefs -> prefs[alertRulesKey(baseUrl)] = stored }
+    }
+
+    /**
+     * The cameras this phone leaves out, what it calls them, and their order. One
+     * block for the same reason the rules are: a field added later can't break the
+     * read.
+     */
+    suspend fun readCameraList(baseUrl: String): CameraList? {
+        val stored = context.dataStore.data.first()[cameraListKey(baseUrl)] ?: return null
+        return runCatching { BlockJson.decodeFromString(CameraList.serializer(), stored) }
+            .getOrNull()
+    }
+
+    suspend fun writeCameraList(baseUrl: String, list: CameraList) {
+        val stored = BlockJson.encodeToString(CameraList.serializer(), list)
+        context.dataStore.edit { prefs -> prefs[cameraListKey(baseUrl)] = stored }
     }
 
     /**
@@ -298,6 +315,7 @@ class ServerPrefs(private val context: Context) {
 
     private fun alertRulesKey(baseUrl: String) = stringPreferencesKey("alert_rules:$baseUrl")
     private fun quietTimesKey(baseUrl: String) = stringPreferencesKey("quiet_times:$baseUrl")
+    private fun cameraListKey(baseUrl: String) = stringPreferencesKey("camera_list:$baseUrl")
     private fun cameraLayoutKey(baseUrl: String) = intPreferencesKey("camera_layout:$baseUrl")
     private fun settingsKey(baseUrl: String) = stringPreferencesKey("settings:$baseUrl")
 

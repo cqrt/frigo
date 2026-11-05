@@ -50,6 +50,8 @@
     <string name="settings_cameras_stale">Tu servidor no responde. Estas son las cámaras que tu teléfono leyó por última vez, %1$s.</string>
     <string name="settings_cameras_offline">Tu servidor no responde, así que no se pueden leer las cámaras.</string>
     <string name="settings_no_cameras">Ninguna cámara visible para esta cuenta.</string>
+    <string name="settings_camera_hidden">Oculta</string>
+    <string name="settings_camera_move">Mover %1$s</string>
 
     <string name="settings_server">Servidor</string>
     <string name="settings_system">Sistema</string>
@@ -178,6 +180,7 @@
     <string name="alerts_all_cameras_off">Todas las cámaras están desactivadas en la página de notificaciones de tu servidor, así que no avisará nada.</string>
     <string name="alerts_no_alerts_on">Ninguna cámara tiene alertas activadas, así que no avisará nada.</string>
     <string name="alerts_no_alert_objects">Ninguna cámara tiene objetos de alerta, así que no avisará nada.</string>
+    <string name="alerts_all_cameras_hidden">Todas las cámaras que avisarían están desactivadas en este teléfono, así que no avisará nada. Vuelve a activar una en Ajustes, Cámaras.</string>
 
     <!-- Lo que dice cuando algo sí: las cámaras, los objetos y la conexión. -->
     <plurals name="alerts_cameras">
@@ -243,6 +246,7 @@
 
     <!-- Cuando no hay nada que mostrar. -->
     <string name="cam_no_cameras">No hay cámaras activadas en Frigate.</string>
+    <string name="cam_none_shown">Todas las cámaras están desactivadas en este teléfono. Vuelve a activar una en Ajustes, Cámaras.</string>
     <string name="cam_try_again">Reintentar</string>
 
     <!-- ===== lists ===== -->
@@ -510,6 +514,14 @@
     <string name="camsw_try_again">Reintentar</string>
     <string name="camsw_stale">Tu servidor no responde. Estos son los ajustes que tu teléfono leyó por última vez, %1$s. No se pueden cambiar hasta que vuelva.</string>
     <string name="camsw_changes_save">Los cambios se guardan en el servidor según tocas.</string>
+
+    <!-- El nombre que este teléfono le da a la cámara. -->
+    <string name="camsw_name_heading">Este teléfono</string>
+    <string name="camsw_name">Nombre</string>
+    <string name="camsw_name_title">Ponle nombre a esta cámara</string>
+    <string name="camsw_name_detail">Solo lo usa este teléfono. Frigate conserva el nombre que tiene.</string>
+    <string name="camsw_name_save">Guardar</string>
+    <string name="camsw_name_use_server">Usar el nombre del servidor</string>
 
     <!-- Los cuatro grupos en que se reparten los ocho interruptores. -->
     <string name="camsw_group_detection">Detección</string>

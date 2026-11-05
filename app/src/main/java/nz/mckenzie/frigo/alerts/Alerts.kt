@@ -46,8 +46,9 @@ object Alerts {
         state: WatchState,
         rules: AlertRules,
         quiet: QuietTimes,
+        hidden: Set<String> = emptySet(),
     ): NotificationCompat.Builder {
-        val text = state.text(context, rules, quiet, System.currentTimeMillis())
+        val text = state.text(context, rules, quiet, System.currentTimeMillis(), hidden)
         val open = PendingIntent.getActivity(
             context,
             0,
@@ -275,6 +276,10 @@ sealed interface WatchState {
      * something will, it counts the cameras the server has turned on and names
      * what they buzz for.
      *
+     * Cameras turned off on this phone are counted out, since they are what this
+     * line is about. With every one of them off, the line says so and names where
+     * to turn one back on.
+     *
      * With [quiet] set and every camera that would buzz inside it, the sentence
      * starts with the time it comes back. Half a quiet window still buzzes, so
      * the line stays as it was rather than claiming more silence than there is.
@@ -284,6 +289,7 @@ sealed interface WatchState {
         rules: AlertRules,
         quiet: QuietTimes? = null,
         now: Long = System.currentTimeMillis(),
+        hidden: Set<String> = emptySet(),
     ): String {
         if (this is SignedOut) return context.words(R.string.alerts_session_expired)
 
@@ -299,11 +305,17 @@ sealed interface WatchState {
         val buzzing = alerting.filterValues { it.labels.isNotEmpty() }
         if (buzzing.isEmpty()) return context.words(R.string.alerts_no_alert_objects)
 
-        val count = buzzing.size
-        val watching = context.counted(R.plurals.alerts_cameras, count, count)
-        val labels = said(context, buzzing.values.flatMap { it.labels }.distinct())
+        // The ones this phone still tells you about. Turning every one of them off
+        // here is the phone's own doing, so the line says so rather than counting
+        // cameras that cannot reach it.
+        val heard = buzzing.filterKeys { it !in hidden }
+        if (heard.isEmpty()) return context.words(R.string.alerts_all_cameras_hidden)
 
-        val silence = if (quiet != null && buzzing.keys.all { quiet.quiets(it, now) }) {
+        val count = heard.size
+        val watching = context.counted(R.plurals.alerts_cameras, count, count)
+        val labels = said(context, heard.values.flatMap { it.labels }.distinct())
+
+        val silence = if (quiet != null && heard.keys.all { quiet.quiets(it, now) }) {
             quiet.quietUntil(now)
                 ?.let { context.words(R.string.alerts_quiet_until, clockTime(it)) }
                 .orEmpty()

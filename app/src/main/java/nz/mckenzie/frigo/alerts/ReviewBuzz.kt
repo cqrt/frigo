@@ -29,11 +29,21 @@ class ReviewBuzz(
      *
      * [change] is the message's `type`: `new` or `update`. Anything else is a
      * message about a review that has moved on.
+     *
+     * [hidden] is the cameras turned off on this phone. One of them never buzzes,
+     * whatever the server's rules say.
      */
-    fun buzzes(review: FrigateReview, change: String?, now: Long, rules: AlertRules): Boolean {
+    fun buzzes(
+        review: FrigateReview,
+        change: String?,
+        now: Long,
+        rules: AlertRules,
+        hidden: Set<String> = emptySet(),
+    ): Boolean {
         if (change != "new" && change != "update") return false
         if (review.severity != ALERT) return false
         if (review.id.isBlank() || review.camera.isBlank()) return false
+        if (review.camera in hidden) return false
 
         // A detection that turns into an alert only counts near its own start.
         if (change == "update") {

@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.19
+
+- A camera can be turned off on this phone alone. It leaves the Cameras tab, the strip under a picture and the chips on Review and Explore, and it stops buzzing. Your server and its other phones don't change.
+- Settings, Cameras is now the list of every camera, with a switch on each. Hold a row and drag it to put the cameras in your order.
+- A camera's own page can give it a name only this phone uses.
+
 ## 0.10.18
 
 - Frigo can ask for your fingerprint, or your phone's PIN, before it opens. It sits under Privacy in Settings, and the walkthrough offers it too.

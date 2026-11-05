@@ -57,6 +57,7 @@ fun CamerasScreen(
 ) {
     val viewModel: CamerasViewModel = viewModel(factory = CamerasViewModel.factory(container))
     val cameras by viewModel.cameras.collectAsStateWithLifecycle()
+    val allHidden by viewModel.allHidden.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()
     val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
@@ -95,7 +96,9 @@ fun CamerasScreen(
                 }
 
                 cameras.isEmpty() -> Text(
-                    text = stringResource(R.string.cam_no_cameras),
+                    text = stringResource(
+                        if (allHidden) R.string.cam_none_shown else R.string.cam_no_cameras,
+                    ),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.align(Alignment.Center).padding(32.dp),
                 )

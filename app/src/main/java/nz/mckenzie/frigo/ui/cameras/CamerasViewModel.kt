@@ -5,7 +5,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.Camera
@@ -29,8 +33,26 @@ enum class CameraLayout(val saved: Int) {
 
 class CamerasViewModel(private val repository: FrigoRepository) : ViewModel() {
 
-    private val _cameras = MutableStateFlow<List<Camera>>(emptyList())
-    val cameras = _cameras.asStateFlow()
+    /** The server's answer, hidden cameras and all. What is drawn is [cameras]. */
+    private val _served = MutableStateFlow<List<Camera>>(emptyList())
+
+    /**
+     * The cameras as this phone draws them: named its way, in its order, with the
+     * ones it turned off left out. Collected rather than read once, so a camera
+     * hidden in Settings leaves the tiles without the app being restarted.
+     */
+    val cameras: StateFlow<List<Camera>> =
+        combine(_served, repository.cameraList) { served, list -> list.shown(served) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /**
+     * True when the server has cameras and every one of them is turned off on this
+     * phone. The tab says which of the two silences it is looking at.
+     */
+    val allHidden: StateFlow<Boolean> =
+        combine(_served, repository.cameraList) { served, list ->
+            served.isNotEmpty() && served.all { list.hides(it.name) }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _loading = MutableStateFlow(true)
     val loading = _loading.asStateFlow()
@@ -81,11 +103,11 @@ class CamerasViewModel(private val repository: FrigoRepository) : ViewModel() {
         // the next second to come round.
         _refreshKey.value++
         viewModelScope.launch {
-            _loading.value = _cameras.value.isEmpty()
-            _refreshing.value = _cameras.value.isNotEmpty()
+            _loading.value = cameras.value.isEmpty()
+            _refreshing.value = cameras.value.isNotEmpty()
             _error.value = null
             runCatching { repository.cameras() }
-                .onSuccess { _cameras.value = it }
+                .onSuccess { _served.value = it }
                 .onFailure { _error.value = it.friendlyMessage(repository.context) }
             _loading.value = false
             _refreshing.value = false

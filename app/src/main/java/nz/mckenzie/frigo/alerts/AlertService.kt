@@ -107,6 +107,7 @@ class AlertService : Service() {
             container.repository.loadAlerts()
             container.repository.loadAlertRules()
             container.repository.loadQuietTimes()
+            container.repository.loadCameraList()
             container.repository.alerts.collect { showWatching() }
         }
         scope.launch {
@@ -120,6 +121,11 @@ class AlertService : Service() {
                 showWatching()
                 watchForQuietChange()
             }
+        }
+        // A camera turned off on this phone changes both what buzzes and what the
+        // line says, so the line is redrawn rather than waiting for a reconnect.
+        scope.launch {
+            container.repository.cameraList.collect { showWatching() }
         }
     }
 
@@ -284,7 +290,8 @@ class AlertService : Service() {
 
         val rules = container.repository.alertRules.value
         val now = System.currentTimeMillis()
-        if (!reviewBuzz.buzzes(review, message.text("type"), now, rules)) {
+        val hidden = container.repository.cameraList.value.hidden
+        if (!reviewBuzz.buzzes(review, message.text("type"), now, rules, hidden)) {
             return
         }
 
@@ -405,6 +412,7 @@ class AlertService : Service() {
             state,
             container.repository.alertRules.value,
             container.repository.quietTimes.value,
+            container.repository.cameraList.value.hidden,
         ).build()
 
     private fun createChannels() {

@@ -92,6 +92,15 @@ class ReviewBuzzTest {
         assertFalse(ReviewBuzz().buzzes(review(camera = "quay"), "new", ten, rules))
     }
 
+    /** Turning a camera off on this phone silences it here, whatever the server says. */
+    @Test
+    fun aCameraTurnedOffOnThisPhoneDoesNotBuzz() {
+        assertTrue(ReviewBuzz().buzzes(review(), "new", ten, rules))
+        assertFalse(
+            ReviewBuzz().buzzes(review(id = "2"), "new", ten, rules, hidden = setOf("drive")),
+        )
+    }
+
     @Test
     fun aReviewWithNoObjectOnTheAlertListDoesNotBuzz() {
         assertFalse(ReviewBuzz().buzzes(review(objects = listOf("car")), "new", ten, rules))

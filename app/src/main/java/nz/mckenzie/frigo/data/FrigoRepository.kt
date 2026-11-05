@@ -118,6 +118,17 @@ class FrigoRepository(
     val quietTimes: StateFlow<QuietTimes> = _quietTimes.asStateFlow()
 
     /**
+     * The cameras this phone leaves out, what it calls them, and their order. Its
+     * own list rather than the server's: what it changes is this phone's screens
+     * and its buzz, and the server and its other phones don't move.
+     *
+     * The alert service reads it too, so a camera turned off here stops buzzing
+     * without the app being open.
+     */
+    private val _cameraList = MutableStateFlow(CameraList())
+    val cameraList: StateFlow<CameraList> = _cameraList.asStateFlow()
+
+    /**
      * Whether the walkthrough is still to come, or null until the phone has been
      * read. The app shows its own spinner for the null, so a new phone never
      * flashes the tabs and an old one never flashes the tour.
@@ -148,6 +159,9 @@ class FrigoRepository(
 
     /** The same, for the phone's quiet hours. */
     @Volatile private var quietTimesLoaded = false
+
+    /** The same, for the phone's own list of cameras. */
+    @Volatile private var cameraListLoaded = false
 
     /**
      * Reads what should set your phone off, once. Safe to call from anywhere;
@@ -181,6 +195,18 @@ class FrigoRepository(
         val server = activeServer()
         _quietTimes.value = server?.let { prefs.readQuietTimes(it.baseUrl) } ?: QuietTimes()
         quietTimesLoaded = true
+    }
+
+    /**
+     * Reads the cameras this phone leaves out, and its names and order for them.
+     * Safe to call from anywhere, and what the service starts from after a restart,
+     * so a camera turned off here stays off in the buzz.
+     */
+    suspend fun loadCameraList() {
+        if (cameraListLoaded) return
+        val server = activeServer()
+        _cameraList.value = server?.let { prefs.readCameraList(it.baseUrl) } ?: CameraList()
+        cameraListLoaded = true
     }
 
     /**
@@ -234,9 +260,11 @@ class FrigoRepository(
         _alerts.value = url?.let { prefs.readAlerts(it) } ?: ServerPrefs.Alerts()
         _alertRules.value = url?.let { prefs.readAlertRules(it) } ?: AlertRules()
         _quietTimes.value = url?.let { prefs.readQuietTimes(it) } ?: QuietTimes()
+        _cameraList.value = url?.let { prefs.readCameraList(it) } ?: CameraList()
         alertsLoaded = true
         alertRulesLoaded = true
         quietTimesLoaded = true
+        cameraListLoaded = true
     }
 
     /** The server's own two answers the settings pages are built from. */
@@ -274,6 +302,7 @@ class FrigoRepository(
         loadAlerts()
         loadAlertRules()
         loadQuietTimes()
+        loadCameraList()
         // The first launch after the walkthrough arrived settles the question once
         // and writes the answer down. A phone with a server already saved is one
         // that was set up before the walkthrough existed, so it is not owed it.
@@ -655,6 +684,30 @@ class FrigoRepository(
         _quietTimes.value = next
         quietTimesLoaded = true
     }
+
+    /**
+     * Keeps this phone's own list of cameras: which are off, what it calls them,
+     * and their order. The screens and the service watch the same value, so a
+     * change in Settings lands on the tiles and on the buzz at once.
+     */
+    suspend fun setCameraList(next: CameraList) {
+        val url = activeServer()?.baseUrl ?: return
+        prefs.writeCameraList(url, next)
+        _cameraList.value = next
+        cameraListLoaded = true
+    }
+
+    /** Turns one camera off on this phone, or back on. */
+    suspend fun setCameraShown(camera: String, on: Boolean) =
+        setCameraList(_cameraList.value.withHidden(camera, !on))
+
+    /** Gives one camera a name of this phone's own. A blank name goes back to the server's. */
+    suspend fun setCameraName(camera: String, name: String) =
+        setCameraList(_cameraList.value.naming(camera, name))
+
+    /** Moves one camera in the order, the way a row dragged up or down leaves it. */
+    suspend fun moveCamera(from: String, to: Int, among: List<String>) =
+        setCameraList(_cameraList.value.moving(from, to, among))
 
     /** Whether the reviews list shows the ones you've already watched. */
     suspend fun readShowReviewed(): Boolean = prefs.readShowReviewed()

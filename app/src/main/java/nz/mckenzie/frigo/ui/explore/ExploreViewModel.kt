@@ -155,7 +155,9 @@ class ExploreViewModel(private val repository: FrigoRepository) : ViewModel() {
     private fun loadChoices() {
         viewModelScope.launch {
             runCatching { repository.cameras() }
-                .onSuccess { cameras -> _state.update { it.copy(cameras = cameras) } }
+                .onSuccess { cameras ->
+                    _state.update { it.copy(cameras = repository.cameraList.value.shown(cameras)) }
+                }
         }
         viewModelScope.launch {
             runCatching { repository.labels() }

@@ -357,7 +357,10 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
         viewModelScope.launch {
             runCatching { repository.reviewPage() }
                 .onSuccess { page ->
-                    _state.update { it.copy(cameras = page.cameras, settings = page.settings) }
+                    // The cameras this phone leaves out are not offered, since the
+                    // chip would only narrow the list to something it never shows.
+                    val offered = repository.cameraList.value.shown(page.cameras)
+                    _state.update { it.copy(cameras = offered, settings = page.settings) }
                 }
         }
     }

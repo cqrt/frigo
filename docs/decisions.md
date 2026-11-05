@@ -2402,3 +2402,39 @@ another angle, and it is worth knowing before it is reported as a bug.
 Notifications keep their pictures. An alert's picture is the whole reason it is
 useful, and it is already on the lock screen. Hiding it would mean the
 notification says something happened without saying what.
+
+## Hiding a camera is this phone's own
+
+Frigate has two switches per camera that look like the same idea: `ui.dashboard` and
+`ui.review`, which keep a camera off its dashboard and off its review page. Both are
+the server's, both need an admin, and both change every phone and browser on the
+account. Neither says anything about a buzz.
+
+What is turned off here is this phone's screens and this phone's buzz. So the list
+lives on the phone, in DataStore beside the quiet hours: which cameras are off, what
+this phone calls them, and the order they appear in. It is one block per server, so
+two servers on the phone keep two lists, and signing out forgets one.
+
+A hidden camera leaves the four places this phone draws the server's cameras: the
+Cameras tab, the strip of other cameras under a picture, and the chips on Review and
+Explore. It does not leave Review's list, its counts or its days. A review is a thing
+the server already decided was worth a look, and hiding a camera is about what the
+phone puts in front of you, not about rewriting what happened. A hidden camera opened
+from an alert still works, picture and bar, because the app has to be able to show you
+what it just told you about.
+
+The buzz is answered where it is decided. `ReviewBuzz.buzzes` takes the hidden set, and
+a camera in it never buzzes, before the rules are read. The watching line counts only
+the cameras this phone still tells you about, and with all of them off it says so and
+names Settings, Cameras. Silence with no reason reads as a fault.
+
+The name and the order are the phone's for the same reason. What a camera is called in
+the app's own sentences, and where its tile sits, is about this phone. The server's key
+is what every URL is built from, so the `name` in Frigate's config is never rewritten,
+and the camera's own page still reads the server's name when you clear yours. A camera
+hidden by name that the server later renames comes back into view, because the stored
+key no longer matches, which is the right way round: a stale hide is worse than a
+camera you have to hide twice.
+
+Rejected: Frigate's `ui.dashboard` and `ui.review`. They need an admin, they change
+every phone, and they stop at the web page.

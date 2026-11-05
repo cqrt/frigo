@@ -77,10 +77,11 @@ fun QuietTimesScreen(
         // The server's answer, or the copy the phone last read, so the list is
         // there with no connection. Telling them apart is the note above it.
         runCatching { repository.cameraSwitchPage() }
-            .onSuccess { cameras = it.cameras }
+            .onSuccess { page -> cameras = repository.cameraList.value.shown(page.cameras) }
             .onFailure {
                 offline = true
-                runCatching { repository.cameras() }.onSuccess { cameras = it }
+                runCatching { repository.cameras() }
+                    .onSuccess { cameras = repository.cameraList.value.shown(it) }
             }
     }
 

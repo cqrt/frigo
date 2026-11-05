@@ -96,7 +96,10 @@ notifications, and one that plays the home page tiles live. Quiet times sits und
 notifications: the hours this phone keeps quiet, and the cameras it keeps quiet.
 Under Alerts and
 detections you reach the server's own pages for what makes an alert and what
-makes a detection. There's a link to the phone's battery settings, because that's
+makes a detection. Under **Cameras** is every camera your server has, in the order
+this phone shows them. A switch there turns one off on this phone. Hold a row and
+drag it to move it, and tap one for its own page, where its name here is set.
+There's a link to the phone's battery settings, because that's
 where you stop Android shutting Frigo down. Under Privacy, **Lock Frigo** asks
 for your fingerprint, or your phone's PIN, before the app opens. It asks each
 time the app starts, not every time you come back to it. While it's on, the app is
@@ -265,6 +268,11 @@ with the two times left as they are.
 None of this reaches your server. Its notifications page, and any other phone,
 are unchanged.
 
+A camera turned off in Settings, Cameras, doesn't buzz here either. That list is
+this phone's own, so your server and its other phones still hear it. Turn every
+camera off and the watching line says why nothing will buzz, rather than counting
+cameras that can't reach you.
+
 When something buzzes, the phone asks your server's model what it is looking at and
 fills the notification in about four seconds later. It takes three pictures a second
 apart and asks for one short sentence. This is the quick answer, and it takes the
@@ -395,6 +403,26 @@ Face recognition and license plate recognition only run when your server has the
 on for everything. While one doesn't, its row says so and can't be turned on.
 
 An admin account can change these and anyone signed in can look.
+
+## Turning a camera off, and naming it
+
+The Cameras list in Settings has a switch on every camera. Turn one off and it
+leaves this phone: the Cameras tab, the strip of other cameras under a picture, and
+the chips on Review and Explore. It stops buzzing too. It's marked **Hidden** on the
+list, and the switch is the way back.
+
+Your server is untouched. It records what it always recorded, and your other phones
+are told what they were always told. The eight switches on the camera's page are
+still Frigate's, so turning a camera off here is never a way to change what the
+server does. A hidden camera opened from an alert still works, picture and bar.
+
+Hold a row and drag it, and the cameras sit in that order from then on. Tap one for
+its own page, where **Name** sets what this phone calls it. That name is used here
+and nowhere else: your server keeps its own, and every address behind the screen is
+still built from it. **Use the server's name** puts it back.
+
+All of it belongs to the server you're signed in to, so two servers on the phone
+keep two lists, and signing out forgets one.
 
 ## How the server is doing
 

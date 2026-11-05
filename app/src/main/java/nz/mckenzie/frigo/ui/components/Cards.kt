@@ -49,7 +49,8 @@ internal fun Group(label: String, content: @Composable ColumnScope.() -> Unit) {
 
 /**
  * A line of the card: an icon, a name, and either a value or what sits beside
- * it, such as a switch or a chevron.
+ * it, such as a switch or a chevron. [leading] sits before the icon, which is
+ * where a row's grip goes.
  */
 @Composable
 internal fun Item(
@@ -58,7 +59,9 @@ internal fun Item(
     value: String? = null,
     supporting: String? = null,
     colour: Color? = null,
+    titleColour: Color? = null,
     onClick: (() -> Unit)? = null,
+    leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
     Row(
@@ -69,6 +72,7 @@ internal fun Item(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        leading?.invoke()
         Icon(
             imageVector = icon,
             contentDescription = null,
@@ -76,7 +80,11 @@ internal fun Item(
             modifier = Modifier.size(22.dp),
         )
         Column(Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = titleColour ?: MaterialTheme.colorScheme.onSurface,
+            )
             if (value != null) {
                 Text(
                     text = value,

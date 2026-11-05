@@ -8,7 +8,10 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -38,7 +42,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,9 +53,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -80,6 +91,7 @@ import nz.mckenzie.frigo.ui.components.OpenMark
 import nz.mckenzie.frigo.ui.components.attention
 import nz.mckenzie.frigo.ui.theme.ThemeMode
 import java.io.File
+import kotlin.math.abs
 
 /**
  * The page is a stack of groups: a small heading, and a card under it holding
@@ -127,6 +139,21 @@ fun SettingsScreen(
     var blocked by remember { mutableStateOf(false) }
     // The server couldn't be asked, so the list below is nothing rather than empty.
     var offline by remember { mutableStateOf(false) }
+
+    // This phone's own list of the cameras: which ones it leaves out, what it calls
+    // them, and their order. Collected, so a switch here lands on the row at once.
+    val list by repository.cameraList.collectAsStateWithLifecycle()
+    // The rows as drawn: named, in this phone's order, the ones it turned off still
+    // in. While a row is held it is this copy that shuffles, and the order is written
+    // when the finger comes up.
+    var rows by remember { mutableStateOf<List<Camera>>(emptyList()) }
+    var held by remember { mutableStateOf<String?>(null) }
+    var drift by remember { mutableFloatStateOf(0f) }
+    val heights = remember { mutableStateMapOf<String, Float>() }
+
+    LaunchedEffect(cameras, list) {
+        if (held == null) rows = list.all(cameras)
+    }
 
     LaunchedEffect(Unit) {
         // One trip answers both: the cameras to list, and what each camera has
@@ -410,6 +437,9 @@ fun SettingsScreen(
                 )
             }
 
+            // Every camera the server has, including the ones this phone turned off:
+            // the switch is the way back, so a hidden camera stays on the list with
+            // its name read quietly and a line saying so.
             Group(stringResource(R.string.settings_cameras)) {
                 val stale = switches?.readAt
                 when {
@@ -423,13 +453,43 @@ fun SettingsScreen(
                     offline -> Note(stringResource(R.string.settings_cameras_offline))
                     cameras.isEmpty() -> Note(stringResource(R.string.settings_no_cameras))
                 }
-                cameras.forEachIndexed { index, camera ->
+                rows.forEachIndexed { index, camera ->
                     if (index > 0) CardDivider()
-                    CameraRow(
-                        title = camera.title,
-                        state = switches?.cameraState(context, camera.name),
-                        onClick = { onOpenCamera(camera.name) },
-                    )
+                    // Keyed by the camera rather than by its place in the list: a row
+                    // that changes places mid-drag keeps its composition, and with it
+                    // the gesture the finger is making.
+                    key(camera.name) {
+                        val dragging = held == camera.name
+                        CameraRow(
+                            title = camera.title,
+                            state = switches?.cameraState(context, camera.name),
+                            hidden = list.hides(camera.name),
+                            dragging = dragging,
+                            onOpen = { onOpenCamera(camera.name) },
+                            onShow = { on ->
+                                scope.launch { repository.setCameraShown(camera.name, on) }
+                            },
+                            onMeasured = { heights[camera.name] = it },
+                            drag = Modifier.cameraDrag(
+                                camera = camera.name,
+                                offset = { if (held == camera.name) drift else 0f },
+                                rows = { rows },
+                                heightOf = { heights[it] ?: 0f },
+                                onHold = { held = it },
+                                onDrift = { drift = it },
+                                onShuffle = { rows = it },
+                                onAbandon = { rows = list.all(cameras) },
+                                onDrop = { moved, to ->
+                                    // Read as the drop happens, not as the row was built:
+                                    // the cameras arrive after the first look at this page.
+                                    val before = list.all(cameras).map { it.name }
+                                    if (before.indexOf(moved) != to) {
+                                        scope.launch { repository.moveCamera(moved, to, before) }
+                                    }
+                                },
+                            ),
+                        )
+                    }
                 }
             }
 
@@ -665,22 +725,135 @@ fun SettingsScreen(
     }
 }
 
-/** A heading over a card, which is what one thing you can change looks like. */
+/**
+ * One camera on the manage list: a grip, the camera, a switch that turns it off on
+ * this phone, and the chevron into its own page.
+ *
+ * The name reads quieter while it is turned off, and the line under it says so
+ * rather than naming which of Frigate's switches are off: a camera you have hidden
+ * is one you have decided not to think about.
+ */
 @Composable
 private fun CameraRow(
     title: String,
     state: CameraState?,
-    onClick: () -> Unit,
+    hidden: Boolean,
+    dragging: Boolean,
+    drag: Modifier,
+    onOpen: () -> Unit,
+    onShow: (Boolean) -> Unit,
+    onMeasured: (Float) -> Unit,
 ) {
-    Item(
-        icon = FrigoIcons.Camera,
-        title = title,
-        supporting = state?.said,
-        colour = if (state?.somethingOff == true) attention() else null,
-        onClick = onClick,
-        trailing = { OpenMark() },
-    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .onSizeChanged { onMeasured(it.height.toFloat()) }
+            .zIndex(if (dragging) 1f else 0f)
+            .graphicsLayer {
+                shadowElevation = if (dragging) 8.dp.toPx() else 0f
+                shape = RoundedCornerShape(12.dp)
+            }
+            .background(
+                if (dragging) MaterialTheme.colorScheme.surfaceContainerLow else Color.Transparent,
+                RoundedCornerShape(12.dp),
+            )
+            .then(drag),
+    ) {
+        Item(
+            icon = FrigoIcons.Camera,
+            title = title,
+            supporting = if (hidden) {
+                stringResource(R.string.settings_camera_hidden)
+            } else {
+                state?.said
+            },
+            colour = if (!hidden && state?.somethingOff == true) attention() else null,
+            titleColour = if (hidden) MaterialTheme.colorScheme.onSurfaceVariant else null,
+            onClick = onOpen,
+            leading = {
+                Icon(
+                    imageVector = FrigoIcons.Grip,
+                    contentDescription = stringResource(R.string.settings_camera_move, title),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            },
+            trailing = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Switch(checked = !hidden, onCheckedChange = onShow)
+                    OpenMark()
+                }
+            },
+        )
+    }
 }
+
+/**
+ * The long press and drag that moves a row up or down.
+ *
+ * The row follows the finger on its own offset. When it passes the middle of the
+ * row above or below, the two change places and the offset carries over, so it stays
+ * under the finger and the rows shuffle around it. Nothing is written until the
+ * finger comes up, and not even then if the row ended up where it started.
+ *
+ * No library: a drag detector, a graphics layer, and a swap.
+ */
+private fun Modifier.cameraDrag(
+    camera: String,
+    offset: () -> Float,
+    rows: () -> List<Camera>,
+    heightOf: (String) -> Float,
+    onHold: (String?) -> Unit,
+    onDrift: (Float) -> Unit,
+    onShuffle: (List<Camera>) -> Unit,
+    onAbandon: () -> Unit,
+    onDrop: (String, Int) -> Unit,
+): Modifier = this
+    .graphicsLayer { translationY = offset() }
+    .pointerInput(camera) {
+        var drift = 0f
+        fun carry() = onDrift(drift)
+        detectDragGesturesAfterLongPress(
+            onDragStart = {
+                drift = 0f
+                carry()
+                onHold(camera)
+            },
+            onDrag = { change, amount ->
+                change.consume()
+                drift += amount.y
+                carry()
+                val at = rows().indexOfFirst { it.name == camera }
+                val down = drift > 0
+                val to = if (down) at + 1 else at - 1
+                val neighbour = rows().getOrNull(to)
+                val height = neighbour?.let { heightOf(it.name) } ?: 0f
+                if (at >= 0 && neighbour != null && height > 0f && abs(drift) >= height / 2f) {
+                    onShuffle(rows().toMutableList().also { it.add(to, it.removeAt(at)) })
+                    drift -= if (down) height else -height
+                    carry()
+                }
+            },
+            onDragEnd = {
+                val to = rows().indexOfFirst { it.name == camera }
+                drift = 0f
+                carry()
+                onHold(null)
+                if (to >= 0) onDrop(camera, to)
+            },
+            onDragCancel = {
+                drift = 0f
+                carry()
+                onHold(null)
+                // A gesture taken away mid-move leaves the rows where the phone last
+                // drew them, which is nowhere the finger chose. They go back.
+                onAbandon()
+            },
+        )
+    }
 
 /** A name and what it is set to, one over the other. */
 @Composable
