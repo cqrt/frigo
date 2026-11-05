@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.15
+
+- Settings has a System page for an admin: what the server is running, how hard the box is working, each camera's health, the disks, and Frigate's own processes.
+- The same page restarts Frigate, after asking first.
+
 ## 0.10.14
 
 - Quiet times in Settings: pick two times and the cameras to leave out, and nothing from them buzzes in between. The review is still in Review.

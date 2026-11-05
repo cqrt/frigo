@@ -91,6 +91,7 @@ fun SettingsScreen(
     onOpenAlerts: () -> Unit = {},
     onOpenAi: () -> Unit = {},
     onOpenQuiet: () -> Unit = {},
+    onOpenSystem: () -> Unit = {},
     onAddServer: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
@@ -397,6 +398,20 @@ fun SettingsScreen(
                         title = camera.title,
                         state = switches?.cameraState(camera.name),
                         onClick = { onOpenCamera(camera.name) },
+                    )
+                }
+            }
+
+            // Only an admin may see what the box is doing, and only an admin can
+            // restart it, so the row is not there for anyone else.
+            if (switches?.admin == true) {
+                Group("Server") {
+                    Item(
+                        icon = FrigoIcons.Gauge,
+                        title = "System",
+                        supporting = "Memory, disks, cameras, and the processes behind them",
+                        onClick = onOpenSystem,
+                        trailing = { OpenMark() },
                     )
                 }
             }

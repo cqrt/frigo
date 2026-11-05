@@ -196,6 +196,14 @@ object FrigoIcons {
         }
     }
 
+    /** A dial with a needle, for the page about how the server is doing. */
+    val Gauge: ImageVector by lazy {
+        vector("Gauge") {
+            path("M4.2 18.4a8.2 8.2 0 1 1 15.6 0", strokeWidth = 1.7f)
+            path("M12 18.4 16.4 12", strokeWidth = 1.8f)
+        }
+    }
+
     /** A camera on its side with a lens at the front, for a camera's switches. */
     val Camera: ImageVector by lazy {
         vector("Camera") {

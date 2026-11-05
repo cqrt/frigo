@@ -371,6 +371,20 @@ on for everything. While one doesn't, its row says so and can't be turned on.
 
 An admin account can change these and anyone signed in can look.
 
+## How the server is doing
+
+Settings has a System row for an admin. It shows what the server is running and how
+hard the box is working: the processor and memory as two bars, any GPU, each camera's
+frames a second and the health of its stream, the disks with what is left on them, and
+Frigate's own processes with the detector's time to think.
+
+The numbers are read again every five seconds while the page is open, and the asking
+stops when you leave it. What is worth noticing turns amber: frames being dropped, a
+poor stream, a disk nearly full, shared memory below what Frigate wants.
+
+The same page restarts Frigate. It asks first, and everything stops for about half a
+minute, alerts included. Recordings and settings are kept.
+
 ## Updating
 
 Frigo isn't in a store. Each release is an APK on the GitHub release page, and the

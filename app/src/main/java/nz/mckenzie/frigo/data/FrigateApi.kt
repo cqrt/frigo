@@ -600,7 +600,24 @@ class FrigateApi(
         return json.decodeFromString(FrigateEvent.serializer(), request.okBody())
     }
 
-    /** Every clip kept on the server, newest first. */
+    /**
+     * Asks the server to restart itself, which is what its own web page does.
+     *
+     * It answers before it goes down, so a success here means the request was
+     * taken, not that it is back. Only an admin is allowed to ask.
+     */
+    fun restart(baseUrl: String, token: String) {
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/restart"))
+            .header("Authorization", "Bearer $token")
+            .post(ByteArray(0).toRequestBody(null))
+            .build()
+        request.okBody()
+    }
+
+    /**
+     * Every clip kept on the server, newest first.
+     */
     fun exports(baseUrl: String, token: String): List<Export> {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/exports"))

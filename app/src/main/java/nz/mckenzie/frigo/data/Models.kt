@@ -259,11 +259,20 @@ data class Camera(
  * The part of `/api/stats` this app reads. Frigate counts the frames each camera
  * has produced over the last few seconds, so a camera with nothing arriving counts
  * zero, which is how it says a camera has stopped.
+ *
+ * The System page reads the rest of it: the whole box's processor and memory, any
+ * GPU, each camera's health, the disks, and the processes behind them.
  */
 @Serializable
 data class FrigateStats(
     val cameras: Map<String, CameraStats> = emptyMap(),
     val service: ServiceStats = ServiceStats(),
+    val detectors: Map<String, DetectorStats> = emptyMap(),
+    /** One entry per process on the box, keyed by pid. The whole system is in here too. */
+    @SerialName("cpu_usages") val cpuUsages: Map<String, CpuUsage> = emptyMap(),
+    @SerialName("gpu_usages") val gpuUsages: Map<String, GpuStats> = emptyMap(),
+    /** Frigate's own workers, by name. */
+    val processes: Map<String, ProcessStats> = emptyMap(),
 )
 
 @Serializable
@@ -274,17 +283,265 @@ data class CameraStats(
      * second's count does. Absent from a server that doesn't say.
      */
     @SerialName("expected_fps") val expectedFps: Double? = null,
+    @SerialName("process_fps") val processFps: Double = 0.0,
+    /** Frames Frigate had to throw away, which is the surest sign the box is behind. */
+    @SerialName("skipped_fps") val skippedFps: Double = 0.0,
+    @SerialName("detection_fps") val detectionFps: Double = 0.0,
+    /** Frigate's own word for the stream's health: excellent, good, fair or poor. */
+    @SerialName("connection_quality") val connectionQuality: String? = null,
+    @SerialName("detection_enabled") val detectionEnabled: Boolean = false,
 ) {
     /** The rate this camera sends at, as a whole number, preferring the one set for it. */
     val settingRate: Int
         get() = (expectedFps?.takeIf { it > 0 } ?: cameraFps).roundToInt()
+
+    /** Whether this camera is being left behind: frames dropped, or a poor stream. */
+    val struggling: Boolean
+        get() = skippedFps > 0.0 || connectionQuality in PoorQualities
 }
+
+private val PoorQualities = setOf("fair", "poor", "bad")
 
 /** How long the server has been up, in seconds. Absent from a server that doesn't say. */
 @Serializable
 data class ServiceStats(
     val uptime: Double? = null,
+    val version: String? = null,
+    @SerialName("latest_version") val latestVersion: String? = null,
+    /** The disks Frigate keeps things on, in megabytes, by path. */
+    val storage: Map<String, StorageStats> = emptyMap(),
 )
+
+@Serializable
+data class StorageStats(
+    val total: Double = 0.0,
+    val used: Double = 0.0,
+    val free: Double = 0.0,
+    @SerialName("mount_type") val mountType: String? = null,
+    /** On the shared memory mount: how many frames fit, against the least Frigate wants. */
+    @SerialName("shm_frame_count") val shmFrameCount: Double? = null,
+    @SerialName("min_shm") val minShm: Double? = null,
+)
+
+@Serializable
+data class DetectorStats(
+    /** Milliseconds for one inference. */
+    @SerialName("inference_speed") val inferenceSpeed: Double = 0.0,
+    val cpu: String? = null,
+    val mem: String? = null,
+)
+
+@Serializable
+data class CpuUsage(
+    val cpu: String? = null,
+    val mem: String? = null,
+)
+
+@Serializable
+data class GpuStats(
+    val vendor: String? = null,
+    val gpu: String? = null,
+    val mem: String? = null,
+    val compute: String? = null,
+    @SerialName("dec") val decode: String? = null,
+)
+
+@Serializable
+data class ProcessStats(
+    val cpu: String? = null,
+    val mem: String? = null,
+)
+
+/**
+ * The System page, worked out from one reading of the server's stats.
+ *
+ * Everything is already in words: a bar knows what fraction of itself is filled,
+ * a line knows what it says. That leaves the screen to draw, and leaves the
+ * numbers to be tried without a phone.
+ */
+data class SystemPage(
+    val version: String,
+    /** The newer release, when the server says there is one. */
+    val newer: String?,
+    val uptime: String,
+    val processor: SystemMeter?,
+    val memory: SystemMeter?,
+    val gpu: List<SystemLine>,
+    val cameras: List<SystemLine>,
+    val storage: List<SystemMeter>,
+    val processes: List<SystemLine>,
+    val detectors: List<SystemLine>,
+    val restartable: Boolean,
+    /** When this came from the phone's own copy rather than the server, or null. */
+    val readAt: Long? = null,
+)
+
+/** A line with a bar under it: how full something is. */
+data class SystemMeter(
+    val title: String,
+    val said: String,
+    val fraction: Float,
+    val detail: String? = null,
+    val warn: Boolean = false,
+)
+
+/** A line without a bar: a name, what it is doing, and whether it wants attention. */
+data class SystemLine(
+    val title: String,
+    val said: String,
+    val value: String? = null,
+    val warn: Boolean = false,
+)
+
+/** The whole page, read off one `/api/stats` answer. */
+fun FrigateStats.systemPage(admin: Boolean, readAt: Long? = null): SystemPage {
+    val whole = cpuUsages["frigate.full_system"]
+
+    return SystemPage(
+        version = service.version?.takeIf { it.isNotBlank() } ?: "Not said",
+        newer = service.latestVersion
+            ?.takeIf { it.isNotBlank() }
+            ?.takeIf { latest -> latest != service.version?.trimEnd('-') },
+        uptime = service.uptime?.let(::uptimeText) ?: "Not said",
+        processor = whole?.cpu?.toDoubleOrNull()?.let { percent ->
+            SystemMeter("Processor", percentText(percent), (percent / 100.0).toFloat())
+        },
+        memory = whole?.mem?.toDoubleOrNull()?.let { percent ->
+            SystemMeter("Memory", percentText(percent), (percent / 100.0).toFloat())
+        },
+        gpu = gpuUsages.map { (name, stats) ->
+            SystemLine(
+                title = name,
+                said = listOfNotNull(
+                    stats.compute?.let { "$it computing" },
+                    stats.decode?.let { "$it decoding" },
+                ).joinToString(" · ").ifBlank { stats.vendor.orEmpty() },
+                value = stats.gpu,
+            )
+        },
+        cameras = cameras.entries
+            .sortedBy { prettyCameraName(it.key) }
+            .map { (name, stats) ->
+                SystemLine(
+                    title = prettyCameraName(name),
+                    said = listOfNotNull(
+                        detectedText(stats.detectionFps),
+                        stats.connectionQuality?.replaceFirstChar { it.uppercase() },
+                    ).joinToString(" · "),
+                    value = rateText(stats.cameraFps),
+                    warn = stats.struggling,
+                )
+            },
+        storage = storageMeters(service.storage),
+        detectors = detectors.map { (name, stats) ->
+            SystemLine(
+                title = "Detector $name",
+                said = listOfNotNull(
+                    stats.inferenceSpeed.takeIf { it > 0 }?.let { "an inference" },
+                    stats.mem?.takeIf { it != "-%"}?.let { "$it of memory" },
+                ).joinToString(" · "),
+                value = stats.inferenceSpeed.takeIf { it > 0 }?.let { oneDecimal(it) + " ms" },
+            )
+        },
+        processes = processes.entries
+            .sortedByDescending { it.value.cpu?.toDoubleOrNull() ?: 0.0 }
+            .map { (name, stats) ->
+                SystemLine(
+                    title = prettyProcessName(name),
+                    said = stats.mem?.takeIf { it != "-%"}?.let { "$it of memory" }.orEmpty(),
+                    value = stats.cpu?.let { "$it processor" },
+                )
+            },
+        restartable = admin,
+        readAt = readAt,
+    )
+}
+
+/**
+ * The disks, said in words. Two paths on the same disk are one line, because
+ * recordings and clips live together and reading them twice says nothing twice.
+ */
+private fun storageMeters(storage: Map<String, StorageStats>): List<SystemMeter> =
+    storage.entries
+        .sortedBy { (path, _) ->
+            val place = MountOrder.indexOfFirst { path.contains(it) }
+            if (place < 0) MountOrder.size else place
+        }
+        .distinctBy { (_, stats) -> "${stats.total}/${stats.used}/${stats.free}" }
+        .map { (path, stats) ->
+            val shmShort = stats.shmFrameCount != null && stats.minShm != null &&
+                stats.shmFrameCount < stats.minShm
+            SystemMeter(
+                title = mountName(path),
+                said = "${sizeText(stats.used)} of ${sizeText(stats.total)}",
+                fraction = if (stats.total > 0) (stats.used / stats.total).toFloat() else 0f,
+                detail = listOfNotNull(
+                    "${sizeText(stats.free)} free",
+                    stats.shmFrameCount?.let { frames ->
+                        val wanted = stats.minShm
+                        if (wanted != null) {
+                            "room for ${frames.roundToInt()} frames, ${wanted.roundToInt()} wanted"
+                        } else {
+                            "room for ${frames.roundToInt()} frames"
+                        }
+                    },
+                ).joinToString(" · "),
+                warn = (stats.total > 0 && stats.free / stats.total < 0.1) || shmShort,
+            )
+        }
+
+private val MountOrder = listOf("recordings", "clips", "cache", "shm")
+
+private fun mountName(path: String): String = when {
+    path.contains("recordings") -> "Recordings"
+    path.contains("clips") -> "Clips"
+    path.contains("cache") -> "Cache"
+    path.contains("shm") -> "Shared memory"
+    else -> path
+}
+
+/** `review_segment` becomes "Review segment"; `go2rtc` keeps its name. */
+private fun prettyProcessName(name: String): String = name
+    .replace('_', ' ')
+    .replaceFirstChar { it.uppercase() }
+
+/** "16 hours 53 minutes", or "3 days 4 hours" once it is that long. */
+fun uptimeText(seconds: Double): String {
+    val total = seconds.toLong().coerceAtLeast(0)
+    val days = total / 86_400
+    val hours = (total % 86_400) / 3_600
+    val minutes = (total % 3_600) / 60
+    return when {
+        days > 0 -> "$days ${plural(days, "day")} $hours ${plural(hours, "hour")}"
+        hours > 0 -> "$hours ${plural(hours, "hour")} $minutes ${plural(minutes, "minute")}"
+        minutes > 0 -> "$minutes ${plural(minutes, "minute")}"
+        else -> "less than a minute"
+    }
+}
+
+private fun plural(count: Long, word: String): String = if (count == 1L) word else "${word}s"
+
+/** Frigate counts storage in megabytes: 58669.1 becomes "58.7 GB". */
+fun sizeText(megabytes: Double): String = when {
+    megabytes >= 1_000 -> oneDecimal(megabytes / 1_000) + " GB"
+    else -> "${megabytes.roundToInt()} MB"
+}
+
+private fun percentText(percent: Double): String = oneDecimal(percent) + "%"
+
+/** "10.1 frames a second", "1 frame a second", or "nothing" when it has stopped. */
+fun rateText(fps: Double): String = when {
+    fps <= 0.0 -> "nothing"
+    fps == 1.0 -> "1 frame a second"
+    else -> "${oneDecimal(fps)} frames a second"
+}
+
+/** "2.0 being detected", or "nothing being detected". */
+private fun detectedText(fps: Double): String =
+    if (fps <= 0.0) "nothing being detected" else "${oneDecimal(fps)} being detected"
+
+/** One decimal place, with a dot whatever the phone's language is set to. */
+private fun oneDecimal(value: Double): String = String.format(java.util.Locale.US, "%.1f", value)
 
 /**
  * A day a camera kept recordings for, and the hours in it that have some. Frigate

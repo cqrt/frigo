@@ -442,8 +442,7 @@ class FrigoRepository(
      * One trip, and the phone's copy when the server doesn't answer, which is how
      * every settings page here works.
      */
-    suspend fun aiSetup(): AiSetup {
-        val answer = settingsAnswer() ?: throw FrigateException(0, NotSignedIn)
+    suspend fun aiSetup(): AiSetup {        val answer = settingsAnswer() ?: throw FrigateException(0, NotSignedIn)
         val settings = answer.settings
         val services = settings.config.genaiServices()
         return AiSetup(
@@ -482,6 +481,26 @@ class FrigoRepository(
     suspend fun describesAlerts(): Boolean {
         val url = activeServer()?.baseUrl ?: return false
         return prefs.readSettings(url)?.config?.review?.genai?.enabled ?: true
+    }
+
+    /**
+     * Everything the System page shows, from one reading of the server's stats.
+     *
+     * The page asks who is looking as it reads, because the restart is only
+     * offered to an admin.
+     */
+    suspend fun systemPage(): SystemPage = authorized { baseUrl, token ->
+        val stats = api.stats(baseUrl, token)
+        // A server that won't say who you are still gives up its stats, so this
+        // failing only ever costs the restart row.
+        val admin = runCatching { api.profile(baseUrl, token).role == "admin" }
+            .getOrDefault(false)
+        stats.systemPage(admin = admin)
+    }
+
+    /** Restarts the server. Everything stops for about half a minute after it answers. */
+    suspend fun restartServer() {
+        authorized { baseUrl, token -> api.restart(baseUrl, token) }
     }
 
     suspend fun events(

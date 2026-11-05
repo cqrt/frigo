@@ -44,6 +44,7 @@ import nz.mckenzie.frigo.ui.settings.AiModelScreen
 import nz.mckenzie.frigo.ui.settings.CameraSwitchesScreen
 import nz.mckenzie.frigo.ui.settings.QuietTimesScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
+import nz.mckenzie.frigo.ui.settings.SystemScreen
 
 @Composable
 fun FrigoApp(container: AppContainer, openCamera: String? = null, onCameraOpened: () -> Unit = {}) {
@@ -192,9 +193,19 @@ private fun MainScaffold(
                     onOpenQuiet = {
                         navController.navigate("quiet-times") { launchSingleTop = true }
                     },
+                    onOpenSystem = {
+                        navController.navigate("system") { launchSingleTop = true }
+                    },
                     onAddServer = {
                         navController.navigate("add-server") { launchSingleTop = true }
                     },
+                )
+            }
+            composable("system") {
+                SystemScreen(
+                    container = container,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable("quiet-times") {
