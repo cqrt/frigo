@@ -64,11 +64,13 @@ bearer token, and it publishes on both of the topics the app can listen to.
   already an alert, then one that starts as a detection and turns into an alert
   three seconds later with the same id and the same start time.
 - Each review carries a name Frigate recognised: Angie on the door, Fay on the north
-  camera. The one that starts as a detection is named only when it turns into an
-  alert three seconds in. Every review then ends at eight seconds, and a description
-  with the name in it follows at ten, which is what a phone waiting to leave somebody
-  out is waiting for. Leave Angie out in Settings, People to leave out and the door
-  goes quiet while "Fay walking" still buzzes, about ten seconds in.
+  camera. The door's person is reported as `person-verified`, the way Frigate marks an
+  object under a known face, while the camera's alert list still says `person`. The one
+  that starts as a detection is named only when it turns into an alert three seconds
+  in. Every review then ends at eight seconds, and a description with the name in it
+  follows at ten, which is what a phone waiting to leave somebody out is waiting for.
+  Leave Angie out in Settings, People to leave out and the door goes quiet while "Fay
+  walking" still buzzes, about ten seconds in.
 
 The app's trial switch chooses which of the two topics it listens to, so both are
 sent and the switch can be flipped without restarting anything. The turn from

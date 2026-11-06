@@ -56,7 +56,6 @@
     <string name="alert_people_title">Personnes à ignorer</string>
     <string name="alert_people_everyone">Tout le monde</string>
     <string name="alert_people_search">Anne, Louis…</string>
-    <string name="alert_people_hint">Rien de coché veut dire Tout le monde. Terminé demande au moins une personne.</string>
     <string name="alert_people_cant_read">Votre serveur ne répond pas, donc cette liste ne montre que les personnes cochées.</string>
     <string name="alert_people_wait">Tant que quelqu\'un figure sur cette liste, les alertes attendent la description de votre serveur : elles arrivent environ vingt secondes plus tard.</string>
     <string name="alert_people_no_descriptions">Votre serveur ne décrit pas ses alertes, donc cette liste ne peut ignorer personne.</string>

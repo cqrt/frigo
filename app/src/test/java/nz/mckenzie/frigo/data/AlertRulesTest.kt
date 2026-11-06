@@ -48,6 +48,22 @@ class AlertRulesTest {
         assertTrue(rules.buzzes("drive", "person"))
     }
 
+    /**
+     * Frigate reports a face it has matched as `person-verified`, while the camera's
+     * alert list names the object, `person`. Reading them as different things left
+     * every recognised face silent.
+     */
+    @Test
+    fun aVerifiedPersonBuzzesWherePersonIsListed() {
+        assertTrue(rules.buzzes("drive", "person-verified"))
+    }
+
+    /** The mark only matters on a label that could carry one. */
+    @Test
+    fun aVerifiedCarBuzzesWhereCarIsListed() {
+        assertTrue(rules.buzzes("drive", "car-verified"))
+    }
+
     /** Its alerts carry no list of its own, so it follows the server-wide one. */
     @Test
     fun aCameraFollowingTheSharedListBuzzesForWhatIsOnIt() {

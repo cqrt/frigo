@@ -19,6 +19,7 @@ import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.QuietTimes
 import nz.mckenzie.frigo.data.clockTime
 import nz.mckenzie.frigo.data.counted
+import nz.mckenzie.frigo.data.objectName
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.data.words
 
@@ -79,6 +80,8 @@ object Alerts {
         val metadata = review.data.metadata
         val title = metadata?.title?.trim()?.takeIf { it.isNotEmpty() }
             ?: review.data.objects
+                .map { it.objectName() }
+                .distinct()
                 .map { it.replace('_', ' ').replaceFirstChar { first -> first.uppercase() } }
                 .joinToString(" · ")
                 .ifBlank { context.words(R.string.alerts_fallback_title) }

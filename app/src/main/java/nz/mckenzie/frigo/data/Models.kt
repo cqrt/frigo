@@ -789,10 +789,23 @@ data class AlertRules(
      */
     fun buzzes(camera: String, label: String, only: AlertObjects = AlertObjects()): Boolean {
         val found = cameras[camera] ?: return false
-        if (!only.lets(camera, label)) return false
-        return found.notify && found.alertsOn && label in found.labels
+        // A review reports a face Frigate has matched as `person-verified`, while the
+        // camera's alert list names the object itself, `person`. They are the same
+        // thing to watch for.
+        val seen = label.objectName()
+        if (!only.lets(camera, seen)) return false
+        return found.notify && found.alertsOn && seen in found.labels
     }
 }
+
+/**
+ * The object a reported label stands for.
+ *
+ * Frigate adds `-verified` to the object under a person or vehicle it has matched to
+ * a known face or plate, so one review can say `person-verified` where the settings
+ * say `person`. The mark is about how sure Frigate is, not about what it saw.
+ */
+fun String.objectName(): String = removeSuffix("-verified")
 
 /** One camera's three answers: tell me about it, its alerts are on, and what makes one. */
 @Serializable

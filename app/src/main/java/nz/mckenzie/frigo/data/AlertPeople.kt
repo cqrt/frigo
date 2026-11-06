@@ -25,7 +25,7 @@ data class AlertPeople(val leftOut: Set<String> = emptySet()) {
      * Whether this name may reach you. Only a name on the list is held back, so a
      * person Frigate doesn't recognise still buzzes.
      */
-    fun lets(name: String): Boolean = name.removeSuffix(Verified) !in leftOut
+    fun lets(name: String): Boolean = name.objectName() !in leftOut
 
     /** True when any of the names Frigate gave this is one to leave out. */
     fun leavesOut(names: List<String>): Boolean = names.any { !lets(it) }
@@ -41,9 +41,3 @@ data class AlertPeople(val leftOut: Set<String> = emptySet()) {
         Regex("""(?i)\b${Regex.escape(name)}\b""").containsMatchIn(sentence)
     }
 }
-
-/**
- * Frigate marks a name it has itself verified with a suffix, and the app never
- * shows the mark, so a tick matches the name either way.
- */
-private const val Verified = "-verified"

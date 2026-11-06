@@ -57,7 +57,6 @@
     <string name="alert_people_title">Personen auslassen</string>
     <string name="alert_people_everyone">Alle</string>
     <string name="alert_people_search">Anna, Max…</string>
-    <string name="alert_people_hint">Nichts angehakt bedeutet Alle. Fertig braucht mindestens eine Person.</string>
     <string name="alert_people_cant_read">Dein Server antwortet nicht, deshalb steht hier nur, wer angehakt ist.</string>
     <string name="alert_people_wait">Solange jemand auf dieser Liste steht, warten Alarme auf die Beschreibung deines Servers, sie kommen also etwa zwanzig Sekunden später.</string>
     <string name="alert_people_no_descriptions">Dein Server beschreibt seine Alarme nicht, deshalb kann diese Liste niemanden auslassen.</string>

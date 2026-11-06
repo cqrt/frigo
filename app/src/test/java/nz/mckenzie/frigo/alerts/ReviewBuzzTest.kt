@@ -121,6 +121,15 @@ class ReviewBuzzTest {
         assertTrue(ReviewBuzz().buzzes(review(objects = listOf("car", "person")), "new", ten, rules))
     }
 
+    /**
+     * Frigate marks an object it has matched to a known face as `person-verified`,
+     * and the camera's alert list still says `person`. It is the same person.
+     */
+    @Test
+    fun aVerifiedPersonCountsAsAPerson() {
+        assertTrue(ReviewBuzz().buzzes(review(objects = listOf("person-verified")), "new", ten, rules))
+    }
+
     /** An `end` message is the review finishing, not something new to tell you. */
     @Test
     fun anEndMessageDoesNotBuzz() {

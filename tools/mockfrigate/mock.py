@@ -178,9 +178,12 @@ WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 # The reviews the socket publishes, alternating between the two cameras whose
 # notifications are on. `person` on door_cam and `car` on north_cam, which is what
 # the alerts page calls an alert. Each is given a name Frigate recognised, since a
-# phone can stay quiet about a person by name and the name is what it needs.
+# phone can stay quiet about a person by name and the name is what it needs. The
+# door camera reports its person as `person-verified`, the way Frigate marks an
+# object it has matched to a known face, while the camera's alert list still says
+# `person`; the two have to mean the same thing.
 SOCKET_REVIEWS = [
-    ("door_cam", ["person"], ["driveway"], "Angie"),
+    ("door_cam", ["person-verified"], ["driveway"], "Angie"),
     ("north_cam", ["car"], ["driveway"], "Fay"),
 ]
 

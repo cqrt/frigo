@@ -2625,3 +2625,22 @@ The phone's own Only these objects page reads the same answer: it offers the ale
 labels each camera can report, so a label the server can't detect isn't there to
 tick. Anything already on the phone's list stays listed, so it can be taken off.
 
+
+## A recognised face reads as `person-verified`, and the rule said `person`
+
+Frigate labels the object under a person it has matched to a known face as
+`person-verified`, while a camera's alert list names the object itself, `person`.
+The phone compared the two as different things, so every review whose object was a
+recognised face was dropped before it could buzz. That is why alerts stopped arriving
+with Matt's name ticked or unticked: the people list was never the reason.
+
+The fix is one place: a label is read as the object it stands for, with the mark
+removed, before it is matched against the server's lists. The phone's own objects list
+gets the same reading, and so do the notification title and Review's rows, which had
+already learned to hide the mark.
+
+The people page also had a trap. Done was greyed out while nothing was ticked, on the
+reasoning that an empty list should not be written by accident. But unticking the last
+name is exactly how you stop staying quiet about someone, and Everyone was the only
+way to write it. Done now saves whatever is ticked, empty included, which is the same
+state as Everyone.

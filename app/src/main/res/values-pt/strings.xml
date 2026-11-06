@@ -56,7 +56,6 @@
     <string name="alert_people_title">Pessoas a ignorar</string>
     <string name="alert_people_everyone">Todos</string>
     <string name="alert_people_search">Ana, Luís…</string>
-    <string name="alert_people_hint">Nada marcado significa Todos. Concluir precisa de pelo menos uma pessoa.</string>
     <string name="alert_people_cant_read">O seu servidor não responde, por isso aqui só aparecem as pessoas que marcou.</string>
     <string name="alert_people_wait">Enquanto houver alguém nesta lista, os alertas esperam a descrição do seu servidor, por isso chegam cerca de vinte segundos mais tarde.</string>
     <string name="alert_people_no_descriptions">O seu servidor não descreve os seus alertas, por isso esta lista não consegue ignorar ninguém.</string>

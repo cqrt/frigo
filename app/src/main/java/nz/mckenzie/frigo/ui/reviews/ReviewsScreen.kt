@@ -54,6 +54,7 @@ import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.ReviewKind
+import nz.mckenzie.frigo.data.objectName
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.Period
@@ -384,7 +385,7 @@ private fun ReviewRow(
 @Composable
 internal fun FrigateReview.title(): String {
     val seen = (data.objects + data.subLabels)
-        .map { it.removeSuffix("-verified").replace('_', ' ') }
+        .map { it.objectName().replace('_', ' ') }
         .filter { it.isNotBlank() }
         .distinct()
     if (seen.isEmpty()) return stringResource(R.string.reviews_motion)

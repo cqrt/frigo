@@ -64,7 +64,8 @@ fun AlertPeopleScreen(
     var query by remember { mutableStateOf("") }
 
     // The write happens when you leave the page rather than on every tap: the list
-    // is written once, and unticking the last person can never mean "everyone".
+    // is written once, and unticking the last person writes everyone, which is the
+    // same thing as tapping Everyone.
     fun keep(names: Set<String>) {
         scope.launch { viewModel.save(names) }
         onBack()
@@ -96,7 +97,6 @@ fun AlertPeopleScreen(
             actions = {
                 TextButton(
                     onClick = { keep(state.chosen) },
-                    enabled = !nobodyTicked,
                 ) {
                     Text(stringResource(R.string.revset_done))
                 }
@@ -140,12 +140,6 @@ fun AlertPeopleScreen(
                         Checkbox(checked = nobodyTicked, onCheckedChange = null)
                     },
                 )
-
-                // Nothing ticked is a state Done won't write, so the card says what
-                // to do about it rather than leaving the button greyed with no reason.
-                if (nobodyTicked) {
-                    Note(stringResource(R.string.alert_people_hint))
-                }
 
                 listed.forEach { name ->
                     CardDivider()

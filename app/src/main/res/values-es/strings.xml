@@ -56,7 +56,6 @@
     <string name="alert_people_title">Personas a omitir</string>
     <string name="alert_people_everyone">Todos</string>
     <string name="alert_people_search">Ana, Luis…</string>
-    <string name="alert_people_hint">Nada marcado significa Todos. Hecho necesita al menos una persona.</string>
     <string name="alert_people_cant_read">Tu servidor no responde, así que aquí solo aparece quien has marcado.</string>
     <string name="alert_people_wait">Mientras haya alguien en esta lista, las alertas esperan la descripción de tu servidor, así que llegan unos veinte segundos más tarde.</string>
     <string name="alert_people_no_descriptions">Tu servidor no describe sus alertas, así que esta lista no puede omitir a nadie.</string>

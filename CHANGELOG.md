@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.30
+
+- Alerts for a person Frigate has recognised arrive again. Its review says `person-verified` once the face is matched, and the app was reading that as a different object from the `person` on the camera's alert list, so those alerts never buzzed at all.
+- On People to leave out, unticking the last name and pressing Done now saves. It means the same as Everyone: nobody is left out.
+
 ## 0.10.29
 
 - People to leave out waits for Frigate's description before an alert goes, because the name is in it. While the list has anyone on it, alerts arrive about twenty seconds later.

@@ -596,9 +596,11 @@ class AlertService : Service() {
 
         /**
          * How long after a review ends the description is given before the alert
-         * goes without it. Frigate writes it a few seconds after the end.
+         * goes without it. Frigate writes it a few seconds after the end, so this is
+         * slack for a slow model rather than the usual wait: the description itself
+         * ends the wait as soon as it lands.
          */
-        private const val EndGrace = 6_000L
+        private const val EndGrace = 15_000L
 
         /** Turns the service on. Safe to call when it is already running. */
         fun start(context: Context) {
