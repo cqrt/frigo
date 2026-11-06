@@ -47,8 +47,9 @@ object Alerts {
         rules: AlertRules,
         quiet: QuietTimes,
         hidden: Set<String> = emptySet(),
+        only: Set<String> = emptySet(),
     ): NotificationCompat.Builder {
-        val text = state.text(context, rules, quiet, System.currentTimeMillis(), hidden)
+        val text = state.text(context, rules, quiet, System.currentTimeMillis(), hidden, only)
         val open = PendingIntent.getActivity(
             context,
             0,
@@ -280,6 +281,10 @@ sealed interface WatchState {
      * line is about. With every one of them off, the line says so and names where
      * to turn one back on.
      *
+     * [only] is this phone's own list of objects. A camera with nothing left on
+     * that list is counted out too, and with every camera left with nothing the
+     * line says which list is to blame.
+     *
      * With [quiet] set and every camera that would buzz inside it, the sentence
      * starts with the time it comes back. Half a quiet window still buzzes, so
      * the line stays as it was rather than claiming more silence than there is.
@@ -290,6 +295,7 @@ sealed interface WatchState {
         quiet: QuietTimes? = null,
         now: Long = System.currentTimeMillis(),
         hidden: Set<String> = emptySet(),
+        only: Set<String> = emptySet(),
     ): String {
         if (this is SignedOut) return context.words(R.string.alerts_session_expired)
 
@@ -305,10 +311,21 @@ sealed interface WatchState {
         val buzzing = alerting.filterValues { it.labels.isNotEmpty() }
         if (buzzing.isEmpty()) return context.words(R.string.alerts_no_alert_objects)
 
+        // This phone's list, applied to each camera: what is left of the objects
+        // the server would tell you about.
+        val allowed = if (only.isEmpty()) {
+            buzzing
+        } else {
+            buzzing
+                .mapValues { (_, camera) -> camera.copy(labels = camera.labels.filter { it in only }) }
+                .filterValues { it.labels.isNotEmpty() }
+        }
+        if (allowed.isEmpty()) return context.words(R.string.alerts_only_objects)
+
         // The ones this phone still tells you about. Turning every one of them off
         // here is the phone's own doing, so the line says so rather than counting
         // cameras that cannot reach it.
-        val heard = buzzing.filterKeys { it !in hidden }
+        val heard = allowed.filterKeys { it !in hidden }
         if (heard.isEmpty()) return context.words(R.string.alerts_all_cameras_hidden)
 
         val count = heard.size

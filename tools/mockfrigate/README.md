@@ -14,6 +14,16 @@ Then point the app at it:
 Sign in as `test` with the password `test`. Any other password is refused, on
 purpose, so the error message can be tried too.
 
+To try the app as someone who isn't an admin, start it with a role:
+
+```
+MOCK_ROLE=viewer python tools/mockfrigate/mock.py
+```
+
+`/api/profile` then answers `viewer`. The server's own pages come off Settings,
+Review loses its tune icon, and a settings write answers the 403 a real server
+gives. Settings, Only these objects is where a phone like that narrows its alerts.
+
 It serves six cameras, one of them disabled, three events, thumbnails, snapshots,
 an endless MJPEG stream that cycles three frames, and a four second clip for two
 of the three events. The third event has no clip, so the still-only path is

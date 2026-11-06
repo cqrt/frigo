@@ -107,6 +107,7 @@ fun SettingsScreen(
     onOpenCamera: (String) -> Unit = {},
     onOpenAlerts: () -> Unit = {},
     onOpenAi: () -> Unit = {},
+    onOpenAlertObjects: () -> Unit = {},
     onOpenQuiet: () -> Unit = {},
     onOpenLanguage: () -> Unit = {},
     onOpenSystem: () -> Unit = {},
@@ -117,6 +118,7 @@ fun SettingsScreen(
     val alerts by repository.alerts.collectAsStateWithLifecycle()
     val rules by repository.alertRules.collectAsStateWithLifecycle()
     val quiet by repository.quietTimes.collectAsStateWithLifecycle()
+    val objects by repository.alertObjects.collectAsStateWithLifecycle()
     val servers by repository.servers.collectAsStateWithLifecycle()
     val liveTiles by repository.liveTiles.collectAsStateWithLifecycle(initialValue = false)
     val theme by repository.theme.collectAsStateWithLifecycle(
@@ -373,20 +375,10 @@ fun SettingsScreen(
                 CardDivider()
 
                 Item(
-                    icon = FrigoIcons.Sparkle,
-                    title = stringResource(R.string.settings_ai),
-                    supporting = stringResource(R.string.settings_ai_supporting),
-                    onClick = onOpenAi,
-                    trailing = { OpenMark() },
-                )
-
-                CardDivider()
-
-                Item(
-                    icon = FrigoIcons.Tune,
-                    title = stringResource(R.string.settings_alerts_and_detections),
-                    supporting = stringResource(R.string.settings_alerts_supporting),
-                    onClick = onOpenAlerts,
+                    icon = FrigoIcons.Tag,
+                    title = stringResource(R.string.alert_objects_title),
+                    supporting = objects.said(),
+                    onClick = onOpenAlertObjects,
                     trailing = { OpenMark() },
                 )
 
@@ -493,10 +485,33 @@ fun SettingsScreen(
                 }
             }
 
-            // Only an admin may see what the box is doing, and only an admin can
-            // restart it, so the row is not there for anyone else.
+            // Only an admin may change what the server decides, and only an admin
+            // may restart it, so these rows are not there for anyone else. What is
+            // here belongs to the server: the lists it makes an alert from, how it
+            // describes one, and how the box is doing. This phone's own switches
+            // stay under Notifications.
             if (switches?.admin == true) {
                 Group(stringResource(R.string.settings_server)) {
+                    Item(
+                        icon = FrigoIcons.Tune,
+                        title = stringResource(R.string.settings_alerts_and_detections),
+                        supporting = stringResource(R.string.settings_alerts_supporting),
+                        onClick = onOpenAlerts,
+                        trailing = { OpenMark() },
+                    )
+
+                    CardDivider()
+
+                    Item(
+                        icon = FrigoIcons.Sparkle,
+                        title = stringResource(R.string.settings_ai),
+                        supporting = stringResource(R.string.settings_ai_supporting),
+                        onClick = onOpenAi,
+                        trailing = { OpenMark() },
+                    )
+
+                    CardDivider()
+
                     Item(
                         icon = FrigoIcons.Gauge,
                         title = stringResource(R.string.settings_system),

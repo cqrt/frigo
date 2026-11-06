@@ -86,11 +86,16 @@ fun ReviewsScreen(
         TopAppBar(
             title = { Text(stringResource(R.string.reviews_title)) },
             actions = {
-                IconButton(onClick = onOpenSettings) {
-                    Icon(
-                        FrigoIcons.Tune,
-                        contentDescription = stringResource(R.string.revset_title),
-                    )
+                // The page behind this is the server's own, and only an admin can
+                // change it. Everyone else narrows alerts from the phone, under
+                // Settings, Only these objects.
+                if (state.admin == true) {
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            FrigoIcons.Tune,
+                            contentDescription = stringResource(R.string.revset_title),
+                        )
+                    }
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),

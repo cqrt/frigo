@@ -31,7 +31,8 @@ class ReviewBuzz(
      * message about a review that has moved on.
      *
      * [hidden] is the cameras turned off on this phone. One of them never buzzes,
-     * whatever the server's rules say.
+     * whatever the server's rules say. [only] is the objects this phone lets
+     * through, which can only take a buzz away.
      */
     fun buzzes(
         review: FrigateReview,
@@ -39,6 +40,7 @@ class ReviewBuzz(
         now: Long,
         rules: AlertRules,
         hidden: Set<String> = emptySet(),
+        only: Set<String> = emptySet(),
     ): Boolean {
         if (change != "new" && change != "update") return false
         if (review.severity != ALERT) return false
@@ -53,7 +55,7 @@ class ReviewBuzz(
 
         forgetOld(now)
         if (review.id in buzzed) return false
-        if (review.data.objects.none { rules.buzzes(review.camera, it) }) return false
+        if (review.data.objects.none { rules.buzzes(review.camera, it, only) }) return false
 
         buzzed[review.id] = now
         return true

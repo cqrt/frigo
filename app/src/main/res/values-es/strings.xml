@@ -37,11 +37,19 @@
     <string name="settings_ai">Descripciones con IA</string>
     <string name="settings_ai_supporting">Con inteligencia artificial, Frigo describe lo que ve en tus alertas</string>
     <string name="settings_alerts_and_detections">Alertas y detecciones</string>
-    <string name="settings_alerts_supporting">Qué cámaras y objetos avisan. Son los ajustes de tu servidor.</string>
+    <string name="settings_alerts_supporting">Las listas con las que tu servidor crea una alerta.</string>
     <string name="settings_all_cameras_off">Todas las cámaras están desactivadas en la página de notificaciones de tu servidor, así que no avisará nada.</string>
     <string name="settings_quiet_times">Horas de silencio</string>
     <string name="settings_battery_note">Frigo se ejecuta en segundo plano para que las alertas sigan llegando. Para que Android no lo cierre y ahorre batería, desactiva la optimización de batería para Frigo.</string>
     <string name="settings_battery_settings">Ajustes de batería</string>
+
+    <!-- La lista de objetos propia de este teléfono. -->
+    <string name="alert_objects_title">Solo estos objetos</string>
+    <string name="alert_objects_everything">Todo lo que envía tu servidor</string>
+    <string name="alert_objects_all">Todo</string>
+    <string name="alert_objects_cant_read">Tu servidor no responde, así que aquí solo aparece lo que has marcado.</string>
+    <string name="alert_objects_hint">Elige al menos uno, o elige Todo.</string>
+    <string name="alert_objects_phone_only">Esta lista es solo de este teléfono. Tu servidor y sus otros teléfonos no cambian.</string>
 
     <string name="settings_live_view">Vídeo en vivo</string>
     <string name="settings_live_supporting">Reproduce vídeo en la pestaña Cámaras. Gasta más batería y datos.</string>
@@ -180,6 +188,7 @@
     <string name="alerts_all_cameras_off">Todas las cámaras están desactivadas en la página de notificaciones de tu servidor, así que no avisará nada.</string>
     <string name="alerts_no_alerts_on">Ninguna cámara tiene alertas activadas, así que no avisará nada.</string>
     <string name="alerts_no_alert_objects">Ninguna cámara tiene objetos de alerta, así que no avisará nada.</string>
+    <string name="alerts_only_objects">Tu lista de objetos es la razón de que no avise nada. Cámbiala en Ajustes, Solo estos objetos.</string>
     <string name="alerts_all_cameras_hidden">Todas las cámaras que avisarían están desactivadas en este teléfono, así que no avisará nada. Vuelve a activar una en Ajustes, Cámaras.</string>
 
     <!-- Lo que dice cuando algo sí: las cámaras, los objetos y la conexión. -->

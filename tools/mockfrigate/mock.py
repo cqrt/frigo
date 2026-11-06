@@ -12,6 +12,12 @@ exactly what a client with the wrong request shape should get.
 Sign in as `test` with the password `test`. Any other password is refused, on
 purpose, so the error message can be tried too.
 
+Set MOCK_ROLE=viewer to sign in as an account that isn't an admin. The server's
+own pages then come off Settings, Review loses its tune icon, and a settings write
+answers the 403 a real server gives.
+
+    MOCK_ROLE=viewer python tools/mockfrigate/mock.py
+
     python tools/mockfrigate/mock.py
 
 Then point the app at:
@@ -45,6 +51,12 @@ FRAMES = [open(os.path.join(HERE, f"frame{i}.jpg"), "rb").read() for i in range(
 STILL = itertools.count()
 # A test pattern, so a clip that plays is obviously playing.
 CLIP = open(os.path.join(HERE, "clip.mp4"), "rb").read()
+
+# What account the mock answers as. Set MOCK_ROLE=viewer to sign in as someone who
+# isn't an admin: the app then hides the server's own pages, takes the tune icon off
+# Review, and the config write below answers the 403 a real server gives.
+ROLE = os.environ.get("MOCK_ROLE", "admin")
+
 # A long recording to cut clips from the way Frigate cuts them, and to hang the
 # day's stretches of recording off in ten second rows, as its database does. Set
 # MOCK_RECORDING to a file to have every clip cut from it, so the joins between
@@ -257,6 +269,29 @@ class Handler(BaseHTTPRequestHandler):
 
         return self.send_json({"message": "not found"}, status=404)
 
+    def do_PUT(self):
+        # A settings write. The body is the change, and the mock only needs to know
+        # whether this account is allowed to send one.
+        length = int(self.headers.get("Content-Length") or 0)
+        if length:
+            self.rfile.read(length)
+
+        path = urlparse(self.path).path
+
+        if path == "/api/config/set":
+            if not self.authorised():
+                return self.send_json({"message": "unauthorized"}, status=401)
+            # Frigate answers a 403 rather than a 401 here, so the app can tell an
+            # account that isn't an admin from a session that has aged out.
+            if ROLE != "admin":
+                return self.send_json(
+                    {"success": False, "message": "Only admins can edit config."},
+                    status=403,
+                )
+            return self.send_json({"success": True})
+
+        return self.send_json({"message": "not found"}, status=404)
+
     def do_GET(self):
         path = urlparse(self.path).path
 
@@ -273,7 +308,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json({"message": "Authentication failed"}, status=401)
             self.send_response(202)
             self.send_header("remote-user", "test")
-            self.send_header("remote-role", "admin")
+            self.send_header("remote-role", ROLE)
             self.send_header("Content-Length", "0")
             self.end_headers()
             return
@@ -291,7 +326,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(SUB_LABELS)
 
         if path == "/api/profile":
-            return self.send_json({"username": "test", "role": "admin", "allowed_cameras": list(CAMERAS)})
+            return self.send_json({"username": "test", "role": ROLE, "allowed_cameras": list(CAMERAS)})
 
         if path == "/api/stats":
             return self.send_json(stats())

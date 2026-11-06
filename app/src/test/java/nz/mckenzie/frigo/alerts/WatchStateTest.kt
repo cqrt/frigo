@@ -132,4 +132,34 @@ class WatchStateTest {
         assertFalse(text.contains("Quiet"))
         assertEquals("2 cameras for person. New events arrive as they happen.", text)
     }
+
+    /** The phone's own list leaving nothing is the phone's doing, so the line says so. */
+    @Test
+    fun aListThatLetsNothingThroughSaysSo() {
+        val text = WatchState.Connected.text(context, buzzesForPerson, only = setOf("car"))
+
+        assertEquals(
+            "Your list of objects is why nothing will buzz. " +
+                "Change it in Settings, Only these objects.",
+            text,
+        )
+    }
+
+    /** The list narrows what the line names, not only how many cameras it counts. */
+    @Test
+    fun theListNarrowsTheObjectsTheLineNames() {
+        val rules = AlertRules(
+            cameras = mapOf(
+                "drive" to CameraAlerts(
+                    notify = true,
+                    alertsOn = true,
+                    labels = listOf("person", "car"),
+                ),
+            ),
+        )
+
+        val text = WatchState.Connected.text(context, rules, only = setOf("car"))
+
+        assertEquals("One camera for car. New events arrive as they happen.", text)
+    }
 }

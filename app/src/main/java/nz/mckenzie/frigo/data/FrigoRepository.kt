@@ -118,6 +118,17 @@ class FrigoRepository(
     val quietTimes: StateFlow<QuietTimes> = _quietTimes.asStateFlow()
 
     /**
+     * The objects this phone lets buzz. Its own list rather than the server's:
+     * Frigate won't take the change from anyone but an admin, so this narrows
+     * what the server already sends, and it can only take an alert away.
+     *
+     * The alert service reads it too, so a change here is felt without the app
+     * being open.
+     */
+    private val _alertObjects = MutableStateFlow(AlertObjects())
+    val alertObjects: StateFlow<AlertObjects> = _alertObjects.asStateFlow()
+
+    /**
      * The cameras this phone leaves out, what it calls them, and their order. Its
      * own list rather than the server's: what it changes is this phone's screens
      * and its buzz, and the server and its other phones don't move.
@@ -148,6 +159,17 @@ class FrigoRepository(
     val lock: StateFlow<Boolean?> = _lock.asStateFlow()
 
     /**
+     * Whether this account is an admin, as the last settings answer said.
+     *
+     * Every settings answer carries the role, so this is kept rather than asked
+     * for again: the screens that offer the server's own pages read it. It is
+     * read off the phone's copy at launch, and null until there is an answer at
+     * all, which is a phone that has never reached its server.
+     */
+    private val _admin = MutableStateFlow<Boolean?>(null)
+    val admin: StateFlow<Boolean?> = _admin.asStateFlow()
+
+    /**
      * Whether the alert choices have been read off the phone yet. The service
      * starts by itself after a restart, before any screen has run, and it needs
      * the saved choices rather than a blank slate.
@@ -159,6 +181,9 @@ class FrigoRepository(
 
     /** The same, for the phone's quiet hours. */
     @Volatile private var quietTimesLoaded = false
+
+    /** The same, for the phone's own list of objects. */
+    @Volatile private var alertObjectsLoaded = false
 
     /** The same, for the phone's own list of cameras. */
     @Volatile private var cameraListLoaded = false
@@ -195,6 +220,18 @@ class FrigoRepository(
         val server = activeServer()
         _quietTimes.value = server?.let { prefs.readQuietTimes(it.baseUrl) } ?: QuietTimes()
         quietTimesLoaded = true
+    }
+
+    /**
+     * Reads the objects this phone lets buzz. Safe to call from anywhere, and what
+     * the service starts from after a restart, so the list still narrows the buzz
+     * with no screen open.
+     */
+    suspend fun loadAlertObjects() {
+        if (alertObjectsLoaded) return
+        val server = activeServer()
+        _alertObjects.value = server?.let { prefs.readAlertObjects(it.baseUrl) } ?: AlertObjects()
+        alertObjectsLoaded = true
     }
 
     /**
@@ -260,10 +297,13 @@ class FrigoRepository(
         _alerts.value = url?.let { prefs.readAlerts(it) } ?: ServerPrefs.Alerts()
         _alertRules.value = url?.let { prefs.readAlertRules(it) } ?: AlertRules()
         _quietTimes.value = url?.let { prefs.readQuietTimes(it) } ?: QuietTimes()
+        _alertObjects.value = url?.let { prefs.readAlertObjects(it) } ?: AlertObjects()
         _cameraList.value = url?.let { prefs.readCameraList(it) } ?: CameraList()
+        _admin.value = url?.let { prefs.readSettings(it) }?.let { it.profile.role == "admin" }
         alertsLoaded = true
         alertRulesLoaded = true
         quietTimesLoaded = true
+        alertObjectsLoaded = true
         cameraListLoaded = true
     }
 
@@ -271,6 +311,9 @@ class FrigoRepository(
     private suspend fun fetchSettings(): ServerSettings = authorized { baseUrl, token ->
         val profile = api.profile(baseUrl, token)
         val config = api.config(baseUrl, token)
+        // Kept here because every answer carries it, and the screens that offer
+        // the server's own pages would otherwise ask again to find out.
+        _admin.value = profile.role == "admin"
         ServerSettings(config = config, profile = profile, readAt = System.currentTimeMillis())
     }
 
@@ -302,6 +345,7 @@ class FrigoRepository(
         loadAlerts()
         loadAlertRules()
         loadQuietTimes()
+        loadAlertObjects()
         loadCameraList()
         // The first launch after the walkthrough arrived settles the question once
         // and writes the answer down. A phone with a server already saved is one
@@ -683,6 +727,39 @@ class FrigoRepository(
         prefs.writeQuietTimes(url, next)
         _quietTimes.value = next
         quietTimesLoaded = true
+    }
+
+    /**
+     * Keeps the objects this phone lets buzz. It is written here and nowhere
+     * else: no request goes to the server, and its own pages and other phones
+     * don't move. The service watches the same value, so a change is felt by the
+     * buzz and the notification line at once.
+     */
+    suspend fun setAlertObjects(labels: Set<String>) {
+        val url = activeServer()?.baseUrl ?: return
+        val next = AlertObjects(labels)
+        prefs.writeAlertObjects(url, next)
+        _alertObjects.value = next
+        alertObjectsLoaded = true
+    }
+
+    /**
+     * Every object any camera this account may see can make an alert from, which
+     * is what the phone's picker offers.
+     *
+     * The settings answer the phone already keeps, so the page opens with the
+     * server away. Null when neither the server nor the phone's copy says
+     * anything, which is a phone that has never read them.
+     */
+    suspend fun alertObjectNames(): List<String>? {
+        val answer = runCatching { settingsAnswer() }.getOrNull() ?: return null
+        val settings = answer.settings
+        val review = settings.config.reviewSettings()
+        return settings.config.visibleCameras(settings.profile.allowedCameras)
+            .flatMap { review.labelsFor(ReviewKind.Alerts, it.name) }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
     }
 
     /**

@@ -38,11 +38,19 @@
     <string name="settings_ai">KI-Beschreibungen</string>
     <string name="settings_ai_supporting">Mit KI beschreibt Frigo, was es in deinen Alarmen sieht</string>
     <string name="settings_alerts_and_detections">Alarme und Erkennungen</string>
-    <string name="settings_alerts_supporting">Welche Kameras und Objekte piepen. Das sind die Einstellungen deines Servers.</string>
+    <string name="settings_alerts_supporting">Die Listen, aus denen dein Server einen Alarm macht.</string>
     <string name="settings_all_cameras_off">Auf der Benachrichtigungsseite deines Servers ist jede Kamera aus, also piept nichts.</string>
     <string name="settings_quiet_times">Ruhezeiten</string>
     <string name="settings_battery_note">Frigo läuft im Hintergrund, damit die Alarme weiterkommen. Damit Android es nicht abschaltet, um Akku zu sparen, schalte die Akku-Optimierung für Frigo aus.</string>
     <string name="settings_battery_settings">Akku-Einstellungen</string>
+
+    <!-- Die eigene Objektliste dieses Telefons. -->
+    <string name="alert_objects_title">Nur diese Objekte</string>
+    <string name="alert_objects_everything">Alles, was dein Server sendet</string>
+    <string name="alert_objects_all">Alles</string>
+    <string name="alert_objects_cant_read">Dein Server antwortet nicht, deshalb steht hier nur, was du angehakt hast.</string>
+    <string name="alert_objects_hint">Wähle mindestens eins, oder wähle Alles.</string>
+    <string name="alert_objects_phone_only">Diese Liste gehört nur zu diesem Telefon. Dein Server und seine anderen Telefone bleiben unverändert.</string>
 
     <string name="settings_live_view">Livebild</string>
     <string name="settings_live_supporting">Spielt Video im Tab Kameras. Das kostet mehr Akku und Daten.</string>
@@ -181,6 +189,7 @@
     <string name="alerts_all_cameras_off">Auf der Benachrichtigungsseite deines Servers ist jede Kamera aus, also piept nichts.</string>
     <string name="alerts_no_alerts_on">Keine Kamera hat Alarme an, also piept nichts.</string>
     <string name="alerts_no_alert_objects">Keine Kamera hat Alarm-Objekte, also piept nichts.</string>
+    <string name="alerts_only_objects">Deine Objektliste ist der Grund, warum nichts piept. Ändere sie in Einstellungen, Nur diese Objekte.</string>
     <string name="alerts_all_cameras_hidden">Alle Kameras, die melden würden, sind auf diesem Telefon ausgeschaltet, also piept nichts. Schalte eine unter Einstellungen, Kameras wieder ein.</string>
 
     <!-- Was sie sagt, wenn etwas piept: die Kameras, die Objekte und die Verbindung. -->

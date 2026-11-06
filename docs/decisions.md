@@ -2446,3 +2446,49 @@ camera you have to hide twice.
 
 Rejected: Frigate's `ui.dashboard` and `ui.review`. They need an admin, they change
 every phone, and they stop at the web page.
+
+## Only these objects: a list the phone keeps because the server won't hear it
+
+What makes an alert is Frigate's: a camera's notifications switch, its alerts switch,
+and the objects on its alerts page. A phone signed in as anyone but an admin cannot
+change any of it. `/api/config/set` answers 403 rather than 401 for a role that isn't
+allowed, which the app already tells apart as `NotAnAdminException`, so the save is
+refused rather than lost silently.
+
+That left the app telling a non-admin to go and change something they had no way to
+change. Frigate has no per-user notification filter either: its own push sends every
+alert for the cameras the account may see. So the phone keeps a short list of its own
+and uses it to narrow what the server already sends. It never writes to the server, and
+it can only take an alert away. The server's own pages and its other phones are
+untouched, which is the same rule the quiet hours and the hidden cameras follow.
+
+**Empty means everything.** A phone with no list behaves exactly as it did before, so
+nothing changes for anyone who never opens the page. Tapping the last object off would
+otherwise mean the whole lot, which is why the picker keeps a draft and Done needs at
+least one tick. Everything is the row that means the lot, and it clears the list and
+closes, so the empty list is only ever reached on purpose.
+
+The picker offers the union of the alert objects of every camera this account may see,
+built from the copy of the server's settings the phone already keeps. That means it
+opens with the server away, and it lists anything ticked even when the server no longer
+alerts on it, so a renamed label can be taken off rather than sitting there unseen.
+With no answer at all, and no copy, it lists only what is ticked and says the server
+can't be read. Unlike the server's own pages, it stays editable: nothing here is going
+to the server.
+
+The watching line had to learn the same list. It counts only cameras with an object
+left after it, and names what is left. With the list leaving nothing, it says the list
+is why nothing will buzz, after the server's own empty states and before the hidden
+cameras, because the first thing that is true is the one worth fixing first.
+
+**The page is the server's, so the icon is an admin's.** The tune icon on Review was a
+way into a page a non-admin could only look at and be told off by. It is drawn only when
+the settings answer says the account is an admin, and the page's own red line stays as a
+guard. The role is kept by the repository in a flow: every settings answer already
+carries it, and the copy on the phone has one, so this costs no extra call.
+
+The two rows that belong to the server moved with it. Alerts and detections and AI
+descriptions now sit in the Server card with System, and that card is shown only to an
+admin. The Notifications card keeps what belongs to this phone: Enable, Only these
+objects, Quiet times, and the battery note.
+

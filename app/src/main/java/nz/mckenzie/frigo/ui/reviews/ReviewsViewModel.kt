@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.data.AppContainer
@@ -45,6 +46,12 @@ data class ReviewsUiState(
     val marking: Boolean = false,
     /** The reviews "Mark these as read" just cleared, so they can go back. */
     val justRead: List<String> = emptyList(),
+    /**
+     * Whether this account is an admin, from the last settings answer the phone
+     * read. Null until it has one, and the tune icon waits for it: the page behind
+     * it is the server's own, and it can't be changed by anyone else.
+     */
+    val admin: Boolean? = null,
 ) {
     /** The labels this tab offers, for all cameras or the one picked. */
     val labelsOn: List<String>
@@ -76,6 +83,11 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
             refresh()
         }
         loadChoices()
+        // The role every settings answer carries, kept by the repository. No extra
+        // call: the icon appears or doesn't as the answer arrives.
+        viewModelScope.launch {
+            repository.admin.collect { admin -> _state.update { it.copy(admin = admin) } }
+        }
     }
 
     fun show(kind: ReviewKind) {

@@ -114,6 +114,7 @@ class ServerPrefs(private val context: Context) {
             prefs.remove(alertsOnKey(baseUrl))
             prefs.remove(alertRulesKey(baseUrl))
             prefs.remove(quietTimesKey(baseUrl))
+            prefs.remove(alertObjectsKey(baseUrl))
             prefs.remove(cameraListKey(baseUrl))
             prefs.remove(cameraLayoutKey(baseUrl))
             prefs.remove(settingsKey(baseUrl))
@@ -177,6 +178,22 @@ class ServerPrefs(private val context: Context) {
     suspend fun writeQuietTimes(baseUrl: String, quiet: QuietTimes) {
         val stored = BlockJson.encodeToString(QuietTimes.serializer(), quiet)
         context.dataStore.edit { prefs -> prefs[quietTimesKey(baseUrl)] = stored }
+    }
+
+    /**
+     * The objects this phone lets buzz, or null when it has no list of its own.
+     * One block for the same reason the rules are: a field added later can't
+     * break the read.
+     */
+    suspend fun readAlertObjects(baseUrl: String): AlertObjects? {
+        val stored = context.dataStore.data.first()[alertObjectsKey(baseUrl)] ?: return null
+        return runCatching { BlockJson.decodeFromString(AlertObjects.serializer(), stored) }
+            .getOrNull()
+    }
+
+    suspend fun writeAlertObjects(baseUrl: String, objects: AlertObjects) {
+        val stored = BlockJson.encodeToString(AlertObjects.serializer(), objects)
+        context.dataStore.edit { prefs -> prefs[alertObjectsKey(baseUrl)] = stored }
     }
 
     /**
@@ -315,6 +332,7 @@ class ServerPrefs(private val context: Context) {
 
     private fun alertRulesKey(baseUrl: String) = stringPreferencesKey("alert_rules:$baseUrl")
     private fun quietTimesKey(baseUrl: String) = stringPreferencesKey("quiet_times:$baseUrl")
+    private fun alertObjectsKey(baseUrl: String) = stringPreferencesKey("alert_objects:$baseUrl")
     private fun cameraListKey(baseUrl: String) = stringPreferencesKey("camera_list:$baseUrl")
     private fun cameraLayoutKey(baseUrl: String) = intPreferencesKey("camera_layout:$baseUrl")
     private fun settingsKey(baseUrl: String) = stringPreferencesKey("settings:$baseUrl")

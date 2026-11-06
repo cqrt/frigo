@@ -37,11 +37,19 @@
     <string name="settings_ai">AI descriptions</string>
     <string name="settings_ai_supporting">Using Artificial Intelligence, Frigo will describe what it sees in your alerts</string>
     <string name="settings_alerts_and_detections">Alerts and detections</string>
-    <string name="settings_alerts_supporting">Which cameras and objects buzz. These are your server\'s settings.</string>
+    <string name="settings_alerts_supporting">The lists your server makes an alert from.</string>
     <string name="settings_all_cameras_off">Every camera is off on your server\'s notifications page, so nothing will buzz.</string>
     <string name="settings_quiet_times">Quiet times</string>
     <string name="settings_battery_note">Frigo runs in the background to keep the alerts coming. So that Android doesn\'t shut it down to save battery, turn off battery optimization for Frigo.</string>
     <string name="settings_battery_settings">Battery settings</string>
+
+    <!-- This phone's own list of the objects that may buzz it. -->
+    <string name="alert_objects_title">Only these objects</string>
+    <string name="alert_objects_everything">Everything your server sends</string>
+    <string name="alert_objects_all">Everything</string>
+    <string name="alert_objects_cant_read">Your server isn\'t answering, so this lists only what you\'ve ticked.</string>
+    <string name="alert_objects_hint">Pick at least one, or pick Everything.</string>
+    <string name="alert_objects_phone_only">This list is this phone\'s own. Your server and its other phones are unchanged.</string>
 
     <string name="settings_live_view">Live view</string>
     <string name="settings_live_supporting">Plays video on the Cameras tab. It uses more battery and data.</string>
@@ -180,6 +188,7 @@
     <string name="alerts_all_cameras_off">Every camera is off on your server\'s notifications page, so nothing will buzz.</string>
     <string name="alerts_no_alerts_on">No camera has alerts on, so nothing will buzz.</string>
     <string name="alerts_no_alert_objects">No camera has any alert objects, so nothing will buzz.</string>
+    <string name="alerts_only_objects">Your list of objects is why nothing will buzz. Change it in Settings, Only these objects.</string>
     <string name="alerts_all_cameras_hidden">Every camera that would buzz is turned off on this phone, so nothing will buzz. Turn one back on in Settings, Cameras.</string>
 
     <!-- What it says when something will: the cameras, the objects, and the connection. -->

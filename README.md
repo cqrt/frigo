@@ -66,8 +66,9 @@ Watch past halfway and the review counts as watched, here and on the web page, s
 it leaves the list. Show reviewed brings the watched ones back. When you've seen
 enough of a day, Mark all as reviewed clears the rest without playing any of it,
 and Put them back undoes that. Pull the list down for what has happened since. The
-tune icon in the corner opens Alerts and detections, where you choose the objects
-behind each.
+tune icon in the corner opens Alerts and detections, which is the server's page
+and only an admin can change it. On any other account, Settings, Only these
+objects is where you narrow what buzzes this phone.
 
 **Explore.** What Frigate has recorded, newest first, with thumbnails, the way
 the Explore page on the server has it. Narrow it by camera, by what was seen, by
@@ -92,13 +93,14 @@ one you're on ticked. Tap another and the app switches to it, with its own
 sign-in, its own alerts switch and its own camera layout. **Add a server** signs
 in to one more, which becomes the one you're on. **Sign out** forgets the server
 you're on, and the next one takes over. Under those sit two switches: one for
-notifications, and one that plays the home page tiles live. Quiet times sits under
-notifications: the hours this phone keeps quiet, and the cameras it keeps quiet.
-Under Alerts and
-detections you reach the server's own pages for what makes an alert and what
-makes a detection. Under **Cameras** is every camera your server has, in the order
+notifications, and one that plays the home page tiles live. Under notifications
+sit **Only these objects**, the list this phone narrows its alerts by, then
+**Quiet times**, the hours it keeps quiet and the cameras it keeps quiet.
+Under **Cameras** is every camera your server has, in the order
 this phone shows them. A switch there turns one off on this phone. Hold a row and
-drag it to move it, and tap one for its own page, where its name here is set.
+drag it to move it, and tap one for its own page, where its name here is set. A
+**Server** card, shown to an admin, holds the server's own pages: Alerts and
+detections, AI descriptions, and System, which is how the box is doing.
 There's a link to the phone's battery settings, because that's
 where you stop Android shutting Frigo down. Under Privacy, **Lock Frigo** asks
 for your fingerprint, or your phone's PIN, before the app opens. It asks each
@@ -182,7 +184,7 @@ show that copy. A line at the top says when it was read, and nothing on the page
 can be changed until the server is back.
 
 The settings that belong to the phone work either way: the colours, the live
-tiles, the walkthrough and the list of servers.
+tiles, the list of objects, the walkthrough and the list of servers.
 
 The rest of the app needs the server. Cameras, Review, Explore and Clips say it
 isn't answering.
@@ -245,6 +247,12 @@ lists on the alerts page. Turn either off and the phone stays quiet.
 The switch at the top of the notifications page turns the cameras on in a batch.
 You can leave it off and turn cameras on one at a time, and those cameras still
 buzz this phone.
+
+This phone can narrow that further. **Only these objects**, under Notifications
+in Settings, keeps a list of its own, and an alert about an object that isn't on
+it stays quiet. The list only ever takes alerts away: nothing on your server
+changes, and its other phones hear what they always heard. An alert for the
+objects you've ticked still depends on the server's own two answers above.
 
 Frigate's own web page shows the same values, so a change made in a browser is
 picked up the next time the app opens or reconnects.
@@ -365,14 +373,16 @@ its own is offered its own.
 
 ## Alerts and detections
 
-The tune icon on Review opens a page for the two lists. Alerts has a switch and the
-objects that make one. Detections has the same, and nothing picked there means
-every other object. Tap Objects to pick them, with a search box and the labels your
-cameras track marked.
+An admin finds this page behind the tune icon on Review, and under Server in
+Settings. Alerts has a switch and the objects that make one. Detections has the
+same, and nothing picked there means every other object. Tap Objects to pick
+them, with a search box and the labels your cameras track marked.
 
-These two lists are also what decides what buzzes your phone, so the page is where
-you go to change it. The notifications page, which says which cameras may tell you
-anything at all, is on your server's own web page.
+These two lists decide what your server calls an alert. An admin changes them,
+and anyone signed in can look. Frigate turns anyone else's change down, so a phone
+on another account narrows alerts with a list of its own instead: Only these
+objects, under Notifications in Settings. The notifications page, which says which
+cameras may tell you anything at all, is on your server's own web page.
 
 The labels are Frigate's own: bark, car, cat, fire alarm, glass, person, scream,
 smash, smoke detector, speech and yell, plus anything already in use on your

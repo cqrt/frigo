@@ -735,6 +735,10 @@ fun ReviewSettings.labelsFor(kind: ReviewKind, camera: String?): List<String> {
  * The phone holds a copy rather than an opinion, so a phone that restarts with no
  * network still knows what to watch.
  *
+ * The one thing the phone adds is a list of its own objects, which can only take
+ * an alert away. Frigate turns a non-admin's change to these rules down, so that
+ * list is where this phone narrows what the server sends.
+ *
  * The switch at the top of the server's notifications page is not one of these.
  * It turns the cameras on in a batch, and you can leave it off and turn them on
  * one at a time, so each camera's own answer is the one that counts.
@@ -743,9 +747,15 @@ fun ReviewSettings.labelsFor(kind: ReviewKind, camera: String?): List<String> {
 data class AlertRules(
     val cameras: Map<String, CameraAlerts> = emptyMap(),
 ) {
-    /** True when the server says this camera seeing this object is worth a buzz. */
-    fun buzzes(camera: String, label: String): Boolean {
+    /**
+     * True when the server says this camera seeing this object is worth a buzz.
+     *
+     * [only] is the phone's own list of objects. Empty means every object the
+     * server sends, and otherwise it can only take one away.
+     */
+    fun buzzes(camera: String, label: String, only: Set<String> = emptySet()): Boolean {
         val found = cameras[camera] ?: return false
+        if (only.isNotEmpty() && label !in only) return false
         return found.notify && found.alertsOn && label in found.labels
     }
 }

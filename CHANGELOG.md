@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.21
+
+- Settings has Only these objects: a list of your own that narrows what buzzes this phone. An alert about anything that isn't on it stays quiet.
+- The list is this phone's own, so it works when you aren't an admin. Your server and its other phones don't change.
+- Alerts and detections and AI descriptions moved under the Server card in Settings, which an admin sees. Review's tune icon is an admin's too.
+
 ## 0.10.19
 
 - A camera can be turned off on this phone alone. It leaves the Cameras tab, the strip under a picture and the chips on Review and Explore, and it stops buzzing. Your server and its other phones don't change.

@@ -122,4 +122,15 @@ class ReviewBuzzTest {
     fun aReviewWithNoIdDoesNotBuzz() {
         assertFalse(ReviewBuzz().buzzes(review(id = ""), "new", ten, rules))
     }
+
+    /** A list of this phone's own can silence an alert the server would send. */
+    @Test
+    fun anAlertWhoseObjectIsNotOnThisPhonesListDoesNotBuzz() {
+        assertFalse(
+            ReviewBuzz().buzzes(review(id = "1"), "new", ten, rules, only = setOf("car")),
+        )
+        assertTrue(
+            ReviewBuzz().buzzes(review(id = "2"), "new", ten, rules, only = setOf("person")),
+        )
+    }
 }

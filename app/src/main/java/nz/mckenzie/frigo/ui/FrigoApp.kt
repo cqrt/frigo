@@ -58,6 +58,7 @@ import nz.mckenzie.frigo.ui.reviews.ReviewSettingsScreen
 import nz.mckenzie.frigo.ui.reviews.ReviewsScreen
 import nz.mckenzie.frigo.ui.settings.AiDescriptionsScreen
 import nz.mckenzie.frigo.ui.settings.AiModelScreen
+import nz.mckenzie.frigo.ui.settings.AlertObjectsScreen
 import nz.mckenzie.frigo.ui.settings.CameraSwitchesScreen
 import nz.mckenzie.frigo.ui.settings.LanguageScreen
 import nz.mckenzie.frigo.ui.settings.QuietTimesScreen
@@ -266,6 +267,9 @@ private fun MainScaffold(
                     onOpenAi = {
                         navController.navigate("ai-descriptions") { launchSingleTop = true }
                     },
+                    onOpenAlertObjects = {
+                        navController.navigate("alert-objects") { launchSingleTop = true }
+                    },
                     onOpenQuiet = {
                         navController.navigate("quiet-times") { launchSingleTop = true }
                     },
@@ -289,6 +293,13 @@ private fun MainScaffold(
             }
             composable("quiet-times") {
                 QuietTimesScreen(
+                    repository = container.repository,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable("alert-objects") {
+                AlertObjectsScreen(
                     repository = container.repository,
                     modifier = Modifier.padding(padding),
                     onBack = { navController.popBackStack() },

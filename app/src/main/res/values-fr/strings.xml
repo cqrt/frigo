@@ -37,11 +37,19 @@
     <string name="settings_ai">Descriptions IA</string>
     <string name="settings_ai_supporting">Avec l\'intelligence artificielle, Frigo décrit ce qu\'il voit dans vos alertes</string>
     <string name="settings_alerts_and_detections">Alertes et détections</string>
-    <string name="settings_alerts_supporting">Quelles caméras et quels objets sonnent. Ce sont les réglages de votre serveur.</string>
+    <string name="settings_alerts_supporting">Les listes à partir desquelles votre serveur crée une alerte.</string>
     <string name="settings_all_cameras_off">Toutes les caméras sont désactivées sur la page notifications de votre serveur, donc rien ne sonnera.</string>
     <string name="settings_quiet_times">Heures calmes</string>
     <string name="settings_battery_note">Frigo tourne en arrière-plan pour que les alertes continuent d\'arriver. Pour qu\'Android ne l\'arrête pas afin d\'économiser la batterie, désactivez l\'optimisation de la batterie pour Frigo.</string>
     <string name="settings_battery_settings">Réglages de la batterie</string>
+
+    <!-- La liste d\'objets propre à ce téléphone. -->
+    <string name="alert_objects_title">Seulement ces objets</string>
+    <string name="alert_objects_everything">Tout ce que votre serveur envoie</string>
+    <string name="alert_objects_all">Tout</string>
+    <string name="alert_objects_cant_read">Votre serveur ne répond pas, donc cette liste ne montre que ce que vous avez coché.</string>
+    <string name="alert_objects_hint">Choisissez-en au moins un, ou choisissez Tout.</string>
+    <string name="alert_objects_phone_only">Cette liste n\'appartient qu\'à ce téléphone. Votre serveur et ses autres téléphones ne changent pas.</string>
 
     <string name="settings_live_view">Vue en direct</string>
     <string name="settings_live_supporting">Lit la vidéo dans l\'onglet Caméras. Ça consomme plus de batterie et de données.</string>
@@ -180,6 +188,7 @@
     <string name="alerts_all_cameras_off">Toutes les caméras sont désactivées sur la page notifications de votre serveur, donc rien ne sonnera.</string>
     <string name="alerts_no_alerts_on">Aucune caméra n\'a les alertes activées, donc rien ne sonnera.</string>
     <string name="alerts_no_alert_objects">Aucune caméra n\'a d\'objets d\'alerte, donc rien ne sonnera.</string>
+    <string name="alerts_only_objects">C\'est votre liste d\'objets qui empêche tout signal. Modifiez-la dans Réglages, Seulement ces objets.</string>
     <string name="alerts_all_cameras_hidden">Toutes les caméras qui sonneraient sont désactivées sur ce téléphone, donc rien ne sonnera. Réactivez-en une dans Réglages, Caméras.</string>
 
     <!-- Ce qu'elle dit quand quelque chose sonnera : les caméras, les objets, et la connexion. -->
