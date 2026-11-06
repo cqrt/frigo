@@ -112,6 +112,7 @@ CONFIG = {
     "review": {
         "alerts": {"enabled": True, "labels": ALERT_LABELS},
         "detections": {"enabled": True},
+        "genai": {"enabled": True, "alerts": True},
     },
     "objects": {"track": ["person", "car", "dog", "cat"]},
     "audio": {"enabled": True, "listen": ["bark", "speech"]},
@@ -567,20 +568,43 @@ class Handler(BaseHTTPRequestHandler):
         object has to step into the driveway before the server calls it an alert.
         The app has a window for exactly that, so the second message is what tries
         it.
+
+        Every review then ends, and Frigate writes a description shortly after,
+        which is where a recognised person's name is. A phone that holds an alert
+        so it can leave somebody out is waiting for that.
         """
         Handler.reviews_sent += 1
         number = Handler.reviews_sent
         if number % 2:
-            self.send_frame(json.dumps(review_message("new", review_body(number, "alert"))).encode())
-            return
+            body = review_body(number, "alert")
+            self.send_frame(json.dumps(review_message("new", body)).encode())
+        else:
+            # The name arrives with the turn into an alert and not before, which is
+            # the case a phone that waits for it is built for.
+            started = review_body(number, "detection", named=False)
+            self.send_frame(json.dumps(review_message("new", started)).encode())
+            body = review_body(number, "alert")
+            body["start_time"] = started["start_time"]
+            body["id"] = started["id"]
+            pending.append((time.time() + 3, review_message("update", body)))
 
-        # The name arrives with the turn into an alert and not before, which is the
-        # case a phone that waits for it is built for.
-        started = review_body(number, "detection", named=False)
-        self.send_frame(json.dumps(review_message("new", started)).encode())
-        turned = review_body(number, "alert")
-        turned["start_time"] = started["start_time"]
-        pending.append((time.time() + 3, review_message("update", turned)))
+        ended = {**body, "end_time": body["start_time"] + 8}
+        pending.append((time.time() + 8, review_message("end", ended)))
+
+        name = SOCKET_REVIEWS[number % len(SOCKET_REVIEWS)][3]
+        described = {
+            **body,
+            "end_time": body["start_time"] + 8,
+            "data": {
+                **body["data"],
+                "metadata": {
+                    "title": f"{name} walking",
+                    "shortSummary": f"{name} is walking up the driveway.",
+                    "potential_threat_level": 0,
+                },
+            },
+        }
+        pending.append((time.time() + 10, review_message("genai", described)))
 
     def send_frame(self, payload):
         length = len(payload)

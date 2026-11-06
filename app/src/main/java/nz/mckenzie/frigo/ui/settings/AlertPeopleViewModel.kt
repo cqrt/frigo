@@ -21,6 +21,11 @@ data class AlertPeopleUiState(
      * already ticked are listed.
      */
     val noAnswer: Boolean = false,
+    /**
+     * Whether the server describes its alerts, which is what the phone waits for
+     * when one of these people is out and about. Null until it has been asked.
+     */
+    val describes: Boolean? = null,
 )
 
 /**
@@ -41,10 +46,12 @@ class AlertPeopleViewModel(private val repository: FrigoRepository) : ViewModel(
     init {
         viewModelScope.launch {
             val names = runCatching { repository.knownPeople() }.getOrNull()
+            val describes = runCatching { repository.describesAlerts() }.getOrDefault(true)
             _state.update { current ->
                 current.copy(
                     loading = false,
                     noAnswer = names == null,
+                    describes = describes,
                     // A name Frigate no longer recognises stays listed, so the one
                     // left out can be put back.
                     offered = ((names ?: emptyList()) + current.chosen).distinct().sorted(),

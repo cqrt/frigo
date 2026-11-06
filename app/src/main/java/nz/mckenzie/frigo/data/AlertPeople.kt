@@ -29,6 +29,17 @@ data class AlertPeople(val leftOut: Set<String> = emptySet()) {
 
     /** True when any of the names Frigate gave this is one to leave out. */
     fun leavesOut(names: List<String>): Boolean = names.any { !lets(it) }
+
+    /**
+     * True when a sentence says one of these names, which is where Frigate puts a
+     * person it recognised: its description reads "Matt walking up the path".
+     *
+     * Whole words only, and not case sensitive, so a name is not found inside a
+     * longer word and the sentence does not have to start with it.
+     */
+    fun mentions(sentence: String): Boolean = leftOut.any { name ->
+        Regex("""(?i)\b${Regex.escape(name)}\b""").containsMatchIn(sentence)
+    }
 }
 
 /**

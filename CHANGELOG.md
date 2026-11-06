@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.29
+
+- People to leave out waits for Frigate's description before an alert goes, because the name is in it. While the list has anyone on it, alerts arrive about twenty seconds later.
+- A review that never gets a description is decided after a minute, so no alert is lost. With nobody on the list, alerts are instant as before.
+- A server that doesn't describe its alerts can't use the list, and the page says so.
+
 ## 0.10.28
 
 - Only these objects sets one camera at a time: a camera opens with every object it alerts on ticked, and you untick what you don't want. The All cameras scope and the Everything row are gone.

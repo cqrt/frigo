@@ -181,6 +181,13 @@ data class FrigateReview(
     val detections: List<String> get() = data.detections
 }
 
+/**
+ * The sentence Frigate wrote about this review, or an empty string when it hasn't
+ * written one. The name of a person it recognised is usually in here.
+ */
+fun FrigateReview.said(): String =
+    data.metadata?.let { "${it.title} ${it.shortSummary}".trim() }.orEmpty()
+
 @Serializable
 data class ReviewData(
     val objects: List<String> = emptyList(),

@@ -122,6 +122,14 @@ fun AlertPeopleScreen(
                     Note(stringResource(R.string.alert_people_cant_read))
                 }
 
+                // What ticking anyone here costs: the alert waits for the sentence
+                // Frigate writes, which is where a recognised name turns up. A server
+                // that writes none has no name for the phone to go on.
+                when (state.describes) {
+                    false -> Note(stringResource(R.string.alert_people_no_descriptions))
+                    else -> Note(stringResource(R.string.alert_people_wait))
+                }
+
                 // Everyone is the list with nobody on it, which is how the app
                 // behaves without one. It clears the list rather than adding to it.
                 Item(

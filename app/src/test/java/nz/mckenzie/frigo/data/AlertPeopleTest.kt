@@ -49,6 +49,25 @@ class AlertPeopleTest {
         assertTrue(people.leavesOut(listOf("Angie", "Matt")))
     }
 
+    /** Frigate's sentence says the name, and that is enough on its own. */
+    @Test
+    fun aSentenceThatSaysTheNameCounts() {
+        val people = AlertPeople(setOf("Matt"))
+
+        assertTrue(people.mentions("Matt walking up the driveway."))
+        assertTrue(people.mentions("A man is at the door. matt waves."))
+    }
+
+    /** A name inside a longer word is not the person, and another name is not them. */
+    @Test
+    fun aNameIsMatchedAsAWholeWord() {
+        val people = AlertPeople(setOf("Matt"))
+
+        assertFalse(people.mentions("A matte black car is parked."))
+        assertFalse(people.mentions("Matthew is walking up the driveway."))
+        assertFalse(people.mentions(""))
+    }
+
     /** It is kept on the phone as one block, so it outlives a restart. */
     @Test
     fun theListSurvivesThePhone() {

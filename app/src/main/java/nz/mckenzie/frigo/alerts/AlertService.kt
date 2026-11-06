@@ -13,6 +13,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -80,6 +82,12 @@ class AlertService : Service() {
      */
     private val held = mutableMapOf<String, FrigateReview>()
     private val holding = mutableMapOf<String, Job>()
+
+    /**
+     * The held reviews a description is awaited for, by review id. Completing one
+     * lets its alert decide and go, or stay quiet.
+     */
+    private val waiting = mutableMapOf<String, CompletableDeferred<Unit>>()
 
     /**
      * The quick description being written for each buzz, by notification id. The
@@ -300,16 +308,24 @@ class AlertService : Service() {
      * One review, when the buzz is per happening the server calls an alert. The
      * rule itself lives in [ReviewBuzz], so it can be tried without a phone.
      *
-     * Frigate puts a recognised person's name on a review a second or two after it
-     * starts, and this phone may be staying quiet about that person. So when its
-     * list has anyone on it, the review is held until a name has had its moment and
-     * the copy that decides is the latest one the server sent.
+     * Frigate puts a recognised person's name in the sentence it writes about a
+     * review, and writes that when the review ends. So when this phone's list has
+     * anyone on it, the review is held until the description arrives (or the review
+     * ends and a little grace has passed), and the copy that decides is the latest
+     * the server sent.
      */
     private fun onReview(message: JsonObject) {
         val after = (message["after"] as? JsonObject) ?: return
         val review = runCatching {
             json.decodeFromString(FrigateReview.serializer(), after.toString())
         }.getOrNull() ?: return
+
+        // The end is what the description follows, so a hold waits a little longer
+        // for it rather than giving up the moment the review closes.
+        if (message.text("type") == "end") {
+            endSoon(review.id)
+            return
+        }
 
         val rules = container.repository.alertRules.value
         val now = System.currentTimeMillis()
@@ -322,12 +338,7 @@ class AlertService : Service() {
 
         // With nobody left out there is nothing to wait for, and every alert arrives
         // as it always did.
-        val wait = if (leftOut.everyone) {
-            0L
-        } else {
-            (review.startedAtMillis + NamesHold - now).coerceIn(0L, NamesHold)
-        }
-        if (wait == 0L) {
+        if (leftOut.everyone) {
             buzz(review, rules, hidden, only, leftOut)
             return
         }
@@ -335,19 +346,39 @@ class AlertService : Service() {
         held[review.id] = review
         if (review.id in holding) return
 
-        // Started once the hold is in the map, so a message that arrives in the same
+        val done = CompletableDeferred<Unit>()
+        waiting[review.id] = done
+
+        // Started once the hold is in the maps, so a message that arrives in the same
         // breath never starts a second hold for one review.
         val job = scope.launch(start = CoroutineStart.LAZY) {
             try {
-                delay(wait)
+                // A server with no descriptions has none to wait for, and its alerts
+                // arrive as they always did.
+                if (container.repository.describesAlerts()) {
+                    withTimeoutOrNull(DescriptionWait) { done.await() }
+                }
                 val latest = held.remove(review.id) ?: return@launch
                 buzz(latest, rules, hidden, only, leftOut)
             } finally {
+                waiting.remove(review.id)
                 holding.remove(review.id)
             }
         }
         holding[review.id] = job
         job.start()
+    }
+
+    /**
+     * Lets a held review wait a little longer for its description, which Frigate
+     * writes shortly after the review ends.
+     */
+    private fun endSoon(id: String) {
+        val done = waiting[id] ?: return
+        scope.launch {
+            delay(EndGrace)
+            done.complete(Unit)
+        }
     }
 
     /**
@@ -378,14 +409,21 @@ class AlertService : Service() {
             val picture = container.repository.reviewThumbnail(review)
             val buzz = Alerts.review(context = this@AlertService, review = review, picture = picture)
             ledger.noteReview(review.id, buzz.id, System.currentTimeMillis())
-            describeSoon(buzz, picture, review.data.subLabels, review.detections.firstOrNull())
+            // It already carries what Frigate wrote when the review has a sentence;
+            // one that doesn't gets the quick one while the picture is still fresh.
+            if (review.data.metadata == null) {
+                describeSoon(buzz, picture, review.data.subLabels, review.detections.firstOrNull())
+            }
         }
     }
 
     /**
-     * The server has looked at a review's clip and written what it saw. The buzz
-     * for it has already gone out, so this fills that notification in rather than
-     * posting another one.
+     * The server has looked at a review's clip and written what it saw.
+     *
+     * A review still waiting for its description takes this as the word it was
+     * waiting for: the updated copy, name and all, is what its alert decides on. One
+     * whose buzz has already gone out fills that notification in rather than posting
+     * another.
      */
     private fun onDescription(message: JsonObject) {
         val after = (message["after"] as? JsonObject) ?: return
@@ -394,7 +432,16 @@ class AlertService : Service() {
         }.getOrNull() ?: return
         if (review.data.metadata == null) return
 
-        val notification = ledger.take(review, System.currentTimeMillis()) ?: return
+        // A held alert decides with the latest copy, so the sentence is kept with it.
+        if (review.id in held) held[review.id] = review
+
+        val notification = ledger.take(review, System.currentTimeMillis())
+
+        // Whether the buzz is still to come or has already gone, the description has
+        // landed and the wait is over.
+        waiting[review.id]?.complete(Unit)
+
+        if (notification == null) return
 
         // The server has now said what it saw, in more words than the quick answer
         // had. The quick one has nothing left to add.
@@ -540,12 +587,18 @@ class AlertService : Service() {
         private const val RECONNECT_LONGEST = 60_000L
 
         /**
-         * How long after a review starts the phone waits for Frigate to name what it
-         * saw, and only when its people list has someone on it. The name lands a
-         * second or two in; four is enough for it, and short enough that nobody
-         * waiting on an alert minds.
+         * How long an alert waits for Frigate's description when this phone stays
+         * quiet about somebody. The description is written when the review ends, so
+         * this is a ceiling on a review that never does; it is long enough for a
+         * person walking past, short enough that an alert is not lost.
          */
-        private const val NamesHold = 4_000L
+        private const val DescriptionWait = 60_000L
+
+        /**
+         * How long after a review ends the description is given before the alert
+         * goes without it. Frigate writes it a few seconds after the end.
+         */
+        private const val EndGrace = 6_000L
 
         /** Turns the service on. Safe to call when it is already running. */
         fun start(context: Context) {

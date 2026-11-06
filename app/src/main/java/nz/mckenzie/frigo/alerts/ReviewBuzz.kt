@@ -4,6 +4,7 @@ import nz.mckenzie.frigo.data.AlertObjects
 import nz.mckenzie.frigo.data.AlertPeople
 import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.FrigateReview
+import nz.mckenzie.frigo.data.said
 
 /**
  * Whether one review message deserves a buzz, and which reviews have already had
@@ -76,9 +77,10 @@ class ReviewBuzz(
 
         forgetOld(now)
         if (review.id in buzzed) return false
-        // Frigate names a recognised person on the review. One of those names on
-        // this phone's list is the whole reason the list exists.
+        // Frigate names a recognised person on the review, and again in the sentence
+        // it writes about it. Either is enough to leave the alert out.
         if (leftOut.leavesOut(review.data.subLabels)) return false
+        if (leftOut.mentions(review.said())) return false
         if (review.data.objects.none { rules.buzzes(review.camera, it, only) }) return false
 
         return true

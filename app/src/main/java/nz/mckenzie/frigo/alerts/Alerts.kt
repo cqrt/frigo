@@ -71,15 +71,19 @@ object Alerts {
 
     /**
      * One review, with the picture of the first thing it saw. Its title is what
-     * the review saw, which can be more than one thing. What comes back is enough
-     * to find the notification again when there is more to say about it.
+     * the review saw, which can be more than one thing, or the sentence Frigate
+     * wrote about it when there is one. What comes back is enough to find the
+     * notification again when there is more to say about it.
      */
     fun review(context: Context, review: FrigateReview, picture: ByteArray?): Buzz {
-        val title = review.data.objects
-            .map { it.replace('_', ' ').replaceFirstChar { first -> first.uppercase() } }
-            .joinToString(" · ")
-            .ifBlank { context.words(R.string.alerts_fallback_title) }
-        return buzz(context, review.camera, title, picture)
+        val metadata = review.data.metadata
+        val title = metadata?.title?.trim()?.takeIf { it.isNotEmpty() }
+            ?: review.data.objects
+                .map { it.replace('_', ' ').replaceFirstChar { first -> first.uppercase() } }
+                .joinToString(" · ")
+                .ifBlank { context.words(R.string.alerts_fallback_title) }
+        val sentence = metadata?.shortSummary?.trim()?.takeIf { it.isNotEmpty() }
+        return buzz(context, review.camera, title, picture, sentence)
     }
 
     /**
@@ -146,14 +150,28 @@ object Alerts {
     /**
      * Posts one buzz, and every buzz takes the next id, so two in the shade do
      * not become one.
+     *
+     * [sentence] is what Frigate wrote about the review, when an alert has waited
+     * for it: the notification then opens with that rather than "tap to watch".
      */
-    private fun buzz(context: Context, cameraName: String, title: String, picture: ByteArray?): Buzz {
+    private fun buzz(
+        context: Context,
+        cameraName: String,
+        title: String,
+        picture: ByteArray?,
+        sentence: String? = null,
+    ): Buzz {
         val id = nextEventId++
         val camera = prettyCameraName(cameraName)
-        val text = context.words(R.string.alerts_tap_to_watch, camera)
+        val text = sentence ?: context.words(R.string.alerts_tap_to_watch, camera)
 
         NotificationManagerCompat.from(context)
-            .notify(id, build(context, id, cameraName, title, text, picture).build())
+            .notify(
+                id,
+                build(context, id, cameraName, title, text, picture, full = sentence != null)
+                    .setSubText(camera)
+                    .build(),
+            )
         return Buzz(id, cameraName, title, camera)
     }
 

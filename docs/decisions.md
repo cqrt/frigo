@@ -2532,7 +2532,7 @@ camera left off the alert list has no objects to make one from. Neither is offer
 there would be nothing for a tick to narrow. What is stored for such a camera stays
 on the phone, so it applies again if alerts are turned back on.
 
-## A named person can be left out, at the cost of four seconds
+## A named person can be left out, by waiting for the sentence
 
 Frigate has no way to leave a recognised person out of an alert. `review.alerts` is
 filtered by object and by zone, and the name Frigate's face recognition works out is
@@ -2541,34 +2541,42 @@ Frigate's tracker, and the answer there is a separate notifier or nothing. Its o
 web push sends every alert for the cameras an account may see, so the server can't
 narrow it per phone either.
 
-The name is on the alert the phone receives, in `data.sub_labels`, which the app has
-read since the day Review listed a person by name. So the phone keeps a short list of
-its own, of names to stay quiet about, beside the objects list. It only ever takes a
-buzz away, and the server and its other phones are untouched.
+The name is on the alert the phone receives: in `data.sub_labels` when face
+recognition has it, and in the sentence Frigate writes about the review. So the phone
+keeps a short list of its own, of names to stay quiet about, beside the objects list.
+It only ever takes a buzz away, and the server and its other phones are untouched.
 
-**The timing is the whole problem.** Frigate names a person a second or two after the
-review starts, and the phone buzzed on the first message. So with anyone on the list,
-an alert is held until four seconds after the review's own start, and the copy that
-decides is the latest one the server sent. Measured from the review rather than from
-the message: a review that turns from a detection into an alert three seconds in waits
-one more second, not four. With nobody on the list nothing is held, so a phone that
-never opens the page behaves exactly as it did.
+**The first version waited four seconds and it was wrong.** It held an alert for four
+seconds after the review started, assuming the name would arrive as a sub label by
+then. On the owner's server it didn't: the alert buzzed with "Person walking", and
+Frigate's description added "Matt walking" to the same notification twenty seconds
+later. A name that arrives with the end of the review cannot be caught by waiting a
+few seconds.
+
+So an alert waits for the sentence. When this phone's list has anyone on it, a review
+that qualifies is held until Frigate's description arrives, and the latest copy
+decides: a name in the sub labels or one in the sentence is enough to drop it. A
+review that ends with no description gets six more seconds, and one still open after a
+minute is decided without either, so a description that never comes cannot swallow an
+alert. With nobody on the list nothing is held, so a phone that never opens the page
+behaves exactly as it did.
+
+The cost is the delay: alerts arrive when the review ends, about twenty seconds later
+for a person walking past. That is what the phone pays for the name. A server that
+doesn't describe its alerts has no name to wait for, so the list does nothing there and
+the page says so.
 
 Rejected: buzzing at once and cancelling the notification when the name turns up. A
-buzz that is taken back is worse than one that arrives three seconds later, and the
-phone cannot know it was unwanted until the moment the notification is already in the
-shade.
+buzz that is taken back is worse than one that arrives twenty seconds later, and the
+sound has already happened by then.
 
-Rejected: waiting without a limit. A person named ten seconds in is one Frigate was
-not sure about, and holding every alert that long to catch a rare case costs more than
-the case is worth.
+Rejected: four seconds, then decide without a name. It cannot work: the name is not
+there yet.
 
-The cost is stated plainly: a person Frigate names after the hold still buzzes, and
-while the list has someone on it every alert arrives a moment later. The page offers
-the names from `/api/sub_labels`, the same endpoint Explore's People filter uses, plus
-anything already ticked, so a name Frigate no longer recognises can be put back. A
-name Frigate has verified carries a `-verified` suffix that the app has never shown,
-and the tick matches it either way.
+The page offers the names from `/api/sub_labels`, the same endpoint Explore's People
+filter uses, plus anything already ticked, so a name Frigate no longer recognises can
+be put back. A name Frigate has verified carries a `-verified` suffix that the app has
+never shown, and the tick matches it either way.
 
 ## Alerts and detections sets one camera at a time
 

@@ -6,6 +6,7 @@ import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.CameraAlerts
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.ReviewData
+import nz.mckenzie.frigo.data.ReviewMetadata
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -37,13 +38,18 @@ class ReviewBuzzTest {
         severity: String = "alert",
         objects: List<String> = listOf("person"),
         names: List<String> = emptyList(),
+        sentence: String? = null,
         startedAt: Long = ten,
     ) = FrigateReview(
         id = id,
         camera = camera,
         startTime = startedAt / 1000.0,
         severity = severity,
-        data = ReviewData(objects = objects, subLabels = names),
+        data = ReviewData(
+            objects = objects,
+            subLabels = names,
+            metadata = sentence?.let { ReviewMetadata(title = it, shortSummary = it) },
+        ),
     )
 
     @Test
@@ -197,6 +203,34 @@ class ReviewBuzzTest {
     fun aReviewWithNoNameIsDecidedByItsObjects() {
         assertTrue(
             ReviewBuzz().buzzes(review(), "new", ten, rules, leftOut = AlertPeople(setOf("Matt"))),
+        )
+    }
+
+    /**
+     * Frigate's sentence is where the name often is, and by the time an alert has
+     * waited for it there are no sub labels to go on.
+     */
+    @Test
+    fun aSentenceNamingSomeoneLeftOutDoesNotBuzz() {
+        val people = AlertPeople(setOf("Matt"))
+
+        assertFalse(
+            ReviewBuzz().buzzes(
+                review(sentence = "Matt walking up the driveway."),
+                "new",
+                ten,
+                rules,
+                leftOut = people,
+            ),
+        )
+        assertTrue(
+            ReviewBuzz().buzzes(
+                review(id = "2", sentence = "Someone walking up the driveway."),
+                "new",
+                ten,
+                rules,
+                leftOut = people,
+            ),
         )
     }
 

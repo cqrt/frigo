@@ -59,6 +59,8 @@
     <string name="alert_people_search">Anna, Max…</string>
     <string name="alert_people_hint">Nichts angehakt bedeutet Alle. Fertig braucht mindestens eine Person.</string>
     <string name="alert_people_cant_read">Dein Server antwortet nicht, deshalb steht hier nur, wer angehakt ist.</string>
+    <string name="alert_people_wait">Solange jemand auf dieser Liste steht, warten Alarme auf die Beschreibung deines Servers, sie kommen also etwa zwanzig Sekunden später.</string>
+    <string name="alert_people_no_descriptions">Dein Server beschreibt seine Alarme nicht, deshalb kann diese Liste niemanden auslassen.</string>
 
     <string name="settings_live_view">Livebild</string>
     <string name="settings_live_supporting">Spielt Video im Tab Kameras. Das kostet mehr Akku und Daten.</string>

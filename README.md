@@ -270,17 +270,20 @@ The cameras offered are the ones that make an alert. One whose Alerts switch is 
 in Alerts and detections never makes one, and one with no alert objects has nothing
 to make one from, so neither is there to set.
 
-**People to leave out** sits under it. Frigate puts a name on a person it
-recognises a second or two after the alert starts, and this phone can stay quiet
-about that name. Pick someone and their alerts never buzz here, while everyone
-else still does. Frigate can't do this itself: its alerts are chosen by object and
-by zone, and its own push sends every alert. Nothing on your server or its other
-phones changes.
+**People to leave out** sits under it. Frigate names a person it recognises in the
+sentence it writes about an alert, and this phone can stay quiet about that name.
+Pick someone and their alerts never buzz here, while everyone else still does.
+Frigate can't do this itself: its alerts are chosen by object and by zone, and its
+own push sends every alert. Nothing on your server or its other phones changes.
 
-With someone on that list, an alert is held for up to four seconds after the
-review starts, so the name has arrived before the phone decides. That is the one
-cost: alerts arrive a moment later than they would otherwise. With nobody on the
-list, nothing waits.
+With someone on that list, an alert waits for that sentence before it goes, so the
+name is known before the phone decides. Frigate writes it when the review ends, so
+alerts arrive about twenty seconds later than they used to while the list has
+anyone on it. A review still open after a minute is decided without the sentence,
+so an alert is never lost. With nobody on the list, nothing waits.
+
+The list needs your server's descriptions. Turn them off and the phone has no name
+to go on, so the list can't leave anyone out, and the page says so.
 
 Frigate's own web page shows the same values, so a change made in a browser is
 picked up the next time the app opens or reconnects.
