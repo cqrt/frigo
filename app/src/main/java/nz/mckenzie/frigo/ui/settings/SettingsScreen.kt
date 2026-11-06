@@ -108,6 +108,7 @@ fun SettingsScreen(
     onOpenAlerts: () -> Unit = {},
     onOpenAi: () -> Unit = {},
     onOpenAlertObjects: () -> Unit = {},
+    onOpenAlertPeople: () -> Unit = {},
     onOpenQuiet: () -> Unit = {},
     onOpenLanguage: () -> Unit = {},
     onOpenSystem: () -> Unit = {},
@@ -119,6 +120,7 @@ fun SettingsScreen(
     val rules by repository.alertRules.collectAsStateWithLifecycle()
     val quiet by repository.quietTimes.collectAsStateWithLifecycle()
     val objects by repository.alertObjects.collectAsStateWithLifecycle()
+    val people by repository.alertPeople.collectAsStateWithLifecycle()
     val servers by repository.servers.collectAsStateWithLifecycle()
     val liveTiles by repository.liveTiles.collectAsStateWithLifecycle(initialValue = false)
     val theme by repository.theme.collectAsStateWithLifecycle(
@@ -379,6 +381,18 @@ fun SettingsScreen(
                     title = stringResource(R.string.alert_objects_title),
                     supporting = objects.said(),
                     onClick = onOpenAlertObjects,
+                    trailing = { OpenMark() },
+                )
+
+                CardDivider()
+
+                // The list for the person rather than the object: Frigate names a
+                // face on the alert, and this phone can stay quiet about that name.
+                Item(
+                    icon = FrigoIcons.Person,
+                    title = stringResource(R.string.alert_people_title),
+                    supporting = people.said(),
+                    onClick = onOpenAlertPeople,
                     trailing = { OpenMark() },
                 )
 

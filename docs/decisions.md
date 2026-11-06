@@ -2510,3 +2510,41 @@ the chip filters what is on show, so a tick means the same thing whichever camer
 are looking at. A ticked object stays listed even when the picked camera doesn't alert
 on it, so the phone's list and the page can't disagree about what is on.
 
+## A named person can be left out, at the cost of four seconds
+
+Frigate has no way to leave a recognised person out of an alert. `review.alerts` is
+filtered by object and by zone, and the name Frigate's face recognition works out is
+not one of the things that can be filtered: there is an open request for it on
+Frigate's tracker, and the answer there is a separate notifier or nothing. Its own
+web push sends every alert for the cameras an account may see, so the server can't
+narrow it per phone either.
+
+The name is on the alert the phone receives, in `data.sub_labels`, which the app has
+read since the day Review listed a person by name. So the phone keeps a short list of
+its own, of names to stay quiet about, beside the objects list. It only ever takes a
+buzz away, and the server and its other phones are untouched.
+
+**The timing is the whole problem.** Frigate names a person a second or two after the
+review starts, and the phone buzzed on the first message. So with anyone on the list,
+an alert is held until four seconds after the review's own start, and the copy that
+decides is the latest one the server sent. Measured from the review rather than from
+the message: a review that turns from a detection into an alert three seconds in waits
+one more second, not four. With nobody on the list nothing is held, so a phone that
+never opens the page behaves exactly as it did.
+
+Rejected: buzzing at once and cancelling the notification when the name turns up. A
+buzz that is taken back is worse than one that arrives three seconds later, and the
+phone cannot know it was unwanted until the moment the notification is already in the
+shade.
+
+Rejected: waiting without a limit. A person named ten seconds in is one Frigate was
+not sure about, and holding every alert that long to catch a rare case costs more than
+the case is worth.
+
+The cost is stated plainly: a person Frigate names after the hold still buzzes, and
+while the list has someone on it every alert arrives a moment later. The page offers
+the names from `/api/sub_labels`, the same endpoint Explore's People filter uses, plus
+anything already ticked, so a name Frigate no longer recognises can be put back. A
+name Frigate has verified carries a `-verified` suffix that the app has never shown,
+and the tick matches it either way.
+

@@ -12,6 +12,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +29,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import nz.mckenzie.frigo.FrigoApplication
 import nz.mckenzie.frigo.R
+import nz.mckenzie.frigo.data.AlertPeople
+import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.StreamSource
@@ -71,6 +74,13 @@ class AlertService : Service() {
     private val ledger = AlertLedger()
 
     /**
+     * Reviews waiting for Frigate to put a name on them, by review id, and the hold
+     * that is waiting. Only used when this phone stays quiet about somebody.
+     */
+    private val held = mutableMapOf<String, FrigateReview>()
+    private val holding = mutableMapOf<String, Job>()
+
+    /**
      * The quick description being written for each buzz, by notification id. The
      * server's own description is the better one, so when it turns up it stops the
      * quick one rather than being overwritten by it.
@@ -108,6 +118,7 @@ class AlertService : Service() {
             container.repository.loadAlertRules()
             container.repository.loadQuietTimes()
             container.repository.loadAlertObjects()
+            container.repository.loadAlertPeople()
             container.repository.loadCameraList()
             container.repository.alerts.collect { showWatching() }
         }
@@ -287,6 +298,11 @@ class AlertService : Service() {
     /**
      * One review, when the buzz is per happening the server calls an alert. The
      * rule itself lives in [ReviewBuzz], so it can be tried without a phone.
+     *
+     * Frigate puts a recognised person's name on a review a second or two after it
+     * starts, and this phone may be staying quiet about that person. So when its
+     * list has anyone on it, the review is held until a name has had its moment and
+     * the copy that decides is the latest one the server sent.
      */
     private fun onReview(message: JsonObject) {
         val after = (message["after"] as? JsonObject) ?: return
@@ -298,13 +314,61 @@ class AlertService : Service() {
         val now = System.currentTimeMillis()
         val hidden = container.repository.cameraList.value.hidden
         val only = container.repository.alertObjects.value.labels
-        if (!reviewBuzz.buzzes(review, message.text("type"), now, rules, hidden, only)) {
+        val leftOut = container.repository.alertPeople.value
+        if (!reviewBuzz.allowed(review, message.text("type"), now, rules, hidden, only, leftOut)) {
             return
         }
 
-        // A quiet window has the last word, and it is answered before anything is
-        // fetched or written: no notification, no picture, no sentence asked for.
-        // The review is still on the server, and still in Review.
+        // With nobody left out there is nothing to wait for, and every alert arrives
+        // as it always did.
+        val wait = if (leftOut.everyone) {
+            0L
+        } else {
+            (review.startedAtMillis + NamesHold - now).coerceIn(0L, NamesHold)
+        }
+        if (wait == 0L) {
+            buzz(review, rules, hidden, only, leftOut)
+            return
+        }
+
+        held[review.id] = review
+        if (review.id in holding) return
+
+        // Started once the hold is in the map, so a message that arrives in the same
+        // breath never starts a second hold for one review.
+        val job = scope.launch(start = CoroutineStart.LAZY) {
+            try {
+                delay(wait)
+                val latest = held.remove(review.id) ?: return@launch
+                buzz(latest, rules, hidden, only, leftOut)
+            } finally {
+                holding.remove(review.id)
+            }
+        }
+        holding[review.id] = job
+        job.start()
+    }
+
+    /**
+     * Posts the buzz for a review whose name is known. A quiet window has the last
+     * word, and it is answered before anything is fetched or written: no
+     * notification, no picture, no sentence asked for. The review is still on the
+     * server, and still in Review.
+     */
+    private fun buzz(
+        review: FrigateReview,
+        rules: AlertRules,
+        hidden: Set<String>,
+        only: Set<String>,
+        leftOut: AlertPeople,
+    ) {
+        val now = System.currentTimeMillis()
+        // Asked as a new message: an update that turned into an alert was already
+        // checked against the window when it arrived.
+        if (!reviewBuzz.buzzes(review, "new", now, rules, hidden, only, leftOut)) {
+            return
+        }
+
         if (container.repository.quietTimes.value.quiets(review.camera, now)) {
             return
         }
@@ -473,6 +537,14 @@ class AlertService : Service() {
 
         private const val RECONNECT_FIRST = 2_000L
         private const val RECONNECT_LONGEST = 60_000L
+
+        /**
+         * How long after a review starts the phone waits for Frigate to name what it
+         * saw, and only when its people list has someone on it. The name lands a
+         * second or two in; four is enough for it, and short enough that nobody
+         * waiting on an alert minds.
+         */
+        private const val NamesHold = 4_000L
 
         /** Turns the service on. Safe to call when it is already running. */
         fun start(context: Context) {

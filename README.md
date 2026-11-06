@@ -95,7 +95,8 @@ in to one more, which becomes the one you're on. **Sign out** forgets the server
 you're on, and the next one takes over. Under those sit two switches: one for
 notifications, and one that plays the home page tiles live. Under notifications
 sit **Only these objects**, the list this phone narrows its alerts by, then
-**Quiet times**, the hours it keeps quiet and the cameras it keeps quiet.
+**People to leave out**, the names it stays quiet about, then **Quiet times**,
+the hours it keeps quiet and the cameras it keeps quiet.
 Under **Cameras** is every camera your server has, in the order
 this phone shows them. A switch there turns one off on this phone. Hold a row and
 drag it to move it, and tap one for its own page, where its name here is set. A
@@ -184,7 +185,8 @@ show that copy. A line at the top says when it was read, and nothing on the page
 can be changed until the server is back.
 
 The settings that belong to the phone work either way: the colours, the live
-tiles, the list of objects, the walkthrough and the list of servers.
+tiles, the list of objects, the list of people, the walkthrough and the list of
+servers.
 
 The rest of the app needs the server. Cameras, Review, Explore and Clips say it
 isn't answering.
@@ -258,6 +260,18 @@ The chip at the top of that page picks a camera to narrow the list by, which is
 how you find one camera's objects in a list of a dozen. It changes what is on
 show and nothing else: there is still one list, and a tick means the same on
 every camera.
+
+**People to leave out** sits under it. Frigate puts a name on a person it
+recognises a second or two after the alert starts, and this phone can stay quiet
+about that name. Pick someone and their alerts never buzz here, while everyone
+else still does. Frigate can't do this itself: its alerts are chosen by object and
+by zone, and its own push sends every alert. Nothing on your server or its other
+phones changes.
+
+With someone on that list, an alert is held for up to four seconds after the
+review starts, so the name has arrived before the phone decides. That is the one
+cost: alerts arrive a moment later than they would otherwise. With nobody on the
+list, nothing waits.
 
 Frigate's own web page shows the same values, so a change made in a browser is
 picked up the next time the app opens or reconnects.

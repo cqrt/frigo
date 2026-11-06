@@ -115,6 +115,7 @@ class ServerPrefs(private val context: Context) {
             prefs.remove(alertRulesKey(baseUrl))
             prefs.remove(quietTimesKey(baseUrl))
             prefs.remove(alertObjectsKey(baseUrl))
+            prefs.remove(alertPeopleKey(baseUrl))
             prefs.remove(cameraListKey(baseUrl))
             prefs.remove(cameraLayoutKey(baseUrl))
             prefs.remove(settingsKey(baseUrl))
@@ -194,6 +195,21 @@ class ServerPrefs(private val context: Context) {
     suspend fun writeAlertObjects(baseUrl: String, objects: AlertObjects) {
         val stored = BlockJson.encodeToString(AlertObjects.serializer(), objects)
         context.dataStore.edit { prefs -> prefs[alertObjectsKey(baseUrl)] = stored }
+    }
+
+    /**
+     * The people this phone stays quiet about, or null when it has no list of its
+     * own. One block, like the objects list beside it.
+     */
+    suspend fun readAlertPeople(baseUrl: String): AlertPeople? {
+        val stored = context.dataStore.data.first()[alertPeopleKey(baseUrl)] ?: return null
+        return runCatching { BlockJson.decodeFromString(AlertPeople.serializer(), stored) }
+            .getOrNull()
+    }
+
+    suspend fun writeAlertPeople(baseUrl: String, people: AlertPeople) {
+        val stored = BlockJson.encodeToString(AlertPeople.serializer(), people)
+        context.dataStore.edit { prefs -> prefs[alertPeopleKey(baseUrl)] = stored }
     }
 
     /**
@@ -333,6 +349,7 @@ class ServerPrefs(private val context: Context) {
     private fun alertRulesKey(baseUrl: String) = stringPreferencesKey("alert_rules:$baseUrl")
     private fun quietTimesKey(baseUrl: String) = stringPreferencesKey("quiet_times:$baseUrl")
     private fun alertObjectsKey(baseUrl: String) = stringPreferencesKey("alert_objects:$baseUrl")
+    private fun alertPeopleKey(baseUrl: String) = stringPreferencesKey("alert_people:$baseUrl")
     private fun cameraListKey(baseUrl: String) = stringPreferencesKey("camera_list:$baseUrl")
     private fun cameraLayoutKey(baseUrl: String) = intPreferencesKey("camera_layout:$baseUrl")
     private fun settingsKey(baseUrl: String) = stringPreferencesKey("settings:$baseUrl")

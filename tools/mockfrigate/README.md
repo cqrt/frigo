@@ -60,6 +60,11 @@ bearer token, and it publishes on both of the topics the app can listen to.
 - On `reviews`, every twenty seconds starting fourteen seconds in: a review that is
   already an alert, then one that starts as a detection and turns into an alert
   three seconds later with the same id and the same start time.
+- Each review carries a name Frigate recognised: Angie on the door, Fay on the north
+  camera. The one that starts as a detection is named only when it turns into an
+  alert three seconds in, which is the case a phone that waits for a name is built
+  for. Leave Angie out in Settings, People to leave out and the door goes quiet while
+  the car still buzzes.
 
 The app's trial switch chooses which of the two topics it listens to, so both are
 sent and the switch can be flipped without restarting anything. The turn from

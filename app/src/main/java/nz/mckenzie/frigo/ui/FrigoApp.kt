@@ -59,6 +59,7 @@ import nz.mckenzie.frigo.ui.reviews.ReviewsScreen
 import nz.mckenzie.frigo.ui.settings.AiDescriptionsScreen
 import nz.mckenzie.frigo.ui.settings.AiModelScreen
 import nz.mckenzie.frigo.ui.settings.AlertObjectsScreen
+import nz.mckenzie.frigo.ui.settings.AlertPeopleScreen
 import nz.mckenzie.frigo.ui.settings.CameraSwitchesScreen
 import nz.mckenzie.frigo.ui.settings.LanguageScreen
 import nz.mckenzie.frigo.ui.settings.QuietTimesScreen
@@ -270,6 +271,9 @@ private fun MainScaffold(
                     onOpenAlertObjects = {
                         navController.navigate("alert-objects") { launchSingleTop = true }
                     },
+                    onOpenAlertPeople = {
+                        navController.navigate("alert-people") { launchSingleTop = true }
+                    },
                     onOpenQuiet = {
                         navController.navigate("quiet-times") { launchSingleTop = true }
                     },
@@ -300,6 +304,13 @@ private fun MainScaffold(
             }
             composable("alert-objects") {
                 AlertObjectsScreen(
+                    repository = container.repository,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable("alert-people") {
+                AlertPeopleScreen(
                     repository = container.repository,
                     modifier = Modifier.padding(padding),
                     onBack = { navController.popBackStack() },

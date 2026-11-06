@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.alerts
 
+import nz.mckenzie.frigo.data.AlertPeople
 import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.FrigateReview
 
@@ -26,13 +27,6 @@ class ReviewBuzz(
     /**
      * True when this message is worth a buzz, and saying so marks the review as
      * buzzed so the next change to it stays quiet.
-     *
-     * [change] is the message's `type`: `new` or `update`. Anything else is a
-     * message about a review that has moved on.
-     *
-     * [hidden] is the cameras turned off on this phone. One of them never buzzes,
-     * whatever the server's rules say. [only] is the objects this phone lets
-     * through, which can only take a buzz away.
      */
     fun buzzes(
         review: FrigateReview,
@@ -41,6 +35,32 @@ class ReviewBuzz(
         rules: AlertRules,
         hidden: Set<String> = emptySet(),
         only: Set<String> = emptySet(),
+        leftOut: AlertPeople = AlertPeople(),
+    ): Boolean {
+        if (!allowed(review, change, now, rules, hidden, only, leftOut)) return false
+        buzzed[review.id] = now
+        return true
+    }
+
+    /**
+     * The same answer without remembering it.
+     *
+     * The service asks this when a message arrives and again once the name is in
+     * hand, so an alert Frigate is about to put a name on costs no trip through the
+     * rule twice with the first answer written down.
+     *
+     * [hidden] is the cameras turned off on this phone. [only] is the objects this
+     * phone lets through and [leftOut] is the people it stays quiet about: both can
+     * only take a buzz away.
+     */
+    fun allowed(
+        review: FrigateReview,
+        change: String?,
+        now: Long,
+        rules: AlertRules,
+        hidden: Set<String> = emptySet(),
+        only: Set<String> = emptySet(),
+        leftOut: AlertPeople = AlertPeople(),
     ): Boolean {
         if (change != "new" && change != "update") return false
         if (review.severity != ALERT) return false
@@ -55,9 +75,11 @@ class ReviewBuzz(
 
         forgetOld(now)
         if (review.id in buzzed) return false
+        // Frigate names a recognised person on the review. One of those names on
+        // this phone's list is the whole reason the list exists.
+        if (leftOut.leavesOut(review.data.subLabels)) return false
         if (review.data.objects.none { rules.buzzes(review.camera, it, only) }) return false
 
-        buzzed[review.id] = now
         return true
     }
 

@@ -52,6 +52,13 @@
     <string name="alert_objects_hint">Nada marcado significa Todo. Hecho necesita al menos un objeto.</string>
     <string name="alert_objects_phone_only">Esta lista es solo de este teléfono. Tu servidor y sus otros teléfonos no cambian.</string>
 
+    <!-- La lista propia de este teléfono: las personas por las que se queda callado. -->
+    <string name="alert_people_title">Personas a omitir</string>
+    <string name="alert_people_everyone">Todos</string>
+    <string name="alert_people_search">Ana, Luis…</string>
+    <string name="alert_people_hint">Nada marcado significa Todos. Hecho necesita al menos una persona.</string>
+    <string name="alert_people_cant_read">Tu servidor no responde, así que aquí solo aparece quien has marcado.</string>
+
     <string name="settings_live_view">Vídeo en vivo</string>
     <string name="settings_live_supporting">Reproduce vídeo en la pestaña Cámaras. Gasta más batería y datos.</string>
 

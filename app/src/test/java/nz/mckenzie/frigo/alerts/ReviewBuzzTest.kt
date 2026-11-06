@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.alerts
 
+import nz.mckenzie.frigo.data.AlertPeople
 import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.CameraAlerts
 import nz.mckenzie.frigo.data.FrigateReview
@@ -34,13 +35,14 @@ class ReviewBuzzTest {
         camera: String = "drive",
         severity: String = "alert",
         objects: List<String> = listOf("person"),
+        names: List<String> = emptyList(),
         startedAt: Long = ten,
     ) = FrigateReview(
         id = id,
         camera = camera,
         startTime = startedAt / 1000.0,
         severity = severity,
-        data = ReviewData(objects = objects),
+        data = ReviewData(objects = objects, subLabels = names),
     )
 
     @Test
@@ -132,5 +134,58 @@ class ReviewBuzzTest {
         assertTrue(
             ReviewBuzz().buzzes(review(id = "2"), "new", ten, rules, only = setOf("person")),
         )
+    }
+
+    /** A person this phone stays quiet about is left out, whatever the object is. */
+    @Test
+    fun aReviewNamingSomeoneLeftOutDoesNotBuzz() {
+        val people = AlertPeople(setOf("Matt"))
+
+        assertFalse(
+            ReviewBuzz().buzzes(review(names = listOf("Matt")), "new", ten, rules, leftOut = people),
+        )
+        assertTrue(
+            ReviewBuzz().buzzes(
+                review(id = "2", names = listOf("Angie")),
+                "new",
+                ten,
+                rules,
+                leftOut = people,
+            ),
+        )
+    }
+
+    /** Frigate marks a name it has verified itself, and the tick matches it either way. */
+    @Test
+    fun aVerifiedNameIsLeftOutToo() {
+        val people = AlertPeople(setOf("Matt"))
+
+        assertFalse(
+            ReviewBuzz().buzzes(
+                review(names = listOf("Matt-verified")),
+                "new",
+                ten,
+                rules,
+                leftOut = people,
+            ),
+        )
+    }
+
+    /** A review with no name yet is decided by its objects, as it always was. */
+    @Test
+    fun aReviewWithNoNameIsDecidedByItsObjects() {
+        assertTrue(
+            ReviewBuzz().buzzes(review(), "new", ten, rules, leftOut = AlertPeople(setOf("Matt"))),
+        )
+    }
+
+    /** The service asks twice while it waits for a name; the first ask must not count. */
+    @Test
+    fun askingWithoutRememberingLeavesTheReviewFreeToBuzz() {
+        val buzz = ReviewBuzz()
+
+        assertTrue(buzz.allowed(review(), "new", ten, rules))
+        assertTrue(buzz.buzzes(review(), "new", ten, rules))
+        assertFalse(buzz.allowed(review(), "new", ten + 1_000, rules))
     }
 }

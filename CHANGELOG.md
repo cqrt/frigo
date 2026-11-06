@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.23
+
+- Settings, Notifications has People to leave out: a name Frigate recognises, and this phone stays quiet about it.
+- With someone on that list, alerts arrive up to four seconds later, so the name has landed. With nobody on it, nothing waits.
+- The list is this phone's own. Your server and its other phones don't change.
+
 ## 0.10.22
 
 - Only these objects wears the same cards, rows and filled search box as the rest of Settings.

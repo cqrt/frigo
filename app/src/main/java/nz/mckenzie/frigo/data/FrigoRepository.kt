@@ -129,6 +129,14 @@ class FrigoRepository(
     val alertObjects: StateFlow<AlertObjects> = _alertObjects.asStateFlow()
 
     /**
+     * The people this phone stays quiet about, by the name Frigate knows them by.
+     * Its own list, like the objects beside it: Frigate has no way to leave a name
+     * out of an alert, and the name is on the alert the phone receives.
+     */
+    private val _alertPeople = MutableStateFlow(AlertPeople())
+    val alertPeople: StateFlow<AlertPeople> = _alertPeople.asStateFlow()
+
+    /**
      * The cameras this phone leaves out, what it calls them, and their order. Its
      * own list rather than the server's: what it changes is this phone's screens
      * and its buzz, and the server and its other phones don't move.
@@ -185,6 +193,9 @@ class FrigoRepository(
     /** The same, for the phone's own list of objects. */
     @Volatile private var alertObjectsLoaded = false
 
+    /** The same, for the phone's own list of people. */
+    @Volatile private var alertPeopleLoaded = false
+
     /** The same, for the phone's own list of cameras. */
     @Volatile private var cameraListLoaded = false
 
@@ -232,6 +243,18 @@ class FrigoRepository(
         val server = activeServer()
         _alertObjects.value = server?.let { prefs.readAlertObjects(it.baseUrl) } ?: AlertObjects()
         alertObjectsLoaded = true
+    }
+
+    /**
+     * Reads the people this phone stays quiet about. Safe to call from anywhere, and
+     * what the service starts from after a restart, so the list still holds an alert
+     * back with no screen open.
+     */
+    suspend fun loadAlertPeople() {
+        if (alertPeopleLoaded) return
+        val server = activeServer()
+        _alertPeople.value = server?.let { prefs.readAlertPeople(it.baseUrl) } ?: AlertPeople()
+        alertPeopleLoaded = true
     }
 
     /**
@@ -298,12 +321,14 @@ class FrigoRepository(
         _alertRules.value = url?.let { prefs.readAlertRules(it) } ?: AlertRules()
         _quietTimes.value = url?.let { prefs.readQuietTimes(it) } ?: QuietTimes()
         _alertObjects.value = url?.let { prefs.readAlertObjects(it) } ?: AlertObjects()
+        _alertPeople.value = url?.let { prefs.readAlertPeople(it) } ?: AlertPeople()
         _cameraList.value = url?.let { prefs.readCameraList(it) } ?: CameraList()
         _admin.value = url?.let { prefs.readSettings(it) }?.let { it.profile.role == "admin" }
         alertsLoaded = true
         alertRulesLoaded = true
         quietTimesLoaded = true
         alertObjectsLoaded = true
+        alertPeopleLoaded = true
         cameraListLoaded = true
     }
 
@@ -346,6 +371,7 @@ class FrigoRepository(
         loadAlertRules()
         loadQuietTimes()
         loadAlertObjects()
+        loadAlertPeople()
         loadCameraList()
         // The first launch after the walkthrough arrived settles the question once
         // and writes the answer down. A phone with a server already saved is one
@@ -742,6 +768,30 @@ class FrigoRepository(
         _alertObjects.value = next
         alertObjectsLoaded = true
     }
+
+    /**
+     * Keeps the people this phone stays quiet about. Written here and nowhere else:
+     * no request goes to the server, and its own pages and other phones don't move.
+     */
+    suspend fun setAlertPeople(names: Set<String>) {
+        val url = activeServer()?.baseUrl ?: return
+        val next = AlertPeople(names)
+        prefs.writeAlertPeople(url, next)
+        _alertPeople.value = next
+        alertPeopleLoaded = true
+    }
+
+    /**
+     * The names Frigate has learned to recognise, which is what the phone's people
+     * list offers. Null when the server couldn't be asked: the page then lists only
+     * the names already left out.
+     */
+    suspend fun knownPeople(): List<String>? = runCatching {
+        authorized { baseUrl, token -> api.subLabels(baseUrl, token) }
+    }.getOrNull()
+        ?.filter { it.isNotBlank() }
+        ?.distinct()
+        ?.sorted()
 
     /**
      * What the phone's picker offers: the cameras this account may see, and the

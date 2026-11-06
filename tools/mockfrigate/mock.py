@@ -170,13 +170,17 @@ WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 # The reviews the socket publishes, alternating between the two cameras whose
 # notifications are on. `person` on door_cam and `car` on north_cam, which is what
-# the alerts page calls an alert.
-SOCKET_REVIEWS = [("door_cam", ["person"], ["driveway"]), ("north_cam", ["car"], ["driveway"])]
+# the alerts page calls an alert. Each is given a name Frigate recognised, since a
+# phone can stay quiet about a person by name and the name is what it needs.
+SOCKET_REVIEWS = [
+    ("door_cam", ["person"], ["driveway"], "Angie"),
+    ("north_cam", ["car"], ["driveway"], "Fay"),
+]
 
 
-def review_body(number, severity, start_time=None):
+def review_body(number, severity, start_time=None, named=True):
     """One review, shaped like 0.18's, with the one detection its picture comes from."""
-    camera, objects, zones = SOCKET_REVIEWS[number % len(SOCKET_REVIEWS)]
+    camera, objects, zones, name = SOCKET_REVIEWS[number % len(SOCKET_REVIEWS)]
     started = time.time() if start_time is None else start_time
     return {
         "id": f"{started:.6f}-socket{number}",
@@ -189,7 +193,7 @@ def review_body(number, severity, start_time=None):
             "audio": [],
             "detections": [f"{started:.6f}-socket{number}"],
             "objects": objects,
-            "sub_labels": [],
+            "sub_labels": [name] if named else [],
             "significant_motion_areas": [],
             "zones": zones,
         },
@@ -564,7 +568,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send_frame(json.dumps(review_message("new", review_body(number, "alert"))).encode())
             return
 
-        started = review_body(number, "detection")
+        # The name arrives with the turn into an alert and not before, which is the
+        # case a phone that waits for it is built for.
+        started = review_body(number, "detection", named=False)
         self.send_frame(json.dumps(review_message("new", started)).encode())
         turned = review_body(number, "alert")
         turned["start_time"] = started["start_time"]

@@ -1,10 +1,7 @@
 package nz.mckenzie.frigo.ui.settings
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,10 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,7 +17,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -34,12 +27,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,6 +43,7 @@ import nz.mckenzie.frigo.ui.components.CardDivider
 import nz.mckenzie.frigo.ui.components.Group
 import nz.mckenzie.frigo.ui.components.Item
 import nz.mckenzie.frigo.ui.components.Note
+import nz.mckenzie.frigo.ui.components.SearchField
 import nz.mckenzie.frigo.ui.components.prettyLabel
 
 /**
@@ -138,7 +128,11 @@ fun AlertObjectsScreen(
                 }
             }
 
-            SearchField(value = query, onValueChange = { query = it })
+            SearchField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = stringResource(R.string.alert_objects_search),
+            )
 
             Group(stringResource(R.string.revset_objects)) {
                 if (state.noAnswer) {
@@ -188,72 +182,6 @@ fun AlertObjectsScreen(
             }
 
             Spacer(Modifier.height(24.dp))
-        }
-    }
-}
-
-/**
- * A search box drawn the way the app's fields are: a filled block with a ring
- * while the cursor is in it, rather than an outlined box.
- */
-@Composable
-private fun SearchField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var focused by remember { mutableStateOf(false) }
-    val ink = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(12.dp)
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(ink.surfaceContainerHighest)
-            .border(
-                width = 2.dp,
-                color = if (focused) ink.primary else Color.Transparent,
-                shape = shape,
-            )
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Icon(
-            imageVector = FrigoIcons.Search,
-            contentDescription = null,
-            tint = if (focused) ink.primary else ink.onSurfaceVariant,
-            modifier = Modifier.size(20.dp),
-        )
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = stringResource(R.string.revset_search),
-                style = MaterialTheme.typography.labelMedium,
-                color = if (focused) ink.primary else ink.onSurfaceVariant,
-            )
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = ink.onSurface),
-                cursorBrush = SolidColor(ink.primary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged { focused = it.isFocused },
-                decorationBox = { inner ->
-                    Box {
-                        if (value.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.alert_objects_search),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = ink.onSurfaceVariant.copy(alpha = 0.7f),
-                            )
-                        }
-                        inner()
-                    }
-                },
-            )
         }
     }
 }

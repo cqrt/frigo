@@ -52,6 +52,13 @@
     <string name="alert_objects_hint">Rien de coché veut dire Tout. Terminé demande au moins un objet.</string>
     <string name="alert_objects_phone_only">Cette liste n\'appartient qu\'à ce téléphone. Votre serveur et ses autres téléphones ne changent pas.</string>
 
+    <!-- La liste propre à ce téléphone : les personnes dont il reste silencieux. -->
+    <string name="alert_people_title">Personnes à ignorer</string>
+    <string name="alert_people_everyone">Tout le monde</string>
+    <string name="alert_people_search">Anne, Louis…</string>
+    <string name="alert_people_hint">Rien de coché veut dire Tout le monde. Terminé demande au moins une personne.</string>
+    <string name="alert_people_cant_read">Votre serveur ne répond pas, donc cette liste ne montre que les personnes cochées.</string>
+
     <string name="settings_live_view">Vue en direct</string>
     <string name="settings_live_supporting">Lit la vidéo dans l\'onglet Caméras. Ça consomme plus de batterie et de données.</string>
 

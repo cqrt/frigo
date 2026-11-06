@@ -53,6 +53,13 @@
     <string name="alert_objects_hint">Nichts angehakt bedeutet Alles. Fertig braucht mindestens ein Objekt.</string>
     <string name="alert_objects_phone_only">Diese Liste gehört nur zu diesem Telefon. Dein Server und seine anderen Telefone bleiben unverändert.</string>
 
+    <!-- Die eigene Liste dieses Telefons: Personen, über die es still bleibt. -->
+    <string name="alert_people_title">Personen auslassen</string>
+    <string name="alert_people_everyone">Alle</string>
+    <string name="alert_people_search">Anna, Max…</string>
+    <string name="alert_people_hint">Nichts angehakt bedeutet Alle. Fertig braucht mindestens eine Person.</string>
+    <string name="alert_people_cant_read">Dein Server antwortet nicht, deshalb steht hier nur, wer angehakt ist.</string>
+
     <string name="settings_live_view">Livebild</string>
     <string name="settings_live_supporting">Spielt Video im Tab Kameras. Das kostet mehr Akku und Daten.</string>
 

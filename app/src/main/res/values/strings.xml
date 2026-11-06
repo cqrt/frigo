@@ -52,6 +52,13 @@
     <string name="alert_objects_hint">Nothing ticked means Everything. Done needs at least one object.</string>
     <string name="alert_objects_phone_only">This list is this phone\'s own. Your server and its other phones are unchanged.</string>
 
+    <!-- This phone's own list of the people it stays quiet about, by the name Frigate knows them by. -->
+    <string name="alert_people_title">People to leave out</string>
+    <string name="alert_people_everyone">Everyone</string>
+    <string name="alert_people_search">Angie, Matt…</string>
+    <string name="alert_people_hint">Nothing ticked means Everyone. Done needs at least one person.</string>
+    <string name="alert_people_cant_read">Your server isn\'t answering, so this lists only the people you\'ve ticked.</string>
+
     <string name="settings_live_view">Live view</string>
     <string name="settings_live_supporting">Plays video on the Cameras tab. It uses more battery and data.</string>
 
