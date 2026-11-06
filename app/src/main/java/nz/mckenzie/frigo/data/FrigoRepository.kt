@@ -804,13 +804,16 @@ class FrigoRepository(
         val answer = runCatching { settingsAnswer() }.getOrNull() ?: return null
         val settings = answer.settings
         val review = settings.config.reviewSettings()
+        // Only a camera that makes an alert has anything to narrow: one whose alerts
+        // are off in Alerts and detections never reports one.
         val cameras = settings.config.visibleCameras(settings.profile.allowedCameras)
+            .filter { review.alertLabelsFor(it.name).isNotEmpty() }
         return AlertObjectChoices(
             cameras = cameras,
             labels = cameras.associate { camera ->
                 // Only what the camera can actually report: an alert label for an
                 // object nobody tracks can never happen, so it is not offered here.
-                camera.name to review.labelsFor(ReviewKind.Alerts, camera.name)
+                camera.name to review.alertLabelsFor(camera.name)
                     .filter { it in settings.config.possibleLabels(camera.name) }
             },
         )

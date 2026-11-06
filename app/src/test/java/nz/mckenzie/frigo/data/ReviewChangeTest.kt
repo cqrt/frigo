@@ -228,4 +228,43 @@ class ReviewChangeTest {
         // A camera with audio off hears none of the shared sounds.
         assertEquals(setOf("person"), parsed.possibleLabels("shed_cam"))
     }
+
+    /**
+     * A camera whose Alerts switch is off never makes one, so the phone's own list
+     * has nothing to narrow for it.
+     */
+    @Test
+    fun aCameraWithAlertsOffHasNoAlertObjects() {
+        val parsed = json(
+            """
+            {
+              "review": {"alerts": {"labels": ["person", "car"]}},
+              "cameras": {
+                "door_cam": {},
+                "shed_cam": {"review": {"alerts": {"enabled": false}}}
+              }
+            }
+            """,
+        ).let { config.decodeFromJsonElement(FrigateConfig.serializer(), it) }
+
+        val settings = parsed.reviewSettings()
+
+        assertEquals(listOf("person", "car"), settings.alertLabelsFor("door_cam"))
+        assertEquals(emptyList<String>(), settings.alertLabelsFor("shed_cam"))
+    }
+
+    /** A camera left off the alert list has no alert objects either. */
+    @Test
+    fun aCameraWithNoAlertLabelsHasNoAlertObjects() {
+        val parsed = json(
+            """
+            {
+              "review": {"alerts": {"labels": ["person", "car"]}},
+              "cameras": {"gate_cam": {"review": {"alerts": {"enabled": true, "labels": []}}}}
+            }
+            """,
+        ).let { config.decodeFromJsonElement(FrigateConfig.serializer(), it) }
+
+        assertEquals(emptyList<String>(), parsed.reviewSettings().alertLabelsFor("gate_cam"))
+    }
 }

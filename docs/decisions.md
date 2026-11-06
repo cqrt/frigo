@@ -2515,6 +2515,11 @@ the row that means the whole of what the server sends for that camera. The share
 and the camera lists are one block on the phone, so a copy written by the version
 with a single list reads as a shared list with no cameras of their own.
 
+A camera with its Alerts switch off in Alerts and detections never makes one, and a
+camera left off the alert list has no objects to make one from. Neither is offered:
+there would be nothing for a tick to narrow. What is stored for such a camera stays
+on the phone, so it applies again if alerts are turned back on.
+
 ## A named person can be left out, at the cost of four seconds
 
 Frigate has no way to leave a recognised person out of an alert. `review.alerts` is

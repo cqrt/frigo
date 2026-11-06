@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.27
+
+- Only these objects no longer offers a camera whose Alerts switch is off in Alerts and detections, since that camera never makes one.
+
 ## 0.10.26
 
 - Only these objects keeps a list per camera: All cameras sets what every camera follows, and a camera of its own keeps what you tick there.

@@ -129,6 +129,11 @@ CONFIG = {
     },
 }
 
+# One camera with its Alerts switch off, as Alerts and detections can turn it off.
+# A camera that never makes an alert has nothing for the phone's own list to narrow,
+# so that list does not offer it.
+CONFIG["cameras"]["quiet_cam"]["review"] = {"alerts": {"enabled": False}}
+
 # Cameras with nothing arriving. Frigate has no flag that says a camera is offline:
 # it counts the frames each one produces, and one that has stopped produces none, so
 # this is what its stats say about it. The stream still hands back the last frame it

@@ -47,9 +47,10 @@ It filters on `severity` the way the real endpoint does.
 `/api/config` carries the two pages the app follows: notifications are on for the
 whole server and for the door and north cameras, and the server-wide alert list is
 `person` and `car`. South camera has alert objects of its own, `dog`, so Settings,
-Only these objects has something to narrow by. It tracks person, car, dog and cat,
-and listens for `bark` and `speech`, so Alerts and detections offers exactly those
-six labels and no others. Every other camera has its
+Only these objects has something to narrow by. Quiet cam has its Alerts switch off,
+so it never makes an alert and is not offered there. It tracks person, car, dog and
+cat, and listens for `bark` and `speech`, so Alerts and detections offers exactly
+those six labels and no others. Every other camera has its
 notifications off, which is what a camera nobody has touched says. Turn one of
 them on in the app and it starts buzzing, because the app has no list of its own
 unless you give it one.

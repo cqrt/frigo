@@ -745,6 +745,15 @@ fun ReviewSettings.labelsFor(kind: ReviewKind, camera: String?): List<String> {
 }
 
 /**
+ * The labels one camera can make an alert from, and none when its alerts are off.
+ *
+ * A camera whose alerts switch is off never reports one, so there is nothing for a
+ * list of its objects to narrow.
+ */
+fun ReviewSettings.alertLabelsFor(camera: String): List<String> =
+    if (cameras[camera]?.alertsOn == true) labelsFor(ReviewKind.Alerts, camera) else emptyList()
+
+/**
  * What the server says is worth telling you about, as one shape the service can
  * ask a single question of.
  *

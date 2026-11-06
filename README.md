@@ -265,6 +265,10 @@ The objects offered are the ones that camera can actually report, so a label you
 server doesn't track there isn't there to pick. Anything already on that camera's
 list stays listed, so it can be taken off.
 
+The cameras offered are the ones that make an alert. One whose Alerts switch is off
+in Alerts and detections never makes one, and one with no alert objects has nothing
+to make one from, so neither is there to set.
+
 **People to leave out** sits under it. Frigate puts a name on a person it
 recognises a second or two after the alert starts, and this phone can stay quiet
 about that name. Pick someone and their alerts never buzz here, while everyone
