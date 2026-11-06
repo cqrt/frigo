@@ -744,22 +744,24 @@ class FrigoRepository(
     }
 
     /**
-     * Every object any camera this account may see can make an alert from, which
-     * is what the phone's picker offers.
+     * What the phone's picker offers: the cameras this account may see, and the
+     * objects each one can make an alert from.
      *
-     * The settings answer the phone already keeps, so the page opens with the
-     * server away. Null when neither the server nor the phone's copy says
-     * anything, which is a phone that has never read them.
+     * It is built from the settings answer the phone already keeps, so the page
+     * opens with the server away. Null when neither the server nor the phone's
+     * copy says anything, which is a phone that has never read them.
      */
-    suspend fun alertObjectNames(): List<String>? {
+    suspend fun alertObjectChoices(): AlertObjectChoices? {
         val answer = runCatching { settingsAnswer() }.getOrNull() ?: return null
         val settings = answer.settings
         val review = settings.config.reviewSettings()
-        return settings.config.visibleCameras(settings.profile.allowedCameras)
-            .flatMap { review.labelsFor(ReviewKind.Alerts, it.name) }
-            .filter { it.isNotBlank() }
-            .distinct()
-            .sorted()
+        val cameras = settings.config.visibleCameras(settings.profile.allowedCameras)
+        return AlertObjectChoices(
+            cameras = cameras,
+            labels = cameras.associate { camera ->
+                camera.name to review.labelsFor(ReviewKind.Alerts, camera.name)
+            },
+        )
     }
 
     /**

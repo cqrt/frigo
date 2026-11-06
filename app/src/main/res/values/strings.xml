@@ -47,8 +47,9 @@
     <string name="alert_objects_title">Only these objects</string>
     <string name="alert_objects_everything">Everything your server sends</string>
     <string name="alert_objects_all">Everything</string>
+    <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">Your server isn\'t answering, so this lists only what you\'ve ticked.</string>
-    <string name="alert_objects_hint">Pick at least one, or pick Everything.</string>
+    <string name="alert_objects_hint">Nothing ticked means Everything. Done needs at least one object.</string>
     <string name="alert_objects_phone_only">This list is this phone\'s own. Your server and its other phones are unchanged.</string>
 
     <string name="settings_live_view">Live view</string>

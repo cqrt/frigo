@@ -47,8 +47,9 @@
     <string name="alert_objects_title">Seulement ces objets</string>
     <string name="alert_objects_everything">Tout ce que votre serveur envoie</string>
     <string name="alert_objects_all">Tout</string>
+    <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">Votre serveur ne répond pas, donc cette liste ne montre que ce que vous avez coché.</string>
-    <string name="alert_objects_hint">Choisissez-en au moins un, ou choisissez Tout.</string>
+    <string name="alert_objects_hint">Rien de coché veut dire Tout. Terminé demande au moins un objet.</string>
     <string name="alert_objects_phone_only">Cette liste n\'appartient qu\'à ce téléphone. Votre serveur et ses autres téléphones ne changent pas.</string>
 
     <string name="settings_live_view">Vue en direct</string>

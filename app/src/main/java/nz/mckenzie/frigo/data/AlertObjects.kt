@@ -25,3 +25,25 @@ data class AlertObjects(val labels: Set<String> = emptySet()) {
     /** Whether this object may reach you. An empty list lets everything through. */
     fun lets(label: String): Boolean = labels.isEmpty() || label in labels
 }
+
+/**
+ * What the phone's object picker offers: the cameras this account may see, and
+ * the objects each one can make an alert from.
+ *
+ * The list itself is one for every camera. The cameras are here so the page can
+ * narrow to one of them while you look for an object, which changes nothing
+ * about what the list means.
+ */
+data class AlertObjectChoices(
+    val cameras: List<Camera> = emptyList(),
+    /** By camera name. */
+    val labels: Map<String, List<String>> = emptyMap(),
+) {
+    /** Every object any of those cameras alerts on, which is the whole list. */
+    val all: List<String>
+        get() = labels.values.flatten().filter { it.isNotBlank() }.distinct().sorted()
+
+    /** What one camera alerts on, or the whole list when no camera is picked. */
+    fun forCamera(camera: String?): List<String> =
+        camera?.let { labels[it].orEmpty() } ?: all
+}

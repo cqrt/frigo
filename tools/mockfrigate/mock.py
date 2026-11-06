@@ -99,6 +99,11 @@ NOTIFYING = {"door_cam", "north_cam"}
 # against this, and against the camera's own list when it has one.
 ALERT_LABELS = ["person", "car"]
 
+# One camera with alert objects of its own, so the phone's Only these objects page
+# has something to narrow by: the others follow the shared list, and the garden
+# alerts on dogs alone.
+OWN_ALERT_LABELS = {"south_cam": ["dog"]}
+
 # The settings file the app reads, with only the keys it uses. The notifications
 # page and the alerts page are both here, because the app follows them rather than
 # keeping a list of its own.
@@ -110,7 +115,15 @@ CONFIG = {
     },
     "objects": {"track": ["person", "car", "dog", "cat"]},
     "cameras": {
-        name: {**settings, "notifications": {"enabled": name in NOTIFYING}}
+        name: {
+            **settings,
+            "notifications": {"enabled": name in NOTIFYING},
+            **(
+                {"review": {"alerts": {"enabled": True, "labels": OWN_ALERT_LABELS[name]}}}
+                if name in OWN_ALERT_LABELS
+                else {}
+            ),
+        }
         for name, settings in CAMERAS.items()
     },
 }

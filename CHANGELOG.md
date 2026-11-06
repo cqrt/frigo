@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.22
+
+- Only these objects wears the same cards, rows and filled search box as the rest of Settings.
+- A camera chip on that page narrows the list to one camera's objects. There is still one list, and a tick means the same on every camera.
+
 ## 0.10.21
 
 - Settings has Only these objects: a list of your own that narrows what buzzes this phone. An alert about anything that isn't on it stays quiet.

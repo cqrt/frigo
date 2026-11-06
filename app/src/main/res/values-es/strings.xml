@@ -47,8 +47,9 @@
     <string name="alert_objects_title">Solo estos objetos</string>
     <string name="alert_objects_everything">Todo lo que envía tu servidor</string>
     <string name="alert_objects_all">Todo</string>
+    <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">Tu servidor no responde, así que aquí solo aparece lo que has marcado.</string>
-    <string name="alert_objects_hint">Elige al menos uno, o elige Todo.</string>
+    <string name="alert_objects_hint">Nada marcado significa Todo. Hecho necesita al menos un objeto.</string>
     <string name="alert_objects_phone_only">Esta lista es solo de este teléfono. Tu servidor y sus otros teléfonos no cambian.</string>
 
     <string name="settings_live_view">Vídeo en vivo</string>

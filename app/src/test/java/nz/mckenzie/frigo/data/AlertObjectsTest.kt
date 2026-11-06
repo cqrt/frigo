@@ -55,4 +55,29 @@ class AlertObjectsTest {
 
         assertEquals(objects, back)
     }
+
+    /** The picker's cameras narrow what is on show, not what a tick means. */
+    @Test
+    fun aPickedCameraShowsItsOwnObjectsAndEveryCameraShowsThemAll() {
+        val choices = AlertObjectChoices(
+            cameras = listOf(Camera("drive", "Drive"), Camera("shed", "Shed")),
+            labels = mapOf(
+                "drive" to listOf("person", "car"),
+                "shed" to listOf("dog"),
+            ),
+        )
+
+        assertEquals(listOf("car", "dog", "person"), choices.all)
+        assertEquals(listOf("dog"), choices.forCamera("shed"))
+        assertEquals(choices.all, choices.forCamera(null))
+    }
+
+    /** A camera the answer doesn't name offers nothing, and adds nothing to the whole. */
+    @Test
+    fun aCameraWithNoObjectsOfItsOwnIsEmpty() {
+        val choices = AlertObjectChoices(labels = mapOf("drive" to listOf("person")))
+
+        assertEquals(emptyList<String>(), choices.forCamera("quay"))
+        assertEquals(listOf("person"), choices.all)
+    }
 }

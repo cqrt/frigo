@@ -2492,3 +2492,21 @@ descriptions now sit in the Server card with System, and that card is shown only
 admin. The Notifications card keeps what belongs to this phone: Enable, Only these
 objects, Quiet times, and the battery note.
 
+**The picker speaks the same language as every other settings page.** It was built
+from the Review label picker, which is a bare list with an outlined search box, and
+that reads as another app's page. It is now the same stack the rest of Settings uses:
+a heading over a card, a row an icon and a checkbox, dividers clear of the icon, and
+a filled search block with a ring while the cursor is in it. The rows are tapped
+rather than the checkboxes, so a tap anywhere on a row counts and every row is the
+same height.
+
+**The camera chip narrows the list and nothing else.** Twelve labels are readable at
+a glance, but one camera's part of them answers "what does the drive tell me about"
+quicker. A camera chip of their own, each with its own objects, was tempting. That is
+a different feature and a much larger one: the rule that decides a buzz, the watching
+line and what the phone stores all become per-camera, and a camera renamed on the
+server would need reasoning about again. The list stayed one for every camera, and
+the chip filters what is on show, so a tick means the same thing whichever camera you
+are looking at. A ticked object stays listed even when the picked camera doesn't alert
+on it, so the phone's list and the page can't disagree about what is on.
+

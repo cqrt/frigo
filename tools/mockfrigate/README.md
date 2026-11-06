@@ -46,9 +46,11 @@ It filters on `severity` the way the real endpoint does.
 
 `/api/config` carries the two pages the app follows: notifications are on for the
 whole server and for the door and north cameras, and the server-wide alert list is
-`person` and `car`. Every other camera has its notifications off, which is what a
-camera nobody has touched says. Turn one of them on in the app and it starts
-buzzing, because the app has no list of its own.
+`person` and `car`. South camera has alert objects of its own, `dog`, so Settings,
+Only these objects has something to narrow by. Every other camera has its
+notifications off, which is what a camera nobody has touched says. Turn one of
+them on in the app and it starts buzzing, because the app has no list of its own
+unless you give it one.
 
 `/ws` is a websocket that behaves like Frigate's message feed: it takes the same
 bearer token, and it publishes on both of the topics the app can listen to.

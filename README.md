@@ -254,6 +254,11 @@ it stays quiet. The list only ever takes alerts away: nothing on your server
 changes, and its other phones hear what they always heard. An alert for the
 objects you've ticked still depends on the server's own two answers above.
 
+The chip at the top of that page picks a camera to narrow the list by, which is
+how you find one camera's objects in a list of a dozen. It changes what is on
+show and nothing else: there is still one list, and a tick means the same on
+every camera.
+
 Frigate's own web page shows the same values, so a change made in a browser is
 picked up the next time the app opens or reconnects.
 
