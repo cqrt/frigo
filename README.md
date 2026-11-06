@@ -256,10 +256,11 @@ it stays quiet. The list only ever takes alerts away: nothing on your server
 changes, and its other phones hear what they always heard. An alert for the
 objects you've ticked still depends on the server's own two answers above.
 
-The chip at the top picks the camera you're setting. All cameras is the list every
-camera follows, and picking one camera sets a list just for it, so the drive can
-tell you about people while the street tells you about cars. A camera with no list
-of its own follows All cameras.
+The chip at the top picks the camera you're setting, one at a time. A camera opens
+with every object it alerts on ticked, and you untick the ones you don't want, so
+the drive can tell you about people while the street tells you about cars. Leave
+every object ticked and the camera stays unfiltered, which also covers an object
+your server starts alerting on later.
 
 The objects offered are the ones that camera can actually report, so a label your
 server doesn't track there isn't there to pick. Anything already on that camera's
@@ -416,9 +417,11 @@ tracks, and the sounds the cameras listen for. Naming a label does not make Frig
 detect it, so an object nobody tracks isn't offered and can't be set as an alert
 that never fires. Anything already chosen stays on the list, so a label you've
 stopped tracking can be taken off. A change goes to the server as you make it, so
-the next thing Frigate sees follows it and nothing restarts. The chip along the top
-picks the scope: all cameras, or one of them. A camera you never pick follows the
-shared settings.
+the next thing Frigate sees follows it and nothing restarts.
+
+One camera is set at a time, as Frigate's own settings do it. The chip at the top
+picks it. A camera with no list of its own follows the server's shared list, and the
+page shows that list; changing anything there gives that camera a list of its own.
 
 These are Frigate's settings rather than the app's. They live in its own settings
 file and the server's web page shows the same values. An admin account can change

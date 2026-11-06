@@ -15,15 +15,15 @@ import nz.mckenzie.frigo.data.FrigoRepository
 
 data class AlertObjectsUiState(
     val loading: Boolean = true,
-    /** The cameras to narrow by, named and ordered the way this phone shows them. */
+    /** The cameras to set, named and ordered the way this phone shows them. */
     val cameras: List<Camera> = emptyList(),
     /** What each camera can make an alert from, by the server's name for it. */
     val choices: AlertObjectChoices = AlertObjectChoices(),
-    /** The camera being set, or null for the list they all follow. */
+    /** The camera being set, which is the first one until another is picked. */
     val scope: String? = null,
     /** The list as it stands, every camera's own included. */
     val objects: AlertObjects = AlertObjects(),
-    /** What is ticked here now. */
+    /** What is ticked for this camera now. Every object it alerts on is everything. */
     val chosen: Set<String> = emptySet(),
     /**
      * True when neither the server nor the phone's copy of its settings said
@@ -32,19 +32,29 @@ data class AlertObjectsUiState(
     val noAnswer: Boolean = false,
 ) {
     /**
-     * The objects this scope offers, and anything already ticked for it so it can
-     * be taken off. A label another camera has is not this camera's business.
+     * The objects this camera offers, and anything already ticked for it so it can
+     * be taken off. Another camera's list is not this camera's business.
      */
     val offered: List<String>
-        get() = ((choices.forCamera(scope) + objects.letsThrough(scope))).distinct().sorted()
+        get() = (choices.forCamera(scope) + objects.letsThrough(scope)).distinct().sorted()
+
+    /** Everything this camera alerts on, which is what ticking all of them means. */
+    val all: Set<String>
+        get() = choices.forCamera(scope).toSet()
 }
 
-/**
- * What one scope lets through, as a list, for the page to widen its offered
- * labels by.
- */
+/** What one scope lets through, as a list, for the page to widen its offered labels by. */
 private fun AlertObjects.letsThrough(scope: String?): List<String> =
     if (scope == null) labels.toList() else labelsFor(scope).toList()
+
+/**
+ * What is ticked for a camera: the list it has, or every object it alerts on when it
+ * has none. No list is the same as everything, and a camera starts that way.
+ */
+private fun ticked(objects: AlertObjects, choices: AlertObjectChoices, camera: String): Set<String> {
+    val saved = objects.labelsFor(camera)
+    return saved.ifEmpty { choices.forCamera(camera).toSet() }
+}
 
 /**
  * The objects this phone lets buzz, camera by camera.
@@ -54,52 +64,55 @@ private fun AlertObjects.letsThrough(scope: String?): List<String> =
  * already keeps, and a change is written to the phone. Frigate turns a non-admin's
  * change to its own lists down, which is why this list exists at all.
  *
- * Leaving a camera writes what was ticked for it, so the choice survives looking
- * at another camera. All cameras is the list every camera without one of its own
- * follows.
+ * One camera is set at a time, and leaving a camera writes what was ticked for it.
+ * A camera with every object it alerts on ticked is stored as having no list, which
+ * is how "everything" is kept: a label the server adds later is included.
  */
 class AlertObjectsViewModel(private val repository: FrigoRepository) : ViewModel() {
 
-    private val _state = MutableStateFlow(startingState())
+    private val _state = MutableStateFlow(
+        AlertObjectsUiState(objects = repository.alertObjects.value),
+    )
     val state = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
             val choices = runCatching { repository.alertObjectChoices() }.getOrNull()
-            // A camera turned off on this phone is not one to narrow by, the same
-            // as on Review and Explore.
+            // A camera turned off on this phone is not one to set, the same as on
+            // Review and Explore.
             val cameras = choices
                 ?.let { repository.cameraList.value.shown(it.cameras) }
                 .orEmpty()
             _state.update { current ->
+                val scope = current.scope ?: cameras.firstOrNull()?.name
+                val next = choices ?: AlertObjectChoices()
                 current.copy(
                     loading = false,
                     noAnswer = choices == null,
                     cameras = cameras,
-                    choices = choices ?: AlertObjectChoices(),
+                    choices = next,
+                    scope = scope,
+                    chosen = scope?.let { ticked(current.objects, next, it) }.orEmpty(),
                 )
             }
         }
     }
 
-    private fun startingState(): AlertObjectsUiState {
-        val objects = repository.alertObjects.value
-        return AlertObjectsUiState(objects = objects, chosen = objects.labels)
-    }
-
-    /** Sets one camera's list, or the one every camera follows, without leaving. */
-    fun show(camera: String?) {
+    /** Moves to another camera, keeping what was ticked for the one being left. */
+    fun show(camera: String) {
         val current = _state.value
         if (current.scope == camera) return
 
         // What was ticked on the camera being left is kept, the same as Done would.
-        val kept = current.objects.withLabels(current.scope, current.chosen)
+        val kept = current.scope
+            ?.let { current.objects.withChosen(it, current.chosen, current.all) }
+            ?: current.objects
         commit(kept)
         _state.update {
             it.copy(
                 scope = camera,
                 objects = kept,
-                chosen = kept.letsThrough(camera).toSet(),
+                chosen = ticked(kept, it.choices, camera),
             )
         }
     }
@@ -117,20 +130,13 @@ class AlertObjectsViewModel(private val repository: FrigoRepository) : ViewModel
         }
     }
 
-    /** Keeps the list here on the phone. Empty means everything for this scope. */
+    /** Keeps the list here on the phone, with all of them ticked stored as everything. */
     fun save(labels: Set<String>) {
         val current = _state.value
-        val next = current.objects.withLabels(current.scope, labels)
+        val camera = current.scope ?: return
+        val next = current.objects.withChosen(camera, labels, current.all)
         commit(next)
-        _state.update { it.copy(objects = next, chosen = labels) }
-    }
-
-    /** Everything for the scope being set, which is the list with nobody on it. */
-    fun everything() {
-        val current = _state.value
-        val next = current.objects.everythingFor(current.scope)
-        commit(next)
-        _state.update { it.copy(objects = next, chosen = emptySet()) }
+        _state.update { it.copy(objects = next, chosen = ticked(next, it.choices, camera)) }
     }
 
     private fun commit(next: AlertObjects) {

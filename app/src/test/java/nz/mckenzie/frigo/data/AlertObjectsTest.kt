@@ -50,36 +50,33 @@ class AlertObjectsTest {
         assertFalse(objects.lets("north_cam", "cat"))
     }
 
-    /** Everything on one camera is a list of its own with nobody on it. */
+    /** A camera with everything it alerts on ticked is kept as no list at all. */
     @Test
-    fun everythingOnOneCameraLeavesTheOthersFiltered() {
-        val objects = AlertObjects(labels = setOf("person"))
-            .everythingFor("door_cam")
+    fun tickingEveryObjectMeansNoList() {
+        val objects = AlertObjects()
+            .withChosen("door_cam", setOf("person", "car"), setOf("person", "car"))
 
+        assertEquals(emptySet<String>(), objects.cameras.getValue("door_cam"))
         assertTrue(objects.lets("door_cam", "dog"))
-        assertFalse(objects.lets("north_cam", "dog"))
     }
 
-    /** Writing a camera's list keeps every other camera's. */
+    /** Taking one off is a list, and only that camera's. */
     @Test
-    fun writingOneCameraLeavesTheRestAlone() {
-        val objects = AlertObjects(labels = setOf("person"))
-            .withLabels("door_cam", setOf("cat"))
+    fun takingOneOffKeepsTheRest() {
+        val objects = AlertObjects()
+            .withChosen("door_cam", setOf("person"), setOf("person", "car"))
 
-        assertEquals(setOf("person"), objects.labelsFor("north_cam"))
-        assertEquals(setOf("cat"), objects.labelsFor("door_cam"))
+        assertEquals(setOf("person"), objects.labelsFor("door_cam"))
+        assertTrue(objects.lets("north_cam", "dog"))
     }
 
-    /** Everything for every camera is the phone saying nothing at all. */
+    /** A camera kept with an empty list is not one the phone is filtering. */
     @Test
-    fun everythingForEveryCameraClearsThemAll() {
-        val objects = AlertObjects(
-            labels = setOf("person"),
-            cameras = mapOf("door_cam" to setOf("cat")),
-        ).everythingFor(null)
+    fun aCameraSetToEverythingLeavesThePhoneUnfiltered() {
+        val objects = AlertObjects().withLabels("door_cam", emptySet())
 
         assertTrue(objects.everything)
-        assertEquals(emptyMap<String, Set<String>>(), objects.cameras)
+        assertTrue(objects.lets("door_cam", "dog"))
     }
 
     /** Frigate's own names, matched as it writes them. */

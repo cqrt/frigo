@@ -2507,13 +2507,25 @@ one camera picked unticked it everywhere, and a label the picked camera doesn't 
 on was still listed because another camera had it ticked. Both are the same mistake,
 one list pretending to be several.
 
-The list is now kept per camera. All cameras is the list every camera follows, and a
-camera you pick has one of its own; a camera with none follows the shared list.
-Leaving a camera writes what was ticked for it, so looking at another camera doesn't
-throw the first choice away. Done still needs at least one tick, and Everything is
-the row that means the whole of what the server sends for that camera. The shared list
-and the camera lists are one block on the phone, so a copy written by the version
-with a single list reads as a shared list with no cameras of their own.
+The list is now kept per camera, and one camera is set at a time: there is no
+all-cameras scope on the page. A camera opens with every object it alerts on ticked,
+and you untick what you don't want, so an unfiltered camera reads as what it is
+rather than as a button called Everything. Leaving every object ticked is stored as
+no list at all, which is how everything is kept: a label Frigate adds later is
+included without opening the page again. Leaving a camera writes what was ticked for
+it, so looking at another camera doesn't throw the first choice away. Done needs at
+least one tick, so unticking the last object can't mean "everything" by accident;
+ticking them all again is how you get back. The shared list and the camera lists are
+one block on the phone, so a copy written by the version with a single list reads as
+a shared list with no cameras of their own.
+
+Rejected: an Everything row. It was indistinguishable from a camera nobody had set,
+so choosing it on one camera looked like it had spread to the next, and it was a
+second way to say what ticking every object already says.
+
+Rejected: an all-cameras scope. It offered the union of every camera's alert objects,
+so a tick could do nothing on some of the cameras it claimed to cover, and it hid the
+one thing worth knowing: what this camera tells you about.
 
 A camera with its Alerts switch off in Alerts and detections never makes one, and a
 camera left off the alert list has no objects to make one from. Neither is offered:
@@ -2557,6 +2569,21 @@ the names from `/api/sub_labels`, the same endpoint Explore's People filter uses
 anything already ticked, so a name Frigate no longer recognises can be put back. A
 name Frigate has verified carries a `-verified` suffix that the app has never shown,
 and the tick matches it either way.
+
+## Alerts and detections sets one camera at a time
+
+The same reasoning reached the server's own page. Its All cameras scope wrote Frigate's
+shared list, and its picker offered every object any camera could report, so a tick
+there could do nothing on some of the cameras it claimed to cover. Frigate's own
+settings screen sets one camera at a time for the same reason: a list that spans
+cameras hides which camera does what.
+
+So the chip lists cameras only, and the page opens on the first one. A camera that has
+never been given a list of its own follows Frigate's shared list, and the page shows
+that list; editing anything gives that camera a list of its own. The page no longer
+writes `review.alerts.labels` itself, so the shared list stays exactly as the server
+has it and keeps covering the cameras nobody has set. Frigate's own web page still
+edits it, and a browser change is picked up the next time the app reads the settings.
 
 ## The label pages offer only what the server can report
 

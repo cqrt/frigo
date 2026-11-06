@@ -21,16 +21,20 @@ enum class ReviewLabels { Alerts, Detections }
 data class ReviewSettingsUiState(
     val loading: Boolean = true,
     val page: ReviewPage? = null,
-    /** The camera being looked at, or null for all of them. */
+    /**
+     * The camera being set, which is the first one until another is picked. There
+     * is no all-cameras scope: Frigate sets one camera at a time, and a list that
+     * covered every camera would offer objects some of them can't report.
+     */
     val scope: String? = null,
     val error: String? = null,
     /** A change is on its way to the server. */
     val busy: Boolean = false,
 )
 
-/** What the page shows: the camera chosen, or all of them. */
+/** What the page shows: the camera being set. */
 val ReviewSettingsUiState.shown: ReviewFlags?
-    get() = page?.let { if (scope == null) it.settings.all else it.settings.cameras[scope] }
+    get() = page?.let { page -> scope?.let { page.settings.cameras[it] } }
 
 /**
  * The four settings behind the Review page, for all cameras or one at a time.
@@ -54,10 +58,11 @@ class ReviewSettingsViewModel(private val repository: FrigoRepository) : ViewMod
             runCatching { repository.reviewPage() }
                 .onSuccess { page ->
                     _state.update { current ->
-                        // A camera that has gone from the server falls back to all of them.
+                        // A camera that has gone from the server falls back to the
+                        // first one, which is where a page that has just opened starts.
                         val scope = current.scope?.takeIf { name ->
                             page.cameras.any { it.name == name }
-                        }
+                        } ?: page.cameras.firstOrNull()?.name
                         current.copy(loading = false, page = page, scope = scope)
                     }
                 }
@@ -68,6 +73,7 @@ class ReviewSettingsViewModel(private val repository: FrigoRepository) : ViewMod
     }
 
     fun show(camera: String?) {
+        if (camera == null) return
         _state.update { it.copy(scope = camera, error = null) }
     }
 
@@ -89,13 +95,15 @@ class ReviewSettingsViewModel(private val repository: FrigoRepository) : ViewMod
         // A page read off the phone can't send anything: the server wasn't there.
         if (current.page?.readAt != null) return
 
+        // One camera at a time: there is no scope that covers every camera.
+        val camera = current.scope ?: return
         val before = current.shown ?: return
         val after = transform(before)
         // Nothing to say means nothing to send.
-        val change = reviewChange(current.scope, before, after) ?: return
+        val change = reviewChange(camera, before, after) ?: return
 
         _state.update {
-            it.copy(page = it.page?.setting(current.scope, after), busy = true, error = null)
+            it.copy(page = it.page?.setting(camera, after), busy = true, error = null)
         }
 
         viewModelScope.launch {
@@ -110,7 +118,7 @@ class ReviewSettingsViewModel(private val repository: FrigoRepository) : ViewMod
                     // Put the page back the way the server still has it.
                     _state.update {
                         it.copy(
-                            page = it.page?.setting(current.scope, before),
+                            page = it.page?.setting(camera, before),
                             busy = false,
                             error = failure.friendlyMessage(repository.context),
                         )
@@ -119,12 +127,8 @@ class ReviewSettingsViewModel(private val repository: FrigoRepository) : ViewMod
         }
     }
 
-    private fun ReviewPage.setting(camera: String?, flags: ReviewFlags): ReviewPage =
-        if (camera == null) {
-            copy(settings = settings.copy(all = flags))
-        } else {
-            copy(settings = settings.copy(cameras = settings.cameras + (camera to flags)))
-        }
+    private fun ReviewPage.setting(camera: String, flags: ReviewFlags): ReviewPage =
+        copy(settings = settings.copy(cameras = settings.cameras + (camera to flags)))
 
     companion object {
         fun factory(container: AppContainer) = viewModelFactory {

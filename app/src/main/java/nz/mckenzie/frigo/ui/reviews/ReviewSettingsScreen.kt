@@ -57,8 +57,9 @@ import nz.mckenzie.frigo.ui.relativeTime
  * make a detection, and whether either is made at all.
  *
  * Frigate keeps these in its own settings file and applies a change as it saves,
- * so the next alert follows it. They are set for all cameras at once, and any one
- * camera can be set on its own.
+ * so the next alert follows it. One camera is set at a time, as Frigate's own
+ * settings do it: a list that covered every camera would offer objects some of
+ * them can't report.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -173,6 +174,7 @@ fun ReviewSettingsScreen(
                         cameras = page.cameras,
                         chosen = state.scope,
                         onChoose = viewModel::show,
+                        all = false,
                     )
 
                     if (!page.admin) {
@@ -260,15 +262,6 @@ fun ReviewSettingsScreen(
                                 null
                             },
                             trailing = if (changeable) ({ OpenMark() }) else null,
-                        )
-                    }
-
-                    if (state.scope == null) {
-                        Text(
-                            text = stringResource(R.string.revset_all_cameras),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp),
                         )
                     }
                 }

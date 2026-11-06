@@ -46,11 +46,10 @@
     <!-- A lista de objetos própria deste telefone. -->
     <string name="alert_objects_title">Só estes objetos</string>
     <string name="alert_objects_everything">Tudo o que o seu servidor envia</string>
-    <string name="alert_objects_all">Tudo</string>
     <string name="alert_objects_per_camera">Ajustado por câmera</string>
     <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">O seu servidor não responde, então aqui só aparece o que você marcou.</string>
-    <string name="alert_objects_hint">Nada marcado significa Tudo. Concluir precisa de pelo menos um objeto.</string>
+    <string name="alert_objects_hint">Escolha pelo menos um objeto.</string>
     <string name="alert_objects_phone_only">Esta lista é só deste telefone. O seu servidor e os outros telefones ficam como estão.</string>
 
     <!-- A lista própria deste telefone: as pessoas por quem ele fica calado. -->
@@ -591,7 +590,6 @@
     <string name="revset_objects">Objetos</string>
     <string name="revset_nothing">Nada</string>
     <string name="revset_everything_else">Todo o resto</string>
-    <string name="revset_all_cameras">Isto vale para todas as câmeras. Escolha uma acima para definir a dela.</string>
 
     <!-- Picking the objects, and what the picker says. -->
     <string name="revset_alert_labels">Rótulos de alerta</string>

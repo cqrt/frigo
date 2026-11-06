@@ -46,11 +46,10 @@
     <!-- La liste d\'objets propre à ce téléphone. -->
     <string name="alert_objects_title">Seulement ces objets</string>
     <string name="alert_objects_everything">Tout ce que votre serveur envoie</string>
-    <string name="alert_objects_all">Tout</string>
     <string name="alert_objects_per_camera">Réglé par caméra</string>
     <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">Votre serveur ne répond pas, donc cette liste ne montre que ce que vous avez coché.</string>
-    <string name="alert_objects_hint">Rien de coché veut dire Tout. Terminé demande au moins un objet.</string>
+    <string name="alert_objects_hint">Choisissez au moins un objet.</string>
     <string name="alert_objects_phone_only">Cette liste n\'appartient qu\'à ce téléphone. Votre serveur et ses autres téléphones ne changent pas.</string>
 
     <!-- La liste propre à ce téléphone : les personnes dont il reste silencieux. -->
@@ -591,7 +590,6 @@
     <string name="revset_objects">Objets</string>
     <string name="revset_nothing">Rien</string>
     <string name="revset_everything_else">Tout le reste</string>
-    <string name="revset_all_cameras">Ceci couvre toutes les caméras. Choisissez-en une au-dessus pour lui donner les siens.</string>
 
     <!-- Choisir les objets, et ce que dit le sélecteur. -->
     <string name="revset_alert_labels">Étiquettes d\'alerte</string>

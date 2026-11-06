@@ -46,11 +46,10 @@
     <!-- This phone's own list of the objects that may buzz it. -->
     <string name="alert_objects_title">Only these objects</string>
     <string name="alert_objects_everything">Everything your server sends</string>
-    <string name="alert_objects_all">Everything</string>
     <string name="alert_objects_per_camera">Set per camera</string>
     <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">Your server isn\'t answering, so this lists only what you\'ve ticked.</string>
-    <string name="alert_objects_hint">Nothing ticked means Everything. Done needs at least one object.</string>
+    <string name="alert_objects_hint">Pick at least one object.</string>
     <string name="alert_objects_phone_only">This list is this phone\'s own. Your server and its other phones are unchanged.</string>
 
     <!-- This phone's own list of the people it stays quiet about, by the name Frigate knows them by. -->
@@ -591,7 +590,6 @@
     <string name="revset_objects">Objects</string>
     <string name="revset_nothing">Nothing</string>
     <string name="revset_everything_else">Everything else</string>
-    <string name="revset_all_cameras">These cover every camera. Pick one above to set its own.</string>
 
     <!-- Picking the objects, and what the picker says. -->
     <string name="revset_alert_labels">Alert labels</string>

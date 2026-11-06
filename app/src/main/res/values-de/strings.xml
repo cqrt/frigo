@@ -47,11 +47,10 @@
     <!-- Die eigene Objektliste dieses Telefons. -->
     <string name="alert_objects_title">Nur diese Objekte</string>
     <string name="alert_objects_everything">Alles, was dein Server sendet</string>
-    <string name="alert_objects_all">Alles</string>
     <string name="alert_objects_per_camera">Pro Kamera eingestellt</string>
     <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">Dein Server antwortet nicht, deshalb steht hier nur, was du angehakt hast.</string>
-    <string name="alert_objects_hint">Nichts angehakt bedeutet Alles. Fertig braucht mindestens ein Objekt.</string>
+    <string name="alert_objects_hint">Wähle mindestens ein Objekt.</string>
     <string name="alert_objects_phone_only">Diese Liste gehört nur zu diesem Telefon. Dein Server und seine anderen Telefone bleiben unverändert.</string>
 
     <!-- Die eigene Liste dieses Telefons: Personen, über die es still bleibt. -->
@@ -592,7 +591,6 @@
     <string name="revset_objects">Objekte</string>
     <string name="revset_nothing">Nichts</string>
     <string name="revset_everything_else">Alles andere</string>
-    <string name="revset_all_cameras">Das gilt für jede Kamera. Wähle oben eine, um ihre eigenen zu setzen.</string>
 
     <!-- Die Objekte wählen, und was die Auswahl sagt. -->
     <string name="revset_alert_labels">Alarm-Labels</string>

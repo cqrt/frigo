@@ -32,12 +32,16 @@ import nz.mckenzie.frigo.ui.said
 /**
  * One chip naming the camera in view, opening the list of them. A chip keeps
  * the whole choice on one line, where a chip per camera took a row of its own.
+ *
+ * [all] is off on a page that sets one camera at a time: there is nothing for "all
+ * cameras" to mean there, and the chip always names the camera being set.
  */
 @Composable
 fun CameraMenu(
     cameras: List<Camera>,
     chosen: String?,
     onChoose: (String?) -> Unit,
+    all: Boolean = true,
 ) {
     var open by remember { mutableStateOf(false) }
     val picked = cameras.firstOrNull { it.name == chosen }
@@ -51,18 +55,20 @@ fun CameraMenu(
             trailingIcon = { Arrow() },
         )
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.comp_all_cameras)) },
-                onClick = {
-                    open = false
-                    onChoose(null)
-                },
-                trailingIcon = if (chosen == null) {
-                    { Icon(Icons.Filled.Check, contentDescription = chosenWord) }
-                } else {
-                    null
-                },
-            )
+            if (all) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.comp_all_cameras)) },
+                    onClick = {
+                        open = false
+                        onChoose(null)
+                    },
+                    trailingIcon = if (chosen == null) {
+                        { Icon(Icons.Filled.Check, contentDescription = chosenWord) }
+                    } else {
+                        null
+                    },
+                )
+            }
             cameras.forEach { camera ->
                 DropdownMenuItem(
                     text = { Text(camera.title) },

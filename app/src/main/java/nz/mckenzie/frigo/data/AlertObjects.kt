@@ -26,8 +26,8 @@ data class AlertObjects(
     val cameras: Map<String, Set<String>> = emptyMap(),
 ) {
 
-    /** True when nothing anywhere is filtered: every object the server sends. */
-    val everything: Boolean get() = labels.isEmpty() && cameras.isEmpty()
+    /** True when nothing is held back anywhere: every camera gets everything. */
+    val everything: Boolean get() = labels.isEmpty() && cameras.values.all { it.isEmpty() }
 
     /**
      * What this camera lets through. A camera with no list of its own follows the
@@ -41,17 +41,16 @@ data class AlertObjects(
         return list.isEmpty() || label in list
     }
 
-    /** The same with a list written for one camera, or for every camera that follows it. */
-    fun withLabels(camera: String?, chosen: Set<String>): AlertObjects =
-        if (camera == null) {
-            copy(labels = chosen)
-        } else {
-            copy(cameras = cameras + (camera to chosen))
-        }
+    /** The same with a list written for one camera. */
+    fun withLabels(camera: String, chosen: Set<String>): AlertObjects =
+        copy(cameras = cameras + (camera to chosen))
 
-    /** Everything for one camera, or for the whole phone when [camera] is null. */
-    fun everythingFor(camera: String?): AlertObjects =
-        if (camera == null) AlertObjects() else copy(cameras = cameras + (camera to emptySet()))
+    /**
+     * The same with one camera's list written, and every object it can alert on
+     * written as no list at all: ticking all of them is what "everything" means.
+     */
+    fun withChosen(camera: String, chosen: Set<String>, offered: Set<String>): AlertObjects =
+        withLabels(camera, if (chosen.containsAll(offered)) emptySet() else chosen)
 }
 
 /**

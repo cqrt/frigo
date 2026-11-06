@@ -72,12 +72,6 @@ fun AlertObjectsScreen(
         onBack()
     }
 
-    /** Everything for this scope, which is the list with nobody on it. */
-    fun keepEverything() {
-        viewModel.everything()
-        onBack()
-    }
-
     BackHandler(onBack = onBack)
 
     val text = query.trim()
@@ -119,14 +113,15 @@ fun AlertObjectsScreen(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // The chip picks the camera being set. All cameras is the list every
-            // camera follows, and one camera of its own keeps what is ticked here.
+            // The chip names the camera being set. There is one camera at a time:
+            // each keeps its own list, so "all cameras" has nothing to mean.
             if (state.cameras.isNotEmpty()) {
                 Row(Modifier.fillMaxWidth()) {
                     CameraMenu(
                         cameras = state.cameras,
                         chosen = state.scope,
-                        onChoose = viewModel::show,
+                        onChoose = { camera -> camera?.let(viewModel::show) },
+                        all = false,
                     )
                 }
             }
@@ -142,20 +137,9 @@ fun AlertObjectsScreen(
                     Note(stringResource(R.string.alert_objects_cant_read))
                 }
 
-                // Everything is the whole of what the server sends, which is what an
-                // empty list means. Here it is this camera's own list, or every
-                // camera's when All cameras is picked.
-                Item(
-                    icon = FrigoIcons.Grid,
-                    title = stringResource(R.string.alert_objects_all),
-                    onClick = { keepEverything() },
-                    trailing = {
-                        Checkbox(checked = nothingTicked, onCheckedChange = null)
-                    },
-                )
-
-                // Nothing ticked is a state Done won't write, so the card says what
-                // to do about it rather than leaving the button greyed with no reason.
+                // Every object this camera alerts on is ticked until one is taken
+                // off, so the page opens reading as everything, which is what an
+                // unset camera does.
                 if (nothingTicked) {
                     Note(stringResource(R.string.alert_objects_hint))
                 }

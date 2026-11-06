@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.28
+
+- Only these objects sets one camera at a time: a camera opens with every object it alerts on ticked, and you untick what you don't want. The All cameras scope and the Everything row are gone.
+- Leaving every object ticked keeps that camera unfiltered, so an object your server starts alerting on later is included.
+- Alerts and detections sets one camera at a time too, the way Frigate's own settings do.
+
 ## 0.10.27
 
 - Only these objects no longer offers a camera whose Alerts switch is off in Alerts and detections, since that camera never makes one.
