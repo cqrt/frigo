@@ -38,7 +38,7 @@ import nz.mckenzie.frigo.ui.FrigoIcons
 fun SearchField(
     value: String,
     onValueChange: (String) -> Unit,
-    placeholder: String,
+    placeholder: String? = null,
     modifier: Modifier = Modifier,
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -82,7 +82,7 @@ fun SearchField(
                     .onFocusChanged { focused = it.isFocused },
                 decorationBox = { inner ->
                     Box {
-                        if (value.isEmpty()) {
+                        if (value.isEmpty() && placeholder != null) {
                             Text(
                                 text = placeholder,
                                 style = MaterialTheme.typography.bodyLarge,

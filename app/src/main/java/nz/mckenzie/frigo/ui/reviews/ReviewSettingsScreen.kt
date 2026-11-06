@@ -1,16 +1,15 @@
 package nz.mckenzie.frigo.ui.reviews
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -22,7 +21,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,8 +45,11 @@ import nz.mckenzie.frigo.ui.components.CameraMenu
 import nz.mckenzie.frigo.ui.components.CardDivider
 import nz.mckenzie.frigo.ui.components.Group
 import nz.mckenzie.frigo.ui.components.Item
+import nz.mckenzie.frigo.ui.components.Note
 import nz.mckenzie.frigo.ui.components.OpenMark
+import nz.mckenzie.frigo.ui.components.SearchField
 import nz.mckenzie.frigo.ui.components.attention
+import nz.mckenzie.frigo.ui.components.prettyLabel
 import nz.mckenzie.frigo.ui.relativeTime
 
 /**
@@ -84,6 +85,7 @@ fun ReviewSettingsScreen(
                 ReviewLabels.Alerts -> shown.alertLabels
                 ReviewLabels.Detections -> shown.detectionLabels.orEmpty()
             },
+            modifier = modifier,
             onDone = {
                 viewModel.setLabels(choosing, it)
                 picking = null
@@ -211,7 +213,7 @@ fun ReviewSettingsScreen(
                             icon = FrigoIcons.Tag,
                             title = stringResource(R.string.revset_objects),
                             value = shown.alertLabels.takeIf { it.isNotEmpty() }
-                                ?.joinToString(", ") { it.labelName() }
+                                ?.joinToString(", ") { prettyLabel(it) }
                                 ?: stringResource(R.string.revset_nothing),
                             onClick = if (changeable) {
                                 { picking = ReviewLabels.Alerts }
@@ -250,7 +252,7 @@ fun ReviewSettingsScreen(
                                 shown.detectionLabels.isEmpty() ->
                                     stringResource(R.string.revset_nothing)
 
-                                else -> shown.detectionLabels.joinToString(", ") { it.labelName() }
+                                else -> shown.detectionLabels.joinToString(", ") { prettyLabel(it) }
                             },
                             onClick = if (changeable) {
                                 { picking = ReviewLabels.Detections }
@@ -275,9 +277,13 @@ fun ReviewSettingsScreen(
     }
 }
 
+
 /**
- * The objects to choose from, with a search box. Nothing ticked on detections
- * means every other object, which is why Done stays available there.
+ * The labels to choose from: a search box, then a row a checkbox in, drawn the way
+ * every other settings page is.
+ *
+ * Nothing ticked on detections means every other object, which is why Done stays
+ * available there.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -286,6 +292,7 @@ private fun LabelPicker(
     objects: List<String>,
     tracked: Set<String>,
     initial: List<String>,
+    modifier: Modifier = Modifier,
     onDone: (List<String>) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -304,7 +311,7 @@ private fun LabelPicker(
         chosen = if (label in chosen) chosen - label else chosen + label
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(modifier.fillMaxSize()) {
         TopAppBar(
             title = {
                 val name = if (kind == ReviewLabels.Alerts) {
@@ -333,81 +340,76 @@ private fun LabelPicker(
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         )
 
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text(stringResource(R.string.revset_search)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            SearchField(value = query, onValueChange = { query = it })
 
-        // A label the server can't report is not offered, so the page says what the
-        // list is rather than leaving a missing object unexplained.
-        Text(
-            text = stringResource(R.string.revset_only_detected),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
+            Group(stringResource(R.string.reviews_labels)) {
+                // A label the server can't report is not offered, so the page says
+                // what the list is rather than leaving a missing object unexplained.
+                Note(stringResource(R.string.revset_only_detected))
 
-        val hint = when {
-            !nothingTicked -> null
-            kind == ReviewLabels.Alerts -> stringResource(R.string.revset_alerts_hint)
-            else -> stringResource(R.string.revset_detections_hint)
-        }
-        if (hint != null) {
-            Text(
-                text = hint,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (kind == ReviewLabels.Alerts) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-        }
-
-        if (listed.isEmpty() && text.isNotEmpty()) {
-            Text(
-                text = stringResource(R.string.revset_no_match),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-        }
-
-        LazyColumn(Modifier.fillMaxSize()) {
-            items(listed, key = { it }) { label ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { toggle(label) }
-                        .padding(end = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Checkbox(
-                        checked = label in chosen,
-                        onCheckedChange = { toggle(label) },
+                listed.forEachIndexed { index, label ->
+                    if (index > 0) CardDivider()
+                    // The row does the ticking, so a tap anywhere on it counts and
+                    // every row is the same height.
+                    Item(
+                        icon = FrigoIcons.Tag,
+                        title = prettyLabel(label),
+                        onClick = { toggle(label) },
+                        trailing = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                if (label in tracked) {
+                                    Text(
+                                        text = stringResource(R.string.revset_tracked),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                                Checkbox(
+                                    checked = label in chosen,
+                                    onCheckedChange = null,
+                                )
+                            }
+                        },
                     )
-                    Text(
-                        text = label.labelName(),
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f),
+                }
+
+                if (listed.isEmpty() && text.isNotEmpty()) {
+                    CardDivider()
+                    Note(stringResource(R.string.revset_no_match))
+                }
+
+                // Nothing ticked is a state Done won't write for alerts, so the card
+                // says what to do about it rather than leaving the button greyed with
+                // no reason. On detections it is a reading, not a warning.
+                val hint = when {
+                    !nothingTicked -> null
+                    kind == ReviewLabels.Alerts -> stringResource(R.string.revset_alerts_hint)
+                    else -> stringResource(R.string.revset_detections_hint)
+                }
+                if (hint != null) {
+                    CardDivider()
+                    Note(
+                        text = hint,
+                        colour = if (kind == ReviewLabels.Alerts) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            null
+                        },
                     )
-                    if (label in tracked) {
-                        Text(
-                            text = stringResource(R.string.revset_tracked),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
                 }
             }
+
+            Spacer(Modifier.height(24.dp))
         }
     }
 }
-
-/** `fire_alarm` said the way a person would. */
-private fun String.labelName(): String = replace('_', ' ')
-    .replaceFirstChar { first -> first.uppercase() }

@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.25
+
+- Alert labels and Detection labels wear the same cards, rows and filled search box as the rest of Settings.
+- Tapping anywhere on a label's row ticks it, and the tracked labels keep their mark beside the checkbox.
+
 ## 0.10.24
 
 - Alerts and detections, and Only these objects, only offer what your server can actually report: the objects each camera tracks, and the sounds it listens for.

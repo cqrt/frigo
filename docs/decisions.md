@@ -2570,6 +2570,12 @@ missing cat reads as "not tracked" rather than "the app lost it".
 The Detections tab reads the same list, so the "everything else" it offers is bounded
 by what the server can report too.
 
+Both pickers are the same stack every other settings page uses: a heading over a
+card, a row with the tag icon and a checkbox, dividers clear of the icon, and the
+same filled search block as the phone's own object list. The "Tracked" mark sits
+beside the checkbox, on the rows it belongs to. They also keep the scaffold's
+padding now, so the page no longer draws under the system bars.
+
 The phone's own Only these objects page reads the same answer: it offers the alert
 labels each camera can report, so a label the server can't detect isn't there to
 tick. Anything already on the phone's list stays listed, so it can be taken off.
