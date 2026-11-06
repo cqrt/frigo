@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.26
+
+- Only these objects keeps a list per camera: All cameras sets what every camera follows, and a camera of its own keeps what you tick there.
+- A camera now lists only the objects it alerts on, so one you've turned off for it no longer shows.
+
 ## 0.10.25
 
 - Alert labels and Detection labels wear the same cards, rows and filled search box as the rest of Settings.

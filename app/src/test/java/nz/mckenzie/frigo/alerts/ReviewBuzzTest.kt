@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.alerts
 
+import nz.mckenzie.frigo.data.AlertObjects
 import nz.mckenzie.frigo.data.AlertPeople
 import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.CameraAlerts
@@ -129,11 +130,31 @@ class ReviewBuzzTest {
     @Test
     fun anAlertWhoseObjectIsNotOnThisPhonesListDoesNotBuzz() {
         assertFalse(
-            ReviewBuzz().buzzes(review(id = "1"), "new", ten, rules, only = setOf("car")),
+            ReviewBuzz().buzzes(
+                review(id = "1"),
+                "new",
+                ten,
+                rules,
+                only = AlertObjects(labels = setOf("car")),
+            ),
         )
         assertTrue(
-            ReviewBuzz().buzzes(review(id = "2"), "new", ten, rules, only = setOf("person")),
+            ReviewBuzz().buzzes(
+                review(id = "2"),
+                "new",
+                ten,
+                rules,
+                only = AlertObjects(labels = setOf("person")),
+            ),
         )
+    }
+
+    /** A list kept for one camera doesn't silence another. */
+    @Test
+    fun aListForAnotherCameraDoesNotSilenceThisOne() {
+        val objects = AlertObjects(cameras = mapOf("quay" to setOf("car")))
+
+        assertTrue(ReviewBuzz().buzzes(review(), "new", ten, rules, only = objects))
     }
 
     /** A person this phone stays quiet about is left out, whatever the object is. */

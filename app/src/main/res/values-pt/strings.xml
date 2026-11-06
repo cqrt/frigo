@@ -47,6 +47,7 @@
     <string name="alert_objects_title">Só estes objetos</string>
     <string name="alert_objects_everything">Tudo o que o seu servidor envia</string>
     <string name="alert_objects_all">Tudo</string>
+    <string name="alert_objects_per_camera">Ajustado por câmera</string>
     <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">O seu servidor não responde, então aqui só aparece o que você marcou.</string>
     <string name="alert_objects_hint">Nada marcado significa Tudo. Concluir precisa de pelo menos um objeto.</string>

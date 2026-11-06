@@ -13,6 +13,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory
 import nz.mckenzie.frigo.MainActivity
 import nz.mckenzie.frigo.R
+import nz.mckenzie.frigo.data.AlertObjects
 import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.QuietTimes
@@ -47,7 +48,7 @@ object Alerts {
         rules: AlertRules,
         quiet: QuietTimes,
         hidden: Set<String> = emptySet(),
-        only: Set<String> = emptySet(),
+        only: AlertObjects = AlertObjects(),
     ): NotificationCompat.Builder {
         val text = state.text(context, rules, quiet, System.currentTimeMillis(), hidden, only)
         val open = PendingIntent.getActivity(
@@ -281,9 +282,9 @@ sealed interface WatchState {
      * line is about. With every one of them off, the line says so and names where
      * to turn one back on.
      *
-     * [only] is this phone's own list of objects. A camera with nothing left on
-     * that list is counted out too, and with every camera left with nothing the
-     * line says which list is to blame.
+     * [only] is this phone's own list of objects, camera by camera. A camera with
+     * nothing left on its list is counted out too, and with every camera left with
+     * nothing the line says which list is to blame.
      *
      * With [quiet] set and every camera that would buzz inside it, the sentence
      * starts with the time it comes back. Half a quiet window still buzzes, so
@@ -295,7 +296,7 @@ sealed interface WatchState {
         quiet: QuietTimes? = null,
         now: Long = System.currentTimeMillis(),
         hidden: Set<String> = emptySet(),
-        only: Set<String> = emptySet(),
+        only: AlertObjects = AlertObjects(),
     ): String {
         if (this is SignedOut) return context.words(R.string.alerts_session_expired)
 
@@ -311,13 +312,15 @@ sealed interface WatchState {
         val buzzing = alerting.filterValues { it.labels.isNotEmpty() }
         if (buzzing.isEmpty()) return context.words(R.string.alerts_no_alert_objects)
 
-        // This phone's list, applied to each camera: what is left of the objects
+        // This phone's list, applied camera by camera: what is left of the objects
         // the server would tell you about.
-        val allowed = if (only.isEmpty()) {
+        val allowed = if (only.everything) {
             buzzing
         } else {
             buzzing
-                .mapValues { (_, camera) -> camera.copy(labels = camera.labels.filter { it in only }) }
+                .mapValues { (name, camera) ->
+                    camera.copy(labels = camera.labels.filter { only.lets(name, it) })
+                }
                 .filterValues { it.labels.isNotEmpty() }
         }
         if (allowed.isEmpty()) return context.words(R.string.alerts_only_objects)

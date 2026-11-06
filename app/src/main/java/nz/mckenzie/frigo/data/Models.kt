@@ -768,12 +768,12 @@ data class AlertRules(
     /**
      * True when the server says this camera seeing this object is worth a buzz.
      *
-     * [only] is the phone's own list of objects. Empty means every object the
-     * server sends, and otherwise it can only take one away.
+     * [only] is the phone's own list of objects, camera by camera. Empty means
+     * every object the server sends, and otherwise it can only take one away.
      */
-    fun buzzes(camera: String, label: String, only: Set<String> = emptySet()): Boolean {
+    fun buzzes(camera: String, label: String, only: AlertObjects = AlertObjects()): Boolean {
         val found = cameras[camera] ?: return false
-        if (only.isNotEmpty() && label !in only) return false
+        if (!only.lets(camera, label)) return false
         return found.notify && found.alertsOn && label in found.labels
     }
 }

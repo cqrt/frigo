@@ -47,6 +47,7 @@
     <string name="alert_objects_title">Seulement ces objets</string>
     <string name="alert_objects_everything">Tout ce que votre serveur envoie</string>
     <string name="alert_objects_all">Tout</string>
+    <string name="alert_objects_per_camera">Réglé par caméra</string>
     <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">Votre serveur ne répond pas, donc cette liste ne montre que ce que vous avez coché.</string>
     <string name="alert_objects_hint">Rien de coché veut dire Tout. Terminé demande au moins un objet.</string>

@@ -2500,15 +2500,20 @@ a filled search block with a ring while the cursor is in it. The rows are tapped
 rather than the checkboxes, so a tap anywhere on a row counts and every row is the
 same height.
 
-**The camera chip narrows the list and nothing else.** Twelve labels are readable at
-a glance, but one camera's part of them answers "what does the drive tell me about"
-quicker. A camera chip of their own, each with its own objects, was tempting. That is
-a different feature and a much larger one: the rule that decides a buzz, the watching
-line and what the phone stores all become per-camera, and a camera renamed on the
-server would need reasoning about again. The list stayed one for every camera, and
-the chip filters what is on show, so a tick means the same thing whichever camera you
-are looking at. A ticked object stays listed even when the picked camera doesn't alert
-on it, so the phone's list and the page can't disagree about what is on.
+**The chip sets a camera, so the list is kept per camera.** The first version had one
+list for every camera and a chip that only narrowed what was on show. That read as a
+filter but behaved as a scope, and it was wrong in two ways: unticking an object with
+one camera picked unticked it everywhere, and a label the picked camera doesn't alert
+on was still listed because another camera had it ticked. Both are the same mistake,
+one list pretending to be several.
+
+The list is now kept per camera. All cameras is the list every camera follows, and a
+camera you pick has one of its own; a camera with none follows the shared list.
+Leaving a camera writes what was ticked for it, so looking at another camera doesn't
+throw the first choice away. Done still needs at least one tick, and Everything is
+the row that means the whole of what the server sends for that camera. The shared list
+and the camera lists are one block on the phone, so a copy written by the version
+with a single list reads as a shared list with no cameras of their own.
 
 ## A named person can be left out, at the cost of four seconds
 

@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.alerts
 
+import nz.mckenzie.frigo.data.AlertObjects
 import nz.mckenzie.frigo.data.AlertPeople
 import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.FrigateReview
@@ -34,7 +35,7 @@ class ReviewBuzz(
         now: Long,
         rules: AlertRules,
         hidden: Set<String> = emptySet(),
-        only: Set<String> = emptySet(),
+        only: AlertObjects = AlertObjects(),
         leftOut: AlertPeople = AlertPeople(),
     ): Boolean {
         if (!allowed(review, change, now, rules, hidden, only, leftOut)) return false
@@ -50,8 +51,8 @@ class ReviewBuzz(
      * rule twice with the first answer written down.
      *
      * [hidden] is the cameras turned off on this phone. [only] is the objects this
-     * phone lets through and [leftOut] is the people it stays quiet about: both can
-     * only take a buzz away.
+     * phone lets through, camera by camera, and [leftOut] is the people it stays
+     * quiet about: both can only take a buzz away.
      */
     fun allowed(
         review: FrigateReview,
@@ -59,7 +60,7 @@ class ReviewBuzz(
         now: Long,
         rules: AlertRules,
         hidden: Set<String> = emptySet(),
-        only: Set<String> = emptySet(),
+        only: AlertObjects = AlertObjects(),
         leftOut: AlertPeople = AlertPeople(),
     ): Boolean {
         if (change != "new" && change != "update") return false

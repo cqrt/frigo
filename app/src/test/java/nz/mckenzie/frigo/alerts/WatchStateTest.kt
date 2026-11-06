@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.alerts
 
+import nz.mckenzie.frigo.data.AlertObjects
 import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.CameraAlerts
 import nz.mckenzie.frigo.data.QuietTimes
@@ -136,7 +137,11 @@ class WatchStateTest {
     /** The phone's own list leaving nothing is the phone's doing, so the line says so. */
     @Test
     fun aListThatLetsNothingThroughSaysSo() {
-        val text = WatchState.Connected.text(context, buzzesForPerson, only = setOf("car"))
+        val text = WatchState.Connected.text(
+            context,
+            buzzesForPerson,
+            only = AlertObjects(labels = setOf("car")),
+        )
 
         assertEquals(
             "Your list of objects is why nothing will buzz. " +
@@ -158,8 +163,31 @@ class WatchStateTest {
             ),
         )
 
-        val text = WatchState.Connected.text(context, rules, only = setOf("car"))
+        val text = WatchState.Connected.text(
+            context,
+            rules,
+            only = AlertObjects(labels = setOf("car")),
+        )
 
         assertEquals("One camera for car. New events arrive as they happen.", text)
+    }
+
+    /** A camera with a list of its own is counted by that, and not by the shared one. */
+    @Test
+    fun aCameraWithItsOwnListIsCountedByIt() {
+        val rules = AlertRules(
+            cameras = mapOf(
+                "drive" to CameraAlerts(notify = true, alertsOn = true, labels = listOf("person")),
+                "shed" to CameraAlerts(notify = true, alertsOn = true, labels = listOf("car")),
+            ),
+        )
+        val only = AlertObjects(
+            labels = setOf("person"),
+            cameras = mapOf("shed" to setOf("car")),
+        )
+
+        val text = WatchState.Connected.text(context, rules, only = only)
+
+        assertEquals("2 cameras for person and car. New events arrive as they happen.", text)
     }
 }

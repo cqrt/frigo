@@ -136,19 +136,28 @@ class AlertRulesTest {
     /** An empty list is this phone saying nothing, so the server's answer stands. */
     @Test
     fun aPhoneWithNoListOfItsOwnFollowsTheServer() {
-        assertTrue(rules.buzzes("drive", "person", emptySet()))
-        assertTrue(rules.buzzes("drive", "car", emptySet()))
+        assertTrue(rules.buzzes("drive", "person", AlertObjects()))
+        assertTrue(rules.buzzes("drive", "car", AlertObjects()))
     }
 
     /** The phone's list can only take an alert away, never add one. */
     @Test
     fun thePhonesOwnListNarrowsWhatTheServerBuzzes() {
-        val only = setOf("person")
+        val only = AlertObjects(labels = setOf("person"))
 
         // The server would buzz for both; the phone keeps the person.
         assertTrue(rules.buzzes("drive", "person", only))
         assertFalse(rules.buzzes("drive", "car", only))
         // A name on the phone's list that the server never alerts on adds nothing.
-        assertFalse(rules.buzzes("drive", "dog", only + "dog"))
+        assertFalse(rules.buzzes("drive", "dog", AlertObjects(labels = setOf("person", "dog"))))
+    }
+
+    /** A list kept for one camera leaves the others as the server has them. */
+    @Test
+    fun aPhoneListForOneCameraLeavesTheOthersAlone() {
+        val only = AlertObjects(cameras = mapOf("drive" to setOf("car")))
+
+        assertFalse(rules.buzzes("drive", "person", only))
+        assertTrue(rules.buzzes("back", "dog", only))
     }
 }

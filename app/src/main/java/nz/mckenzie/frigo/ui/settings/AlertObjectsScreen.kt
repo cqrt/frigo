@@ -25,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,7 +32,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AlertObjects
 import nz.mckenzie.frigo.data.FrigoRepository
@@ -65,13 +63,18 @@ fun AlertObjectsScreen(
     ),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
 
-    // The write happens when you leave the page rather than on every tap: the list
-    // is written once, and unticking the last object can never mean "everything".
+    // Done writes what is ticked for the camera being set, and closes. Leaving for
+    // another camera keeps that choice too, which is what makes this per camera.
     fun keep(labels: Set<String>) {
-        scope.launch { viewModel.save(labels) }
+        viewModel.save(labels)
+        onBack()
+    }
+
+    /** Everything for this scope, which is the list with nobody on it. */
+    fun keepEverything() {
+        viewModel.everything()
         onBack()
     }
 
@@ -116,8 +119,8 @@ fun AlertObjectsScreen(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Narrowing by a camera changes what is on show, not what a tick means:
-            // there is one list, and this is how you find one camera's part of it.
+            // The chip picks the camera being set. All cameras is the list every
+            // camera follows, and one camera of its own keeps what is ticked here.
             if (state.cameras.isNotEmpty()) {
                 Row(Modifier.fillMaxWidth()) {
                     CameraMenu(
@@ -139,12 +142,13 @@ fun AlertObjectsScreen(
                     Note(stringResource(R.string.alert_objects_cant_read))
                 }
 
-                // Everything is the whole of what the server sends, which is what
-                // an empty list means. It clears the list rather than adding to it.
+                // Everything is the whole of what the server sends, which is what an
+                // empty list means. Here it is this camera's own list, or every
+                // camera's when All cameras is picked.
                 Item(
                     icon = FrigoIcons.Grid,
                     title = stringResource(R.string.alert_objects_all),
-                    onClick = { keep(emptySet()) },
+                    onClick = { keepEverything() },
                     trailing = {
                         Checkbox(checked = nothingTicked, onCheckedChange = null)
                     },
@@ -187,22 +191,25 @@ fun AlertObjectsScreen(
 }
 
 /**
- * What the Settings row says under Only these objects: everything, or the objects
- * by name.
+ * What the Settings row says under Only these objects: everything, the objects by
+ * name, or that the cameras differ.
  */
 @Composable
-internal fun AlertObjects.said(): String {
-    if (everything) return stringResource(R.string.alert_objects_everything)
-    val names = labels.sorted().map { prettyLabel(it) }
-    return when (names.size) {
-        1 -> names[0]
-        2 -> stringResource(R.string.alerts_two_objects, names[0], names[1].lowerFirst())
-        else -> stringResource(
-            R.string.alerts_more_objects,
-            names[0],
-            names[1].lowerFirst(),
-            names.size - 2,
-        )
+internal fun AlertObjects.said(): String = when {
+    everything -> stringResource(R.string.alert_objects_everything)
+    cameras.isNotEmpty() -> stringResource(R.string.alert_objects_per_camera)
+    else -> {
+        val names = labels.sorted().map { prettyLabel(it) }
+        when (names.size) {
+            1 -> names[0]
+            2 -> stringResource(R.string.alerts_two_objects, names[0], names[1].lowerFirst())
+            else -> stringResource(
+                R.string.alerts_more_objects,
+                names[0],
+                names[1].lowerFirst(),
+                names.size - 2,
+            )
+        }
     }
 }
 

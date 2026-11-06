@@ -47,6 +47,7 @@
     <string name="alert_objects_title">Only these objects</string>
     <string name="alert_objects_everything">Everything your server sends</string>
     <string name="alert_objects_all">Everything</string>
+    <string name="alert_objects_per_camera">Set per camera</string>
     <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">Your server isn\'t answering, so this lists only what you\'ve ticked.</string>
     <string name="alert_objects_hint">Nothing ticked means Everything. Done needs at least one object.</string>

@@ -256,14 +256,14 @@ it stays quiet. The list only ever takes alerts away: nothing on your server
 changes, and its other phones hear what they always heard. An alert for the
 objects you've ticked still depends on the server's own two answers above.
 
-The chip at the top of that page picks a camera to narrow the list by, which is
-how you find one camera's objects in a list of a dozen. It changes what is on
-show and nothing else: there is still one list, and a tick means the same on
-every camera.
+The chip at the top picks the camera you're setting. All cameras is the list every
+camera follows, and picking one camera sets a list just for it, so the drive can
+tell you about people while the street tells you about cars. A camera with no list
+of its own follows All cameras.
 
-The objects offered are the ones the cameras can actually report, so a label your
-server doesn't track isn't there to pick. Anything already on the list stays
-listed, so it can be taken off.
+The objects offered are the ones that camera can actually report, so a label your
+server doesn't track there isn't there to pick. Anything already on that camera's
+list stays listed, so it can be taken off.
 
 **People to leave out** sits under it. Frigate puts a name on a person it
 recognises a second or two after the alert starts, and this phone can stay quiet

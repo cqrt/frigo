@@ -48,6 +48,7 @@
     <string name="alert_objects_title">Nur diese Objekte</string>
     <string name="alert_objects_everything">Alles, was dein Server sendet</string>
     <string name="alert_objects_all">Alles</string>
+    <string name="alert_objects_per_camera">Pro Kamera eingestellt</string>
     <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">Dein Server antwortet nicht, deshalb steht hier nur, was du angehakt hast.</string>
     <string name="alert_objects_hint">Nichts angehakt bedeutet Alles. Fertig braucht mindestens ein Objekt.</string>

@@ -29,6 +29,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import nz.mckenzie.frigo.FrigoApplication
 import nz.mckenzie.frigo.R
+import nz.mckenzie.frigo.data.AlertObjects
 import nz.mckenzie.frigo.data.AlertPeople
 import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.AppContainer
@@ -313,7 +314,7 @@ class AlertService : Service() {
         val rules = container.repository.alertRules.value
         val now = System.currentTimeMillis()
         val hidden = container.repository.cameraList.value.hidden
-        val only = container.repository.alertObjects.value.labels
+        val only = container.repository.alertObjects.value
         val leftOut = container.repository.alertPeople.value
         if (!reviewBuzz.allowed(review, message.text("type"), now, rules, hidden, only, leftOut)) {
             return
@@ -359,7 +360,7 @@ class AlertService : Service() {
         review: FrigateReview,
         rules: AlertRules,
         hidden: Set<String>,
-        only: Set<String>,
+        only: AlertObjects,
         leftOut: AlertPeople,
     ) {
         val now = System.currentTimeMillis()
@@ -484,7 +485,7 @@ class AlertService : Service() {
             container.repository.alertRules.value,
             container.repository.quietTimes.value,
             container.repository.cameraList.value.hidden,
-            container.repository.alertObjects.value.labels,
+            container.repository.alertObjects.value,
         ).build()
 
     private fun createChannels() {

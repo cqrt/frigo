@@ -761,9 +761,8 @@ class FrigoRepository(
      * don't move. The service watches the same value, so a change is felt by the
      * buzz and the notification line at once.
      */
-    suspend fun setAlertObjects(labels: Set<String>) {
+    suspend fun setAlertObjects(next: AlertObjects) {
         val url = activeServer()?.baseUrl ?: return
-        val next = AlertObjects(labels)
         prefs.writeAlertObjects(url, next)
         _alertObjects.value = next
         alertObjectsLoaded = true
