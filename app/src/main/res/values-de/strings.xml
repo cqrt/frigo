@@ -601,6 +601,7 @@
     <string name="revset_alerts_hint">Wähle mindestens eins, oder schalte Alarme aus.</string>
     <string name="revset_detections_hint">Keins angehakt heißt jedes andere Objekt.</string>
     <string name="revset_no_match">Hier heißt nichts so.</string>
+    <string name="revset_only_detected">Hier steht nur, was dein Server verfolgt und worauf er hört.</string>
     <string name="revset_tracked">Verfolgt</string>
 
     <!-- ===== sys ===== -->

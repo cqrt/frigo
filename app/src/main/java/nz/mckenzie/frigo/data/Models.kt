@@ -22,6 +22,11 @@ import nz.mckenzie.frigo.R
 data class FrigateConfig(
     val review: ReviewBlockConfig = ReviewBlockConfig(),
     val objects: TrackedObjects = TrackedObjects(),
+    /**
+     * The sounds the server listens for. It is on by default, and a camera that
+     * names no list of its own follows the shared one.
+     */
+    val audio: AudioConfig = AudioConfig(),
     val cameras: Map<String, CameraConfig> = emptyMap(),
     /**
      * The server's own switch for telling anyone about an alert. Frigate starts it
@@ -46,6 +51,19 @@ data class FrigateConfig(
 /** Whether a feature is on. Frigate keeps a lot more beside it that this app doesn't read. */
 @Serializable
 data class SwitchConfig(val enabled: Boolean = true)
+
+/**
+ * The sounds a server listens for.
+ *
+ * Frigate has audio detection on by default and a list of sounds it knows. A camera
+ * that names no list of its own follows the shared one, which is why [listen] is
+ * null rather than empty there.
+ */
+@Serializable
+data class AudioConfig(
+    val enabled: Boolean = true,
+    val listen: List<String>? = null,
+)
 
 /**
  * What the signed-in user is allowed to see. `/api/config` answers with every
@@ -90,7 +108,7 @@ data class CameraConfig(
     val motion: SwitchConfig = SwitchConfig(),
     val record: SwitchConfig = SwitchConfig(),
     val snapshots: SwitchConfig = SwitchConfig(),
-    val audio: SwitchConfig = SwitchConfig(),
+    val audio: AudioConfig = AudioConfig(),
     val birdseye: SwitchConfig = SwitchConfig(),
     @SerialName("face_recognition") val faceRecognition: SwitchConfig = SwitchConfig(),
     val lpr: SwitchConfig = SwitchConfig(),
@@ -783,22 +801,14 @@ fun FrigateConfig.alertRules(): AlertRules {
 }
 
 /**
- * The labels Frigate flags by itself: the objects it follows and the sounds it
- * listens for. Its own settings page offers the same names.
- */
-val FrigateLabels = listOf(
-    "bark", "car", "cat", "fire_alarm", "glass", "scream",
-    "person", "smash", "smoke_detector", "speech", "yell",
-).sorted()
-
-/**
  * Alerts and detections, read from Frigate's settings file.
  *
- * The list to choose from is [FrigateLabels], plus anything already tracked or
- * already chosen. A label in use therefore never falls out of the picker, even
- * when Frigate doesn't offer it. The label map the detector runs is deliberately
- * not used: it holds the ninety names the model was trained on, which is not the
- * set Frigate acts on, and most of them no camera here can see.
+ * The list to choose from is what the server can actually report: the objects it
+ * tracks and the sounds its cameras listen for, plus anything already chosen. A
+ * label that can't happen is not offered, because naming one as an alert sets an
+ * alert that never fires. The label map the detector runs is deliberately not
+ * used: it holds the ninety names the model was trained on, which is not the set
+ * Frigate acts on.
  */
 fun FrigateConfig.reviewSettings(): ReviewSettings {
     val tracked = (objects.track + cameras.values.flatMap { it.objects.track })
@@ -806,8 +816,7 @@ fun FrigateConfig.reviewSettings(): ReviewSettings {
         .toSet()
 
     val objects = LinkedHashSet<String>()
-    objects += FrigateLabels
-    objects += tracked
+    objects += possibleLabels()
     objects += review.alerts.labels.orEmpty()
     objects += review.detections.labels.orEmpty()
     cameras.values.forEach { camera ->
@@ -822,6 +831,40 @@ fun FrigateConfig.reviewSettings(): ReviewSettings {
             .sortedWith(compareBy({ it !in tracked }, { it })),
         tracked = tracked,
     )
+}
+
+/**
+ * The labels any camera on the server can report: the objects it tracks and the
+ * sounds it listens for.
+ *
+ * With no cameras at all, the shared lists are the server's answer.
+ */
+private fun FrigateConfig.possibleLabels(): Set<String> {
+    if (cameras.isEmpty()) {
+        val labels = LinkedHashSet<String>(objects.track.filter { it.isNotBlank() })
+        if (audio.enabled) labels += audio.listen.orEmpty().filter { it.isNotBlank() }
+        return labels
+    }
+    return cameras.keys.flatMap { possibleLabels(it) }.toSet()
+}
+
+/**
+ * The labels one camera can report: the objects it tracks and the sounds it listens
+ * for, following the shared lists it names none of its own.
+ *
+ * A camera that names an object list of its own replaces the shared one, which is
+ * how Frigate merges them, and audio has to be on both for a sound to be heard.
+ */
+internal fun FrigateConfig.possibleLabels(camera: String): Set<String> {
+    val found = cameras[camera]
+    val tracked = found?.objects?.track.orEmpty().ifEmpty { objects.track }
+    val labels = LinkedHashSet(tracked.filter { it.isNotBlank() })
+
+    val sound = found?.audio
+    if (audio.enabled && (sound?.enabled ?: true)) {
+        labels += (sound?.listen ?: audio.listen.orEmpty()).filter { it.isNotBlank() }
+    }
+    return labels
 }
 
 /**

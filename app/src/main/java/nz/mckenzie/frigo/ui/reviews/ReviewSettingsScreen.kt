@@ -341,6 +341,15 @@ private fun LabelPicker(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         )
 
+        // A label the server can't report is not offered, so the page says what the
+        // list is rather than leaving a missing object unexplained.
+        Text(
+            text = stringResource(R.string.revset_only_detected),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+
         val hint = when {
             !nothingTicked -> null
             kind == ReviewLabels.Alerts -> stringResource(R.string.revset_alerts_hint)
@@ -359,7 +368,7 @@ private fun LabelPicker(
             )
         }
 
-        if (listed.isEmpty()) {
+        if (listed.isEmpty() && text.isNotEmpty()) {
             Text(
                 text = stringResource(R.string.revset_no_match),
                 style = MaterialTheme.typography.bodyMedium,

@@ -114,6 +114,7 @@ CONFIG = {
         "detections": {"enabled": True},
     },
     "objects": {"track": ["person", "car", "dog", "cat"]},
+    "audio": {"enabled": True, "listen": ["bark", "speech"]},
     "cameras": {
         name: {
             **settings,

@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.24
+
+- Alerts and detections, and Only these objects, only offer what your server can actually report: the objects each camera tracks, and the sounds it listens for.
+- A label that can't happen is no longer offered. One already chosen stays listed, so you can take it off.
+
 ## 0.10.23
 
 - Settings, Notifications has People to leave out: a name Frigate recognises, and this phone stays quiet about it.

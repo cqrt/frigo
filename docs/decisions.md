@@ -2548,3 +2548,29 @@ anything already ticked, so a name Frigate no longer recognises can be put back.
 name Frigate has verified carries a `-verified` suffix that the app has never shown,
 and the tick matches it either way.
 
+## The label pages offer only what the server can report
+
+Frigate tracks one object by default — person — and naming a label as an alert does
+not make the server detect it. The app offered every label Frigate knows, eleven of
+them, so an admin could tick cat on a server that has never tracked a cat and end up
+with an alert that can never fire. Frigate's own docs say it plainly: setting labels
+for alerts and detections does not enable detection of new objects.
+
+The list is now what the server can actually report: the objects each camera tracks,
+and the sounds a camera listens for when audio is on for it and for the server. A
+camera that names no list of its own follows the shared one, which is how Frigate
+merges them; with no cameras at all, the shared lists are the answer. Anything
+already chosen stays listed even when it can't be reported, so a label set before
+this change can be taken off rather than sitting there with no way out.
+
+What the page doesn't do is turn tracking on: that is Frigate's own Objects page, and
+the app has no page for it. The picker says in one line what it is showing, so a
+missing cat reads as "not tracked" rather than "the app lost it".
+
+The Detections tab reads the same list, so the "everything else" it offers is bounded
+by what the server can report too.
+
+The phone's own Only these objects page reads the same answer: it offers the alert
+labels each camera can report, so a label the server can't detect isn't there to
+tick. Anything already on the phone's list stays listed, so it can be taken off.
+

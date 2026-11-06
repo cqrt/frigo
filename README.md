@@ -261,6 +261,10 @@ how you find one camera's objects in a list of a dozen. It changes what is on
 show and nothing else: there is still one list, and a tick means the same on
 every camera.
 
+The objects offered are the ones the cameras can actually report, so a label your
+server doesn't track isn't there to pick. Anything already on the list stays
+listed, so it can be taken off.
+
 **People to leave out** sits under it. Frigate puts a name on a person it
 recognises a second or two after the alert starts, and this phone can stay quiet
 about that name. Pick someone and their alerts never buzz here, while everyone
@@ -403,11 +407,14 @@ on another account narrows alerts with a list of its own instead: Only these
 objects, under Notifications in Settings. The notifications page, which says which
 cameras may tell you anything at all, is on your server's own web page.
 
-The labels are Frigate's own: bark, car, cat, fire alarm, glass, person, scream,
-smash, smoke detector, speech and yell, plus anything already in use on your
-server. A change goes to the server as you make it, so the next thing Frigate sees
-follows it and nothing restarts. The chip along the top picks the scope: all
-cameras, or one of them. A camera you never pick follows the shared settings.
+The labels offered are the ones your server can actually report: the objects it
+tracks, and the sounds the cameras listen for. Naming a label does not make Frigate
+detect it, so an object nobody tracks isn't offered and can't be set as an alert
+that never fires. Anything already chosen stays on the list, so a label you've
+stopped tracking can be taken off. A change goes to the server as you make it, so
+the next thing Frigate sees follows it and nothing restarts. The chip along the top
+picks the scope: all cameras, or one of them. A camera you never pick follows the
+shared settings.
 
 These are Frigate's settings rather than the app's. They live in its own settings
 file and the server's web page shows the same values. An admin account can change

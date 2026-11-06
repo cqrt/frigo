@@ -600,6 +600,7 @@
     <string name="revset_alerts_hint">Escolha pelo menos um ou desligue Alertas.</string>
     <string name="revset_detections_hint">Nenhum marcado significa todos os outros objetos.</string>
     <string name="revset_no_match">Nada aqui tem esse nome.</string>
+    <string name="revset_only_detected">Aqui só aparece o que o seu servidor segue e escuta.</string>
     <string name="revset_tracked">Rastreado</string>
 
     <!-- ===== sys ===== -->

@@ -600,6 +600,7 @@
     <string name="revset_alerts_hint">Choisissez-en au moins une, ou désactivez les alertes.</string>
     <string name="revset_detections_hint">Aucune cochée veut dire tous les autres objets.</string>
     <string name="revset_no_match">Rien ici ne porte ce nom.</string>
+    <string name="revset_only_detected">Seul ce que votre serveur suit et écoute est listé.</string>
     <string name="revset_tracked">Suivi</string>
 
     <!-- ===== sys ===== -->

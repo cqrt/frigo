@@ -85,14 +85,14 @@ class ReviewChangeTest {
     }
 
     /**
-     * The labels to pick from are Frigate's own, with what is already chosen and
-     * what is already tracked among them, and the tracked ones first.
+     * The labels to pick from are what the server can actually report, with what is
+     * already chosen kept among them and the tracked ones first.
      *
      * Each camera arrives with its settings worked out, so the camera that was
      * never given any of its own reads the same as the server's.
      */
     @Test
-    fun thePickerOffersFrigatesLabelsAndKeepsWhatIsInUse() {
+    fun thePickerOffersWhatTheServerCanReportAndKeepsWhatIsInUse() {
         val parsed = json(
             """
             {
@@ -108,8 +108,9 @@ class ReviewChangeTest {
 
         val settings = parsed.reviewSettings()
 
-        assertEquals(FrigateLabels, settings.objects.sorted())
-        assertEquals("person", settings.objects.first())
+        // The one object the server tracks, then the label already in use that it
+        // can't report, so it can be taken off.
+        assertEquals(listOf("person", "glass"), settings.objects)
         assertEquals(setOf("person"), settings.tracked)
         assertEquals(settings.all, settings.cameras["south_cam"])
         assertEquals(listOf("glass"), settings.cameras["north_cam"]?.detectionLabels)
@@ -117,8 +118,8 @@ class ReviewChangeTest {
 
     /**
      * The detector's label map is the model's ninety class names, not the set
-     * Frigate flags, so it is not what the picker offers. A label already in use
-     * is still offered, even though Frigate doesn't name it.
+     * Frigate reports, so it is not what the picker offers. A label already in use
+     * is still offered, even though nothing on the server can produce it.
      */
     @Test
     fun theModelsClassNamesAreNotOfferedButWhatIsInUseIs() {
@@ -131,6 +132,100 @@ class ReviewChangeTest {
             """,
         ).let { config.decodeFromJsonElement(FrigateConfig.serializer(), it) }
 
-        assertEquals((FrigateLabels + "dog").sorted(), parsed.reviewSettings().objects)
+        assertEquals(listOf("dog"), parsed.reviewSettings().objects)
+    }
+
+    /** A sound is offered when a camera has audio on and listens for it. */
+    @Test
+    fun aSoundIsOfferedWhenACameraListensForIt() {
+        val parsed = json(
+            """
+            {
+              "audio": {"enabled": true, "listen": ["bark", "speech"]},
+              "objects": {"track": ["person"]}
+            }
+            """,
+        ).let { config.decodeFromJsonElement(FrigateConfig.serializer(), it) }
+
+        assertEquals(setOf("bark", "person", "speech"), parsed.reviewSettings().objects.toSet())
+    }
+
+    /** Audio has to be on for the camera as well as the server, or nothing is heard. */
+    @Test
+    fun aCameraWithAudioOffReportsNoSounds() {
+        val parsed = json(
+            """
+            {
+              "audio": {"enabled": true, "listen": ["bark"]},
+              "objects": {"track": ["person"]},
+              "cameras": {
+                "door_cam": {"audio": {"enabled": false}},
+                "garden_cam": {"audio": {"enabled": true}}
+              }
+            }
+            """,
+        ).let { config.decodeFromJsonElement(FrigateConfig.serializer(), it) }
+
+        // The garden follows the shared list, so the sound is still reported by it.
+        assertEquals(setOf("bark", "person"), parsed.reviewSettings().objects.toSet())
+    }
+
+    /** A camera that tracks objects of its own adds them; the shared list is still there. */
+    @Test
+    fun aCameraTrackingOfItsOwnAddsToWhatIsOffered() {
+        val parsed = json(
+            """
+            {
+              "objects": {"track": ["person"]},
+              "cameras": {
+                "door_cam": {},
+                "garden_cam": {"objects": {"track": ["dog"]}}
+              }
+            }
+            """,
+        ).let { config.decodeFromJsonElement(FrigateConfig.serializer(), it) }
+
+        assertEquals(setOf("person", "dog"), parsed.reviewSettings().objects.toSet())
+    }
+
+    /** Audio off for the whole server leaves every sound out, whatever is listened for. */
+    @Test
+    fun audioOffEverywhereLeavesSoundsOut() {
+        val parsed = json(
+            """
+            {
+              "audio": {"enabled": false, "listen": ["bark"]},
+              "objects": {"track": ["person"]}
+            }
+            """,
+        ).let { config.decodeFromJsonElement(FrigateConfig.serializer(), it) }
+
+        assertEquals(listOf("person"), parsed.reviewSettings().objects)
+    }
+
+    /** One camera's own answer is what it tracks and listens for, not the server's. */
+    @Test
+    fun whatOneCameraCanReportFollowsItsOwnLists() {
+        val parsed = json(
+            """
+            {
+              "audio": {"enabled": true, "listen": ["speech"]},
+              "objects": {"track": ["person"]},
+              "cameras": {
+                "door_cam": {},
+                "garden_cam": {
+                  "objects": {"track": ["dog"]},
+                  "audio": {"enabled": true, "listen": ["bark"]}
+                },
+                "shed_cam": {"audio": {"enabled": false}}
+              }
+            }
+            """,
+        ).let { config.decodeFromJsonElement(FrigateConfig.serializer(), it) }
+
+        assertEquals(setOf("person", "speech"), parsed.possibleLabels("door_cam"))
+        assertEquals(setOf("dog", "bark"), parsed.possibleLabels("garden_cam"))
+        // A camera with audio off hears none of the shared sounds.
+        assertEquals(setOf("person"), parsed.possibleLabels("shed_cam"))
     }
 }

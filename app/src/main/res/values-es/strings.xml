@@ -600,6 +600,7 @@
     <string name="revset_alerts_hint">Elige al menos una, o desactiva Alertas.</string>
     <string name="revset_detections_hint">Ninguna marcada significa todos los demás objetos.</string>
     <string name="revset_no_match">Aquí no hay nada con ese nombre.</string>
+    <string name="revset_only_detected">Aquí solo aparece lo que tu servidor sigue y escucha.</string>
     <string name="revset_tracked">Seguido</string>
 
     <!-- ===== sys ===== -->

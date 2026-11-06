@@ -809,7 +809,10 @@ class FrigoRepository(
         return AlertObjectChoices(
             cameras = cameras,
             labels = cameras.associate { camera ->
+                // Only what the camera can actually report: an alert label for an
+                // object nobody tracks can never happen, so it is not offered here.
                 camera.name to review.labelsFor(ReviewKind.Alerts, camera.name)
+                    .filter { it in settings.config.possibleLabels(camera.name) }
             },
         )
     }

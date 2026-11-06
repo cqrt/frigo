@@ -600,6 +600,7 @@
     <string name="revset_alerts_hint">Pick at least one, or turn Alerts off.</string>
     <string name="revset_detections_hint">None ticked means every other object.</string>
     <string name="revset_no_match">Nothing here goes by that name.</string>
+    <string name="revset_only_detected">Only what your server tracks and listens for is listed.</string>
     <string name="revset_tracked">Tracked</string>
 
     <!-- ===== sys ===== -->
