@@ -156,4 +156,73 @@ class ReviewWordsTest {
         assertEquals(onScreen.id, merged.id)
         assertEquals(onScreen.severity, merged.severity)
     }
+
+    /**
+     * Now and then the server keeps the scene as a list holding the words rather
+     * than one string, and the list has one entry. Reading one review that is
+     * written this way is what a whole page of them does.
+     */
+    @Test
+    fun aSceneWrittenAsAListReadsAsWords() {
+        val read = json.decodeFromString(
+            FrigateReview.serializer(),
+            """
+            {
+              "id": "1793998489.291657-ec1l5w",
+              "camera": "door_cam",
+              "start_time": 1793998489.291657,
+              "end_time": 1793998500.934841,
+              "severity": "alert",
+              "data": {
+                "objects": ["cat"],
+                "metadata": {
+                  "title": "Cat moving in hallway",
+                  "shortSummary": "A cat is observed moving and crouching on a mat.",
+                  "scene": [
+                    "The sequence begins with a cat standing on a mat.",
+                    "The cat then lowers its body and crouches."
+                  ],
+                  "potential_threat_level": 0,
+                  "other_concerns": null
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals("Cat moving in hallway", read.aiTitle())
+        assertEquals(
+            "The sequence begins with a cat standing on a mat. The cat then lowers its body and crouches.",
+            read.description(),
+        )
+    }
+
+    /** A whole list reads, which is what the Review list and its mark-all walk ask for. */
+    @Test
+    fun aPageHoldingOneOfThemReads() {
+        val page = json.decodeFromString(
+            kotlinx.serialization.builtins.ListSerializer(FrigateReview.serializer()),
+            """
+            [
+              {
+                "id": "1793998489.291657-ec1l5w",
+                "camera": "door_cam",
+                "start_time": 1793998489.291657,
+                "severity": "alert",
+                "data": {"objects": ["cat"], "metadata": {"scene": ["A cat on a mat."]}}
+              },
+              {
+                "id": "1794071549.342566-n4x7zr",
+                "camera": "door_cam",
+                "start_time": 1794071549.342566,
+                "severity": "alert",
+                "data": {"objects": ["person"], "metadata": {"scene": "A person at the door."}}
+              }
+            ]
+            """.trimIndent(),
+        )
+
+        assertEquals("A cat on a mat.", page[0].description())
+        assertEquals("A person at the door.", page[1].description())
+    }
 }

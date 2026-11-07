@@ -4,11 +4,19 @@ import android.content.Context
 import androidx.annotation.StringRes
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlin.math.roundToInt
@@ -238,10 +246,38 @@ data class ReviewData(
 data class ReviewMetadata(
     val title: String = "",
     val shortSummary: String = "",
-    val scene: String = "",
+    @Serializable(with = SceneText::class) val scene: String = "",
     @SerialName("potential_threat_level") val threatLevel: Int = 0,
     @SerialName("other_concerns") val otherConcerns: List<String> = emptyList(),
 )
+
+/**
+ * The scene, read as words however the server wrote it.
+ *
+ * Frigate usually writes the scene as one sentence. Now and then the model behind
+ * it answers with a list holding that sentence instead, and the server keeps it
+ * as it arrived. A list where text was promised fails the whole page of reviews
+ * it sits on, not just that one review, so a list is joined back into the
+ * sentence it was meant to be.
+ */
+object SceneText : KSerializer<String> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("SceneText", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): String {
+        val input = decoder as? JsonDecoder ?: return decoder.decodeString()
+        return when (val element = input.decodeJsonElement()) {
+            is JsonArray -> element
+                .mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+                .filter { it.isNotBlank() }
+                .joinToString(" ")
+            is JsonPrimitive -> element.contentOrNull.orEmpty()
+            else -> ""
+        }
+    }
+
+    override fun serialize(encoder: Encoder, value: String) = encoder.encodeString(value)
+}
 
 /**
  * One day of reviews, as `/api/review/summary` counts them: how many there were
