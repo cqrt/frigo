@@ -2418,18 +2418,26 @@ Frigate has two switches per camera that look like the same idea: `ui.dashboard`
 the server's, both need an admin, and both change every phone and browser on the
 account. Neither says anything about a buzz.
 
-What is turned off here is this phone's screens and this phone's buzz. So the list
+What is turned off here is this phone's screens and this phone's alerts. So the list
 lives on the phone, in DataStore beside the quiet hours: which cameras are off, what
 this phone calls them, and the order they appear in. It is one block per server, so
 two servers on the phone keep two lists, and signing out forgets one.
 
-A hidden camera leaves the four places this phone draws the server's cameras: the
-Cameras tab, the strip of other cameras under a picture, and the chips on Review and
-Explore. It does not leave Review's list, its counts or its days. A review is a thing
-the server already decided was worth a look, and hiding a camera is about what the
-phone puts in front of you, not about rewriting what happened. A hidden camera opened
-from an alert still works, picture and bar, because the app has to be able to show you
-what it just told you about.
+A hidden camera leaves the five places this phone draws the server's cameras: the
+Cameras tab, the strip of other cameras under a picture, the chips on Review and
+Explore, and the camera list on Alerts and detections. It does not leave Review's
+list, its counts or its days. A review is a thing the server already decided was
+worth a look, and hiding a camera is about what the phone puts in front of you, not
+about rewriting what happened. A hidden camera opened from an alert still works,
+picture and bar, because the app has to be able to show you what it just told you
+about.
+
+Alerts and detections is on the list because it is a page about four cameras, one
+at a time: what makes an alert and what makes a detection. A camera you have turned
+off on this phone is one you have stopped watching, so it is not one to set up
+either. Its settings stay on the server, and they are there again the day you turn
+it back on. The page with all of them off says so and names Settings, Cameras,
+rather than reading as a camera whose settings the app can't read.
 
 The buzz is answered where it is decided. `ReviewBuzz.buzzes` takes the hidden set, and
 a camera in it never buzzes, before the rules are read. The watching line counts only

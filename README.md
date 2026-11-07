@@ -428,6 +428,11 @@ One camera is set at a time, as Frigate's own settings do it. The chip at the to
 picks it. A camera with no list of its own follows the server's shared list, and the
 page shows that list; changing anything there gives that camera a list of its own.
 
+A camera turned off on this phone isn't in that list. It's one you've stopped
+watching, so it's not one to set up either, and your server keeps its settings for
+the day you turn it back on. With all of them off the page says so and points at
+Settings, Cameras.
+
 These are Frigate's settings rather than the app's. They live in its own settings
 file and the server's web page shows the same values. An admin account can change
 them and anyone signed in can look.
@@ -456,9 +461,10 @@ An admin account can change these and anyone signed in can look.
 ## Turning a camera off, and naming it
 
 The Cameras list in Settings has a switch on every camera. Turn one off and it
-leaves this phone: the Cameras tab, the strip of other cameras under a picture, and
-the chips on Review and Explore. It stops buzzing too. It's marked **Hidden** on the
-list, and the switch is the way back.
+leaves this phone: the Cameras tab, the strip of other cameras under a picture, the
+chips on Review and Explore, and the camera list on Alerts and detections. It stops
+alerting you, too. It's marked **Hidden** on the list, and the switch is the way
+back.
 
 Your server is untouched. It records what it always recorded, and your other phones
 are told what they were always told. The eight switches on the camera's page are

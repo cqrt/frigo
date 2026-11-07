@@ -30,6 +30,12 @@ data class ReviewSettingsUiState(
     val error: String? = null,
     /** A change is on its way to the server. */
     val busy: Boolean = false,
+    /**
+     * True when the server has cameras and every one of them is turned off on this
+     * phone, so there is nothing here to set. Told apart from a server with no
+     * cameras at all, which is the account's doing rather than the phone's.
+     */
+    val everyCameraHidden: Boolean = false,
 )
 
 /** What the page shows: the camera being set. */
@@ -57,13 +63,25 @@ class ReviewSettingsViewModel(private val repository: FrigoRepository) : ViewMod
             _state.update { it.copy(loading = true, error = null) }
             runCatching { repository.reviewPage() }
                 .onSuccess { page ->
+                    // A camera this phone turned off is not offered here: hiding one
+                    // is a decision to stop setting it up as well as to stop watching
+                    // it. The server keeps its settings for the day it comes back.
+                    val offered = repository.cameraList.value.shown(page.cameras)
+                    val everyHidden = page.cameras.isNotEmpty() && offered.isEmpty()
+                    val listed = page.copy(cameras = offered)
                     _state.update { current ->
-                        // A camera that has gone from the server falls back to the
-                        // first one, which is where a page that has just opened starts.
+                        // A camera that has gone from the server, or one turned off on
+                        // this phone, falls back to the first one still offered, which
+                        // is where a page that has just opened starts.
                         val scope = current.scope?.takeIf { name ->
-                            page.cameras.any { it.name == name }
-                        } ?: page.cameras.firstOrNull()?.name
-                        current.copy(loading = false, page = page, scope = scope)
+                            offered.any { it.name == name }
+                        } ?: offered.firstOrNull()?.name
+                        current.copy(
+                            loading = false,
+                            page = listed,
+                            scope = scope,
+                            everyCameraHidden = everyHidden,
+                        )
                     }
                 }
                 .onFailure { failure ->

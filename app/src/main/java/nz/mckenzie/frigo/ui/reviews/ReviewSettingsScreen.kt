@@ -132,6 +132,19 @@ fun ReviewSettingsScreen(
                 }
             }
 
+            // Every camera turned off on this phone leaves nothing to set here, and
+            // saying "that camera has settings of its own" would be about a camera
+            // that isn't there. It says where the switch is instead.
+            state.everyCameraHidden -> Column(
+                modifier = Modifier.fillMaxSize().padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = stringResource(R.string.cam_none_shown),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+
             shown == null -> Column(
                 modifier = Modifier.fillMaxSize().padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,

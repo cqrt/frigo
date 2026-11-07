@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.33
+
+- Alerts and detections leaves out a camera you've turned off on this phone. With all of them off, the page says where the switch is rather than reading as a camera it can't read.
+
 ## 0.10.32
 
 - People to leave out no longer has an Everyone row. With nobody ticked the list is empty and every alert reaches you, but a row that lights up when the list is empty reads as everyone being left out.
