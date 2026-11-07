@@ -80,10 +80,10 @@ fun LogsScreen(
         onPauseOrDispose { viewModel.stop() }
     }
 
-    val visible = remember(state.lines, state.level, state.query) {
-        state.lines.narrowed(state.level, state.query)
+    val visible = remember(state.lines, state.levels, state.query) {
+        state.lines.narrowed(state.levels, state.query)
     }
-    val filtering = state.level != null || state.query.isNotBlank()
+    val filtering = state.levels.isNotEmpty() || state.query.isNotBlank()
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
@@ -143,28 +143,28 @@ fun LogsScreen(
             ) {
                 LevelChip(
                     label = stringResource(R.string.logs_all),
-                    selected = state.level == null,
-                    onClick = { viewModel.setLevel(null) },
+                    selected = state.levels.isEmpty(),
+                    onClick = viewModel::showAll,
                 )
                 LevelChip(
                     label = stringResource(R.string.logs_errors),
-                    selected = state.level == LogLevel.Error,
-                    onClick = { viewModel.setLevel(LogLevel.Error) },
+                    selected = LogLevel.Error in state.levels,
+                    onClick = { viewModel.toggleLevel(LogLevel.Error) },
                 )
                 LevelChip(
                     label = stringResource(R.string.logs_warnings),
-                    selected = state.level == LogLevel.Warning,
-                    onClick = { viewModel.setLevel(LogLevel.Warning) },
+                    selected = LogLevel.Warning in state.levels,
+                    onClick = { viewModel.toggleLevel(LogLevel.Warning) },
                 )
                 LevelChip(
                     label = stringResource(R.string.logs_info),
-                    selected = state.level == LogLevel.Info,
-                    onClick = { viewModel.setLevel(LogLevel.Info) },
+                    selected = LogLevel.Info in state.levels,
+                    onClick = { viewModel.toggleLevel(LogLevel.Info) },
                 )
                 LevelChip(
                     label = stringResource(R.string.logs_debug),
-                    selected = state.level == LogLevel.Debug,
-                    onClick = { viewModel.setLevel(LogLevel.Debug) },
+                    selected = LogLevel.Debug in state.levels,
+                    onClick = { viewModel.toggleLevel(LogLevel.Debug) },
                 )
             }
 

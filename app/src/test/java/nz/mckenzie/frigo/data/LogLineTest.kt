@@ -127,7 +127,7 @@ class LogLineTest {
     }
 
     @Test
-    fun aChipAndASearchNarrowTogether() {
+    fun theChipsAndTheSearchNarrowTogether() {
         val lines = listOf(
             LogLine(level = LogLevel.Error, message = "camera north_cam went offline"),
             LogLine(level = LogLevel.Error, message = "config write failed"),
@@ -136,19 +136,41 @@ class LogLineTest {
             LogLine(level = null, message = "camera line with no level"),
         )
 
-        assertEquals(listOf("camera north_cam went offline"), lines.narrowed(LogLevel.Error, "camera").map { it.message })
+        assertEquals(
+            listOf("camera north_cam went offline"),
+            lines.narrowed(setOf(LogLevel.Error), "camera").map { it.message },
+        )
         assertEquals(
             listOf("camera north_cam went offline", "camera took a while", "camera started", "camera line with no level"),
-            lines.narrowed(null, "camera").map { it.message },
+            lines.narrowed(emptySet(), "camera").map { it.message },
         )
-        assertEquals(5, lines.narrowed(null, "").size)
+        assertEquals(5, lines.narrowed(emptySet(), "").size)
+    }
+
+    @Test
+    fun moreThanOneChipCanBeTicked() {
+        val lines = listOf(
+            LogLine(level = LogLevel.Error, message = "camera failed"),
+            LogLine(level = LogLevel.Warning, message = "camera behind"),
+            LogLine(level = LogLevel.Info, message = "camera started"),
+            LogLine(level = LogLevel.Warning, message = "disk behind"),
+        )
+
+        assertEquals(
+            listOf("camera failed", "camera behind"),
+            lines.narrowed(setOf(LogLevel.Error, LogLevel.Warning), "camera").map { it.message },
+        )
+        assertEquals(
+            listOf("camera failed", "camera behind", "disk behind"),
+            lines.narrowed(setOf(LogLevel.Error, LogLevel.Warning), "").map { it.message },
+        )
     }
 
     @Test
     fun aLineWithNoLevelShowsUnderAllOnly() {
         val line = LogLine(message = "no level here")
 
-        assertEquals(listOf(line), listOf(line).narrowed(null, ""))
-        assertEquals(emptyList<LogLine>(), listOf(line).narrowed(LogLevel.Info, ""))
+        assertEquals(listOf(line), listOf(line).narrowed(emptySet(), ""))
+        assertEquals(emptyList<LogLine>(), listOf(line).narrowed(setOf(LogLevel.Info), ""))
     }
 }

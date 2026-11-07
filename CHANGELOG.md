@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.38
+
+- On System logs, more than one level chip can be ticked at once. Errors and Warnings together shows both, and the search still narrows what is left.
+
 ## 0.10.37
 
 - Settings has System logs for an admin: what frigate, go2rtc and nginx have been saying, newest at the bottom and still arriving while you read.

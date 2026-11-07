@@ -1421,13 +1421,14 @@ fun List<LogLine>.newestLines(): List<LogLine> =
     if (size <= MostLogLines) this else takeLast(MostLogLines)
 
 /**
- * The lines that match the chip and the search. A null [level] is All, and a
- * blank [query] is every message.
+ * The lines that match the chips and the search. No [levels] is All; any number
+ * may be ticked, and a line has to be one of them. A blank [query] is every
+ * message, and a search has to match as well as the chips.
  */
-fun List<LogLine>.narrowed(level: LogLevel?, query: String): List<LogLine> {
+fun List<LogLine>.narrowed(levels: Set<LogLevel>, query: String): List<LogLine> {
     val text = query.trim()
     return filter { line ->
-        (level == null || line.level == level) &&
+        (levels.isEmpty() || line.level in levels) &&
             (text.isEmpty() || line.message.contains(text, ignoreCase = true))
     }
 }

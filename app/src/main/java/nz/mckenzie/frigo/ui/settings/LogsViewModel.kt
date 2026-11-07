@@ -35,8 +35,8 @@ data class LogsUiState(
     val error: String? = null,
     /** Whether new lines pull the list down to the newest. */
     val following: Boolean = true,
-    /** The chip to narrow by, or null for All. */
-    val level: LogLevel? = null,
+    /** The chips to narrow by. Empty is All. */
+    val levels: Set<LogLevel> = emptySet(),
     val query: String = "",
     /** The feed has ended or failed and is waiting to be opened again. */
     val feedStopped: Boolean = false,
@@ -127,8 +127,22 @@ class LogsViewModel(private val repository: FrigoRepository) : ViewModel() {
         _state.update { it.copy(following = on) }
     }
 
-    fun setLevel(level: LogLevel?) {
-        _state.update { it.copy(level = level) }
+    /** All, which is no chip ticked. */
+    fun showAll() {
+        _state.update { it.copy(levels = emptySet()) }
+    }
+
+    /** One level on or off the list. Unticking the last one leaves All. */
+    fun toggleLevel(level: LogLevel) {
+        _state.update { current ->
+            current.copy(
+                levels = if (level in current.levels) {
+                    current.levels - level
+                } else {
+                    current.levels + level
+                },
+            )
+        }
     }
 
     fun setQuery(query: String) {
@@ -136,7 +150,7 @@ class LogsViewModel(private val repository: FrigoRepository) : ViewModel() {
     }
 
     fun clearFilters() {
-        _state.update { it.copy(level = null, query = "") }
+        _state.update { it.copy(levels = emptySet(), query = "") }
     }
 
     /** The whole log, shown before the feed is opened so the page fills at once. */
