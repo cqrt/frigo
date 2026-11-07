@@ -112,6 +112,7 @@ fun SettingsScreen(
     onOpenQuiet: () -> Unit = {},
     onOpenLanguage: () -> Unit = {},
     onOpenSystem: () -> Unit = {},
+    onOpenLogs: () -> Unit = {},
     onAddServer: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
@@ -381,6 +382,16 @@ fun SettingsScreen(
                         title = stringResource(R.string.settings_system),
                         supporting = stringResource(R.string.settings_system_supporting),
                         onClick = onOpenSystem,
+                        trailing = { OpenMark() },
+                    )
+
+                    CardDivider()
+
+                    // No supporting line: the row is the title and the chevron.
+                    Item(
+                        icon = FrigoIcons.Lines,
+                        title = stringResource(R.string.settings_logs),
+                        onClick = onOpenLogs,
                         trailing = { OpenMark() },
                     )
                 }

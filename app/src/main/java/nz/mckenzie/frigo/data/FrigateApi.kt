@@ -647,6 +647,48 @@ class FrigateApi(
         request.okBody()
     }
 
+    /** Everything a service has written: the whole of its current log file. */
+    fun logs(baseUrl: String, token: String, service: String): FrigateLogs {
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/logs/$service"))
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return json.decodeFromString(FrigateLogs.serializer(), request.okBody())
+    }
+
+    /**
+     * Opens a log's feed. The response must be closed by the caller; its body is
+     * text/plain, and a line arrives when the server writes one.
+     *
+     * The code is checked before the body is read. A 403 is an account that isn't
+     * an admin rather than a session that has aged out, so it is told apart before
+     * the repository would try to renew anything. A 500 carries the server's own
+     * reason for refusing, which is more use than its status.
+     */
+    fun openLogFeed(baseUrl: String, token: String, service: String): Response {
+        val target = url(baseUrl, "/api/logs/$service").newBuilder()
+            .addQueryParameter("stream", "true")
+            .build()
+        val request = Request.Builder()
+            .url(target)
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        val response = streamClient.newCall(request).execute()
+        if (!response.isSuccessful) {
+            val status = response.code
+            val said = response.serverMessage()
+            response.close()
+            if (status == 403) throw NotAnAdminException()
+            throw FrigateException(
+                status,
+                said ?: context.words(R.string.api_server_returned, status),
+            )
+        }
+        return response
+    }
+
     /**
      * Every clip kept on the server, newest first.
      */

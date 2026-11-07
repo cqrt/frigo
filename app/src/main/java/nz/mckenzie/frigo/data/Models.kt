@@ -21,6 +21,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlin.math.roundToInt
 import nz.mckenzie.frigo.R
+import java.util.Locale
 
 /**
  * Only the pieces of /api/config this app reads. Everything else in the file is
@@ -1308,3 +1309,125 @@ fun prettyCameraName(raw: String): String = raw
     .replace('-', ' ')
     .trim()
     .replaceFirstChar { it.uppercase() }
+
+/**
+ * A service's log as `/api/logs/{service}` answers it: the whole file it is
+ * writing, with repeated lines collapsed.
+ */
+@Serializable
+data class FrigateLogs(
+    val totalLines: Int = 0,
+    val lines: List<String> = emptyList(),
+)
+
+/**
+ * The three logs Frigate keeps. The names are the server's own, in its own
+ * spelling, so they read the same in every language.
+ */
+enum class LogService(val id: String) {
+    Frigate("frigate"),
+    Go2rtc("go2rtc"),
+    Nginx("nginx"),
+}
+
+/** How loud a line is. A line with no level is shown under All only. */
+enum class LogLevel { Error, Warning, Info, Debug }
+
+/**
+ * One line of a log, with the parts of Frigate's own prefix read off it.
+ *
+ * A processed line begins `2026-11-08 08:29:43.777006` and two spaces. [date] is
+ * that day and [time] is the second it was written, so the row can say them
+ * itself rather than repeating the server's prefix. The rest is [message], with
+ * a leading `[INFO]` taken off because the row already says it.
+ */
+data class LogLine(
+    val date: String? = null,
+    val time: String? = null,
+    val level: LogLevel? = null,
+    val message: String = "",
+)
+
+/** The prefix Frigate's own logger puts on every line it has processed. */
+private val ProcessedLine = Regex(
+    """^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(?:\.\d+)?\s{2,}(.*)$""",
+)
+
+/** A level in brackets, which is how Python's logging and nginx both write one. */
+private val BracketedLevel = Regex(
+    "\\[(INFO|DEBUG|WARNING|WARN|ERROR|LOGGING|NOTICE|CRIT|ALERT|EMERG)]",
+    RegexOption.IGNORE_CASE,
+)
+
+/**
+ * A level written as a bare word before a colon, which is how a container writes
+ * it. Frigate's own nested lines use the same shape, `INFO    :`, so every level
+ * is read this way and not only `DEBUG`.
+ */
+private val BareLevel = Regex(
+    "\\b(DEBUG|INFO|WARNING|ERROR)\\s*:",
+    RegexOption.IGNORE_CASE,
+)
+
+/** A bracket at the start of a line that only repeats what the row already says. */
+private val LeadingBracket = Regex(
+    "^\\[(INFO|DEBUG|WARNING|WARN|ERROR|LOGGING|NOTICE|CRIT|ALERT|EMERG)]\\s*",
+    RegexOption.IGNORE_CASE,
+)
+
+/** A bare level at the start of a container's line, which the row also already says. */
+private val LeadingBareLevel = Regex(
+    "^(DEBUG|INFO|WARNING|ERROR)\\s*:\\s*",
+    RegexOption.IGNORE_CASE,
+)
+
+/** The date bracket Python's logging puts inside a message, which the row already says. */
+private val DateBracket = Regex("""^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}]\s*""")
+
+/** One raw line, read into the parts the page shows. */
+fun String.asLogLine(): LogLine {
+    val found = ProcessedLine.find(this)
+    val rest = if (found == null) this else found.groupValues[3]
+    val message = DateBracket.replace(rest, "")
+    return LogLine(
+        date = found?.groupValues?.get(1),
+        time = found?.groupValues?.get(2),
+        level = levelIn(message),
+        message = LeadingBareLevel.replace(LeadingBracket.replace(message, ""), ""),
+    )
+}
+
+/** The first level in a message: a bracket, and a bare word only when there is none. */
+private fun levelIn(message: String): LogLevel? {
+    val bracketed = BracketedLevel.find(message)?.groupValues?.get(1)
+    if (bracketed != null) return levelOf(bracketed)
+    val bare = BareLevel.find(message)?.groupValues?.get(1) ?: return null
+    return levelOf(bare)
+}
+
+private fun levelOf(word: String): LogLevel? = when (word.uppercase(Locale.ROOT)) {
+    "ERROR", "CRIT", "ALERT", "EMERG" -> LogLevel.Error
+    "WARNING", "WARN" -> LogLevel.Warning
+    "INFO", "LOGGING", "NOTICE" -> LogLevel.Info
+    "DEBUG" -> LogLevel.Debug
+    else -> null
+}
+
+/** How much of a log this page keeps. Older lines go as new ones arrive. */
+const val MostLogLines = 5_000
+
+/** The newest [MostLogLines] of a list, which is what the page holds. */
+fun List<LogLine>.newestLines(): List<LogLine> =
+    if (size <= MostLogLines) this else takeLast(MostLogLines)
+
+/**
+ * The lines that match the chip and the search. A null [level] is All, and a
+ * blank [query] is every message.
+ */
+fun List<LogLine>.narrowed(level: LogLevel?, query: String): List<LogLine> {
+    val text = query.trim()
+    return filter { line ->
+        (level == null || line.level == level) &&
+            (text.isEmpty() || line.message.contains(text, ignoreCase = true))
+    }
+}

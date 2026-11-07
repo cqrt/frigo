@@ -651,6 +651,18 @@ class FrigoRepository(
         authorized { baseUrl, token -> api.restart(baseUrl, token) }
     }
 
+    /** Everything a service has written, for the first look at a log. */
+    suspend fun logs(service: String): FrigateLogs =
+        authorized { baseUrl, token -> api.logs(baseUrl, token, service) }
+
+    /**
+     * Opens a log's feed, which the caller closes. A 403 is left as
+     * [NotAnAdminException] on the way through, so this never treats an account
+     * that isn't an admin as a session to renew.
+     */
+    suspend fun openLogFeed(service: String): Response =
+        authorized { baseUrl, token -> api.openLogFeed(baseUrl, token, service) }
+
     suspend fun events(
         camera: String? = null,
         labels: List<String> = emptyList(),

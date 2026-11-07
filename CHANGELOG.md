@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.37
+
+- Settings has System logs for an admin: what frigate, go2rtc and nginx have been saying, newest at the bottom and still arriving while you read.
+- Choose the service, narrow by level, or search the lines.
+
 ## 0.10.36
 
 - Signing out and back in no longer loses your settings. The alerts switch, quiet hours, the lists, and the cameras you'd hidden or renamed are all still there.

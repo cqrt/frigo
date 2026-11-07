@@ -728,4 +728,20 @@
     <string name="system_this_server">This server</string>
     <string name="system_restart_frigate">Restart Frigate</string>
     <string name="system_restart_supporting">Alerts stop for about half a minute</string>
+
+    <!-- ===== system logs ===== -->
+    <!-- The row under System, and the page it opens. -->
+    <string name="settings_logs">System logs</string>
+    <string name="logs_following">Following</string>
+    <string name="logs_paused">Paused</string>
+    <string name="logs_all">All</string>
+    <string name="logs_errors">Errors</string>
+    <string name="logs_warnings">Warnings</string>
+    <string name="logs_info">Info</string>
+    <string name="logs_debug">Debug</string>
+    <string name="logs_search">Search the log</string>
+    <string name="logs_no_match">Nothing matches</string>
+    <string name="logs_clear">Clear</string>
+    <string name="logs_feed_stopped">The feed stopped. Trying again.</string>
+    <string name="logs_older_gone">The oldest lines have gone from this page.</string>
 </resources>

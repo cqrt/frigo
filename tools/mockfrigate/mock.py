@@ -157,6 +157,56 @@ LABELS = ["glass", "person", "car", "dog", "cat"]
 # The names Frigate has learned to recognise, which filter events as sub labels.
 SUB_LABELS = ["Angie", "Fay"]
 
+# What each service's log says, written the way the server writes it: Frigate's
+# own prefix with the date and second, a line that repeats, a line the container
+# writes with no prefix, a Python line with the date in a second bracket, and an
+# nginx line with no level at all.
+LOG_SAMPLES = {
+    "frigate": [
+        "2026-11-08 08:29:43.777006  [INFO] Preparing Frigate...",
+        "2026-11-08 08:29:44.767285  [INFO] Starting Frigate...",
+        "2026-11-08 08:29:49.695709  [2026-11-08 08:29:49] frigate.util.config            INFO    : Checking if frigate config needs migration...",
+        "2026-11-08 08:29:52.196213  [2026-11-08 08:29:52] frigate.app                    INFO    : Starting Frigate (0.18.2-)",
+        "2026-11-08 08:29:54.461891  [2026-11-08 08:29:54] frigate.comms.webpush          WARNING : Email must be provided for push notifications to be sent.",
+        "2026-11-08 08:30:14.175109  [2026-11-08 08:30:14] frigate.record.maintainer      DEBUG   : Copied /media/frigate/recordings/2026-11-07/19/door_cam/29.58.mp4 in 0.030995845794677734 seconds.",
+        "2026-11-08 08:30:20.100000  [2026-11-08 08:30:20] frigate.record.maintainer      ERROR   : Failed to copy /media/frigate/recordings/2026-11-07/19/door_cam/30.00.mp4",
+        "DEBUG   : Copied a recording with no server prefix.",
+        "2026-11-08 08:30:21.200000  [INFO] Waiting for the detector to come up...",
+        "2026-11-08 08:30:21.200000  [INFO] Waiting for the detector to come up...",
+    ],
+    "go2rtc": [
+        "2026-11-08 08:29:44.767157  [INFO] Preparing new go2rtc config...",
+        "2026-11-08 08:29:46.329006  [INFO] Starting go2rtc...",
+        "2026-11-08 08:29:46.864775  08:29:46.864 INF go2rtc platform=linux/amd64 revision=b5948cf version=1.9.14",
+        "2026-11-08 08:29:46.865530  08:29:46.865 INF [api] listen addr=:1984",
+        "2026-11-08 08:29:46.865563  08:29:46.865 INF [rtsp] listen addr=:8554",
+        "2026-11-08 08:30:02.100000  08:30:02.100 WRN [rtsp] client disconnected",
+        "2026-11-08 08:30:02.100000  08:30:02.100 WRN [rtsp] client disconnected",
+    ],
+    "nginx": [
+        "2026-11-08 08:29:43.634511  [INFO] Starting NGINX...",
+        "2026-11-08 08:29:45.264397  2026/11/08 08:29:45 [warn] 422#422: audio_encoder_process_init: failed to get AAC encoder",
+        "2026-11-08 08:29:48.486806  2026/11/08 08:29:48 [error] 387#387: *1 connect() failed (111: Connection refused) while connecting to upstream",
+        "2026-11-08 08:33:08.051580  192.168.0.103 - - [08/Nov/2026:08:33:08 +1300] \"GET /api/profile HTTP/1.1\" 200 102 \"-\" \"okhttp/4.12.0\"",
+        "2026-11-08 08:33:08.051580  192.168.0.103 - - [08/Nov/2026:08:33:08 +1300] \"GET /api/profile HTTP/1.1\" 200 102 \"-\" \"okhttp/4.12.0\"",
+    ],
+}
+
+# The lines the feed adds, one every two seconds, so a page left open fills in.
+LOG_STREAM = [
+    "[INFO] Detector: inference 7.9 ms",
+    "[DEBUG] Copied /media/frigate/recordings/2026-11-08/09/door_cam/00.01.mp4",
+    "[WARNING] Camera north_cam is behind by 0.8 seconds",
+    "[ERROR] Lost connection to 3d_printer",
+]
+
+
+def log_stream_line(number):
+    """One line, stamped now and shaped like the top of a Frigate log."""
+    now = datetime.datetime.now()
+    stamp = now.strftime("%Y-%m-%d %H:%M:%S.") + f"{now.microsecond:06d}"
+    return f"{stamp}  {LOG_STREAM[number % len(LOG_STREAM)]}"
+
 # Events the Explore list is made of: label, sub label, camera, minutes ago.
 EVENT_SEEDS = [
     ("person", "Angie", "door_cam", 2),
@@ -358,6 +408,21 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/stats":
             return self.send_json(stats())
+
+        if path.startswith("/api/logs/"):
+            # A service's whole log, or the feed of what it writes from now on.
+            # A real server keeps this to an admin, and answers 403 for anyone else.
+            service = path[len("/api/logs/"):]
+            if service not in LOG_SAMPLES:
+                return self.send_json({"detail": f"Invalid service. {service}"}, status=500)
+            if ROLE != "admin":
+                return self.send_json({"message": "Only admins can view logs."}, status=403)
+            query = parse_qs(urlparse(self.path).query)
+            if (query.get("stream") or ["false"])[0].lower() == "true":
+                return self.stream_log()
+            return self.send_json(
+                {"totalLines": len(LOG_SAMPLES[service]), "lines": LOG_SAMPLES[service]},
+            )
 
         if path == "/api/events":
             return self.send_json(events(urlparse(self.path).query))
@@ -691,6 +756,26 @@ class Handler(BaseHTTPRequestHandler):
                 time.sleep(0.15)
         except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             # The player closed the stream, which is what leaving the screen does.
+            return
+
+    def stream_log(self):
+        """What a log's feed looks like: text, one line every two seconds, until
+        the app closes the response."""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.close_connection = True
+        number = 0
+        try:
+            while True:
+                self.wfile.write((log_stream_line(number) + "\n").encode())
+                self.wfile.flush()
+                number += 1
+                time.sleep(2)
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, OSError):
+            # The page was left, or the app reopened the feed for a fresher file.
             return
 
     def stream_audio(self, path):

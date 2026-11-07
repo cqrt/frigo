@@ -728,4 +728,20 @@
     <string name="system_this_server">Este servidor</string>
     <string name="system_restart_frigate">Reiniciar Frigate</string>
     <string name="system_restart_supporting">Las alertas se paran unos treinta segundos</string>
+
+    <!-- ===== registros del sistema ===== -->
+    <!-- La fila bajo Sistema y la página que abre. -->
+    <string name="settings_logs">Registros del sistema</string>
+    <string name="logs_following">Siguiendo</string>
+    <string name="logs_paused">En pausa</string>
+    <string name="logs_all">Todo</string>
+    <string name="logs_errors">Errores</string>
+    <string name="logs_warnings">Avisos</string>
+    <string name="logs_info">Info</string>
+    <string name="logs_debug">Debug</string>
+    <string name="logs_search">Buscar en el registro</string>
+    <string name="logs_no_match">Nada coincide</string>
+    <string name="logs_clear">Limpiar</string>
+    <string name="logs_feed_stopped">La conexión se detuvo. Reintentando.</string>
+    <string name="logs_older_gone">Las líneas más antiguas ya no están en esta página.</string>
 </resources>

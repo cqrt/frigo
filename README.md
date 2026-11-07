@@ -101,6 +101,8 @@ it, with its own sign-in, its own alerts switch and its own camera layout, and
 **Add a server** signs in to one more. **Sign out** takes you off the server you're
 on, and the next one takes over. Under Servers, an admin finds **Frigate**: Alerts
 and detections, AI descriptions, and System, which is how the box is doing.
+**System logs** under System shows what frigate, go2rtc and nginx have been saying,
+newest at the bottom.
 Then come two switches: one for notifications, and one that plays the home page
 tiles live. Under notifications sit **Only these objects**, the list this phone
 narrows its alerts by, then **People to leave out**, the names it stays quiet

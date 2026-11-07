@@ -62,6 +62,7 @@ import nz.mckenzie.frigo.ui.settings.AlertObjectsScreen
 import nz.mckenzie.frigo.ui.settings.AlertPeopleScreen
 import nz.mckenzie.frigo.ui.settings.CameraSwitchesScreen
 import nz.mckenzie.frigo.ui.settings.LanguageScreen
+import nz.mckenzie.frigo.ui.settings.LogsScreen
 import nz.mckenzie.frigo.ui.settings.QuietTimesScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
 import nz.mckenzie.frigo.ui.settings.SystemScreen
@@ -286,6 +287,9 @@ private fun MainScaffold(
                     onOpenSystem = {
                         navController.navigate("system") { launchSingleTop = true }
                     },
+                    onOpenLogs = {
+                        navController.navigate("system-logs") { launchSingleTop = true }
+                    },
                     onAddServer = {
                         navController.navigate("add-server") { launchSingleTop = true }
                     },
@@ -293,6 +297,13 @@ private fun MainScaffold(
             }
             composable("system") {
                 SystemScreen(
+                    container = container,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable("system-logs") {
+                LogsScreen(
                     container = container,
                     modifier = Modifier.padding(padding),
                     onBack = { navController.popBackStack() },

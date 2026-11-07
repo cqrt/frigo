@@ -2800,3 +2800,53 @@ five days of alerts turned into a button that never worked.
 `SceneText` reads the scene either way and joins a list into the sentence it was meant to
 be. A field that arrives in the wrong shape should not take the page down with it, and
 this one is Frigate's own writing, not something the phone asked for.
+
+## Logs follow the server's own feed
+
+Frigate's `/api/logs/{service}` answers the whole of the current file, and with
+`?stream=true` it answers text and pushes each line as it is written. The page
+reads the file once, then follows the feed. Asking again every few seconds would
+copy a few hundred kilobytes for a handful of new lines, and the new lines would
+arrive late.
+
+The feed is closed when the page is left, when the service changes, and when the
+response ends. Closing the response is what unblocks the read. A feed that fails
+is opened again after five seconds. One that says nothing for a minute is opened
+again at once: a rolling log can be replaced under an open feed, and the old file
+stays quiet for ever.
+
+Rejected: rereading the file on a timer. It costs a whole file for each look, and
+a line written just after a read waits for the next one.
+
+## Following is a switch, not a scroll
+
+A list that stops following when you scroll up decides for you, and a small
+movement would stop the page without saying so. The chip says Following or
+Paused. While it is on, the newest line stays in view. Paused leaves the view
+where it is while lines collect below, and turning it back on goes to the newest.
+
+The cost is that scrolling up while Following is on does not keep you there: the
+next line takes you back down. Pausing is one tap, and the chip says which way it
+is set.
+
+## The log page keeps five thousand lines
+
+The first read is the whole file, and a busy Frigate writes a line a second or
+more. Five thousand lines is long enough to scroll back through a day of noise at
+a phone's width, and short enough that the list stays cheap to draw and to keep in
+memory. Older lines go as newer ones arrive, and a note at the top says so. A log
+that silently loses its beginning reads as a bug.
+
+## The three services keep their server names
+
+`frigate`, `go2rtc` and `nginx` are the names the server uses in the path. They
+are not translated and not capitalised. A server answer, a log line and a search
+on the web all use the same lower case word, so a translated name would be one
+more thing to map back to what the server said.
+
+## There is no copy on the log page
+
+Copying a log is what you do to send it to someone. This page is for reading what
+your own box is saying. A long press to copy would also fight the list's own
+gestures, and a button would need somewhere to put the text and a way to say it
+arrived. Neither is here.

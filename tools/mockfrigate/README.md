@@ -65,6 +65,14 @@ notifications off, which is what a camera nobody has touched says. Turn one of
 them on in the app and it starts buzzing, because the app has no list of its own
 unless you give it one.
 
+`/api/logs/frigate`, `/api/logs/go2rtc` and `/api/logs/nginx` answer the whole of
+that service's current log. The lines carry every level the app reads, a line the
+container writes with no prefix, a line with the date repeated in brackets, an
+nginx line with no level, and one line twice. `?stream=true` answers `text/plain`
+and adds a line every two seconds until the app closes it, which is what Settings,
+System logs sits on. A viewer account gets the 403 a real server gives. Any other
+service name answers the 500 the real endpoint does.
+
 `/ws` is a websocket that behaves like Frigate's message feed: it takes the same
 bearer token, and it publishes on both of the topics the app can listen to.
 

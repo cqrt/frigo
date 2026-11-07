@@ -728,4 +728,20 @@
     <string name="system_this_server">Ce serveur</string>
     <string name="system_restart_frigate">Redémarrer Frigate</string>
     <string name="system_restart_supporting">Les alertes s\'arrêtent environ trente secondes</string>
+
+    <!-- ===== journaux système ===== -->
+    <!-- La ligne sous Système et la page qu'elle ouvre. -->
+    <string name="settings_logs">Journaux système</string>
+    <string name="logs_following">Suivi</string>
+    <string name="logs_paused">En pause</string>
+    <string name="logs_all">Tout</string>
+    <string name="logs_errors">Erreurs</string>
+    <string name="logs_warnings">Avertissements</string>
+    <string name="logs_info">Info</string>
+    <string name="logs_debug">Debug</string>
+    <string name="logs_search">Rechercher dans le journal</string>
+    <string name="logs_no_match">Aucun résultat</string>
+    <string name="logs_clear">Effacer</string>
+    <string name="logs_feed_stopped">La connexion s\'est arrêtée. Nouvelle tentative.</string>
+    <string name="logs_older_gone">Les plus anciennes lignes ont quitté cette page.</string>
 </resources>

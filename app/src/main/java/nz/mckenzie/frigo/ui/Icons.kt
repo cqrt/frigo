@@ -204,6 +204,13 @@ object FrigoIcons {
         }
     }
 
+    /** Three strokes, the middle one shorter, for what the server has been saying. */
+    val Lines: ImageVector by lazy {
+        vector("Lines") {
+            path("M4 7h16M4 12h9M4 17h16", strokeWidth = 1.9f)
+        }
+    }
+
     /** A globe, for the language the app speaks. */
     val Globe: ImageVector by lazy {
         vector("Globe") {

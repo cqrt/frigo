@@ -729,4 +729,20 @@
     <string name="system_this_server">Dieser Server</string>
     <string name="system_restart_frigate">Frigate neu starten</string>
     <string name="system_restart_supporting">Alarme stehen etwa eine halbe Minute</string>
+
+    <!-- ===== Systemprotokolle ===== -->
+    <!-- Die Zeile unter System und die Seite, die sie öffnet. -->
+    <string name="settings_logs">Systemprotokolle</string>
+    <string name="logs_following">Folgen</string>
+    <string name="logs_paused">Pausiert</string>
+    <string name="logs_all">Alle</string>
+    <string name="logs_errors">Fehler</string>
+    <string name="logs_warnings">Warnungen</string>
+    <string name="logs_info">Info</string>
+    <string name="logs_debug">Debug</string>
+    <string name="logs_search">Protokoll durchsuchen</string>
+    <string name="logs_no_match">Keine Treffer</string>
+    <string name="logs_clear">Leeren</string>
+    <string name="logs_feed_stopped">Die Verbindung wurde beendet. Neuer Versuch.</string>
+    <string name="logs_older_gone">Die ältesten Zeilen sind von dieser Seite verschwunden.</string>
 </resources>
