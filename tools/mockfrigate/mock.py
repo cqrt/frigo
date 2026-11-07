@@ -797,12 +797,16 @@ REVIEW_WORDS = {
         "shortSummary": "A person is walking up the driveway.",
         "scene": "A person walked up the driveway towards the door, stood there for a "
         "moment, and then headed back down the path.",
+        "potential_threat_level": 1,
+        "other_concerns": ["a car passing on the street"],
     },
     "detection": {
         "title": "Dog in the garden",
         "shortSummary": "A dog is moving about the garden.",
         "scene": "A dog wandered around the garden for a while, stopping to sniff along "
         "the fence before moving out of the picture.",
+        "potential_threat_level": 0,
+        "other_concerns": [],
     },
 }
 
@@ -861,7 +865,7 @@ def reviews(severity, reviewed=None, cameras=None, after=None, before=None):
             "zones": zones,
         }
         if index == 0:
-            data["metadata"] = {**REVIEW_WORDS[severity], "potential_threat_level": 0}
+            data["metadata"] = dict(REVIEW_WORDS[severity])
         answer.append(
             {
                 "id": review_id,

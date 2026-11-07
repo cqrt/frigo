@@ -2745,3 +2745,15 @@ so their viewers are untouched.
 Rejected: reading the summary instead of the scene, which is written for a notification
 and stops before the story does; and polling the list for the description, which would
 need a request on a timer for an answer the open call can bring once.
+
+## A review opens as a page, not as a black box
+
+The clip viewer was built for an event in Explore and for a clip kept on the server, and it fills the screen with black because it is a clip and nothing else. A review is more than a clip: the picture starts below the status bar rather than under it, the cameras that saw the same moment sit beneath it, and the card takes the rest. So `ClipViewer` has a sheet layout now, and only the review player asks for it. Explore and Clips keep the full screen one.
+
+The line with the camera and the time moved out of the picture and onto the page above it, with the close mark. The picture is a rounded frame with a margin now, and a title over it would sit in a corner of its own. On its side the sheet becomes the full screen clip again: there is no room for a card or a strip. The picture keeps the same slot in the tree both ways, so turning the phone does not fetch or restart the clip.
+
+The other cameras are stills of that moment, from `/{camera}/recordings/{moment}/snapshot.jpg`, the same request the camera screen makes for its strip. A clip each would be one cut and download per camera to answer a question a picture answers. A camera with nothing recorded then comes back blank, which is the answer.
+
+The facts on the card are the server's own: objects and recognised names, zones, the kind of review, its length, `potential_threat_level` and `other_concerns`. Confidence is left out, because a percentage from a model reads as a fact and is only an opinion. The threat badge appears only when Frigate says suspicious or critical; a badge on every ordinary moment is noise.
+
+Tapping a camera opens the player at the review's start, which meant a `startMoment` on `PlayerScreen` and an optional `at` on its route. It opens on the still of that moment with the bar there rather than on the stream, so what you tapped is what you get.

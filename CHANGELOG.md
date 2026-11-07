@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.35
+
+- A review opens on a page now: the clip below the status bar, the cameras that saw the same moment under it, and Frigate's words on a card that fills the rest.
+- Tap another camera under a clip and it opens at that same moment.
+- The card says what was seen, where, how long the moment ran, and anything Frigate thought worth flagging.
+
 ## 0.10.34
 
 - In the Review list, a moment Frigate has described is named by its own title rather than by the objects it saw.

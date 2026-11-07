@@ -197,6 +197,11 @@ private fun saveStampFormat(locale: Locale): DateTimeFormatter =
 fun PlayerScreen(
     repository: FrigoRepository,
     cameraName: String,
+    /**
+     * A moment to open on, in epoch seconds, or null for the stream. A review's
+     * other-camera tile sends one, so the camera opens on what happened then.
+     */
+    startMoment: Double? = null,
     onBack: () -> Unit,
     onOpenClips: () -> Unit = {},
 ) {
@@ -262,17 +267,28 @@ fun PlayerScreen(
     var spans by remember { mutableStateOf<List<RecordingSpan>>(emptyList()) }
     var rows by remember { mutableStateOf<List<RecordingSpan>>(emptyList()) }
     var spikes by remember { mutableStateOf<List<FrigateReview>>(emptyList()) }
-    var day by rememberSaveable { mutableStateOf<String?>(null) }
-    var chosen by rememberSaveable { mutableDoubleStateOf(0.0) }
-    var live by rememberSaveable { mutableStateOf(true) }
+    // A moment to open on, sent by a review's other-camera tile. It only decides
+    // where the screen starts: the day, the marker, and whether the picture is the
+    // stream or the recording there.
+    val opensAt = remember(cameraName) { startMoment }
+    var day by rememberSaveable {
+        mutableStateOf(
+            opensAt?.let {
+                LocalDate.ofInstant(Instant.ofEpochSecond(it.toLong()), zone).toString()
+            },
+        )
+    }
+    var chosen by rememberSaveable { mutableDoubleStateOf(opensAt?.let { quantise(it) } ?: 0.0) }
+    var live by rememberSaveable { mutableStateOf(opensAt == null) }
     var barReady by remember { mutableStateOf(false) }
     var barProblem by remember { mutableStateOf<String?>(null) }
     var attempt by remember { mutableIntStateOf(0) }
-    // Set by tapping another camera's picture. The moment on the bar stays where
-    // it is, so the same stretch of time is in front of you on the new camera,
-    // rather than jumping to that camera's latest recording.
-    var keepingMoment by remember { mutableStateOf(false) }
-    var keptDay by remember { mutableStateOf<String?>(null) }
+    // Set by tapping another camera's picture, and by opening a camera at a moment.
+    // The moment on the bar stays where it is, so the same stretch of time is in
+    // front of you on the new camera, rather than jumping to that camera's latest
+    // recording.
+    var keepingMoment by remember { mutableStateOf(opensAt != null) }
+    var keptDay by remember { mutableStateOf(day) }
     // Set by picking another camera while a recording is playing: the moment it had
     // reached, and the day it was on, so the run carries on from there on the camera
     // picked instead of going back to where it started.

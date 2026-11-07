@@ -580,6 +580,13 @@
     <!-- La légende du lecteur : la caméra, puis il y a combien de temps. -->
     <string name="reviews_player_subtitle">%1$s · %2$s</string>
 
+    <!-- La carte sous le clip d'une revue : le type, la durée et le reste de ce que le serveur a dit. -->
+    <string name="reviews_alert">Alerte</string>
+    <string name="reviews_detection">Détection</string>
+    <string name="reviews_threat_suspicious">Suspect</string>
+    <string name="reviews_threat_critical">Menace critique</string>
+    <string name="reviews_other_concerns">A aussi remarqué : %1$s</string>
+
     <!-- Alertes et détections : la page, et ce qu'elle dit quand elle ne charge pas. -->
     <string name="revset_title">Alertes et détections</string>
     <string name="revset_cant_read">Impossible de lire ces réglages.</string>

@@ -238,6 +238,9 @@ private fun MainScaffold(
                     onOpenSettings = {
                         navController.navigate("review-settings") { launchSingleTop = true }
                     },
+                    onOpenCamera = { camera, moment ->
+                        navController.navigate("$PLAYER_PREFIX$camera?at=${momentParam(moment)}")
+                    },
                 )
             }
             composable("review-settings") {
@@ -356,13 +359,17 @@ private fun MainScaffold(
                     onBack = { navController.popBackStack() },
                 )
             }
-            composable("$PLAYER_PREFIX{camera}") { entry ->
+            composable("$PLAYER_PREFIX{camera}?at={at}") { entry ->
                 val camera = entry.arguments?.getString("camera") ?: return@composable
+                // The moment is sent by a review's other-camera tile, so the
+                // camera opens on what happened then rather than on the stream.
+                val at = entry.arguments?.getString("at")?.toDoubleOrNull()
                 // The player draws its own background under the system bars, so
                 // it deliberately ignores the scaffold padding.
                 PlayerScreen(
                     repository = container.repository,
                     cameraName = camera,
+                    startMoment = at,
                     onBack = { navController.popBackStack() },
                     onOpenClips = { navController.switchTo("clips") },
                 )
@@ -379,6 +386,10 @@ private fun NavController.switchTo(route: String) {
         restoreState = true
     }
 }
+
+/** A moment written the way the player's route reads it: digits and a dot, no exponent. */
+private fun momentParam(seconds: Double): String =
+    String.format(java.util.Locale.ROOT, "%.3f", seconds)
 
 /**
  * A tab's icon with a red dot on its corner, meaning a newer Frigo is waiting.

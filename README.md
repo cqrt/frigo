@@ -60,11 +60,14 @@ before it closes, and its last line goes to the clips you've kept already.
 
 **Review.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review
-rather than twenty events. Tap one to watch the clip of that time, and what
-Frigate made of it sits under the clip: a name for what happened, and the whole
-story under the name. In the list, a review it has described is named by its own
-title rather than by the objects it saw. Frigate writes that a minute or two
-after a review ends, so one that has no words yet opens on the clip alone. Alerts
+rather than twenty events. Tap one to watch the clip of that time, in a frame
+clear of the status bar. What Frigate made of it sits under the clip: a name for
+what happened, and the whole story under the name. Under the clip are the other
+cameras at that same moment, and a tap on one opens it there. The card also says
+what was seen, where, how long it ran, and anything else Frigate noticed. In the
+list, a review it has described is named by its own title rather than by the
+objects it saw. Frigate writes that a minute or two after a review ends, so one
+that has no words yet opens on the clip and the other cameras alone. Alerts
 and detections are separate halves of the list, and each half says how many are
 left. Watch past halfway and the review counts as watched, here and on the web
 page, so it leaves the list. Show reviewed brings the watched ones back. When

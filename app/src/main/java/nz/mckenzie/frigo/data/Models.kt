@@ -231,7 +231,8 @@ data class ReviewData(
  * about it. The scene is the whole narrative, which is what Frigate's own page
  * shows. Older servers write a title and a summary with no scene, so [scene] is
  * empty there. [threatLevel] is 0 for ordinary, 1 for suspicious and 2 for a
- * critical threat.
+ * critical threat. [otherConcerns] is whatever else the model noticed, which is
+ * sometimes read as an aside on its own line.
  */
 @Serializable
 data class ReviewMetadata(
@@ -239,6 +240,7 @@ data class ReviewMetadata(
     val shortSummary: String = "",
     val scene: String = "",
     @SerialName("potential_threat_level") val threatLevel: Int = 0,
+    @SerialName("other_concerns") val otherConcerns: List<String> = emptyList(),
 )
 
 /**

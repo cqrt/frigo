@@ -581,6 +581,13 @@
     <!-- Die Bildunterschrift: die Kamera, dann wie lange her. -->
     <string name="reviews_player_subtitle">%1$s · %2$s</string>
 
+    <!-- Die Karte unter dem Clip: die Art, die Länge und was der Server sonst gesagt hat. -->
+    <string name="reviews_alert">Alarm</string>
+    <string name="reviews_detection">Erkennung</string>
+    <string name="reviews_threat_suspicious">Verdächtig</string>
+    <string name="reviews_threat_critical">Kritische Bedrohung</string>
+    <string name="reviews_other_concerns">Außerdem bemerkt: %1$s</string>
+
     <!-- Alarme und Erkennungen: die Seite und was sie sagt, wenn sie nicht lädt. -->
     <string name="revset_title">Alarme und Erkennungen</string>
     <string name="revset_cant_read">Diese Einstellungen lassen sich nicht lesen.</string>

@@ -48,9 +48,11 @@ calendar have something to show.
 
 The first alert and the first detection carry what the server made of them: a
 title, a short summary and a whole scene, the way Frigate writes them a minute or
-two after a review ends. The other four carry none, so the list shows a row named
-the way Frigate named it and a row named after the objects. `/api/review/<id>`
-answers one review by id, built the same way, which is what opening one asks for.
+two after a review ends. The alert is also marked suspicious and carries an aside
+about a car, so the card's badge and its last line have something to show. The
+other four carry none, so the list shows a row named the way Frigate named it and
+a row named after the objects. `/api/review/<id>` answers one review by id, built
+the same way, which is what opening one asks for.
 
 `/api/config` carries the two pages the app follows: notifications are on for the
 whole server and for the door and north cameras, and the server-wide alert list is

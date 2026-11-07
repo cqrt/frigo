@@ -580,6 +580,13 @@
     <!-- El pie del reproductor: la cámara, y luego cuánto tiempo hace. -->
     <string name="reviews_player_subtitle">%1$s · %2$s</string>
 
+    <!-- La tarjeta bajo el clip de una revisión: el tipo, la duración y lo demás que dijo el servidor. -->
+    <string name="reviews_alert">Alerta</string>
+    <string name="reviews_detection">Detección</string>
+    <string name="reviews_threat_suspicious">Sospechoso</string>
+    <string name="reviews_threat_critical">Amenaza crítica</string>
+    <string name="reviews_other_concerns">También notó: %1$s</string>
+
     <!-- Alertas y detecciones: la página, y lo que dice cuando no carga. -->
     <string name="revset_title">Alertas y detecciones</string>
     <string name="revset_cant_read">No se pueden leer estos ajustes.</string>

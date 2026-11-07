@@ -90,8 +90,8 @@ class ReviewWordsTest {
                   "title": "Person at the door",
                   "shortSummary": "A person is walking up the driveway.",
                   "scene": "A person walked up the driveway and stopped at the door.",
-                  "potential_threat_level": 0,
-                  "other_concerns": []
+                  "potential_threat_level": 1,
+                  "other_concerns": ["a car passing on the street"]
                 }
               }
             }
@@ -100,6 +100,8 @@ class ReviewWordsTest {
 
         assertEquals("Person at the door", read.aiTitle())
         assertEquals("A person walked up the driveway and stopped at the door.", read.description())
+        assertEquals(1, read.data.metadata?.threatLevel)
+        assertEquals(listOf("a car passing on the street"), read.data.metadata?.otherConcerns)
     }
 
     /** A server from before scenes existed sends no such key, and still reads. */

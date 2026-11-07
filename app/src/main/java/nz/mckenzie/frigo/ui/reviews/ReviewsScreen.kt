@@ -78,6 +78,7 @@ fun ReviewsScreen(
     container: AppContainer,
     modifier: Modifier = Modifier,
     onOpenSettings: () -> Unit,
+    onOpenCamera: (String, Double) -> Unit,
 ) {
     val viewModel: ReviewsViewModel = viewModel(factory = ReviewsViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -308,8 +309,13 @@ fun ReviewsScreen(
         ReviewPlayerDialog(
             repository = container.repository,
             review = review,
+            cameras = state.cameras,
             onDismiss = viewModel::close,
             onHalfWatched = { viewModel.markReviewed(review) },
+            onOpenCamera = { camera, moment ->
+                viewModel.close()
+                onOpenCamera(camera, moment)
+            },
         )
     }
 

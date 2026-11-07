@@ -580,6 +580,13 @@
     <!-- The player's caption: the camera, then how long ago. -->
     <string name="reviews_player_subtitle">%1$s · %2$s</string>
 
+    <!-- The card under a review's clip: the kind, the length, and what else the server said. -->
+    <string name="reviews_alert">Alert</string>
+    <string name="reviews_detection">Detection</string>
+    <string name="reviews_threat_suspicious">Suspicious</string>
+    <string name="reviews_threat_critical">Critical threat</string>
+    <string name="reviews_other_concerns">Also noted: %1$s</string>
+
     <!-- Alerts and detections: the page, and what it says when it can't load. -->
     <string name="revset_title">Alerts and detections</string>
     <string name="revset_cant_read">Can\'t read these settings.</string>
