@@ -8,15 +8,15 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.32
+
+- People to leave out no longer has an Everyone row. With nobody ticked the list is empty and every alert reaches you, but a row that lights up when the list is empty reads as everyone being left out.
+- The Settings row now says No one when the list is empty, rather than Everyone.
+
 ## 0.10.31
 
 - Only an admin can add a server or switch between them now. Everyone else sees the servers the phone holds, with the one they're on ticked.
 - Alerts and detections, AI descriptions and System sit under Servers, in a card called Frigate, which only an admin sees.
-
-## 0.10.31
-
-- People to leave out no longer has an Everyone row. With nobody ticked the list is empty and every alert reaches you, but a row that lights up when the list is empty reads as everyone being left out.
-- The Settings row now says No one when the list is empty, rather than Everyone.
 
 ## 0.10.30
 
