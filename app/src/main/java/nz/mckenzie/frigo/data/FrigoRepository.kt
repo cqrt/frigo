@@ -206,7 +206,7 @@ class FrigoRepository(
     suspend fun loadAlerts() {
         if (alertsLoaded) return
         val server = activeServer()
-        _alerts.value = server?.let { prefs.readAlerts(it.baseUrl) } ?: ServerPrefs.Alerts()
+        _alerts.value = server?.let { prefs.readAlerts(it) } ?: ServerPrefs.Alerts()
         alertsLoaded = true
     }
 
@@ -229,7 +229,7 @@ class FrigoRepository(
     suspend fun loadQuietTimes() {
         if (quietTimesLoaded) return
         val server = activeServer()
-        _quietTimes.value = server?.let { prefs.readQuietTimes(it.baseUrl) } ?: QuietTimes()
+        _quietTimes.value = server?.let { prefs.readQuietTimes(it) } ?: QuietTimes()
         quietTimesLoaded = true
     }
 
@@ -241,7 +241,7 @@ class FrigoRepository(
     suspend fun loadAlertObjects() {
         if (alertObjectsLoaded) return
         val server = activeServer()
-        _alertObjects.value = server?.let { prefs.readAlertObjects(it.baseUrl) } ?: AlertObjects()
+        _alertObjects.value = server?.let { prefs.readAlertObjects(it) } ?: AlertObjects()
         alertObjectsLoaded = true
     }
 
@@ -253,7 +253,7 @@ class FrigoRepository(
     suspend fun loadAlertPeople() {
         if (alertPeopleLoaded) return
         val server = activeServer()
-        _alertPeople.value = server?.let { prefs.readAlertPeople(it.baseUrl) } ?: AlertPeople()
+        _alertPeople.value = server?.let { prefs.readAlertPeople(it) } ?: AlertPeople()
         alertPeopleLoaded = true
     }
 
@@ -265,7 +265,7 @@ class FrigoRepository(
     suspend fun loadCameraList() {
         if (cameraListLoaded) return
         val server = activeServer()
-        _cameraList.value = server?.let { prefs.readCameraList(it.baseUrl) } ?: CameraList()
+        _cameraList.value = server?.let { prefs.readCameraList(it) } ?: CameraList()
         cameraListLoaded = true
     }
 
@@ -317,12 +317,15 @@ class FrigoRepository(
     /** Reads the phone's copy of the active server's choices, over what was there. */
     private suspend fun loadChoices() {
         val url = stored?.baseUrl
-        _alerts.value = url?.let { prefs.readAlerts(it) } ?: ServerPrefs.Alerts()
+        // Settings an older version kept for the server alone come over to this
+        // account first, so nobody signs in to find them missing.
+        stored?.let { prefs.adopt(it) }
+        _alerts.value = stored?.let { prefs.readAlerts(it) } ?: ServerPrefs.Alerts()
         _alertRules.value = url?.let { prefs.readAlertRules(it) } ?: AlertRules()
-        _quietTimes.value = url?.let { prefs.readQuietTimes(it) } ?: QuietTimes()
-        _alertObjects.value = url?.let { prefs.readAlertObjects(it) } ?: AlertObjects()
-        _alertPeople.value = url?.let { prefs.readAlertPeople(it) } ?: AlertPeople()
-        _cameraList.value = url?.let { prefs.readCameraList(it) } ?: CameraList()
+        _quietTimes.value = stored?.let { prefs.readQuietTimes(it) } ?: QuietTimes()
+        _alertObjects.value = stored?.let { prefs.readAlertObjects(it) } ?: AlertObjects()
+        _alertPeople.value = stored?.let { prefs.readAlertPeople(it) } ?: AlertPeople()
+        _cameraList.value = stored?.let { prefs.readCameraList(it) } ?: CameraList()
         _admin.value = url?.let { prefs.readSettings(it) }?.let { it.profile.role == "admin" }
         alertsLoaded = true
         alertRulesLoaded = true
@@ -364,6 +367,9 @@ class FrigoRepository(
     /** Called once on launch. Keeps you signed in if the token still works. */
     suspend fun restore() {
         val saved = activeServer()
+        // Settings an older version kept for the server alone come over to this
+        // account before anything reads them.
+        saved?.let { prefs.adopt(it) }
         // Read first, and before the early return below, so a phone with the lock
         // on is covered on its way to the sign-in page as well.
         _lock.value = prefs.readLock()
@@ -464,9 +470,11 @@ class FrigoRepository(
     }
 
     /**
-     * Signing out forgets the server you are on, and what this phone kept for it.
-     * If you have another it takes over; otherwise the sign-in page comes up with
-     * the address you left filled in.
+     * Signing out leaves the server you are on, and takes the address off the
+     * phone. What you chose on it stays, under your username, so signing back in
+     * finds your switches, your quiet hours and your cameras as you left them. If
+     * you have another server it takes over; otherwise the sign-in page comes up
+     * with the address you left filled in.
      */
     suspend fun signOut() {
         val gone = stored ?: activeServer()
@@ -479,7 +487,6 @@ class FrigoRepository(
             stored = leaving
             persist(kept, leaving?.baseUrl)
         }
-        gone?.baseUrl?.let { prefs.forget(it) }
         limits.clear()
         statsAt = null
         loadChoices()
@@ -745,8 +752,8 @@ class FrigoRepository(
     }.getOrDefault(emptyList()).distinct().sorted()
 
     suspend fun setAlerts(next: ServerPrefs.Alerts) {
-        val url = activeServer()?.baseUrl ?: return
-        prefs.writeAlerts(url, next)
+        val server = activeServer() ?: return
+        prefs.writeAlerts(server, next)
         _alerts.value = next
         alertsLoaded = true
     }
@@ -756,8 +763,8 @@ class FrigoRepository(
      * change here is felt by the notification line at once.
      */
     suspend fun setQuietTimes(next: QuietTimes) {
-        val url = activeServer()?.baseUrl ?: return
-        prefs.writeQuietTimes(url, next)
+        val server = activeServer() ?: return
+        prefs.writeQuietTimes(server, next)
         _quietTimes.value = next
         quietTimesLoaded = true
     }
@@ -769,8 +776,8 @@ class FrigoRepository(
      * buzz and the notification line at once.
      */
     suspend fun setAlertObjects(next: AlertObjects) {
-        val url = activeServer()?.baseUrl ?: return
-        prefs.writeAlertObjects(url, next)
+        val server = activeServer() ?: return
+        prefs.writeAlertObjects(server, next)
         _alertObjects.value = next
         alertObjectsLoaded = true
     }
@@ -780,9 +787,9 @@ class FrigoRepository(
      * no request goes to the server, and its own pages and other phones don't move.
      */
     suspend fun setAlertPeople(names: Set<String>) {
-        val url = activeServer()?.baseUrl ?: return
+        val server = activeServer() ?: return
         val next = AlertPeople(names)
-        prefs.writeAlertPeople(url, next)
+        prefs.writeAlertPeople(server, next)
         _alertPeople.value = next
         alertPeopleLoaded = true
     }
@@ -832,8 +839,8 @@ class FrigoRepository(
      * change in Settings lands on the tiles and on the buzz at once.
      */
     suspend fun setCameraList(next: CameraList) {
-        val url = activeServer()?.baseUrl ?: return
-        prefs.writeCameraList(url, next)
+        val server = activeServer() ?: return
+        prefs.writeCameraList(server, next)
         _cameraList.value = next
         cameraListLoaded = true
     }
@@ -857,13 +864,13 @@ class FrigoRepository(
 
     /** Which way the cameras are laid out, remembered between launches. */
     suspend fun readCameraLayout(): Int {
-        val url = activeServer()?.baseUrl ?: return 0
-        return prefs.readCameraLayout(url)
+        val server = activeServer() ?: return 0
+        return prefs.readCameraLayout(server)
     }
 
     suspend fun setCameraLayout(layout: Int) {
-        val url = activeServer()?.baseUrl ?: return
-        prefs.writeCameraLayout(url, layout)
+        val server = activeServer() ?: return
+        prefs.writeCameraLayout(server, layout)
     }
 
     /** Whether the home page tiles play live. A flow, so Settings is felt at once. */

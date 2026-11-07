@@ -27,7 +27,7 @@ class BootReceiver : BroadcastReceiver() {
                 // The server you were on, and that server's own switch. Each one
                 // keeps its own, so a restart doesn't turn on a server you left off.
                 val active = prefs.readServers().active
-                if (active?.token != null && prefs.readAlerts(active.baseUrl).on) {
+                if (active?.token != null && prefs.readAlerts(active).on) {
                     AlertService.start(appContext)
                 }
             } finally {

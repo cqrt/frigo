@@ -2,6 +2,7 @@ package nz.mckenzie.frigo.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -24,6 +25,11 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
  *
  * The address and username outlive the token. When Frigate expires the session
  * you sign in again, and those two fields are already filled in.
+ *
+ * What you chose for yourself on a server - the alerts switch, quiet hours, the
+ * lists, the cameras and how they are laid out - is kept under the server and
+ * your username together, so signing out and back in finds it again, and a phone
+ * shared with someone else keeps their answers apart from yours.
  *
  * The token sits in DataStore, which lives in this app's private storage and is
  * not readable by other apps. Backup is off in the manifest for the same reason.
@@ -93,9 +99,9 @@ class ServerPrefs(private val context: Context) {
         context.dataStore.edit { next ->
             next[Keys.servers] = BlockJson.encodeToString(ListSerializer(Stored.serializer()), saved.servers)
             next[Keys.active] = baseUrl
-            prefs[Keys.alertsOn]?.let { next[alertsOnKey(baseUrl)] = it }
+            prefs[Keys.alertsOn]?.let { next[alertsOnKey(server)] = it }
             prefs[Keys.alertRules]?.let { next[alertRulesKey(baseUrl)] = it }
-            prefs[Keys.cameraLayout]?.let { next[cameraLayoutKey(baseUrl)] = it }
+            prefs[Keys.cameraLayout]?.let { next[cameraLayoutKey(server)] = it }
             // The one server's keys are not read again, so they go.
             next.remove(Keys.baseUrl)
             next.remove(Keys.username)
@@ -108,30 +114,54 @@ class ServerPrefs(private val context: Context) {
         return saved
     }
 
-    /** Drops everything this phone kept for a server it no longer holds. */
-    suspend fun forget(baseUrl: String) {
+    /**
+     * Hands the settings an older version kept for a server alone over to the
+     * account signing in, and takes the old copy away, so the next person to sign
+     * in to the same server starts with their own. It runs on every sign-in and
+     * does nothing once there is nothing older left.
+     */
+    suspend fun adopt(server: Stored) {
+        val older = run {
+            val prefs = context.dataStore.data.first()
+            listOf(
+                booleanPreferencesKey("alerts_on:${server.baseUrl}"),
+                stringPreferencesKey("quiet_times:${server.baseUrl}"),
+                stringPreferencesKey("alert_objects:${server.baseUrl}"),
+                stringPreferencesKey("alert_people:${server.baseUrl}"),
+                stringPreferencesKey("camera_list:${server.baseUrl}"),
+                intPreferencesKey("camera_layout:${server.baseUrl}"),
+            ).filter { it in prefs.asMap().keys }
+        }
+        if (older.isEmpty()) return
+
         context.dataStore.edit { prefs ->
-            prefs.remove(alertsOnKey(baseUrl))
-            prefs.remove(alertRulesKey(baseUrl))
-            prefs.remove(quietTimesKey(baseUrl))
-            prefs.remove(alertObjectsKey(baseUrl))
-            prefs.remove(alertPeopleKey(baseUrl))
-            prefs.remove(cameraListKey(baseUrl))
-            prefs.remove(cameraLayoutKey(baseUrl))
-            prefs.remove(settingsKey(baseUrl))
+            prefs.adopt(booleanPreferencesKey("alerts_on:${server.baseUrl}"), alertsOnKey(server))
+            prefs.adopt(stringPreferencesKey("quiet_times:${server.baseUrl}"), quietTimesKey(server))
+            prefs.adopt(stringPreferencesKey("alert_objects:${server.baseUrl}"), alertObjectsKey(server))
+            prefs.adopt(stringPreferencesKey("alert_people:${server.baseUrl}"), alertPeopleKey(server))
+            prefs.adopt(stringPreferencesKey("camera_list:${server.baseUrl}"), cameraListKey(server))
+            prefs.adopt(intPreferencesKey("camera_layout:${server.baseUrl}"), cameraLayoutKey(server))
         }
     }
 
-    suspend fun readAlerts(baseUrl: String): Alerts {
+    /** Moves one kept value to the account's name for it, unless it is there already. */
+    private fun <T> MutablePreferences.adopt(from: Preferences.Key<T>, to: Preferences.Key<T>) {
+        if (this[to] != null) return
+        val value = this[from] ?: return
+        this[to] = value
+        remove(from)
+    }
+
+    suspend fun readAlerts(server: Stored): Alerts {
         val prefs = context.dataStore.data.first()
         return Alerts(
-            on = prefs[alertsOnKey(baseUrl)] ?: false,
+            on = prefs[alertsOnKey(server)] ?: false,
         )
     }
 
-    suspend fun writeAlerts(baseUrl: String, alerts: Alerts) {
+    suspend fun writeAlerts(server: Stored, alerts: Alerts) {
         context.dataStore.edit { prefs ->
-            prefs[alertsOnKey(baseUrl)] = alerts.on
+            prefs[alertsOnKey(server)] = alerts.on
         }
     }
 
@@ -155,30 +185,30 @@ class ServerPrefs(private val context: Context) {
      * block for the same reason the rules are: a field added later can't break the
      * read.
      */
-    suspend fun readCameraList(baseUrl: String): CameraList? {
-        val stored = context.dataStore.data.first()[cameraListKey(baseUrl)] ?: return null
+    suspend fun readCameraList(server: Stored): CameraList? {
+        val stored = context.dataStore.data.first()[cameraListKey(server)] ?: return null
         return runCatching { BlockJson.decodeFromString(CameraList.serializer(), stored) }
             .getOrNull()
     }
 
-    suspend fun writeCameraList(baseUrl: String, list: CameraList) {
+    suspend fun writeCameraList(server: Stored, list: CameraList) {
         val stored = BlockJson.encodeToString(CameraList.serializer(), list)
-        context.dataStore.edit { prefs -> prefs[cameraListKey(baseUrl)] = stored }
+        context.dataStore.edit { prefs -> prefs[cameraListKey(server)] = stored }
     }
 
     /**
      * The quiet hours this phone keeps for a server. One block for the same
      * reason the rules are: a field added later can't break the read.
      */
-    suspend fun readQuietTimes(baseUrl: String): QuietTimes? {
-        val stored = context.dataStore.data.first()[quietTimesKey(baseUrl)] ?: return null
+    suspend fun readQuietTimes(server: Stored): QuietTimes? {
+        val stored = context.dataStore.data.first()[quietTimesKey(server)] ?: return null
         return runCatching { BlockJson.decodeFromString(QuietTimes.serializer(), stored) }
             .getOrNull()
     }
 
-    suspend fun writeQuietTimes(baseUrl: String, quiet: QuietTimes) {
+    suspend fun writeQuietTimes(server: Stored, quiet: QuietTimes) {
         val stored = BlockJson.encodeToString(QuietTimes.serializer(), quiet)
-        context.dataStore.edit { prefs -> prefs[quietTimesKey(baseUrl)] = stored }
+        context.dataStore.edit { prefs -> prefs[quietTimesKey(server)] = stored }
     }
 
     /**
@@ -186,30 +216,30 @@ class ServerPrefs(private val context: Context) {
      * One block for the same reason the rules are: a field added later can't
      * break the read.
      */
-    suspend fun readAlertObjects(baseUrl: String): AlertObjects? {
-        val stored = context.dataStore.data.first()[alertObjectsKey(baseUrl)] ?: return null
+    suspend fun readAlertObjects(server: Stored): AlertObjects? {
+        val stored = context.dataStore.data.first()[alertObjectsKey(server)] ?: return null
         return runCatching { BlockJson.decodeFromString(AlertObjects.serializer(), stored) }
             .getOrNull()
     }
 
-    suspend fun writeAlertObjects(baseUrl: String, objects: AlertObjects) {
+    suspend fun writeAlertObjects(server: Stored, objects: AlertObjects) {
         val stored = BlockJson.encodeToString(AlertObjects.serializer(), objects)
-        context.dataStore.edit { prefs -> prefs[alertObjectsKey(baseUrl)] = stored }
+        context.dataStore.edit { prefs -> prefs[alertObjectsKey(server)] = stored }
     }
 
     /**
      * The people this phone stays quiet about, or null when it has no list of its
      * own. One block, like the objects list beside it.
      */
-    suspend fun readAlertPeople(baseUrl: String): AlertPeople? {
-        val stored = context.dataStore.data.first()[alertPeopleKey(baseUrl)] ?: return null
+    suspend fun readAlertPeople(server: Stored): AlertPeople? {
+        val stored = context.dataStore.data.first()[alertPeopleKey(server)] ?: return null
         return runCatching { BlockJson.decodeFromString(AlertPeople.serializer(), stored) }
             .getOrNull()
     }
 
-    suspend fun writeAlertPeople(baseUrl: String, people: AlertPeople) {
+    suspend fun writeAlertPeople(server: Stored, people: AlertPeople) {
         val stored = BlockJson.encodeToString(AlertPeople.serializer(), people)
-        context.dataStore.edit { prefs -> prefs[alertPeopleKey(baseUrl)] = stored }
+        context.dataStore.edit { prefs -> prefs[alertPeopleKey(server)] = stored }
     }
 
     /**
@@ -236,11 +266,11 @@ class ServerPrefs(private val context: Context) {
     }
 
     /** Which way the cameras are laid out: a grid, a list, or one picture to a row. */
-    suspend fun readCameraLayout(baseUrl: String): Int =
-        context.dataStore.data.first()[cameraLayoutKey(baseUrl)] ?: 0
+    suspend fun readCameraLayout(server: Stored): Int =
+        context.dataStore.data.first()[cameraLayoutKey(server)] ?: 0
 
-    suspend fun writeCameraLayout(baseUrl: String, layout: Int) {
-        context.dataStore.edit { prefs -> prefs[cameraLayoutKey(baseUrl)] = layout }
+    suspend fun writeCameraLayout(server: Stored, layout: Int) {
+        context.dataStore.edit { prefs -> prefs[cameraLayoutKey(server)] = layout }
     }
 
     /**
@@ -342,16 +372,20 @@ class ServerPrefs(private val context: Context) {
         runCatching { BlockJson.decodeFromString(ListSerializer(Stored.serializer()), stored) }
             .getOrNull()
 
-    // Everything that belongs to one server is named after it, so two of them can
-    // hold two different answers to the same question.
-    private fun alertsOnKey(baseUrl: String) = booleanPreferencesKey("alerts_on:$baseUrl")
+    // Everything one person keeps on one server is named after both, so two accounts
+    // on the same box keep two answers to the same question and signing out leaves
+    // yours behind for you. What the server itself said - its rules and its settings
+    // - is named after the server alone, since it is the same answer for everyone.
+    private fun who(server: Stored) = "${server.baseUrl}|${server.username}"
+
+    private fun alertsOnKey(server: Stored) = booleanPreferencesKey("alerts_on:${who(server)}")
+    private fun quietTimesKey(server: Stored) = stringPreferencesKey("quiet_times:${who(server)}")
+    private fun alertObjectsKey(server: Stored) = stringPreferencesKey("alert_objects:${who(server)}")
+    private fun alertPeopleKey(server: Stored) = stringPreferencesKey("alert_people:${who(server)}")
+    private fun cameraListKey(server: Stored) = stringPreferencesKey("camera_list:${who(server)}")
+    private fun cameraLayoutKey(server: Stored) = intPreferencesKey("camera_layout:${who(server)}")
 
     private fun alertRulesKey(baseUrl: String) = stringPreferencesKey("alert_rules:$baseUrl")
-    private fun quietTimesKey(baseUrl: String) = stringPreferencesKey("quiet_times:$baseUrl")
-    private fun alertObjectsKey(baseUrl: String) = stringPreferencesKey("alert_objects:$baseUrl")
-    private fun alertPeopleKey(baseUrl: String) = stringPreferencesKey("alert_people:$baseUrl")
-    private fun cameraListKey(baseUrl: String) = stringPreferencesKey("camera_list:$baseUrl")
-    private fun cameraLayoutKey(baseUrl: String) = intPreferencesKey("camera_layout:$baseUrl")
     private fun settingsKey(baseUrl: String) = stringPreferencesKey("settings:$baseUrl")
 
     private object Keys {

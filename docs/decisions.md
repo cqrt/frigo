@@ -2757,3 +2757,46 @@ The other cameras are stills of that moment, from `/{camera}/recordings/{moment}
 The facts on the card are the server's own: objects and recognised names, zones, the kind of review, its length, `potential_threat_level` and `other_concerns`. Confidence is left out, because a percentage from a model reads as a fact and is only an opinion. The threat badge appears only when Frigate says suspicious or critical; a badge on every ordinary moment is noise.
 
 Tapping a camera opens the player at the review's start, which meant a `startMoment` on `PlayerScreen` and an optional `at` on its route. It opens on the still of that moment with the bar there rather than on the stream, so what you tapped is what you get.
+
+## Your settings are yours, whoever is holding the phone
+
+The settings a person makes on a server were kept under the server's address alone, and
+signing out dropped every one of them. Sign back in and the alerts switch, quiet hours,
+the objects and people lists, the cameras you'd hidden, the names you'd given them and
+their order were all gone, while the address and username were kept for the sign-in
+page. Signing out also removed the server from the list, which was the written reason
+for clearing the rest: the row had no second use.
+
+Two things were wrong with that. Signing back in to the same server is the ordinary way
+back, not a goodbye, so the screen asking you to type your password again is the last
+place that should also ask you to redo your preferences. And the row a shared phone
+needs is per username, not per address: two people who use one box are two answers to
+the same question.
+
+So signed-out settings stay. What you chose for yourself is named after the server and
+your username together, and only what the server itself said - its rules and its copy of
+its settings - stays named after the server, since that answer is the same for everyone.
+`adopt` hands what an older version kept for the server alone to the account signing in
+the first time, and removes the old copy, so updating doesn't cost anyone the settings
+they already had.
+
+Sign out takes the row and the address off the phone and leaves your settings where they
+are. Nothing reads them until you sign back in, and nothing else on the phone can be
+changed by them.
+
+## A review's scene can arrive as a list
+
+One review on the server carries its scene as a JSON list holding one sentence rather
+than as the sentence. Frigate keeps what its model answered, and the model answered with
+a list that time. The model here declared text, so the whole page of reviews failed to
+read and the Review tab said `Unexpected JSON token at offset 76685`, which is where the
+square bracket sits.
+
+The list asks for thirty reviews at a time, so the one bad row sat beyond the first
+screen and the tab looked fine. The walk behind "Mark these as read" asks for two hundred
+at a time and reached it on the first page, which is how a broken row in the middle of
+five days of alerts turned into a button that never worked.
+
+`SceneText` reads the scene either way and joins a list into the sentence it was meant to
+be. A field that arrives in the wrong shape should not take the page down with it, and
+this one is Frigate's own writing, not something the phone asked for.

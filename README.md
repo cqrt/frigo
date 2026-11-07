@@ -98,8 +98,8 @@ camera grid.
 **Settings.** Holds the servers you've signed in to, one under the other, with the
 one you're on ticked. On an admin account, tap another and the app switches to
 it, with its own sign-in, its own alerts switch and its own camera layout, and
-**Add a server** signs in to one more. **Sign out** forgets the server you're on,
-and the next one takes over. Under Servers, an admin finds **Frigate**: Alerts
+**Add a server** signs in to one more. **Sign out** takes you off the server you're
+on, and the next one takes over. Under Servers, an admin finds **Frigate**: Alerts
 and detections, AI descriptions, and System, which is how the box is doing.
 Then come two switches: one for notifications, and one that plays the home page
 tiles live. Under notifications sit **Only these objects**, the list this phone
@@ -165,9 +165,10 @@ Its alert switch and its camera layout come back with it. The colours, the
 walkthrough and the picture size you picked for a camera stay with the phone,
 because they're about how you use it rather than which box it's looking at.
 
-Sign out forgets the server you're on, along with what the phone kept for it.
-Another server takes over if you have one. Otherwise you land on the sign-in page
-with that address filled in.
+Sign out takes you off the server you're on and leaves what you set on it, under
+your username. Sign in again and the alerts switch, the quiet hours and the
+cameras are as you left them. Another server takes over if you have one.
+Otherwise you land on the sign-in page with that address filled in.
 
 ## In another language
 
@@ -483,8 +484,9 @@ its own page, where **Name** sets what this phone calls it. That name is used he
 and nowhere else: your server keeps its own, and every address behind the screen is
 still built from it. **Use the server's name** puts it back.
 
-All of it belongs to the server you're signed in to, so two servers on the phone
-keep two lists, and signing out forgets one.
+All of it belongs to the server you're signed in to, and to your username on it. So
+two servers on the phone keep two lists, and two people on one server keep their
+own.
 
 ## How the server is doing
 

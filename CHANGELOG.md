@@ -8,6 +8,13 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.36
+
+- Signing out and back in no longer loses your settings. The alerts switch, quiet hours, the lists, and the cameras you'd hidden or renamed are all still there.
+- What you set is kept for your username now, so two people on one phone and the same server each find their own.
+- Anything you'd already set comes across the first time this version opens.
+- Mark these as read works again. One review had its description stored as a list rather than a sentence, and that stopped the whole page being read.
+
 ## 0.10.35
 
 - A review opens on a page now: the clip below the status bar, the cameras that saw the same moment under it, and Frigate's words on a card that fills the rest.
