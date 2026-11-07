@@ -2850,3 +2850,97 @@ Copying a log is what you do to send it to someone. This page is for reading wha
 your own box is saying. A long press to copy would also fight the list's own
 gestures, and a button would need somewhere to put the text and a way to say it
 arrived. Neither is here.
+
+## The television is a second app, not a mode in the phone app
+
+A television is a different thing to use: it has no touch screen, its launcher
+shows landscape banners, every press comes from a D-pad, and it is watched from
+across a room. Folding that into the phone app would mean a landscape layout with
+focus handling and a leanback launcher entry, all inside an app that is mostly
+read with a thumb.
+
+So `tv/` is its own application with its own id (`nz.mckenzie.frigo.tv`), built
+from the same repository, signed with the same key and released under the same
+version. The two install side by side and neither can break the other's update.
+
+Rejected: one app that detects a television. The `leanback` feature can be
+checked at runtime, but the launcher needs a different intent filter in the
+manifest, so the manifest would carry both entries and the phone would download
+the television's code and the other way round.
+
+## The television shows the code, because it has no camera
+
+Pairing needs one of the two devices to look at something, and a television set
+top box has no camera. So the TV is the one that shows: a QR code with its address,
+its port, a six-digit number and a one-time secret, and a line saying where in
+Frigo to find the scanner.
+
+The phone is the scanner. Settings, Link a TV, and the camera opens. It reads the
+address and the secret out of the code and posts the server's address, the
+username and the password to the television over the home network. The television
+signs in to Frigate with them before it keeps anything, so a wrong password comes
+back to the phone as a sentence.
+
+Rejected: the phone showing the code. A television cannot read one, so it would
+mean typing the credentials with a remote, which is the thing pairing exists to
+avoid.
+
+Rejected: a pairing held on Frigate. Frigate 0.18 has no endpoint that issues a
+key for another device. Anything like it would mean storing a key in the server's
+configuration that anyone with the address could use.
+
+The six-digit number under the code is for saying which television is being
+paired. The secret in the QR code is what the pairing server actually checks, and
+it is good once. After the pairing is accepted the socket is closed, so nothing
+is left listening in the room.
+
+## The television keeps the password
+
+Frigate's session is a JWT that lasts a day. There is no endpoint that makes
+another one without a password, and `/api/auth` only lengthens a token that has
+not expired. A television that kept only the token would show the pairing screen
+every morning.
+
+So the password is kept, in the app's own private storage, and the television
+signs itself in again when a request comes back 401. Android's backup is off for
+the app, as it is for the phone, so the file does not leave the box.
+
+Rejected: pairing again each day. Finding the remote is already a step; finding
+the phone and scanning a code every morning is the television app being a chore.
+
+The password crosses the home network in a plain HTTP request to the television.
+That is the same network the phone and the television already share, and the
+message is accepted once, while the code is on the screen. Frigate itself may be
+on HTTPS; that path is separate and unchanged.
+
+## The big picture is go2rtc's video, the strip is MJPEG
+
+The big picture asks for the camera's own H.264 (`/api/stream.mp4?src=<camera>`),
+which is the stream the phone's live view plays: the whole picture, a fraction of
+the data of a stream of stills, and about a second behind the clock.
+
+The strip cannot afford that. Four or five cameras at full quality would be four
+or five decoders and the network cost of a wall of televisions. It asks for
+Frigate's MJPEG feed at 360p and two frames a second instead, which is enough to
+see a person walk in and cheap enough that the strip costs less than the big
+picture does.
+
+Rejected: stills in the strip. A still a second is cheaper again, but a camera
+that is live and obviously moving is what makes the strip worth glancing at.
+Rejected: MJPEG for the big picture. Frigate's stills stream is one frame at a
+time and costs about fifteen times what the camera's H.264 does for the same
+picture.
+
+## The strip is the sorted list with the chosen camera left out
+
+A press moves a camera into the big picture and the camera it replaces goes back
+into the strip. The strip is not a history of what was watched: it is the
+cameras in the server's order, with the one you are watching removed. So a camera
+returns to the place its name gives it, and the big picture is the only thing
+that changes.
+
+The focus is put back by position rather than by name. When a tile leaves the
+list, Compose moves the focus to the first one, so the screen remembers which
+place the press came from and asks for the tile that is there afterwards. Without
+that, choosing the fourth camera and pressing Select lands the arrows back at the
+top of the strip.

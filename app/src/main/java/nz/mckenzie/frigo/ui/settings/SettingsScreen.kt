@@ -114,6 +114,7 @@ fun SettingsScreen(
     onOpenSystem: () -> Unit = {},
     onOpenLogs: () -> Unit = {},
     onAddServer: () -> Unit = {},
+    onLinkTv: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -324,6 +325,15 @@ fun SettingsScreen(
                 }
 
                 if (servers.isNotEmpty()) CardDivider()
+
+                Item(
+                    icon = FrigoIcons.Television,
+                    title = stringResource(R.string.link_tv_title),
+                    supporting = stringResource(R.string.link_tv_supporting),
+                    onClick = onLinkTv,
+                )
+
+                CardDivider()
 
                 if (canManage) {
                     Item(

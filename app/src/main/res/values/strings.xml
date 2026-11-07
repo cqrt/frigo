@@ -29,6 +29,23 @@
     <string name="settings_add_server">Add a server</string>
     <string name="settings_sign_out">Sign out</string>
     <string name="settings_sign_out_this">Sign out of this server</string>
+
+    <!-- Linking a television: the phone reads the code on the TV's screen and
+         hands it the server and sign-in to use. -->
+    <string name="link_tv_title">Link a TV</string>
+    <string name="link_tv_supporting">Put your cameras on your television.</string>
+    <string name="link_tv_scan">Point your phone at the code on the TV.</string>
+    <string name="link_tv_scan_again">Scan again</string>
+    <string name="link_tv_tv_at">TV at %1$s</string>
+    <string name="link_tv_signs_in">Signs in as %1$s on %2$s.</string>
+    <string name="link_tv_password">Frigate password</string>
+    <string name="link_tv_pair">Pair the TV</string>
+    <string name="link_tv_paired">Paired. The TV is signing in.</string>
+    <string name="link_tv_done">Done</string>
+    <string name="link_tv_allow">Allow the camera</string>
+    <string name="link_tv_camera_off">Frigo needs the camera to read the code on the TV.</string>
+    <string name="link_tv_camera_denied">The camera is off for Frigo. Turn it on in Android\'s settings, then come back.</string>
+    <string name="link_tv_no_answer">The TV did not answer. Check that it is on and on the same network.</string>
     <string name="settings_signed_in">Signed in</string>
 
     <string name="settings_notifications">Notifications</string>

@@ -29,6 +29,23 @@
     <string name="settings_add_server">Adicionar um servidor</string>
     <string name="settings_sign_out">Sair</string>
     <string name="settings_sign_out_this">Sair deste servidor</string>
+    <!-- Ligar uma TV: o telefone lê o código na tela e passa o servidor e a
+         entrada. -->
+    <string name="link_tv_title">Ligar uma TV</string>
+    <string name="link_tv_supporting">Ponha suas câmeras na televisão.</string>
+    <string name="link_tv_scan">Aponte o telefone para o código na TV.</string>
+    <string name="link_tv_scan_again">Ler de novo</string>
+    <string name="link_tv_tv_at">TV em %1$s</string>
+    <string name="link_tv_signs_in">Entra como %1$s em %2$s.</string>
+    <string name="link_tv_password">Senha do Frigate</string>
+    <string name="link_tv_pair">Ligar a TV</string>
+    <string name="link_tv_paired">Ligada. A TV está entrando.</string>
+    <string name="link_tv_done">Concluído</string>
+    <string name="link_tv_allow">Permitir a câmera</string>
+    <string name="link_tv_camera_off">O Frigo precisa da câmera para ler o código na TV.</string>
+    <string name="link_tv_camera_denied">A câmera está desligada para o Frigo. Ligue-a nas configurações do Android e volte.</string>
+    <string name="link_tv_no_answer">A TV não respondeu. Verifique se ela está ligada e na mesma rede.</string>
+
     <string name="settings_signed_in">Conectado</string>
 
     <string name="settings_notifications">Notificações</string>

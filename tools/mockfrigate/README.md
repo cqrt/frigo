@@ -30,6 +30,11 @@ of the three events. The third event has no clip, so the still-only path is
 reachable too. The clip is a test pattern, made with ffmpeg, so a clip that plays
 is obviously playing.
 
+`/api/stream.mp4` is the camera's own video on a real server, sent by go2rtc. The
+mock sends the test clip whole, so the television's big picture plays the pattern
+for four seconds and opens it again when it ends. The picture is the clip, not a
+live camera, which is what the bar at the bottom of the pattern is there to show.
+
 One of the five, Quiet cam, reports no frames in `/api/stats` while its stream goes
 on handing back a picture. That's a camera that has stopped sending, as a real
 server reports one, and it's what the app's grey Offline pill is for.
@@ -41,8 +46,7 @@ server scales a still up to whatever `height` it is given, which is why the app
 reads a still's own size instead of asking for a bigger one.
 
 `/api/labels` answers with the objects the app can tick in Settings. `/api/review`
-answers with three alerts and three detections, newest first, and a clip for each.
-It filters on `severity` the way the real endpoint does. `/api/review/summary`
+answers with three alerts and three detections, newest first, and a clip for each.It filters on `severity` the way the real endpoint does. `/api/review/summary`
 counts those six as today's, so the numbers beside the two tabs and the dots in the
 calendar have something to show.
 

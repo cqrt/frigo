@@ -21,4 +21,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Frigo"
+// The phone and the television are two apps from one repository: they share a
+// version and a release, and install side by side.
 include(":app")
+include(":tv")

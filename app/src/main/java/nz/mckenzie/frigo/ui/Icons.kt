@@ -328,6 +328,20 @@ object FrigoIcons {
         }
     }
 
+    /** A television, for the row that links one. */
+    val Television: ImageVector by lazy {
+        vector("Television") {
+            path(
+                "M4.4 5.4h15.2a2.2 2.2 0 0 1 2.2 2.2v8.2a2.2 2.2 0 0 1-2.2 2.2H4.4" +
+                    "a2.2 2.2 0 0 1-2.2-2.2V7.6a2.2 2.2 0 0 1 2.2-2.2z",
+                strokeWidth = 1.7f,
+            )
+            path("M9 21h6", strokeWidth = 1.8f)
+            // The picture on it, a shade dimmer than the box.
+            path("M7.2 9.1h9.6v5.2H7.2z", alpha = 0.4f)
+        }
+    }
+
     /** A page of dates, for a day to narrow to. */
     val Calendar: ImageVector by lazy {        vector("Calendar") {
             path(

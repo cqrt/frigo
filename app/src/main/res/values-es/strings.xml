@@ -29,6 +29,23 @@
     <string name="settings_add_server">Añadir un servidor</string>
     <string name="settings_sign_out">Cerrar sesión</string>
     <string name="settings_sign_out_this">Cerrar sesión en este servidor</string>
+    <!-- Enlazar un televisor: el teléfono lee el código de la pantalla y le pasa
+         el servidor y el inicio de sesión. -->
+    <string name="link_tv_title">Vincular un TV</string>
+    <string name="link_tv_supporting">Pon tus cámaras en el televisor.</string>
+    <string name="link_tv_scan">Apunta el teléfono al código del televisor.</string>
+    <string name="link_tv_scan_again">Escanear de nuevo</string>
+    <string name="link_tv_tv_at">TV en %1$s</string>
+    <string name="link_tv_signs_in">Inicia sesión como %1$s en %2$s.</string>
+    <string name="link_tv_password">Contraseña de Frigate</string>
+    <string name="link_tv_pair">Vincular el TV</string>
+    <string name="link_tv_paired">Vinculado. El televisor está iniciando sesión.</string>
+    <string name="link_tv_done">Listo</string>
+    <string name="link_tv_allow">Permitir la cámara</string>
+    <string name="link_tv_camera_off">Frigo necesita la cámara para leer el código del televisor.</string>
+    <string name="link_tv_camera_denied">La cámara está desactivada para Frigo. Actívala en los ajustes de Android y vuelve.</string>
+    <string name="link_tv_no_answer">El televisor no respondió. Comprueba que está encendido y en la misma red.</string>
+
     <string name="settings_signed_in">Sesión iniciada</string>
 
     <string name="settings_notifications">Notificaciones</string>

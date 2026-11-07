@@ -52,4 +52,7 @@ class AppContainer(context: Context) {
      * locked is about the launch.
      */
     val lock = AppLock()
+
+    /** Hands a television the server and sign-in it needs, over the home network. */
+    val tvPairing = TvPairingClient()
 }

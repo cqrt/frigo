@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The screen before Compose draws anything, and the colour the system uses
+         around it. The app is dark on purpose: a television in a room with the
+         lamps off should not light the room between screens. -->
+    <style name="Theme.FrigoTv" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/tv_night</item>
+        <item name="android:colorBackground">@color/tv_night</item>
+        <item name="android:navigationBarColor">@color/tv_night</item>
+        <item name="android:statusBarColor">@color/tv_night</item>
+    </style>
+</resources>

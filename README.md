@@ -1,7 +1,8 @@
 # Frigo
 
-Frigo puts your Frigate cameras on your phone. It talks to the Frigate server you
-already run, so there is nothing to install on the server side.
+Frigo puts your Frigate cameras on your phone, and on your television. It talks
+to the Frigate server you already run, so there is nothing to install on the
+server side.
 
 ## What it does
 
@@ -99,7 +100,9 @@ camera grid.
 one you're on ticked. On an admin account, tap another and the app switches to
 it, with its own sign-in, its own alerts switch and its own camera layout, and
 **Add a server** signs in to one more. **Sign out** takes you off the server you're
-on, and the next one takes over. Under Servers, an admin finds **Frigate**: Alerts
+on, and the next one takes over. **Link a TV** puts your cameras on an Android TV:
+point the phone at the code on the television's screen, and type your Frigate
+password once. Under Servers, an admin finds **Frigate**: Alerts
 and detections, AI descriptions, and System, which is how the box is doing.
 **System logs** under System shows what frigate, go2rtc and nginx have been saying,
 newest at the bottom.
@@ -124,6 +127,30 @@ phone's own. Under
 Updates it says which version you're on, and whether there's a newer one to
 install. A small red dot on the Settings icon in the bar means a newer version is
 waiting.
+
+## On the television
+
+There's a second app for Android TV, and one screen in it. A camera fills the
+screen, and the others sit live down the right, moving at two frames a second.
+Press an arrow to choose one and Select to bring it into the big picture. The
+camera it replaces goes back into the strip in its own place.
+
+The first time, the television shows a code. On your phone, open Settings, tap
+**Link a TV**, point the camera at the code, and type your Frigate password. The
+phone hands the television the server's address and your sign-in over your home
+network, and the television signs in to Frigate itself from then on.
+
+The television keeps that sign-in, so it stays signed in after Frigate's day-long
+session runs out. It signs in again with the password you gave it, and the phone
+is not involved.
+
+The big picture is the camera's own video, the same stream the phone plays from
+live view. The strip is a smaller feed, cheap enough for several at once. The
+television says **Live** over the big picture while it is arriving, and **Waiting
+for a picture** until the first frame does.
+
+The TV app is `frigo-tv-<version>.apk` on each release page. It installs beside
+the phone app under its own name, and updates on its own.
 
 ## The first time you open it
 
@@ -534,23 +561,31 @@ You need JDK 17 to 23, the Android SDK with platform 36, and nothing else.
 
 ```
 ./gradlew :app:assembleDebug
+./gradlew :tv:assembleDebug
 ```
 
-The debug APK lands in `app/build/outputs/apk/debug/`. For a release build, put
-your keystore details in a gitignored `keystore.properties`, or set the
+The phone's debug APK lands in `app/build/outputs/apk/debug/`, and the
+television's in `tv/build/outputs/apk/debug/`. For a release build, put your
+keystore details in a gitignored `keystore.properties`, or set the
 `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` and `KEY_PASSWORD` environment
 variables:
 
 ```
-./gradlew :app:assembleRelease
+./gradlew :app:assembleRelease :tv:assembleRelease
+```
+
+The television app installs with adb, over the network or a cable:
+
+```
+adb install -r tv/build/outputs/apk/release/tv-release.apk
 ```
 
 ## Releasing
 
 You cut a release on the GitHub website. Open Actions, pick Release, run the
-workflow, and type the version as `0.7.3`. It builds the signed APK, tags the
-commit, and puts the APK on the release page. Pushing a `v0.7.3` tag does the
-same thing if you'd rather do that from the command line.
+workflow, and type the version as `0.7.3`. It builds the signed APKs, tags the
+commit, and puts both on the release page. Pushing a `v0.7.3` tag does the same
+thing if you'd rather do that from the command line.
 
 The last number counts up for each release, from `0.7.0` to `0.7.99`, and only
 then does the middle number move on to `0.8.0`. So a fix or a small change is
@@ -581,3 +616,5 @@ is ever committed. Backup: there's a copy of the key and its password at
 - `ui/cameras/LiveVideo.kt` - the camera's own video, its sound, and keeping the picture up with the clock.
 - `ui/cameras/Playback.kt` - the day's bar under a camera, its spikes, the moment's picture, and the other cameras.
 - `ui/clips/` - the tab of clips kept on the server: the list, the rename and the delete, and the copy saved to the phone.
+- `tv/` - the television app: the pairing code, the strip of live cameras, and the sign-in it keeps.
+- `tools/mockfrigate/mock.py` - a stand-in Frigate for working on either app without touching the real one.

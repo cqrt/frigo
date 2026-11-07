@@ -8,6 +8,13 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.11.0
+
+- Frigo on the TV: a second app for Android TV. One camera fills the screen, the others are live down the right, and the arrows choose the one to bring up.
+- The TV has no camera, so your phone does the looking. Settings, Link a TV, point it at the code on the television, and type your Frigate password once.
+- The television signs in to Frigate itself and stays signed in after the day-long session runs out.
+- The television app is `frigo-tv-0.11.0.apk` on this release page. It installs beside the phone app and is installed over adb for now.
+
 ## 0.10.38
 
 - On System logs, more than one level chip can be ticked at once. Errors and Warnings together shows both, and the search still narrows what is left.

@@ -1,0 +1,239 @@
+package nz.mckenzie.frigo.tv.data
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import java.io.IOException
+import java.util.concurrent.TimeUnit
+
+/** Something Frigate or the network said that the screen should repeat. */
+class TvException(val status: Int, override val message: String) : IOException(message)
+
+/**
+ * The handful of Frigate endpoints a television needs: signing in, the list of
+ * cameras, a still, the small MJPEG feed, and the camera's own H.264.
+ *
+ * It is written against Frigate 0.18, the same version the phone talks to. The
+ * sign-in is a JSON body of `user` and `password`, and the session comes back as
+ * a JWT in a `Set-Cookie` header, which is then sent as a bearer token.
+ */
+class TvApi {
+
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(6, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
+
+    /** The MJPEG body never ends, so it gets a client with no read timeout. */
+    private val streamClient = client.newBuilder()
+        .readTimeout(0, TimeUnit.MILLISECONDS)
+        .build()
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        coerceInputValues = true
+    }
+
+    /** Signs in and returns the token. */
+    fun login(baseUrl: String, user: String, password: String): String {
+        val body = """{"user":${quote(user)},"password":${quote(password)}}"""
+            .toRequestBody(JSON)
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/login"))
+            .post(body)
+            .build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw response.toException()
+            return response.jwtFromCookies() ?: throw TvException(0, NO_TOKEN)
+        }
+    }
+
+    /**
+     * 202 means the token is still good. The server may hand back a fresh one
+     * near expiry, which is returned so it can be kept.
+     */
+    fun checkToken(baseUrl: String, token: String): String? {
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/auth"))
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw response.toException()
+            return response.jwtFromCookies()
+        }
+    }
+
+    /**
+     * The cameras this account may watch, named and in the order the phone puts
+     * them in. `/api/config` lists every camera on the server whatever the
+     * account is, so the profile is what narrows it.
+     */
+    fun cameras(baseUrl: String, token: String): List<Camera> {
+        val allowed = json.decodeFromString(
+            Profile.serializer(),
+            open(baseUrl, token, "/api/profile").use { it.bodyText() },
+        ).allowedCameras
+        val config = json.decodeFromString(
+            Config.serializer(),
+            open(baseUrl, token, "/api/config").use { it.bodyText() },
+        )
+        return config.cameras
+            .filterValues { it.enabled }
+            .filter { (name, _) -> allowed == null || name in allowed }
+            .map { (name, camera) -> Camera(name, camera.friendlyName ?: prettyName(name)) }
+            .sortedBy { it.title.lowercase() }
+    }
+
+    /** One camera's most recent still, which stands in until the video arrives. */
+    fun latestJpeg(baseUrl: String, token: String, camera: String, height: Int): ByteArray {
+        val target = url(baseUrl, "/api/$camera/latest.jpg").newBuilder()
+            .addQueryParameter("t", System.currentTimeMillis().toString())
+            .addQueryParameter("height", height.toString())
+            .build()
+        val request = Request.Builder()
+            .url(target)
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw response.toException()
+            return response.body?.bytes() ?: ByteArray(0)
+        }
+    }
+
+    /**
+     * The small MJPEG feed, kept open until it is closed. The caller owns the
+     * response and closes it when it stops watching.
+     */
+    fun openMjpeg(
+        baseUrl: String,
+        token: String,
+        camera: String,
+        height: Int,
+        fps: Int,
+    ): Response {
+        val target = url(baseUrl, "/api/$camera").newBuilder()
+            .addQueryParameter("height", height.toString())
+            .addQueryParameter("fps", fps.toString())
+            .build()
+        val request = Request.Builder()
+            .url(target)
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        val response = streamClient.newCall(request).execute()
+        if (!response.isSuccessful) {
+            val status = response.code
+            response.close()
+            throw TvException(status, "The live picture returned $status.")
+        }
+        return response
+    }
+
+    /** The camera's own H.264, which is what the big picture plays. */
+    fun streamUrl(baseUrl: String, camera: String): String =
+        (baseUrl.trimEnd('/') + "/api/stream.mp4?src=" + camera).also {
+            if (it.toHttpUrlOrNull() == null) throw TvException(0, "That address is not a web address.")
+        }
+
+    fun open(baseUrl: String, token: String, path: String): Response {
+        val response = client.newCall(
+            Request.Builder()
+                .url(url(baseUrl, path))
+                .header("Authorization", "Bearer $token")
+                .get()
+                .build(),
+        ).execute()
+        if (!response.isSuccessful) {
+            val status = response.code
+            response.close()
+            throw TvException(status, "The server returned $status.")
+        }
+        return response
+    }
+
+    private fun url(baseUrl: String, path: String) =
+        (baseUrl.trimEnd('/') + path).toHttpUrlOrNull()
+            ?: throw TvException(0, "That address is not a web address.")
+
+    /** Turns `door_cam` into `Door cam`, for a camera with no name of its own. */
+    private fun prettyName(raw: String): String = raw
+        .replace('_', ' ')
+        .replace('-', ' ')
+        .trim()
+        .replaceFirstChar { it.uppercase() }
+
+    private fun Response.bodyText(): String = body?.string().orEmpty()
+
+    /**
+     * Reads the JWT out of Set-Cookie. The cookie's name is configurable on the
+     * server, so the value is recognised by its shape: three parts, dots between.
+     */
+    private fun Response.jwtFromCookies(): String? {
+        for (header in headers("Set-Cookie")) {
+            val value = header.substringBefore(';').substringAfter('=', "").trim()
+            if (value.count { it == '.' } == 2 && value.isNotEmpty()) return value
+        }
+        return null
+    }
+
+    private fun Response.toException(): TvException {
+        val said = runCatching { body?.string() }.getOrNull().orEmpty()
+        val text = when (code) {
+            401, 403 -> "Frigate refused the username or password."
+            404 -> "That address has no Frigate on it."
+            in 500..599 -> "The server is not answering."
+            else -> said.ifBlank { "The server returned $code." }
+        }
+        return TvException(code, text)
+    }
+
+    private fun quote(text: String): String = buildString {
+        append('"')
+        for (character in text) {
+            when (character) {
+                '"' -> append("\\\"")
+                '\\' -> append("\\\\")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                else -> if (character < ' ') {
+                    append("\\u%04x".format(character.code))
+                } else {
+                    append(character)
+                }
+            }
+        }
+        append('"')
+    }
+
+    private companion object {
+        const val NO_TOKEN = "Frigate signed in but sent no session."
+        val JSON = "application/json; charset=utf-8".toMediaType()
+    }
+}
+
+/** One camera, as the television shows it. */
+data class Camera(val name: String, val title: String)
+
+@Serializable
+private data class Config(val cameras: Map<String, CameraConfig> = emptyMap())
+
+@Serializable
+private data class CameraConfig(
+    val enabled: Boolean = true,
+    @SerialName("friendly_name") val friendlyName: String? = null,
+)
+
+@Serializable
+private data class Profile(
+    @SerialName("allowed_cameras") val allowedCameras: List<String>? = null,
+)

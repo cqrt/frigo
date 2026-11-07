@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The big picture. It is drawn into a texture rather than a surface of its own,
+    so it can be clipped to the rounded corners the rest of the screen uses, and
+    so Compose can draw the name and the Live pill over it.
+-->
+<androidx.media3.ui.PlayerView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/tv_live_video"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:resize_mode="fit"
+    app:show_buffering="never"
+    app:surface_type="texture_view"
+    app:use_controller="false" />

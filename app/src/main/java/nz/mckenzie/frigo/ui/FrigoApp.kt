@@ -62,6 +62,7 @@ import nz.mckenzie.frigo.ui.settings.AlertObjectsScreen
 import nz.mckenzie.frigo.ui.settings.AlertPeopleScreen
 import nz.mckenzie.frigo.ui.settings.CameraSwitchesScreen
 import nz.mckenzie.frigo.ui.settings.LanguageScreen
+import nz.mckenzie.frigo.ui.settings.LinkTvScreen
 import nz.mckenzie.frigo.ui.settings.LogsScreen
 import nz.mckenzie.frigo.ui.settings.QuietTimesScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
@@ -293,6 +294,9 @@ private fun MainScaffold(
                     onAddServer = {
                         navController.navigate("add-server") { launchSingleTop = true }
                     },
+                    onLinkTv = {
+                        navController.navigate("link-tv") { launchSingleTop = true }
+                    },
                 )
             }
             composable("system") {
@@ -357,6 +361,15 @@ private fun MainScaffold(
             composable("add-server") {
                 AddServerScreen(
                     repository = container.repository,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable("link-tv") {
+                LinkTvScreen(
+                    container = container,
+                    baseUrl = server.baseUrl,
+                    username = server.username,
                     modifier = Modifier.padding(padding),
                     onBack = { navController.popBackStack() },
                 )

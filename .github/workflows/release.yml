@@ -1,8 +1,9 @@
 name: Release
 
 # A release is cut from the GitHub UI: Actions, Release, Run workflow, type the
-# version. The workflow builds it, signs it, tags the commit and publishes the
-# APK on the release page. Pushing a tag by hand does the same thing.
+# version. The workflow builds them, signs them, tags the commit and publishes
+# the phone's APK and the television's on the release page. Pushing a tag by hand
+# does the same thing.
 on:
   push:
     tags: ['v*.*.*']
@@ -111,6 +112,12 @@ jobs:
             echo
             echo "Download \`frigo-${VERSION}.apk\` and open it on the phone."
             echo
+            echo "For an Android TV, download \`frigo-tv-${VERSION}.apk\` and install it with adb:"
+            echo
+            echo '```'
+            echo "adb install -r frigo-tv-${VERSION}.apk"
+            echo '```'
+            echo
             echo "Signed with the Frigo release key, so later versions install over this one"
             echo "without uninstalling anything first."
             echo
@@ -133,7 +140,7 @@ jobs:
           fi
           printf '%s' "${KEYSTORE_BASE64}" | base64 -d > "${RUNNER_TEMP}/release.jks"
 
-      - name: Build the signed APK
+      - name: Build the signed APKs
         env:
           KEYSTORE_FILE: ${{ runner.temp }}/release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -144,19 +151,23 @@ jobs:
             -PversionCode="${{ steps.version.outputs.code }}" \
             -PversionName="${{ steps.version.outputs.name }}"
 
-      - name: Verify the APK is signed
+      - name: Verify the APKs are signed
         run: |
           APKSIGNER="$(find "${ANDROID_HOME}/build-tools" -name apksigner | sort | tail -n 1)"
           "${APKSIGNER}" verify --print-certs app/build/outputs/apk/release/app-release.apk
+          "${APKSIGNER}" verify --print-certs tv/build/outputs/apk/release/tv-release.apk
 
-      # One APK, renamed so it says what it is: a release page is read on a phone,
-      # where "app-release.apk" tells you nothing and the version is the point.
-      - name: Name the file for the release page
+      # Two APKs, renamed so each says what it is: a release page is read on a
+      # phone, where "app-release.apk" tells you nothing and the version is the
+      # point.
+      - name: Name the files for the release page
         run: |
           VERSION="${{ steps.version.outputs.name }}"
           DIR=app/build/outputs/apk/release
+          TV=tv/build/outputs/apk/release
           cp "${DIR}/app-release.apk" "${DIR}/frigo-${VERSION}.apk"
-          ls -la "${DIR}"
+          cp "${TV}/tv-release.apk" "${TV}/frigo-tv-${VERSION}.apk"
+          ls -la "${DIR}" "${TV}"
 
       - name: Publish the release
         uses: softprops/action-gh-release@v3
@@ -167,3 +178,4 @@ jobs:
           body_path: ${{ runner.temp }}/body.md
           files: |
             app/build/outputs/apk/release/frigo-*.apk
+            tv/build/outputs/apk/release/frigo-tv-*.apk

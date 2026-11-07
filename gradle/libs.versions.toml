@@ -26,6 +26,12 @@ biometric = "1.1.0"
 # player gets a data source that sends the header with every request.
 media3 = "1.11.1"
 
+# Pairing a television. The phone looks through its camera, which is CameraX, and
+# ZXing reads the code out of the frames. ZXing also draws the code on the TV, so
+# both apps use the one library.
+camera = "1.4.2"
+zxing = "3.5.3"
+
 # Networking. Frigate's API is small and stable, so a hand-written OkHttp client
 # is less machinery than Retrofit and converters. OkHttp 5 needs compileSdk 37,
 # which this AGP cannot target yet, so this stays on the 4.x line.
@@ -67,6 +73,12 @@ media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "medi
 
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+
+androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camera" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camera" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camera" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camera" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }

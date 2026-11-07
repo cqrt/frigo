@@ -556,6 +556,13 @@ class Handler(BaseHTTPRequestHandler):
             # pictures shows up as one that stops changing.
             return self.send_bytes(FRAMES[next(STILL) % len(FRAMES)], "image/jpeg")
 
+        if path == "/api/stream.mp4":
+            # On a real server this path is handed to go2rtc, which sends the
+            # camera's own H.264 with the sound on it. The mock sends its test
+            # clip: four seconds of picture at a time, and the player opens it
+            # again when it ends, which is what a stream that stops looks like.
+            return self.send_bytes(CLIP, "video/mp4")
+
         if path == "/api/stream.aac":
             # Sound, which on a real server comes from go2rtc's own port rather
             # than from this API. Point MOCK_SOUND at a file of ADTS AAC to serve

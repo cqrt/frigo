@@ -30,6 +30,23 @@
     <string name="settings_add_server">Server hinzufügen</string>
     <string name="settings_sign_out">Abmelden</string>
     <string name="settings_sign_out_this">Von diesem Server abmelden</string>
+    <!-- Einen Fernseher verbinden: das Telefon liest den Code vom Bildschirm und
+         übergibt Server und Anmeldung. -->
+    <string name="link_tv_title">Fernseher verbinden</string>
+    <string name="link_tv_supporting">Bring deine Kameras auf den Fernseher.</string>
+    <string name="link_tv_scan">Richte das Telefon auf den Code am Fernseher.</string>
+    <string name="link_tv_scan_again">Erneut scannen</string>
+    <string name="link_tv_tv_at">Fernseher unter %1$s</string>
+    <string name="link_tv_signs_in">Meldet sich als %1$s auf %2$s an.</string>
+    <string name="link_tv_password">Frigate-Passwort</string>
+    <string name="link_tv_pair">Fernseher verbinden</string>
+    <string name="link_tv_paired">Verbunden. Der Fernseher meldet sich an.</string>
+    <string name="link_tv_done">Fertig</string>
+    <string name="link_tv_allow">Kamera erlauben</string>
+    <string name="link_tv_camera_off">Frigo braucht die Kamera, um den Code am Fernseher zu lesen.</string>
+    <string name="link_tv_camera_denied">Die Kamera ist für Frigo aus. Schalte sie in Androids Einstellungen ein und komm zurück.</string>
+    <string name="link_tv_no_answer">Der Fernseher hat nicht geantwortet. Prüfe, ob er an und im selben Netzwerk ist.</string>
+
     <string name="settings_signed_in">Angemeldet</string>
 
     <string name="settings_notifications">Benachrichtigungen</string>
