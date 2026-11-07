@@ -122,6 +122,7 @@ fun SettingsScreen(
     val objects by repository.alertObjects.collectAsStateWithLifecycle()
     val people by repository.alertPeople.collectAsStateWithLifecycle()
     val servers by repository.servers.collectAsStateWithLifecycle()
+    val admin by repository.admin.collectAsStateWithLifecycle()
     val liveTiles by repository.liveTiles.collectAsStateWithLifecycle(initialValue = false)
     val theme by repository.theme.collectAsStateWithLifecycle(
         initialValue = ThemeMode.System.ordinal,
@@ -282,30 +283,40 @@ fun SettingsScreen(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // Adding a server and moving the phone to another one are an admin's.
+            // A phone that is shared should stay on the box it was set to, so the
+            // list still shows every server it holds but only the one in use is
+            // ticked, and only an admin can leave it. The role is the one the app
+            // keeps for the account on this server; no answer yet reads as not an
+            // admin, so the rows stay hidden until there is one.
+            val canManage = admin == true
             Group(stringResource(R.string.settings_servers)) {
                 servers.forEachIndexed { index, server ->
                     if (index > 0) CardDivider()
                     val here = server.baseUrl == baseUrl
+                    val switchable = !here && canManage
                     Item(
                         icon = FrigoIcons.Server,
                         title = server.baseUrl.shortName(),
                         value = server.username,
-                        // Tapping the one you are on does nothing, so it isn't a tap.
-                        onClick = if (here) {
-                            null
-                        } else {
+                        // The one you are on is not a tap, and neither is one you
+                        // are not allowed to move to.
+                        onClick = if (switchable) {
                             { scope.launch { repository.switchTo(server.baseUrl) } }
+                        } else {
+                            null
                         },
                         trailing = {
-                            if (here) {
-                                Icon(
+                            when {
+                                here -> Icon(
                                     imageVector = Icons.Filled.Check,
                                     contentDescription = stringResource(R.string.settings_signed_in),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp),
                                 )
-                            } else {
-                                OpenMark()
+                                // A mark that opens nothing is a lie, so a row
+                                // nobody may move to carries none.
+                                switchable -> OpenMark()
                             }
                         },
                     )
@@ -313,13 +324,15 @@ fun SettingsScreen(
 
                 if (servers.isNotEmpty()) CardDivider()
 
-                Item(
-                    icon = Icons.Filled.Add,
-                    title = stringResource(R.string.settings_add_server),
-                    onClick = onAddServer,
-                )
+                if (canManage) {
+                    Item(
+                        icon = Icons.Filled.Add,
+                        title = stringResource(R.string.settings_add_server),
+                        onClick = onAddServer,
+                    )
 
-                CardDivider()
+                    CardDivider()
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
@@ -334,6 +347,42 @@ fun SettingsScreen(
                             },
                         )
                     }
+                }
+            }
+
+            // What belongs to the server rather than to this phone: the lists it
+            // makes an alert from, how it describes one, and how the box is doing.
+            // Only an admin changes any of it, so the card is not there for anyone
+            // else. It sits under the servers it belongs to.
+            if (admin == true) {
+                Group(stringResource(R.string.settings_frigate)) {
+                    Item(
+                        icon = FrigoIcons.Tune,
+                        title = stringResource(R.string.settings_alerts_and_detections),
+                        supporting = stringResource(R.string.settings_alerts_supporting),
+                        onClick = onOpenAlerts,
+                        trailing = { OpenMark() },
+                    )
+
+                    CardDivider()
+
+                    Item(
+                        icon = FrigoIcons.Sparkle,
+                        title = stringResource(R.string.settings_ai),
+                        supporting = stringResource(R.string.settings_ai_supporting),
+                        onClick = onOpenAi,
+                        trailing = { OpenMark() },
+                    )
+
+                    CardDivider()
+
+                    Item(
+                        icon = FrigoIcons.Gauge,
+                        title = stringResource(R.string.settings_system),
+                        supporting = stringResource(R.string.settings_system_supporting),
+                        onClick = onOpenSystem,
+                        trailing = { OpenMark() },
+                    )
                 }
             }
 
@@ -496,43 +545,6 @@ fun SettingsScreen(
                             ),
                         )
                     }
-                }
-            }
-
-            // Only an admin may change what the server decides, and only an admin
-            // may restart it, so these rows are not there for anyone else. What is
-            // here belongs to the server: the lists it makes an alert from, how it
-            // describes one, and how the box is doing. This phone's own switches
-            // stay under Notifications.
-            if (switches?.admin == true) {
-                Group(stringResource(R.string.settings_server)) {
-                    Item(
-                        icon = FrigoIcons.Tune,
-                        title = stringResource(R.string.settings_alerts_and_detections),
-                        supporting = stringResource(R.string.settings_alerts_supporting),
-                        onClick = onOpenAlerts,
-                        trailing = { OpenMark() },
-                    )
-
-                    CardDivider()
-
-                    Item(
-                        icon = FrigoIcons.Sparkle,
-                        title = stringResource(R.string.settings_ai),
-                        supporting = stringResource(R.string.settings_ai_supporting),
-                        onClick = onOpenAi,
-                        trailing = { OpenMark() },
-                    )
-
-                    CardDivider()
-
-                    Item(
-                        icon = FrigoIcons.Gauge,
-                        title = stringResource(R.string.settings_system),
-                        supporting = stringResource(R.string.settings_system_supporting),
-                        onClick = onOpenSystem,
-                        trailing = { OpenMark() },
-                    )
                 }
             }
 

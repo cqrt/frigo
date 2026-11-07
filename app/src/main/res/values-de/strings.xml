@@ -71,7 +71,7 @@
     <string name="settings_camera_hidden">Ausgeblendet</string>
     <string name="settings_camera_move">%1$s verschieben</string>
 
-    <string name="settings_server">Server</string>
+    <string name="settings_frigate">Frigate</string>
     <string name="settings_system">System</string>
     <string name="settings_system_supporting">Speicher, Platten, Kameras und die Prozesse dahinter</string>
 

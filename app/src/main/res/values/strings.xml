@@ -70,7 +70,7 @@
     <string name="settings_camera_hidden">Hidden</string>
     <string name="settings_camera_move">Move %1$s</string>
 
-    <string name="settings_server">Server</string>
+    <string name="settings_frigate">Frigate</string>
     <string name="settings_system">System</string>
     <string name="settings_system_supporting">Memory, disks, cameras, and the processes behind them</string>
 

@@ -13,8 +13,9 @@ Sign in as `test` with the password `test`. Any other password is refused, on
 purpose, so the error message can be tried too.
 
 Set MOCK_ROLE=viewer to sign in as an account that isn't an admin. The server's
-own pages then come off Settings, Review loses its tune icon, and a settings write
-answers the 403 a real server gives.
+own pages and Add a server then come off Settings, a saved server can't be
+switched to, Review loses its tune icon, and a settings write answers the 403 a
+real server gives.
 
     MOCK_ROLE=viewer python tools/mockfrigate/mock.py
 

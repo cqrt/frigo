@@ -89,19 +89,19 @@ of what it saw. Tap the alert and that camera opens. The back arrow goes to the
 camera grid.
 
 **Settings.** Holds the servers you've signed in to, one under the other, with the
-one you're on ticked. Tap another and the app switches to it, with its own
-sign-in, its own alerts switch and its own camera layout. **Add a server** signs
-in to one more, which becomes the one you're on. **Sign out** forgets the server
-you're on, and the next one takes over. Under those sit two switches: one for
-notifications, and one that plays the home page tiles live. Under notifications
-sit **Only these objects**, the list this phone narrows its alerts by, then
-**People to leave out**, the names it stays quiet about, then **Quiet times**,
-the hours it keeps quiet and the cameras it keeps quiet.
+one you're on ticked. On an admin account, tap another and the app switches to
+it, with its own sign-in, its own alerts switch and its own camera layout, and
+**Add a server** signs in to one more. **Sign out** forgets the server you're on,
+and the next one takes over. Under Servers, an admin finds **Frigate**: Alerts
+and detections, AI descriptions, and System, which is how the box is doing.
+Then come two switches: one for notifications, and one that plays the home page
+tiles live. Under notifications sit **Only these objects**, the list this phone
+narrows its alerts by, then **People to leave out**, the names it stays quiet
+about, then **Quiet times**, the hours it keeps quiet and the cameras it keeps
+quiet.
 Under **Cameras** is every camera your server has, in the order
 this phone shows them. A switch there turns one off on this phone. Hold a row and
-drag it to move it, and tap one for its own page, where its name here is set. A
-**Server** card, shown to an admin, holds the server's own pages: Alerts and
-detections, AI descriptions, and System, which is how the box is doing.
+drag it to move it, and tap one for its own page, where its name here is set.
 There's a link to the phone's battery settings, because that's
 where you stop Android shutting Frigo down. Under Privacy, **Lock Frigo** asks
 for your fingerprint, or your phone's PIN, before the app opens. It asks each
@@ -148,8 +148,10 @@ already filled in.
 
 ## More than one server
 
-You add a server from Settings, under Servers. It asks for an address, a username
-and a password, the same as the first one, and then becomes the server you're on.
+On an admin account you add a server from Settings, under Servers. It asks for
+an address, a username and a password, the same as the first one, and then
+becomes the server you're on. Without an admin account you still see the servers
+the phone holds, but you stay on the one it's set to.
 
 Each server keeps its own sign-in, so switching is one tap and nothing to type.
 Its alert switch and its camera layout come back with it. The colours, the

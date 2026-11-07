@@ -2644,3 +2644,42 @@ reasoning that an empty list should not be written by accident. But unticking th
 name is exactly how you stop staying quiet about someone, and Everyone was the only
 way to write it. Done now saves whatever is ticked, empty included, which is the same
 state as Everyone.
+## Only an admin moves the phone between servers
+
+Adding a server from Settings, and switching to one already saved, are now an
+admin's. A non-admin sees every server the phone holds, with the one they are on
+ticked; the others are not taps and carry no chevron, and Add a server is not
+drawn. Sign out stays, and so does what it does when another server is saved: the
+next one takes over.
+
+The reason is the shared phone. Saving a sign-in and choosing which box the app
+points at are about this phone, but the choice decides what the phone shows
+everyone holding it. Someone who is not trusted with the server should not be
+able to move it onto another.
+
+The role is the current server's, because there is nothing to ask before a server
+is added. The account you are on is the only role the phone has.
+
+The screen reads `repository.admin` rather than the camera switch page's answer.
+It is the flow the rest of the app uses for the server's own pages, it is already
+known when the page is drawn, and it does not flash the non-admin shape while a
+network answer is on its way. No answer at all reads as not an admin, which hides
+the rows until there is one.
+
+The list keeps every saved server because it is the phone's record of what it
+holds. A server that is listed but cannot be moved to says more than one that has
+vanished.
+
+Signing out and the sign-in page are left open. Signing out has to leave a way
+back in, and that page is the same one a new phone starts on. Locking its address
+would strand someone whose role changed on the server, with no way left to reach
+it.
+
+Rejected: hiding Sign out with the rest, which would leave a phone that cannot
+leave a server; locking the address on the sign-in page; and a refusal in
+`switchTo` as well, since the choice is offered in one place and nothing else
+reaches the saved list.
+
+The server's own pages moved up to sit under Servers, in a card called Frigate. A
+second card called Server read as two servers, next to the Servers card above it.
+The card is still an admin's.

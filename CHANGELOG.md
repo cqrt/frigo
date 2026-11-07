@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.31
+
+- Only an admin can add a server or switch between them now. Everyone else sees the servers the phone holds, with the one they're on ticked.
+- Alerts and detections, AI descriptions and System sit under Servers, in a card called Frigate, which only an admin sees.
+
 ## 0.10.30
 
 - Alerts for a person Frigate has recognised arrive again. Its review says `person-verified` once the face is matched, and the app was reading that as a different object from the `person` on the camera's alert list, so those alerts never buzzed at all.
