@@ -54,7 +54,7 @@
 
     <!-- La liste propre à ce téléphone : les personnes dont il reste silencieux. -->
     <string name="alert_people_title">Personnes à ignorer</string>
-    <string name="alert_people_everyone">Tout le monde</string>
+    <string name="alert_people_nobody">Personne</string>
     <string name="alert_people_search">Anne, Louis…</string>
     <string name="alert_people_cant_read">Votre serveur ne répond pas, donc cette liste ne montre que les personnes cochées.</string>
     <string name="alert_people_wait">Tant que quelqu\'un figure sur cette liste, les alertes attendent la description de votre serveur : elles arrivent environ vingt secondes plus tard.</string>

@@ -54,7 +54,7 @@
 
     <!-- A lista própria deste telefone: as pessoas por quem ele fica calado. -->
     <string name="alert_people_title">Pessoas a ignorar</string>
-    <string name="alert_people_everyone">Todos</string>
+    <string name="alert_people_nobody">Ninguém</string>
     <string name="alert_people_search">Ana, Luís…</string>
     <string name="alert_people_cant_read">O seu servidor não responde, por isso aqui só aparecem as pessoas que marcou.</string>
     <string name="alert_people_wait">Enquanto houver alguém nesta lista, os alertas esperam a descrição do seu servidor, por isso chegam cerca de vinte segundos mais tarde.</string>

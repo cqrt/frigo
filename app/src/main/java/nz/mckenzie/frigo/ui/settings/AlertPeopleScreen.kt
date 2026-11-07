@@ -46,8 +46,8 @@ import nz.mckenzie.frigo.ui.components.SearchField
  * The people this phone stays quiet about: a search box, and a row a checkbox in.
  *
  * Frigate names a recognised person on the alert it sends, and this is the list of
- * names the phone holds back. Ticked means left out, so Everyone is the list with
- * nobody on it, and that is what the page starts on.
+ * names the phone holds back. Ticked means left out. With nobody ticked the list is
+ * empty and everyone reaches you, which is how the page starts.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,7 +81,6 @@ fun AlertPeopleScreen(
             state.offered.filter { it.contains(text, ignoreCase = true) }
         }
     }
-    val nobodyTicked = state.chosen.isEmpty()
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
@@ -130,17 +129,9 @@ fun AlertPeopleScreen(
                     else -> Note(stringResource(R.string.alert_people_wait))
                 }
 
-                // Everyone is the list with nobody on it, which is how the app
-                // behaves without one. It clears the list rather than adding to it.
-                Item(
-                    icon = FrigoIcons.Grid,
-                    title = stringResource(R.string.alert_people_everyone),
-                    onClick = { keep(emptySet()) },
-                    trailing = {
-                        Checkbox(checked = nobodyTicked, onCheckedChange = null)
-                    },
-                )
-
+                // No Everyone row: with nobody ticked the list is empty, and a row
+                // that lights up when it is empty reads as the opposite of what it
+                // means. Unticking the last name is how you clear the list.
                 listed.forEach { name ->
                     CardDivider()
                     Item(
@@ -161,8 +152,8 @@ fun AlertPeopleScreen(
                 if (!state.loading) {
                     CardDivider()
                     if (!state.noAnswer && state.offered.isEmpty()) {
-                        // A server with no faces learned yet has nothing to offer,
-                        // and "Everyone" alone would look like a page that failed.
+                        // A server with no faces learned yet has nothing to offer, and
+                        // an empty card would look like a page that failed.
                         Note(stringResource(R.string.explore_no_people))
                     } else {
                         Note(stringResource(R.string.alert_objects_phone_only))
@@ -176,12 +167,12 @@ fun AlertPeopleScreen(
 }
 
 /**
- * What the Settings row says under People to leave out: everyone, or the people by
- * name.
+ * What the Settings row says under People to leave out: no one, or the people by
+ * name. "Everyone" would read as everyone left out, which is the wrong way round.
  */
 @Composable
 internal fun AlertPeople.said(): String {
-    if (everyone) return stringResource(R.string.alert_people_everyone)
+    if (everyone) return stringResource(R.string.alert_people_nobody)
     val names = leftOut.sorted()
     return when (names.size) {
         1 -> names[0]

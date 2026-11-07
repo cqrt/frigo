@@ -2683,3 +2683,18 @@ reaches the saved list.
 The server's own pages moved up to sit under Servers, in a card called Frigate. A
 second card called Server read as two servers, next to the Servers card above it.
 The card is still an admin's.
+
+## An Everyone row is a trap, so the people page has none
+
+The page had a row called Everyone, which cleared the list. It was ticked while nobody
+was on the list, so unticking the last person left it ticked, and it read as "everyone
+is now left out" when it meant the opposite. Two mental models, one checkbox.
+
+The same trap as All cameras on the alerts pages: a control that stands for "everything"
+sits beside the things it stands for, and the two look alike. Those pages are set one
+camera at a time, and this page is set one person at a time. With nobody ticked the list
+is simply empty, which is everyone reaching you, and the page says that with no row at
+all.
+
+The Settings row below People to leave out said Everyone for the same empty list, which
+had the same problem in a different shape. It says No one now.

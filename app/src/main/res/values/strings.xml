@@ -54,7 +54,7 @@
 
     <!-- This phone's own list of the people it stays quiet about, by the name Frigate knows them by. -->
     <string name="alert_people_title">People to leave out</string>
-    <string name="alert_people_everyone">Everyone</string>
+    <string name="alert_people_nobody">No one</string>
     <string name="alert_people_search">Angie, Matt…</string>
     <string name="alert_people_cant_read">Your server isn\'t answering, so this lists only the people you\'ve ticked.</string>
     <string name="alert_people_wait">While anyone is on this list, alerts wait for your server\'s description, so they arrive about twenty seconds later.</string>

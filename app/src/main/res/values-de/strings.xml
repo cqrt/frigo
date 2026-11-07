@@ -55,7 +55,7 @@
 
     <!-- Die eigene Liste dieses Telefons: Personen, über die es still bleibt. -->
     <string name="alert_people_title">Personen auslassen</string>
-    <string name="alert_people_everyone">Alle</string>
+    <string name="alert_people_nobody">Niemand</string>
     <string name="alert_people_search">Anna, Max…</string>
     <string name="alert_people_cant_read">Dein Server antwortet nicht, deshalb steht hier nur, wer angehakt ist.</string>
     <string name="alert_people_wait">Solange jemand auf dieser Liste steht, warten Alarme auf die Beschreibung deines Servers, sie kommen also etwa zwanzig Sekunden später.</string>
