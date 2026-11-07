@@ -60,15 +60,19 @@ before it closes, and its last line goes to the clips you've kept already.
 
 **Review.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review
-rather than twenty events. Tap one to watch the clip of that time. Alerts and
-detections are separate halves of the list, and each half says how many are left.
-Watch past halfway and the review counts as watched, here and on the web page, so
-it leaves the list. Show reviewed brings the watched ones back. When you've seen
-enough of a day, Mark all as reviewed clears the rest without playing any of it,
-and Put them back undoes that. Pull the list down for what has happened since. The
-tune icon in the corner opens Alerts and detections, which is the server's page
-and only an admin can change it. On any other account, Settings, Only these
-objects is where you narrow what buzzes this phone.
+rather than twenty events. Tap one to watch the clip of that time, and what
+Frigate made of it sits under the clip: a name for what happened, and the whole
+story under the name. In the list, a review it has described is named by its own
+title rather than by the objects it saw. Frigate writes that a minute or two
+after a review ends, so one that has no words yet opens on the clip alone. Alerts
+and detections are separate halves of the list, and each half says how many are
+left. Watch past halfway and the review counts as watched, here and on the web
+page, so it leaves the list. Show reviewed brings the watched ones back. When
+you've seen enough of a day, Mark all as reviewed clears the rest without playing
+any of it, and Put them back undoes that. Pull the list down for what has happened
+since. The tune icon in the corner opens Alerts and detections, which is the
+server's page and only an admin can change it. On any other account, Settings,
+Only these objects is where you narrow what buzzes this phone.
 
 **Explore.** What Frigate has recorded, newest first, with thumbnails, the way
 the Explore page on the server has it. Narrow it by camera, by what was seen, by

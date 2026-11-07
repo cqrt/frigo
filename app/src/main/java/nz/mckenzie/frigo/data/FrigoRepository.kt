@@ -692,6 +692,13 @@ class FrigoRepository(
         authorized { baseUrl, token -> api.reviewSpikes(baseUrl, token, camera, after, before) }
 
     /**
+     * One review as the server holds it now. Opening a review asks for it again,
+     * because Frigate writes the words about it a minute or two after it ends.
+     */
+    suspend fun review(id: String): FrigateReview =
+        authorized { baseUrl, token -> api.review(baseUrl, token, id) }
+
+    /**
      * Says a review has been watched. Frigate keeps that on the server, so the
      * web page drops it from its list too.
      */

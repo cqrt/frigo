@@ -17,6 +17,7 @@ import nz.mckenzie.frigo.data.ReviewDayCount
 import nz.mckenzie.frigo.data.ReviewKind
 import nz.mckenzie.frigo.data.ReviewSettings
 import nz.mckenzie.frigo.data.labelsFor
+import nz.mckenzie.frigo.data.withWordsFrom
 import nz.mckenzie.frigo.ui.Period
 import nz.mckenzie.frigo.ui.friendlyMessage
 import nz.mckenzie.frigo.ui.range
@@ -24,6 +25,11 @@ import java.time.LocalDate
 
 data class ReviewsUiState(
     val reviews: List<FrigateReview> = emptyList(),
+    /**
+     * The review whose clip is open, or null. It is a copy of its own rather than
+     * looked up in the list, because marking a review watched clears its row.
+     */
+    val opened: FrigateReview? = null,
     val kind: ReviewKind = ReviewKind.Alerts,
     val cameras: List<Camera> = emptyList(),
     /** The camera being looked at, or null for all of them. */
@@ -216,6 +222,39 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
                 otherCounts = others.getOrNull() ?: it.otherCounts,
             )
         }
+    }
+
+    /**
+     * Opens a review, and asks the server for it again.
+     *
+     * Frigate writes the words about a review a minute or two after it ends, so a
+     * review can be in the list before it has any. The fresher copy is put back
+     * over the one on screen and over its row, so the list catches up when the
+     * card is closed. A server that doesn't answer leaves the clip playing with
+     * whatever the list had.
+     */
+    fun open(review: FrigateReview) {
+        _state.update { it.copy(opened = review) }
+        viewModelScope.launch {
+            runCatching { repository.review(review.id) }
+                .onSuccess { fresh ->
+                    _state.update { current ->
+                        val open = current.opened
+                        if (open?.id != review.id) return@update current
+                        current.copy(
+                            opened = open.withWordsFrom(fresh),
+                            reviews = current.reviews.map {
+                                if (it.id == review.id) it.withWordsFrom(fresh) else it
+                            },
+                        )
+                    }
+                }
+        }
+    }
+
+    /** Closes the clip without touching anything on the server. */
+    fun close() {
+        _state.update { it.copy(opened = null) }
     }
 
     /**

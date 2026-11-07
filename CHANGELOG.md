@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.10.34
+
+- In the Review list, a moment Frigate has described is named by its own title rather than by the objects it saw.
+- Open a review and what Frigate made of it sits under the clip: a name for what happened, and the whole story under the name.
+
 ## 0.10.33
 
 - Alerts and detections leaves out a camera you've turned off on this phone. With all of them off, the page says where the switch is rather than reading as a camera it can't read.

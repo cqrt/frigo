@@ -188,6 +188,32 @@ data class FrigateReview(
 fun FrigateReview.said(): String =
     data.metadata?.let { "${it.title} ${it.shortSummary}".trim() }.orEmpty()
 
+/**
+ * The short name Frigate gave this review, or null when it hasn't written one.
+ * A title of nothing but spaces counts as no title.
+ */
+fun FrigateReview.aiTitle(): String? =
+    data.metadata?.title?.trim()?.takeIf { it.isNotEmpty() }
+
+/**
+ * The whole of what Frigate wrote about this review: the scene when the server
+ * writes one, and the summary on a server that doesn't. Null when it has written
+ * neither, which is a review it hasn't looked at yet.
+ */
+fun FrigateReview.description(): String? = data.metadata
+    ?.let { it.scene.trim().ifEmpty { it.shortSummary.trim() } }
+    ?.takeIf { it.isNotEmpty() }
+
+/**
+ * The words from a fresher copy of this review, on the review already on screen.
+ *
+ * Opening a review asks the server for it again, because Frigate writes the words
+ * a minute or two after the review ends. That answer is the row as the server
+ * holds it, without `has_been_reviewed`, which is kept per user and only joined in
+ * on the list call, so the rest of the review here is left as it was.
+ */
+fun FrigateReview.withWordsFrom(fresh: FrigateReview): FrigateReview = copy(data = fresh.data)
+
 @Serializable
 data class ReviewData(
     val objects: List<String> = emptyList(),
@@ -202,13 +228,16 @@ data class ReviewData(
  * writes a few seconds after the review starts.
  *
  * The title is a short name for what happened and the summary is a sentence
- * about it. [threatLevel] is 0 for ordinary, 1 for suspicious and 2 for a
+ * about it. The scene is the whole narrative, which is what Frigate's own page
+ * shows. Older servers write a title and a summary with no scene, so [scene] is
+ * empty there. [threatLevel] is 0 for ordinary, 1 for suspicious and 2 for a
  * critical threat.
  */
 @Serializable
 data class ReviewMetadata(
     val title: String = "",
     val shortSummary: String = "",
+    val scene: String = "",
     @SerialName("potential_threat_level") val threatLevel: Int = 0,
 )
 

@@ -214,6 +214,21 @@ class FrigateApi(
     }
 
     /**
+     * One review as the server holds it now, which is more than the list carried:
+     * Frigate writes the words about a review a minute or two after it ends, so a
+     * review can be in the list before it has any. The server checks camera access
+     * itself and answers 404 for a review that has since been deleted.
+     */
+    fun review(baseUrl: String, token: String, id: String): FrigateReview {
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/review/$id"))
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return json.decodeFromString(FrigateReview.serializer(), request.okBody())
+    }
+
+    /**
      * Every review Frigate kept on one camera between two moments, alerts and
      * detections together, watched or not. This is what the timeline draws its
      * spikes from.

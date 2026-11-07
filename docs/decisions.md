@@ -2706,3 +2706,42 @@ all.
 
 The Settings row below People to leave out said Everyone for the same empty list, which
 had the same problem in a different shape. It says No one now.
+
+## The card under a review's clip is Frigate's own words
+
+Frigate hands out a title and a one-line summary about each review it looks at, and both
+were written for a notification: 80 characters and 70 to 140. It also writes `scene`,
+150 to 600 characters, which is the narrative its own page shows. The card reads the
+scene, and falls back to the summary only because a server from before it existed still
+writes one. The card holds neither the concerns nor the confidence: a person watching
+the clip has already seen the thing the model is describing.
+
+The row says the title Frigate wrote instead of the object names. It is a name for what
+happened rather than a list of what was in the frame, and the row was already clipping
+to one line. A review with no title keeps the object names, and "Motion" when it saw
+nothing it can name.
+
+Opening a review asks the server for it again rather than listening for the description
+on the socket. The socket is where alerts are decided, and it is held by a service even
+when no screen is open; making it also feed a screen would mean two paths for one
+answer. `GET /api/review/<id>` is the same row the list sent, and it is one request
+while you are already waiting for a clip.
+
+Only `data` is taken from that answer. The server keeps `has_been_reviewed` per user and
+joins it in on the list call alone, so the single-review answer never carries it. Taking
+the whole row back would quietly un-watch a review that was marked watched a moment ago.
+`withWordsFrom` is that rule in one place, so a test can hold it.
+
+The card is not drawn on its side. Landscape is where the clip is meant to fill the
+screen, and a card would take the height the picture needs. The viewer's tree stays the
+same either way, so turning the phone neither fetches nor restarts the clip, and the
+card comes back on the way round.
+
+The card belongs to reviews alone. A clip kept on the server and an event in Explore
+carry nothing Frigate wrote about them, and a card with nothing in it would be a frame
+around a blank. `ClipViewer` takes the slot optionally and both of those pass nothing,
+so their viewers are untouched.
+
+Rejected: reading the summary instead of the scene, which is written for a notification
+and stops before the story does; and polling the list for the description, which would
+need a request on a timer for an answer the open call can bring once.

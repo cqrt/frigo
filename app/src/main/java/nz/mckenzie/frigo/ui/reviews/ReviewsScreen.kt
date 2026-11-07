@@ -54,6 +54,7 @@ import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.ReviewKind
+import nz.mckenzie.frigo.data.aiTitle
 import nz.mckenzie.frigo.data.objectName
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.ui.FrigoIcons
@@ -80,7 +81,6 @@ fun ReviewsScreen(
 ) {
     val viewModel: ReviewsViewModel = viewModel(factory = ReviewsViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var opened by remember { mutableStateOf<FrigateReview?>(null) }
     var pickingDay by remember { mutableStateOf(false) }
 
     Column(modifier.fillMaxSize()) {
@@ -258,7 +258,7 @@ fun ReviewsScreen(
                         ReviewRow(
                             repository = container.repository,
                             review = review,
-                            onClick = { opened = review },
+                            onClick = { viewModel.open(review) },
                         )
                     }
                     if (!state.showReviewed) {
@@ -304,11 +304,11 @@ fun ReviewsScreen(
         }
     }
 
-    opened?.let { review ->
+    state.opened?.let { review ->
         ReviewPlayerDialog(
             repository = container.repository,
             review = review,
-            onDismiss = { opened = null },
+            onDismiss = viewModel::close,
             onHalfWatched = { viewModel.markReviewed(review) },
         )
     }
@@ -384,6 +384,9 @@ private fun ReviewRow(
 /** `person`, `person-verified` and the like, said the way a person would. */
 @Composable
 internal fun FrigateReview.title(): String {
+    // What Frigate made of it beats a list of objects: the title is a name for
+    // what happened, and the objects are only in there to be looked up.
+    aiTitle()?.let { return it }
     val seen = (data.objects + data.subLabels)
         .map { it.objectName().replace('_', ' ') }
         .filter { it.isNotBlank() }

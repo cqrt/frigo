@@ -370,6 +370,11 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/events/") and path.endswith(".jpg"):
             return self.send_bytes(FRAMES[0], "image/jpeg")
 
+        if path == "/api/review/summary":
+            # What each day held, and how much of it has been watched. The mock's
+            # reviews all sit within the last two hours, so they are all today's.
+            return self.send_json(review_summary())
+
         if path == "/api/review":
             # Frigate's endpoint is singular. Without a severity it sends alerts
             # and detections together, which is what the timeline's spikes ask for.
@@ -384,6 +389,16 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/review/") and path.endswith("/clip.mp4"):
             # Cut from recordings on a real server; here it is one short file.
             return self.send_bytes(CLIP, "video/mp4")
+
+        if path.startswith("/api/review/"):
+            # One review by id, which is what opening a review asks for so that a
+            # description written since the list was fetched comes with it.
+            rest = path[len("/api/review/"):]
+            if rest and "/" not in rest and rest != "summary":
+                found = one_review(rest)
+                if found is None:
+                    return self.send_json({"message": "Review not found"}, status=404)
+                return self.send_json(found)
 
         if path.endswith("/recordings/summary"):
             # Which days and hours a camera has footage for. The mock keeps the
@@ -604,6 +619,8 @@ class Handler(BaseHTTPRequestHandler):
                 "metadata": {
                     "title": f"{name} walking",
                     "shortSummary": f"{name} is walking up the driveway.",
+                    "scene": f"{name} walked up the driveway towards the door, paused at "
+                    "the top, and then turned and headed back down the path.",
                     "potential_threat_level": 0,
                 },
             },
@@ -771,6 +788,25 @@ def events(raw_query):
     return answer[:limit]
 
 
+# What the server made of its first alert and its first detection. Frigate writes
+# these a minute or two after a review ends, so the other rows carry none, and a
+# review that has no words is the case the app is built to open too.
+REVIEW_WORDS = {
+    "alert": {
+        "title": "Person at the door",
+        "shortSummary": "A person is walking up the driveway.",
+        "scene": "A person walked up the driveway towards the door, stood there for a "
+        "moment, and then headed back down the path.",
+    },
+    "detection": {
+        "title": "Dog in the garden",
+        "shortSummary": "A dog is moving about the garden.",
+        "scene": "A dog wandered around the garden for a while, stopping to sniff along "
+        "the fence before moving out of the picture.",
+    },
+}
+
+
 def reviews(severity, reviewed=None, cameras=None, after=None, before=None):
     """Reviews shaped like 0.18's, newest first, with both kinds served.
 
@@ -816,6 +852,16 @@ def reviews(severity, reviewed=None, cameras=None, after=None, before=None):
             continue
         if reviewed == "1" and not watched:
             continue
+        data = {
+            "audio": [],
+            "detections": [f"{started:.6f}-{severity}{index}"],
+            "objects": objects,
+            "sub_labels": [],
+            "significant_motion_areas": [],
+            "zones": zones,
+        }
+        if index == 0:
+            data["metadata"] = {**REVIEW_WORDS[severity], "potential_threat_level": 0}
         answer.append(
             {
                 "id": review_id,
@@ -827,17 +873,33 @@ def reviews(severity, reviewed=None, cameras=None, after=None, before=None):
                 # A path on the server's disk on a real server. The app takes its
                 # picture from the first detection, so this only has to be there.
                 "thumb_path": f"/clips/{camera}/review-{severity}-{index}-thumb.webp",
-                "data": {
-                    "audio": [],
-                    "detections": [f"{started:.6f}-{severity}{index}"],
-                    "objects": objects,
-                    "sub_labels": [],
-                    "significant_motion_areas": [],
-                    "zones": zones,
-                },
+                "data": data,
             }
         )
     return answer
+
+
+def one_review(review_id):
+    """The review the list would have sent for this id, or None when no such row.
+
+    Built by the same function the list uses, because on a real server the two
+    answers are the same row, joined with what the user has watched.
+    """
+    severity = review_id.rsplit("-", 1)[-1]
+    if severity not in ("alert", "detection"):
+        return None
+    return next((review for review in reviews(severity) if review["id"] == review_id), None)
+
+
+def review_summary():
+    """What each day held, as /api/review/summary answers it. The mock's reviews all
+    sit within the last two hours, so the only day it has is today."""
+    counts = {}
+    for severity in ("alert", "detection"):
+        rows = reviews(severity)
+        counts[f"total_{severity}"] = len(rows)
+        counts[f"reviewed_{severity}"] = sum(1 for row in rows if row["has_been_reviewed"])
+    return {datetime.date.today().isoformat(): counts}
 
 
 def segments(after, before):

@@ -42,7 +42,15 @@ reads a still's own size instead of asking for a bigger one.
 
 `/api/labels` answers with the objects the app can tick in Settings. `/api/review`
 answers with three alerts and three detections, newest first, and a clip for each.
-It filters on `severity` the way the real endpoint does.
+It filters on `severity` the way the real endpoint does. `/api/review/summary`
+counts those six as today's, so the numbers beside the two tabs and the dots in the
+calendar have something to show.
+
+The first alert and the first detection carry what the server made of them: a
+title, a short summary and a whole scene, the way Frigate writes them a minute or
+two after a review ends. The other four carry none, so the list shows a row named
+the way Frigate named it and a row named after the objects. `/api/review/<id>`
+answers one review by id, built the same way, which is what opening one asks for.
 
 `/api/config` carries the two pages the app follows: notifications are on for the
 whole server and for the door and north cameras, and the server-wide alert list is
@@ -68,9 +76,10 @@ bearer token, and it publishes on both of the topics the app can listen to.
   object under a known face, while the camera's alert list still says `person`. The one
   that starts as a detection is named only when it turns into an alert three seconds
   in. Every review then ends at eight seconds, and a description with the name in it
-  follows at ten, which is what a phone waiting to leave somebody out is waiting for.
-  Leave Angie out in Settings, People to leave out and the door goes quiet while "Fay
-  walking" still buzzes, about ten seconds in.
+  follows at ten: a title, a short summary and a whole scene, which is what a phone
+  waiting to leave somebody out is waiting for. Leave Angie out in Settings, People
+  to leave out and the door goes quiet while "Fay walking" still buzzes, about ten
+  seconds in.
 
 The app's trial switch chooses which of the two topics it listens to, so both are
 sent and the switch can be flipped without restarting anything. The turn from
