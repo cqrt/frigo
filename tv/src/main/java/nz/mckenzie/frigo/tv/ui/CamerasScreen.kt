@@ -221,6 +221,19 @@ fun CamerasScreen(
     val requesters = remember { mutableStateMapOf<String, FocusRequester>() }
     val listState = rememberLazyListState()
 
+    // A tile only exists once the strip has been laid out, and a request made
+    // before then does nothing. Ask again until it lands, so the strip has the
+    // arrows when the screen opens rather than a press later.
+    suspend fun focusCamera(name: String) {
+        repeat(8) {
+            val requester = requesters[name]
+            if (requester != null && runCatching { requester.requestFocus() }.isSuccess) {
+                return
+            }
+            delay(60)
+        }
+    }
+
     // The strip takes the focus when the screen opens, and keeps its place after
     // one camera replaces another: the press that moved a picture left the
     // arrows where they were. A picture that changed by itself leaves them be.
@@ -234,8 +247,7 @@ fun CamerasScreen(
         val target = others.getOrNull(wanted) ?: others.firstOrNull() ?: return@LaunchedEffect
         val at = others.indexOf(target)
         if (at >= 0) runCatching { listState.animateScrollToItem(at) }
-        delay(80)
-        runCatching { requesters[target.name]?.requestFocus() }
+        focusCamera(target.name)
         focusAt = at
     }
 
@@ -280,23 +292,19 @@ fun CamerasScreen(
     LaunchedEffect(settingsOpen) {
         if (settingsOpen) return@LaunchedEffect
         delay(80)
-        runCatching {
-            val target = others.getOrNull(focusAt) ?: others.firstOrNull()
-            target?.let { requesters[it.name]?.requestFocus() }
-        }
+        val target = others.getOrNull(focusAt) ?: others.firstOrNull()
+        target?.let { focusCamera(it.name) }
     }
 
     // The picture takes the focus when it fills the screen, and gives it back to
     // the strip when the strip comes back.
     LaunchedEffect(fullScreen) {
         delay(80)
-        runCatching {
-            if (fullScreen) {
-                pictureFocus.requestFocus()
-            } else {
-                val target = others.getOrNull(focusAt) ?: others.firstOrNull()
-                target?.let { requesters[it.name]?.requestFocus() }
-            }
+        if (fullScreen) {
+            runCatching { pictureFocus.requestFocus() }
+        } else {
+            val target = others.getOrNull(focusAt) ?: others.firstOrNull()
+            target?.let { focusCamera(it.name) }
         }
     }
 

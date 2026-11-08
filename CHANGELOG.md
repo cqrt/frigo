@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.14.2
+
+- The television opens on the camera you picked under Default camera, and the first press of the arrows lands on the camera strip instead of nowhere.
+
 ## 0.14.1
 
 - On the television's Settings card, the switch is called Camera auto switch and its sentence says what it does. The signed-in line no longer repeats Pair again.
