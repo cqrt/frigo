@@ -4,8 +4,11 @@ import android.graphics.Bitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -256,6 +259,28 @@ class TvRepository(
         _screen.value = value
     }
 
+    private val _ringUrl = MutableStateFlow<String?>(null)
+
+    /**
+     * The address Home Assistant posts to when the bell rings, or null while the
+     * app has no door open for it. It is shown on the television so it can be
+     * typed into an automation once.
+     */
+    val ringUrl: StateFlow<String?> = _ringUrl.asStateFlow()
+
+    fun setRingUrl(url: String?) {
+        _ringUrl.value = url
+    }
+
+    private val _rings = MutableSharedFlow<Ring>(extraBufferCapacity = 4)
+
+    /** A doorbell that has been pressed, waiting for a screen to answer it. */
+    val rings: SharedFlow<Ring> = _rings.asSharedFlow()
+
+    fun ring(camera: String?) {
+        _rings.tryEmit(Ring(camera))
+    }
+
     /**
      * Asks whether anything has come in since the page was last opened. A
      * television that has never opened it counts the last day, so the dot means
@@ -397,3 +422,9 @@ class TvRepository(
         const val DAY_MILLIS = 24L * 60 * 60 * 1000
     }
 }
+
+/**
+ * A doorbell, pressed. The camera is whichever one the address named, or null
+ * when it named none and the television decides.
+ */
+data class Ring(val camera: String?, val at: Long = System.currentTimeMillis())

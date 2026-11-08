@@ -3128,3 +3128,35 @@ than one press away from the camera you were watching.
 Camera auto switch does nothing while the wall is up: the camera that saw someone
 is already on the screen, and taking it over would shrink two others to make a
 point. It carries on working once a camera has been opened from the wall.
+
+## The doorbell is a door the television leaves open
+
+Frigate has no idea a bell was pressed: it reports objects and sounds, and a
+D235's button is not either of them. Home Assistant does know, from the Tapo
+Cameras Control sensor it already makes for the camera. So the ring comes from
+Home Assistant, and the television supplies one thing for it: a port.
+
+The address carries a key made once and kept in the television's own settings,
+which is quiet security rather than real security: it stops a neighbour's
+automation on the same Wi-Fi, and it is read off the television's own screen by
+the person who owns it. A password would need typing on a remote.
+
+Rejected: a port picked fresh each start, the way the pairing code is. That is
+right for a code good once, and wrong for an address pasted into an automation,
+which would break every time the television was switched off.
+
+Rejected: the television watching Home Assistant. It needs a token in the
+television's settings, and a token typed on a remote is a worse afternoon than a
+fixed address in a router. It is also a connection kept open in one direction for
+days at a time, where a post is nothing until it happens.
+
+## A bell is louder than the Camera auto switch
+
+The bell fills the screen for the same half minute as a takeover, and it does not
+ask the Camera auto switch first. That switch is about what Frigate notices on its
+own; the doorbell automation was written on purpose, one press at a time, and is
+already the household's answer to someone at the door.
+
+It is the same half minute and the same return, so the two arrivals share the code
+that puts the screen back. When the bell came in over a wall, the room gets the
+wall back rather than a layout it did not ask for.

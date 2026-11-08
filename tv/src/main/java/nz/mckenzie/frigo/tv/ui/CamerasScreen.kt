@@ -95,6 +95,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.tv.R
 import nz.mckenzie.frigo.tv.data.Camera
+import nz.mckenzie.frigo.tv.data.Ring
 import nz.mckenzie.frigo.tv.data.ScreenGrid
 import nz.mckenzie.frigo.tv.data.ScreenOne
 import nz.mckenzie.frigo.tv.data.TvRepository
@@ -135,6 +136,7 @@ fun CamerasScreen(
     cameras: List<Camera>,
     newAlerts: Boolean = false,
     onOpenAlerts: () -> Unit = {},
+    ring: Ring? = null,
 ) {
     var chosen by rememberSaveable { mutableStateOf<String?>(null) }
     var settingsOpen by remember { mutableStateOf(false) }
@@ -156,6 +158,9 @@ fun CamerasScreen(
     var takeoverUntil by remember { mutableLongStateOf(0L) }
     // A picture that changes by itself should not move the arrows.
     var skipFocus by remember { mutableStateOf(false) }
+    // Whether this screen was full screen before a bell filled it, so the room
+    // gets back what it had rather than a picture it did not ask for.
+    var bellFullScreen by remember { mutableStateOf(false) }
     val takeoverOn by repository.takeover.collectAsStateWithLifecycle(initialValue = true)
     val soundOn by repository.liveSound.collectAsStateWithLifecycle(initialValue = true)
     val defaultCamera by repository.defaultCamera.collectAsStateWithLifecycle()
@@ -322,8 +327,31 @@ fun CamerasScreen(
         val back = takeoverFrom ?: return@LaunchedEffect
         skipFocus = true
         chosen = back
+        // A bell filled the screen; the room gets its layout back with it.
+        if (bellFullScreen) {
+            fullScreen = false
+            bellFullScreen = false
+        }
         takeoverFrom = null
         takeoverUntil = 0L
+    }
+
+    // A bell is the takeover's louder cousin: it fills the screen for the same
+    // half minute, because a visitor is the one thing worth covering a wall for.
+    // It is not the Camera auto switch and does not obey it: the automation that
+    // rings the television was written on purpose, one press at a time.
+    LaunchedEffect(ring) {
+        val pressed = ring ?: return@LaunchedEffect
+        val wanted = pressed.camera ?: defaultCamera
+        val target = cameras.firstOrNull { it.name == wanted }
+            ?: cameras.firstOrNull()
+            ?: return@LaunchedEffect
+        val shown = current?.name
+        if (takeoverFrom == null) takeoverFrom = shown
+        bellFullScreen = !fullScreen
+        chosen = target.name
+        fullScreen = true
+        takeoverUntil = System.currentTimeMillis() + TakeoverMillis
     }
 
     // A change of layout starts the page again: a wall is a wall, not the camera
@@ -496,6 +524,7 @@ private fun SettingsPanel(
     val takeoverOn by repository.takeover.collectAsStateWithLifecycle(initialValue = true)
     val defaultCamera by repository.defaultCamera.collectAsStateWithLifecycle()
     val screen by repository.screen.collectAsStateWithLifecycle(initialValue = ScreenOne)
+    val ringUrl by repository.ringUrl.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     // The camera the big picture opens on: the one that was picked, or the first
@@ -620,8 +649,12 @@ private fun SettingsPanel(
             shape = RoundedCornerShape(24.dp),
         ) {
             Column(
-                modifier = Modifier.width(640.dp).padding(28.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                // Six rows and the server line have to fit a 1080p screen, so
+                // the card is tight rather than comfortable.
+                modifier = Modifier
+                    .width(640.dp)
+                    .padding(horizontal = 24.dp, vertical = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(7.dp),
             ) {
                 when (picking) {
                     CardPicker.DefaultCamera -> DefaultCameraPicker(
@@ -643,6 +676,11 @@ private fun SettingsPanel(
                             scope.launch { repository.setScreen(value) }
                             closePicker(ScreenAt)
                         },
+                    )
+
+                    CardPicker.Doorbell -> DoorbellAddress(
+                        url = ringUrl,
+                        onCancel = { closePicker(DoorbellAt) },
                     )
 
                     null -> {
@@ -699,6 +737,18 @@ private fun SettingsPanel(
                             },
                         )
                         SettingRow(
+                            title = stringResource(R.string.tv_doorbell),
+                            supporting = stringResource(R.string.tv_doorbell_note),
+                            chevron = true,
+                            modifier = Modifier.focusRequester(rows[DoorbellAt]),
+                            onFocused = { at = DoorbellAt },
+                            onClick = {
+                                // One row rather than a list, so the arrows have
+                                // somewhere to be while the address is read.
+                                openPicker(CardPicker.Doorbell, 0, count = 1)
+                            },
+                        )
+                        SettingRow(
                             title = stringResource(R.string.tv_takeover),
                             supporting = stringResource(R.string.tv_takeover_note),
                             modifier = Modifier.focusRequester(rows[TakeoverAt]),
@@ -733,13 +783,14 @@ private fun SettingsPanel(
 /** The row order on the Settings card, and where the arrows start. */
 private const val DefaultCameraAt = 0
 private const val ScreenAt = 1
-private const val TakeoverAt = 2
-private const val PairAt = 3
-private const val CloseAt = 4
-private const val CardRows = 5
+private const val DoorbellAt = 2
+private const val TakeoverAt = 3
+private const val PairAt = 4
+private const val CloseAt = 5
+private const val CardRows = 6
 
-/** A short list that takes the card's place while it is up. */
-private enum class CardPicker { DefaultCamera, Screen }
+/** Something that takes the card's place while it is up. */
+private enum class CardPicker { DefaultCamera, Screen, Doorbell }
 
 /** One big picture, or a wall of every camera. Both hold the arrows while up. */
 @Composable
@@ -773,6 +824,36 @@ private fun ScreenPicker(
                 onClick = { onPick(value) },
             )
         }
+    }
+}
+
+/** The address to give Home Assistant, and what posting to it does. */
+@Composable
+private fun DoorbellAddress(url: String?, onCancel: () -> Unit) {
+    BackHandler(enabled = true, onBack = onCancel)
+
+    Text(
+        text = stringResource(R.string.tv_doorbell).uppercase(),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Text(
+        text = stringResource(R.string.tv_doorbell_what),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    if (url == null) {
+        Text(
+            text = stringResource(R.string.tv_doorbell_shut),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.error,
+        )
+    } else {
+        Text(
+            text = url,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 
@@ -839,7 +920,7 @@ private fun SettingRow(
                 if (it.isFocused) onFocused()
             }
             .clickable { onClick() }
-            .padding(horizontal = 18.dp, vertical = 10.dp),
+            .padding(horizontal = 18.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {

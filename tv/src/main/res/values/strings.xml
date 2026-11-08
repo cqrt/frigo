@@ -32,6 +32,10 @@
     <string name="tv_screen_note">Select layout from Default or Grid.</string>
     <string name="tv_screen_default">Default</string>
     <string name="tv_screen_grid">Grid</string>
+    <string name="tv_doorbell">Doorbell</string>
+    <string name="tv_doorbell_note">The address Home Assistant rings.</string>
+    <string name="tv_doorbell_what">Post to this when someone rings, and that camera fills the screen for half a minute. Add ?camera=north_cam to choose another.</string>
+    <string name="tv_doorbell_shut">The address is not open. Restart the app.</string>
     <string name="tv_pair_again_note">Use another server, or another account.</string>
     <string name="tv_sound">Sound</string>
     <string name="tv_muted">Muted</string>

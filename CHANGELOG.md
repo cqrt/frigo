@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.16.0
+
+- The television answers a doorbell. Settings, Doorbell, is an address Home Assistant can post to, and that camera fills the screen for half a minute.
+- Ringing works from a Home Assistant automation on the D235's own bell sensor. There's a page on wiring it up in docs.
+
 ## 0.15.1
 
 - Select on a camera in the wall fills the screen with that camera, and Back goes straight back to the wall.

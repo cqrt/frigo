@@ -163,6 +163,11 @@ is every camera at the same size, fitted to how many you have: four make a 2×2,
 six make two rows of three. Select on a tile fills the screen with that camera,
 and Back brings the wall back with the arrows on the camera you left.
 
+**Doorbell** shows an address for Home Assistant. Post to it when someone presses
+the bell, and that camera fills the screen for half a minute. The address carries
+a key the television made for itself, so it only answers its own house
+([how to wire it up](docs/doorbell.md)).
+
 A camera that sees a person or a car takes the big picture for half a minute, and
 the screen then goes back to the camera it was on. **Camera auto switch** under
 Settings is where it is turned off, and picking a camera by hand ends it early.

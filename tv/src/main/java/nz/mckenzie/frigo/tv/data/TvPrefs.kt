@@ -106,6 +106,19 @@ class TvPrefs(private val context: Context) {
         context.tvStore.edit { prefs -> prefs[Keys.screen] = screen }
     }
 
+    /**
+     * The key in the doorbell address, made once and kept. It is what keeps a
+     * neighbour's automation on the same Wi-Fi from ringing this television.
+     */
+    suspend fun ringKey(): String {
+        val kept = context.tvStore.data.first()[Keys.ringKey]
+        if (kept != null) return kept
+        val random = java.security.SecureRandom()
+        val made = ByteArray(5).also(random::nextBytes).joinToString("") { "%02x".format(it) }
+        context.tvStore.edit { prefs -> prefs[Keys.ringKey] = made }
+        return made
+    }
+
     private object Keys {
         val server = stringPreferencesKey("server")
         val alertsSeen = longPreferencesKey("alerts_seen")
@@ -113,6 +126,7 @@ class TvPrefs(private val context: Context) {
         val defaultCamera = stringPreferencesKey("default_camera")
         val liveSound = booleanPreferencesKey("live_sound")
         val screen = stringPreferencesKey("screen")
+        val ringKey = stringPreferencesKey("ring_key")
     }
 }
 

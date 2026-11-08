@@ -50,6 +50,7 @@ import nz.mckenzie.frigo.tv.BuildConfig
 import nz.mckenzie.frigo.tv.R
 import nz.mckenzie.frigo.tv.data.Alert
 import nz.mckenzie.frigo.tv.data.Camera
+import nz.mckenzie.frigo.tv.data.Ring
 import nz.mckenzie.frigo.tv.data.TvRepository
 import nz.mckenzie.frigo.tv.pair.PairingCode
 import nz.mckenzie.frigo.tv.pair.PairingServer
@@ -108,6 +109,17 @@ private sealed interface TvPage {
 private fun ReadyScreens(repository: TvRepository, cameras: List<Camera>) {
     var page by remember { mutableStateOf<TvPage>(TvPage.Cameras) }
     val unseen by repository.unseenAlerts.collectAsStateWithLifecycle()
+    var ring by remember { mutableStateOf<Ring?>(null) }
+
+    // A bell is louder than whatever is on: it puts the cameras back up, where
+    // the picture that answers it lives. Anywhere else on the app, a ring that
+    // left the screen on the alerts page would look like it did nothing.
+    LaunchedEffect(Unit) {
+        repository.rings.collect { pressed ->
+            ring = pressed
+            page = TvPage.Cameras
+        }
+    }
 
     when (val showing = page) {
         TvPage.Cameras -> CamerasScreen(
@@ -115,6 +127,7 @@ private fun ReadyScreens(repository: TvRepository, cameras: List<Camera>) {
             cameras = cameras,
             newAlerts = unseen,
             onOpenAlerts = { page = TvPage.Alerts },
+            ring = ring,
         )
 
         TvPage.Alerts -> AlertsScreen(
