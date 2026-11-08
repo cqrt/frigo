@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.15.0
+
+- The cameras page on the television can be a wall of every camera at once: Settings, Cameras on screen, Grid. Four cameras fill a 2x2, six make two rows of three.
+- Select on a tile opens that camera with the strip beside it, and Back brings the wall back with the arrows where you left them.
+
 ## 0.14.3
 
 - Default camera is a plain list of your cameras now, with no "first camera" row to wonder about.

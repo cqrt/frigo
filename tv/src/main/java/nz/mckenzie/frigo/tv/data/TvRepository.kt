@@ -65,6 +65,7 @@ class TvRepository(
     /** Called once, when the app opens. */
     suspend fun start() = withContext(Dispatchers.IO) {
         _defaultCamera.value = prefs.readDefaultCamera()
+        _screen.value = prefs.readScreen()
         val server = prefs.readServer()
         if (server == null) {
             _gate.value = Gate.Pairing
@@ -244,6 +245,16 @@ class TvRepository(
     val liveSound: Flow<Boolean> = prefs.liveSound
 
     suspend fun setLiveSound(on: Boolean) = prefs.writeLiveSound(on)
+
+    private val _screen = MutableStateFlow(ScreenOne)
+
+    /** One big picture with a strip, or a wall of every camera. */
+    val screen: StateFlow<String> = _screen.asStateFlow()
+
+    suspend fun setScreen(value: String) {
+        prefs.writeScreen(value)
+        _screen.value = value
+    }
 
     /**
      * Asks whether anything has come in since the page was last opened. A

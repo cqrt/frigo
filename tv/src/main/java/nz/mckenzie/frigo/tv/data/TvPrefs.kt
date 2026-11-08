@@ -95,11 +95,29 @@ class TvPrefs(private val context: Context) {
         context.tvStore.edit { prefs -> prefs[Keys.liveSound] = on }
     }
 
+    /**
+     * Whether the cameras page is one big picture with the rest beside it, or a
+     * wall of all of them. The television's own choice, like the sound and the
+     * camera it opens on.
+     */
+    suspend fun readScreen(): String = context.tvStore.data.first()[Keys.screen] ?: ScreenOne
+
+    suspend fun writeScreen(screen: String) {
+        context.tvStore.edit { prefs -> prefs[Keys.screen] = screen }
+    }
+
     private object Keys {
         val server = stringPreferencesKey("server")
         val alertsSeen = longPreferencesKey("alerts_seen")
         val takeover = booleanPreferencesKey("takeover")
         val defaultCamera = stringPreferencesKey("default_camera")
         val liveSound = booleanPreferencesKey("live_sound")
+        val screen = stringPreferencesKey("screen")
     }
 }
+
+/** The cameras page as it has always been: one big picture, the rest in a strip. */
+const val ScreenOne = "one"
+
+/** Every camera on the screen at once, in as square a wall as the count allows. */
+const val ScreenGrid = "grid"

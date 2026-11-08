@@ -3091,3 +3091,30 @@ Rejected: opening on whatever the television was showing when it was last
 switched off. A storm that left it on the door camera at midnight should not put
 the street on the screen the next evening, and a default is worth only what it
 keeps the same.
+
+## The wall fits the cameras it has
+
+A wall is for glancing at the whole house, so it is arranged from the count rather
+than from a setting: the fewest columns that keep it near square. Three or four
+cameras make a 2x2, six or nine make rows of three, and one camera on its own
+fills the screen. A household does not buy a camera to round the grid off, and a
+choice of "2 across or 3 across" would leave a hole in the wall on the evening it
+is set and again on the evening a camera is added.
+
+Rejected: two, three or four across as a setting. The empty slot is what a person
+notices, and the count is the only thing that decides where it goes.
+
+The wall keeps the strip's feed, 360p at two frames a second, rather than nine of
+the big streams. The box is a small one, and a wall is watched the way a window is.
+
+## Select on the wall is another way into the same camera page
+
+Every camera is on the wall, so a press on a tile has to mean something else. It
+opens that camera in the one-camera layout, the picture with the strip beside it,
+which is where a person goes when the glance turns into watching something. Back
+returns to the wall with the arrows on the camera that was open. The wall and the
+strip are two ways to the same page rather than two pages.
+
+Camera auto switch does nothing while the wall is up: the camera that saw someone
+is already on the screen, and taking it over would shrink two others to make a
+point. It carries on working once a camera has been opened from the wall.

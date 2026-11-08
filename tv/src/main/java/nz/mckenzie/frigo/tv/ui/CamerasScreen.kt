@@ -95,6 +95,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.tv.R
 import nz.mckenzie.frigo.tv.data.Camera
+import nz.mckenzie.frigo.tv.data.ScreenGrid
+import nz.mckenzie.frigo.tv.data.ScreenOne
 import nz.mckenzie.frigo.tv.data.TvRepository
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -141,6 +143,13 @@ fun CamerasScreen(
     val pictureFocus = remember { FocusRequester() }
     val current = cameras.firstOrNull { it.name == chosen } ?: cameras.firstOrNull()
 
+    // A wall is every camera at once, so there is nothing to open on unless a
+    // press asks for one, and that press puts the one-camera layout up instead.
+    val screen by repository.screen.collectAsStateWithLifecycle(initialValue = ScreenOne)
+    var wallOpen by rememberSaveable { mutableStateOf(false) }
+    // The tile the arrows were on, so coming back to the wall finds them there.
+    var wallAt by rememberSaveable { mutableStateOf<String?>(null) }
+
     // The picture that took over, and when it gives the screen back. A press on
     // a camera by hand ends the takeover: the viewer has chosen.
     var takeoverFrom by remember { mutableStateOf<String?>(null) }
@@ -176,8 +185,14 @@ fun CamerasScreen(
 
     // The television is paired once, so the way back to the code has to be a
     // press away rather than a reinstall. Back closes what is on top of the
-    // screen: the Settings card, or the picture filling it.
+    // screen: the Settings card, the camera opened over the wall, or the picture
+    // filling it.
     BackHandler(enabled = settingsOpen) { settingsOpen = false }
+    BackHandler(enabled = screen == ScreenGrid && wallOpen && !fullScreen) {
+        // Back to the wall, with the arrows on the camera that was open.
+        wallAt = current?.name
+        wallOpen = false
+    }
     BackHandler(enabled = fullScreen) { fullScreen = false }
 
     if (current == null) {
@@ -211,6 +226,9 @@ fun CamerasScreen(
     }
 
     val others = cameras.filter { it.name != current.name }
+    // Whether the one-camera layout is the one up: always unless the wall is on
+    // and nothing has been opened from it.
+    val stripShown = screen != ScreenGrid || wallOpen
     var focusAt by remember { mutableIntStateOf(0) }
     // The place a press asked for, kept apart from where the focus happened to
     // be when the picture changed: a tile taken out of the list hands its focus
@@ -218,14 +236,16 @@ fun CamerasScreen(
     // the viewer was.
     var landing by remember { mutableStateOf<Int?>(null) }
     val requesters = remember { mutableStateMapOf<String, FocusRequester>() }
+    val wallRequesters = remember { mutableStateMapOf<String, FocusRequester>() }
     val listState = rememberLazyListState()
 
-    // A tile only exists once the strip has been laid out, and a request made
-    // before then does nothing. Ask again until it lands, so the strip has the
-    // arrows when the screen opens rather than a press later.
-    suspend fun focusCamera(name: String) {
+    // A tile only exists once it has been laid out, and a request made before
+    // then does nothing. Ask again until it lands, so the strip or the wall has
+    // the arrows when it opens rather than a press later.
+    suspend fun focusTile(tiles: Map<String, FocusRequester>, name: String?) {
+        if (name == null) return
         repeat(8) {
-            val requester = requesters[name]
+            val requester = tiles[name]
             if (requester != null && runCatching { requester.requestFocus() }.isSuccess) {
                 return
             }
@@ -233,10 +253,13 @@ fun CamerasScreen(
         }
     }
 
+    suspend fun focusCamera(name: String) = focusTile(requesters, name)
+
     // The strip takes the focus when the screen opens, and keeps its place after
     // one camera replaces another: the press that moved a picture left the
     // arrows where they were. A picture that changed by itself leaves them be.
-    LaunchedEffect(current.name) {
+    LaunchedEffect(current.name, stripShown) {
+        if (!stripShown) return@LaunchedEffect
         if (skipFocus) {
             skipFocus = false
             return@LaunchedEffect
@@ -248,6 +271,16 @@ fun CamerasScreen(
         if (at >= 0) runCatching { listState.animateScrollToItem(at) }
         focusCamera(target.name)
         focusAt = at
+    }
+
+    // Coming back to the wall puts the arrows back on the tile they left, and a
+    // wall that has just appeared on the television opens on the camera Settings
+    // names.
+    LaunchedEffect(stripShown, cameras.size) {
+        if (stripShown) return@LaunchedEffect
+        delay(60)
+        val wanted = wallAt?.takeIf { name -> cameras.any { it.name == name } } ?: current.name
+        focusTile(wallRequesters, wanted)
     }
 
     // A person or a car on a camera this television shows brings that camera up
@@ -268,7 +301,7 @@ fun CamerasScreen(
                     cameras.any { it.name == alert.cameraName } &&
                     seen.add(alert.id)
             }
-            if (hit != null && !fullScreen && !settingsOpen) {
+            if (hit != null && !fullScreen && !settingsOpen && stripShown) {
                 takeOver(hit.cameraName)
             }
         }
@@ -291,8 +324,13 @@ fun CamerasScreen(
     LaunchedEffect(settingsOpen) {
         if (settingsOpen) return@LaunchedEffect
         delay(80)
-        val target = others.getOrNull(focusAt) ?: others.firstOrNull()
-        target?.let { focusCamera(it.name) }
+        if (stripShown) {
+            val target = others.getOrNull(focusAt) ?: others.firstOrNull()
+            target?.let { focusCamera(it.name) }
+        } else {
+            val wanted = wallAt?.takeIf { name -> cameras.any { it.name == name } } ?: current.name
+            focusTile(wallRequesters, wanted)
+        }
     }
 
     // The picture takes the focus when it fills the screen, and gives it back to
@@ -301,95 +339,118 @@ fun CamerasScreen(
         delay(80)
         if (fullScreen) {
             runCatching { pictureFocus.requestFocus() }
-        } else {
+        } else if (stripShown) {
             val target = others.getOrNull(focusAt) ?: others.firstOrNull()
             target?.let { focusCamera(it.name) }
         }
     }
 
     Box(Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    horizontal = if (fullScreen) 0.dp else 24.dp,
-                    vertical = if (fullScreen) 0.dp else 36.dp,
-                ),
-            horizontalArrangement = Arrangement.spacedBy(if (fullScreen) 0.dp else 24.dp),
-        ) {
-            Column(Modifier.weight(1f).fillMaxHeight()) {
-                if (!fullScreen) {
-                    Header(
-                        newAlerts = newAlerts,
-                        soundOn = soundOn,
-                        onToggleSound = { scope.launch { repository.setLiveSound(!soundOn) } },
-                        onAlerts = onOpenAlerts,
-                        onSettings = { settingsOpen = true },
-                        settingsFocus = settingsFocus,
-                    )
-                    Spacer(Modifier.height(16.dp))
-                }
-                BigPicture(
-                    repository = repository,
-                    camera = current,
-                    fullScreen = fullScreen,
-                    muted = !soundOn,
-                    focusRequester = pictureFocus,
-                    onToggle = {
-                        // Filling the screen is a choice; it ends a takeover.
-                        if (!fullScreen) {
-                            takeoverFrom = null
-                            takeoverUntil = 0L
-                        }
-                        fullScreen = !fullScreen
-                    },
-                    modifier = if (fullScreen) {
-                        Modifier.fillMaxSize()
-                    } else {
-                        Modifier.fillMaxWidth().aspectRatio(16f / 9f)
-                    },
-                )
-                if (!fullScreen) {
-                    Spacer(Modifier.height(18.dp))
-                    Text(
-                        text = current.title,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-
-            if (!fullScreen) {
-                LazyColumn(
-                    modifier = Modifier.width(RailWidth).fillMaxHeight(),
-                    state = listState,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    itemsIndexed(others, key = { _, camera -> camera.name }) { index, camera ->
-                        val requester = requesters.getOrPut(camera.name) { FocusRequester() }
-                        CameraTile(
-                            repository = repository,
-                            camera = camera,
-                            modifier = Modifier
-                                .focusRequester(requester)
-                                .focusProperties {
-                                    // Left is the picture, from anywhere in the
-                                    // strip. Up from the first camera is the
-                                    // button that leads back to the pairing code.
-                                    left = pictureFocus
-                                    if (index == 0) up = settingsFocus
-                                },
-                            onFocused = { focusAt = index },
-                            onClick = {
-                                // A press picks for the room, so the takeover ends here.
+        if (!stripShown) {
+            CameraWall(
+                repository = repository,
+                cameras = cameras,
+                newAlerts = newAlerts,
+                soundOn = soundOn,
+                onToggleSound = { scope.launch { repository.setLiveSound(!soundOn) } },
+                onAlerts = onOpenAlerts,
+                onSettings = { settingsOpen = true },
+                settingsFocus = settingsFocus,
+                requesters = wallRequesters,
+                onFocused = { wallAt = it },
+                onOpen = { camera ->
+                    // The press asks for one camera, which is the layout with the
+                    // picture and the strip. Back brings the wall back.
+                    chosen = camera.name
+                    wallAt = camera.name
+                    landing = 0
+                    wallOpen = true
+                },
+            )
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        horizontal = if (fullScreen) 0.dp else 24.dp,
+                        vertical = if (fullScreen) 0.dp else 36.dp,
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(if (fullScreen) 0.dp else 24.dp),
+            ) {
+                Column(Modifier.weight(1f).fillMaxHeight()) {
+                    if (!fullScreen) {
+                        Header(
+                            newAlerts = newAlerts,
+                            soundOn = soundOn,
+                            onToggleSound = { scope.launch { repository.setLiveSound(!soundOn) } },
+                            onAlerts = onOpenAlerts,
+                            onSettings = { settingsOpen = true },
+                            settingsFocus = settingsFocus,
+                        )
+                        Spacer(Modifier.height(16.dp))
+                    }
+                    BigPicture(
+                        repository = repository,
+                        camera = current,
+                        fullScreen = fullScreen,
+                        muted = !soundOn,
+                        focusRequester = pictureFocus,
+                        onToggle = {
+                            // Filling the screen is a choice; it ends a takeover.
+                            if (!fullScreen) {
                                 takeoverFrom = null
                                 takeoverUntil = 0L
-                                landing = index
-                                chosen = camera.name
-                            },
+                            }
+                            fullScreen = !fullScreen
+                        },
+                        modifier = if (fullScreen) {
+                            Modifier.fillMaxSize()
+                        } else {
+                            Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+                        },
+                    )
+                    if (!fullScreen) {
+                        Spacer(Modifier.height(18.dp))
+                        Text(
+                            text = current.title,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
+                    }
+                }
+
+                if (!fullScreen) {
+                    LazyColumn(
+                        modifier = Modifier.width(RailWidth).fillMaxHeight(),
+                        state = listState,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        itemsIndexed(others, key = { _, camera -> camera.name }) { index, camera ->
+                            val requester = requesters.getOrPut(camera.name) { FocusRequester() }
+                            CameraTile(
+                                repository = repository,
+                                camera = camera,
+                                modifier = Modifier
+                                    .focusRequester(requester)
+                                    .focusProperties {
+                                        // Left is the picture, from anywhere in the
+                                        // strip. Up from the first camera is the
+                                        // button that leads back to the pairing code.
+                                        left = pictureFocus
+                                        if (index == 0) up = settingsFocus
+                                    },
+                                onFocused = { focusAt = index },
+                                onClick = {
+                                    // A press picks for the room, so the takeover ends here.
+                                    takeoverFrom = null
+                                    takeoverUntil = 0L
+                                    landing = index
+                                    chosen = camera.name
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -411,34 +472,36 @@ private fun SettingsPanel(
     val session by repository.session.collectAsStateWithLifecycle()
     val takeoverOn by repository.takeover.collectAsStateWithLifecycle(initialValue = true)
     val defaultCamera by repository.defaultCamera.collectAsStateWithLifecycle()
+    val screen by repository.screen.collectAsStateWithLifecycle(initialValue = ScreenOne)
     val scope = rememberCoroutineScope()
 
     // The camera the big picture opens on: the one that was picked, or the first
     // in Frigate's list on a television that has never picked one.
     val opening = cameras.firstOrNull { it.name == defaultCamera } ?: cameras.firstOrNull()
 
-    var picking by remember { mutableStateOf(false) }
+    // Which short list is up, and nothing when the rows are.
+    var picking by remember { mutableStateOf<CardPicker?>(null) }
     // The card is the whole screen while it is up, so the arrows move between
-    // its rows and nowhere else. They come back round, which on four rows is
+    // its rows and nowhere else. They come back round, which on five rows is
     // kinder than stopping at an edge.
-    var at by remember { mutableIntStateOf(3) }
-    val rows = remember { List(4) { FocusRequester() } }
+    var at by remember { mutableIntStateOf(CardRows - 1) }
+    val rows = remember { List(CardRows) { FocusRequester() } }
     val firstChoice = remember { FocusRequester() }
 
-    // The list goes when a camera is picked, so the arrows come back to the row
+    // The list goes when a choice is made, so the arrows come back to the row
     // that opened it rather than to nothing.
-    fun closePicker() {
-        picking = false
-        at = 0
+    fun closePicker(returnTo: Int) {
+        picking = null
+        at = returnTo
         scope.launch {
             delay(80)
-            runCatching { rows[0].requestFocus() }
+            runCatching { rows[returnTo].requestFocus() }
         }
     }
 
     LaunchedEffect(Unit) {
         delay(80)
-        runCatching { rows[3].requestFocus() }
+        runCatching { rows[CardRows - 1].requestFocus() }
     }
 
     Box(
@@ -446,8 +509,10 @@ private fun SettingsPanel(
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.62f))
             .onPreviewKeyEvent { event ->
-                // While a camera is being picked, the picker's own list has the arrows.
-                if (picking || event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                // While a short list is up, its own rows have the arrows.
+                if (picking != null || event.type != KeyEventType.KeyDown) {
+                    return@onPreviewKeyEvent false
+                }
                 when (event.key) {
                     Key.DirectionLeft,
                     Key.DirectionUp,
@@ -478,71 +543,148 @@ private fun SettingsPanel(
                 modifier = Modifier.width(640.dp).padding(28.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                if (picking) {
-                    DefaultCameraPicker(
+                when (picking) {
+                    CardPicker.DefaultCamera -> DefaultCameraPicker(
                         cameras = cameras,
                         chosen = opening?.name,
                         firstFocus = firstChoice,
-                        onCancel = { closePicker() },
+                        onCancel = { closePicker(DefaultCameraAt) },
                         onPick = { name ->
                             scope.launch { repository.setDefaultCamera(name) }
-                            closePicker()
+                            closePicker(DefaultCameraAt)
                         },
                     )
-                } else {
-                    Text(
-                        text = stringResource(R.string.tv_settings).uppercase(),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.tv_signed_in_note,
-                            session?.baseUrl?.shortName().orEmpty(),
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                    SettingRow(
-                        title = stringResource(R.string.tv_default_camera),
-                        supporting = stringResource(R.string.tv_default_camera_note),
-                        // The row says the camera that will open, which on a
-                        // television that has never picked one is the first in
-                        // Frigate's list.
-                        value = opening?.title.orEmpty(),
-                        chevron = true,
-                        modifier = Modifier.focusRequester(rows[0]),
-                        onFocused = { at = 0 },
-                        onClick = { picking = true },
-                    )
-                    SettingRow(
-                        title = stringResource(R.string.tv_takeover),
-                        supporting = stringResource(R.string.tv_takeover_note),
-                        modifier = Modifier.focusRequester(rows[1]),
-                        onFocused = { at = 1 },
-                        onClick = { scope.launch { repository.setTakeover(!takeoverOn) } },
-                        trailing = { Switch(checked = takeoverOn, onCheckedChange = null) },
-                    )
-                    SettingRow(
-                        title = stringResource(R.string.tv_pair_again),
-                        supporting = stringResource(R.string.tv_pair_again_note),
-                        modifier = Modifier.focusRequester(rows[2]),
-                        onFocused = { at = 2 },
-                        onClick = {
-                            onClose()
-                            scope.launch { repository.forget() }
+
+                    CardPicker.Screen -> ScreenPicker(
+                        screen = screen,
+                        firstFocus = firstChoice,
+                        onCancel = { closePicker(ScreenAt) },
+                        onPick = { value ->
+                            scope.launch { repository.setScreen(value) }
+                            closePicker(ScreenAt)
                         },
                     )
-                    SettingRow(
-                        title = stringResource(R.string.tv_close),
-                        supporting = null,
-                        modifier = Modifier.focusRequester(rows[3]),
-                        onFocused = { at = 3 },
-                        onClick = onClose,
-                    )
+
+                    null -> {
+                        Text(
+                            text = stringResource(R.string.tv_settings).uppercase(),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.tv_signed_in_note,
+                                session?.baseUrl?.shortName().orEmpty(),
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                        )
+                        SettingRow(
+                            title = stringResource(R.string.tv_default_camera),
+                            supporting = stringResource(R.string.tv_default_camera_note),
+                            // The row says the camera that will open, which on a
+                            // television that has never picked one is the first in
+                            // Frigate's list.
+                            value = opening?.title.orEmpty(),
+                            chevron = true,
+                            modifier = Modifier.focusRequester(rows[DefaultCameraAt]),
+                            onFocused = { at = DefaultCameraAt },
+                            onClick = { picking = CardPicker.DefaultCamera },
+                        )
+                        SettingRow(
+                            title = stringResource(R.string.tv_screen),
+                            supporting = stringResource(R.string.tv_screen_note),
+                            value = stringResource(
+                                if (screen == ScreenGrid) R.string.tv_screen_grid
+                                else R.string.tv_screen_one,
+                            ),
+                            chevron = true,
+                            modifier = Modifier.focusRequester(rows[ScreenAt]),
+                            onFocused = { at = ScreenAt },
+                            onClick = { picking = CardPicker.Screen },
+                        )
+                        SettingRow(
+                            title = stringResource(R.string.tv_takeover),
+                            supporting = stringResource(R.string.tv_takeover_note),
+                            modifier = Modifier.focusRequester(rows[TakeoverAt]),
+                            onFocused = { at = TakeoverAt },
+                            onClick = { scope.launch { repository.setTakeover(!takeoverOn) } },
+                            trailing = { Switch(checked = takeoverOn, onCheckedChange = null) },
+                        )
+                        SettingRow(
+                            title = stringResource(R.string.tv_pair_again),
+                            supporting = stringResource(R.string.tv_pair_again_note),
+                            modifier = Modifier.focusRequester(rows[PairAt]),
+                            onFocused = { at = PairAt },
+                            onClick = {
+                                onClose()
+                                scope.launch { repository.forget() }
+                            },
+                        )
+                        SettingRow(
+                            title = stringResource(R.string.tv_close),
+                            supporting = null,
+                            modifier = Modifier.focusRequester(rows[CloseAt]),
+                            onFocused = { at = CloseAt },
+                            onClick = onClose,
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+/** The row order on the Settings card, and where the arrows start. */
+private const val DefaultCameraAt = 0
+private const val ScreenAt = 1
+private const val TakeoverAt = 2
+private const val PairAt = 3
+private const val CloseAt = 4
+private const val CardRows = 5
+
+/** A short list that takes the card's place while it is up. */
+private enum class CardPicker { DefaultCamera, Screen }
+
+/** One camera at a time with the rest beside it, or all of them on a wall. */
+@Composable
+private fun ScreenPicker(
+    screen: String,
+    firstFocus: FocusRequester,
+    onCancel: () -> Unit,
+    onPick: (String) -> Unit,
+) {
+    BackHandler(enabled = true, onBack = onCancel)
+
+    LaunchedEffect(Unit) {
+        delay(80)
+        runCatching { firstFocus.requestFocus() }
+    }
+
+    Text(
+        text = stringResource(R.string.tv_screen).uppercase(),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Text(
+        text = stringResource(R.string.tv_screen_note),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(
+            ScreenOne to R.string.tv_screen_one,
+            ScreenGrid to R.string.tv_screen_grid,
+        ).forEachIndexed { index, (value, label) ->
+            PickerRow(
+                label = stringResource(label),
+                ticked = screen == value,
+                modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
+                onClick = { onPick(value) },
+            )
         }
     }
 }
@@ -1266,26 +1408,111 @@ private fun buildPlayer(context: android.content.Context, url: String, token: St
 }
 
 /**
+ * Every camera at once, in as square a wall as the count allows: four cameras are
+ * a 2x2, six are two rows of three. The header stays where it always is, and a
+ * press on a tile opens that camera with the strip beside it. Back brings the
+ * wall back.
+ */
+@Composable
+private fun CameraWall(
+    repository: TvRepository,
+    cameras: List<Camera>,
+    newAlerts: Boolean,
+    soundOn: Boolean,
+    onToggleSound: () -> Unit,
+    onAlerts: () -> Unit,
+    onSettings: () -> Unit,
+    settingsFocus: FocusRequester,
+    requesters: MutableMap<String, FocusRequester>,
+    onFocused: (String) -> Unit,
+    onOpen: (Camera) -> Unit,
+) {
+    val columns = wallColumns(cameras.size)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 36.dp),
+    ) {
+        Header(
+            newAlerts = newAlerts,
+            soundOn = soundOn,
+            onToggleSound = onToggleSound,
+            onAlerts = onAlerts,
+            onSettings = onSettings,
+            settingsFocus = settingsFocus,
+        )
+        Spacer(Modifier.height(16.dp))
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            cameras.chunked(columns).forEachIndexed { rowAt, row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    row.forEach { camera ->
+                        val requester = requesters.getOrPut(camera.name) { FocusRequester() }
+                        CameraTile(
+                            repository = repository,
+                            camera = camera,
+                            wall = true,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .focusRequester(requester)
+                                .focusProperties {
+                                    // Up from the top row is the header, the way it
+                                    // is from the first camera in the strip.
+                                    if (rowAt == 0) up = settingsFocus
+                                },
+                            onFocused = { onFocused(camera.name) },
+                            onClick = { onOpen(camera) },
+                        )
+                    }
+                    // A short last row keeps its tiles the width of the ones above.
+                    repeat(columns - row.size) {
+                        Spacer(Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The fewest columns that keep the wall near square, which is what a wall is for.
+ * A house of three or four cameras is a 2x2, of six is two rows of three, and one
+ * camera on its own fills the screen.
+ */
+private fun wallColumns(count: Int): Int {
+    var columns = 1
+    while (columns * columns < count) columns++
+    return columns
+}
+
+/**
  * One camera in the strip: a live 360p feed, its name over the picture, and a
- * ring while the arrows are on it.
+ * ring while the arrows are on it. On the wall the same tile fills its cell
+ * instead of keeping the shape of the picture.
  */
 @Composable
 private fun CameraTile(
     repository: TvRepository,
     camera: Camera,
     modifier: Modifier = Modifier,
+    wall: Boolean = false,
     onFocused: () -> Unit,
     onClick: () -> Unit,
 ) {
     var focused by remember { mutableStateOf(false) }
     var online by remember { mutableStateOf(true) }
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(if (wall) 18.dp else 14.dp)
     val ink = MaterialTheme.colorScheme
 
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f)
+            .then(if (wall) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(16f / 9f))
             .clip(shape)
             .background(ink.surfaceContainer)
             .border(
@@ -1322,12 +1549,13 @@ private fun CameraTile(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 9.dp),
+                .padding(horizontal = if (wall) 18.dp else 12.dp, vertical = if (wall) 14.dp else 9.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = camera.title,
-                style = MaterialTheme.typography.titleMedium,
+                style = if (wall) MaterialTheme.typography.titleLarge
+                else MaterialTheme.typography.titleMedium,
                 color = Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
