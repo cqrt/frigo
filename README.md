@@ -145,9 +145,9 @@ session runs out. It signs in again with the password you gave it, and the phone
 is not involved.
 
 The big picture is the camera's own video, the same stream the phone plays from
-live view. The strip is a smaller feed, cheap enough for several at once. The
-television says **Live** over the big picture while it is arriving, and **Waiting
-for a picture** until the first frame does.
+live view, with its sound. The strip is a smaller feed, cheap enough for several
+at once. The television says **Live** over the big picture while it is arriving,
+and **Waiting for a picture** until the first frame does.
 
 Settings in the corner, or one press up from the first camera, says which server
 the television is on. **Pair again** puts the code back on screen, so another

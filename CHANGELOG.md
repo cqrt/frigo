@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.12.1
+
+- The live picture on the television comes with its sound on, and the remote's volume decides how loud.
+
 ## 0.12.0
 
 - Alerts on the television are a page of their own: the list down the left, the chosen alert's picture and Frigate's description on the right.

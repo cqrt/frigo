@@ -928,8 +928,18 @@ private fun buildPlayer(context: android.content.Context, url: String, token: St
         )
         .build()
         .apply {
-            // A television is watched, not listened to. The sound is on the phone.
-            volume = 0f
+            // The television is the best speaker in the house. The stream
+            // carries the camera's sound, and the remote's volume is the one
+            // that decides how loud it is.
+            setAudioAttributes(
+                androidx.media3.common.AudioAttributes.Builder()
+                    .setUsage(androidx.media3.common.C.USAGE_MEDIA)
+                    .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE)
+                    .build(),
+                true,
+            )
+            setHandleAudioBecomingNoisy(true)
+            volume = 1f
             setMediaSource(media)
             prepare()
             playWhenReady = true
