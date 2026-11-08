@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.11.4
+
+- On the television, the arrows stay inside the Settings card while it is up, instead of wandering into the cameras behind it.
+
 ## 0.11.3
 
 - On the television, Select on the big picture fills the screen with it. Select or Back brings the strip and the name back.

@@ -2987,3 +2987,16 @@ The picture is focusable, which is also how a mouse or an air remote works it.
 Left from any camera in the strip finds it, and Select fills the screen; Select
 again, or Back, gives the strip back. Up from the first camera in the strip is
 Settings, which is the other thing the arrows have to reach.
+
+## The Settings card keeps the arrows
+
+While the card is up it is the only thing on the screen worth pressing, so an
+arrow moves between its two answers and goes nowhere else. Any of the four
+moves to the other answer, because there are only two; the card consumes the
+press rather than letting focus walk out into cameras that are behind a scrim
+and cannot be used. Back closes it.
+
+Rejected: leaving the background focusable and letting the arrows find their
+way back into the card. A press that lands on the strip behind the card looks
+like the card ignoring you, and on a television there is no pointer to tell you
+where the focus went.

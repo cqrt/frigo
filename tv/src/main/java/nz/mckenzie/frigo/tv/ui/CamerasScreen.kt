@@ -59,6 +59,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -283,6 +288,11 @@ private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
     val session by repository.session.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val closeFocus = remember { FocusRequester() }
+    val pairFocus = remember { FocusRequester() }
+    // The card is the whole screen while it is up, so the arrows move between
+    // its two answers and nowhere else. Without this they walk out of the card
+    // and into the cameras behind it, which cannot be pressed anyway.
+    var onPair by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         delay(80)
@@ -292,7 +302,25 @@ private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.62f)),
+            .background(Color.Black.copy(alpha = 0.62f))
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when (event.key) {
+                    Key.DirectionLeft,
+                    Key.DirectionRight,
+                    Key.DirectionUp,
+                    Key.DirectionDown,
+                    -> {
+                        onPair = !onPair
+                        runCatching {
+                            (if (onPair) pairFocus else closeFocus).requestFocus()
+                        }
+                        true
+                    }
+
+                    else -> false
+                }
+            },
         contentAlignment = Alignment.Center,
     ) {
         Surface(
@@ -325,6 +353,8 @@ private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
                     PanelAction(
                         label = stringResource(R.string.tv_pair_again),
                         filled = true,
+                        modifier = Modifier.focusRequester(pairFocus),
+                        onFocused = { onPair = true },
                         onClick = {
                             onClose()
                             scope.launch { repository.forget() }
@@ -334,6 +364,7 @@ private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
                         label = stringResource(R.string.tv_close),
                         filled = false,
                         modifier = Modifier.focusRequester(closeFocus),
+                        onFocused = { onPair = false },
                         onClick = onClose,
                     )
                 }
@@ -348,6 +379,7 @@ private fun PanelAction(
     label: String,
     filled: Boolean,
     modifier: Modifier = Modifier,
+    onFocused: () -> Unit = {},
     onClick: () -> Unit,
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -366,7 +398,10 @@ private fun PanelAction(
                 },
                 shape = shape,
             )
-            .onFocusChanged { focused = it.isFocused }
+            .onFocusChanged {
+                focused = it.isFocused
+                if (it.isFocused) onFocused()
+            }
             .clickable { onClick() }
             .padding(horizontal = 22.dp, vertical = 12.dp),
     ) {
