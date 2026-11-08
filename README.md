@@ -150,7 +150,7 @@ at once. The television says **Live** over the big picture while it is arriving,
 and **Waiting for a picture** until the first frame does.
 
 Settings in the corner, one press up from the first camera, is a list: **Default
-camera**, the camera the television opens on when it starts; **Bring a camera up**;
+camera**, the camera the television opens on when it starts; **Camera auto switch**;
 and **Pair again** for another server or account. Back closes it.
 
 Press left from a camera in the strip and Select, and that camera fills the
@@ -158,8 +158,8 @@ screen. Its name and **Live** stay on the picture; Select or Back brings the str
 back.
 
 A camera that sees a person or a car takes the big picture for half a minute, and
-the screen then goes back to the camera it was on. It's a switch under Settings,
-on unless you turn it off, and picking a camera by hand ends it early.
+the screen then goes back to the camera it was on. **Camera auto switch** under
+Settings is where it is turned off, and picking a camera by hand ends it early.
 
 **Sound** in the corner mutes the live picture, and past that it says **Muted**.
 It remembers which one you left it on.

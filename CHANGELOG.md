@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.14.1
+
+- On the television's Settings card, the switch is called Camera auto switch and its sentence says what it does. The signed-in line no longer repeats Pair again.
+
 ## 0.14.0
 
 - The live picture on the television has a mute button: Sound, then Muted, and it remembers which one you left it on.

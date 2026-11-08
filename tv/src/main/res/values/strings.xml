@@ -21,13 +21,13 @@
     <string name="tv_connecting">Waiting for a picture</string>
 
     <string name="tv_settings">Settings</string>
-    <string name="tv_signed_in_note">This television is signed in to %1$s. Pair it again to use another server, or another account.</string>
+    <string name="tv_signed_in_note">This app is signed in to %1$s.</string>
     <string name="tv_pair_again">Pair again</string>
     <string name="tv_close">Close</string>
-    <string name="tv_takeover">Bring a camera up</string>
-    <string name="tv_takeover_note">A person or a car brings that camera to the big picture for half a minute.</string>
+    <string name="tv_takeover">Camera auto switch</string>
+    <string name="tv_takeover_note">Alerts on followed objects will switch to main view briefly.</string>
     <string name="tv_default_camera">Default camera</string>
-    <string name="tv_default_camera_note">Opens on this camera when the television starts.</string>
+    <string name="tv_default_camera_note">Opens on this camera when the app starts.</string>
     <string name="tv_default_first">The first camera</string>
     <string name="tv_pair_again_note">Use another server, or another account.</string>
     <string name="tv_sound">Sound</string>
