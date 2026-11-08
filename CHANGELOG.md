@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.11.2
+
+- On the television, the margins either side are smaller, and the line under the camera name is gone, so the picture takes more of the screen.
+
 ## 0.11.1
 
 - On the television, the big picture comes up as soon as its stream does, rather than sitting on a still.

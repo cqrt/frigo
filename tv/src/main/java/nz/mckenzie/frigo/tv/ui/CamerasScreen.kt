@@ -126,7 +126,7 @@ fun CamerasScreen(repository: TvRepository, cameras: List<Camera>) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 48.dp, vertical = 36.dp),
+                .padding(horizontal = 24.dp, vertical = 36.dp),
         ) {
             Header(onSettings = { settingsOpen = true }, settingsFocus = settingsFocus)
             Spacer(Modifier.weight(1f))
@@ -184,7 +184,7 @@ fun CamerasScreen(repository: TvRepository, cameras: List<Camera>) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 48.dp, vertical = 36.dp),
+                .padding(horizontal = 24.dp, vertical = 36.dp),
             horizontalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -198,12 +198,6 @@ fun CamerasScreen(repository: TvRepository, cameras: List<Camera>) {
                     color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.weight(1f))
-                Text(
-                    text = stringResource(R.string.tv_choose_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 

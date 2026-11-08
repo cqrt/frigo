@@ -12,7 +12,6 @@
 
     <string name="tv_live">Live</string>
     <string name="tv_offline">Offline</string>
-    <string name="tv_choose_hint">Arrows choose a camera. Select brings it up.</string>
     <string name="tv_loading">Signing in</string>
     <string name="tv_no_cameras">This account has no cameras.</string>
     <string name="tv_refused_title">Frigate refused the sign-in</string>
