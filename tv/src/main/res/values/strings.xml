@@ -24,4 +24,13 @@
     <string name="tv_signed_in_note">This television is signed in to %1$s. Pair it again to use another server, or another account.</string>
     <string name="tv_pair_again">Pair again</string>
     <string name="tv_close">Close</string>
+
+    <string name="alerts_title">Alerts</string>
+    <string name="alerts_reading">Reading the alerts</string>
+    <string name="alerts_empty">Nothing has been flagged in the last day.</string>
+    <string name="alerts_failed">The server did not answer.</string>
+    <string name="alerts_try_again">Try again</string>
+    <string name="alerts_seen">Something was seen</string>
+    <string name="clip_fetching">Fetching the clip</string>
+    <string name="clip_failed">The clip is not there. It may have aged out of the recordings.</string>
 </resources>

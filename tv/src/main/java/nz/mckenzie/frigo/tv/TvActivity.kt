@@ -36,6 +36,7 @@ class TvActivity : ComponentActivity() {
         val repository = TvRepository(
             prefs = TvPrefs(applicationContext),
             api = TvApi(),
+            cacheDir = cacheDir,
         )
 
         setContent {

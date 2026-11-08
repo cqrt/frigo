@@ -13,6 +13,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 
 /**
@@ -27,6 +29,8 @@ import java.io.IOException
 class TvRepository(
     private val prefs: TvPrefs,
     private val api: TvApi,
+    /** Where a clip is kept while it is watched, so a second look costs nothing. */
+    private val cacheDir: File,
 ) {
 
     /** Where the server is, and the token to send. Changes when the token is renewed. */
@@ -186,6 +190,118 @@ class TvRepository(
             .getOrNull()
     }
 
+    // --- alerts -----------------------------------------------------------
+
+    private val _unseenAlerts = MutableStateFlow(false)
+
+    /** Whether something has been flagged since the alerts page was last opened. */
+    val unseenAlerts: StateFlow<Boolean> = _unseenAlerts.asStateFlow()
+
+    /**
+     * The alerts of the last two days that nobody has watched, newest first,
+     * with each camera's name as this television shows it.
+     */
+    suspend fun alerts(): List<Alert> = withContext(Dispatchers.IO) {
+        val current = sessionOrRenew() ?: throw TvException(0, "The TV is not signed in.")
+        val since = System.currentTimeMillis() / 1_000 - TWO_DAYS
+        val titles = camerasByName()
+        api.alerts(current.baseUrl, current.token, since)
+            .map { alert -> alert.copy(camera = titles[alert.camera] ?: alert.camera) }
+    }
+
+    /**
+     * Asks whether anything has come in since the page was last opened. A
+     * television that has never opened it counts the last day, so the dot means
+     * "there are alerts" the first time rather than nothing at all.
+     */
+    suspend fun refreshUnseenAlerts() = withContext(Dispatchers.IO) {
+        val current = sessionOrRenew() ?: return@withContext
+        val now = System.currentTimeMillis() / 1_000
+        val since = prefs.readAlertsSeen() ?: (now - TWO_DAYS)
+        val newest = runCatching {
+            api.alerts(current.baseUrl, current.token, since, limit = 1)
+        }.getOrNull()
+        _unseenAlerts.value = !newest.isNullOrEmpty()
+    }
+
+    /** The page has been opened, so the dot beside it has nothing left to say. */
+    suspend fun markAlertsSeen() = withContext(Dispatchers.IO) {
+        prefs.writeAlertsSeen(System.currentTimeMillis() / 1_000)
+        _unseenAlerts.value = false
+    }
+
+    /** Says an alert has been watched, so it leaves the list here and on the phone. */
+    suspend fun markAlertWatched(alert: Alert) = withContext(Dispatchers.IO) {
+        val current = sessionOrRenew() ?: return@withContext
+        runCatching { api.markReviewed(current.baseUrl, current.token, alert.id) }
+    }
+
+    /** An alert's picture: the first thing it saw. */
+    suspend fun alertThumbnail(alert: Alert): Bitmap? = withContext(Dispatchers.IO) {
+        val event = alert.eventId ?: return@withContext null
+        val current = sessionOrRenew() ?: return@withContext null
+        runCatching {
+            MjpegReader.decode(api.eventThumbnail(current.baseUrl, current.token, event))
+        }.getOrNull()
+    }
+
+    /**
+     * Fetches an alert's clip and keeps it on the television, so it plays from
+     * the box rather than stalling on a cut Frigate is still making. [onProgress]
+     * is a whole percentage, or null while the size is unknown.
+     */
+    suspend fun clipFile(alert: Alert, onProgress: (Int?) -> Unit = {}): File? =
+        withContext(Dispatchers.IO) {
+            val current = sessionOrRenew() ?: return@withContext null
+            val dir = File(cacheDir, "alerts").apply { mkdirs() }
+            val file = File(dir, alert.id.replace('/', '_') + ".mp4")
+            if (file.isFile && file.length() > 0) return@withContext file
+
+            // A clip is worth keeping while it is new; an old one is only disk.
+            val stale = System.currentTimeMillis() - DAY_MILLIS
+            dir.listFiles()?.filter { it.lastModified() < stale }?.forEach { it.delete() }
+
+            val part = File(dir, file.name + ".part")
+            part.delete()
+            try {
+                api.open(current.baseUrl, current.token, api.clipPath(alert.id)).use { response ->
+                    val total = response.body?.contentLength() ?: -1L
+                    response.body?.byteStream()?.use { input ->
+                        FileOutputStream(part).use { out ->
+                            val buffer = ByteArray(64 * 1024)
+                            var copied = 0L
+                            while (true) {
+                                val read = input.read(buffer)
+                                if (read < 0) break
+                                out.write(buffer, 0, read)
+                                copied += read
+                                if (total > 0) onProgress((copied * 100 / total).toInt())
+                            }
+                        }
+                    }
+                }
+                if (part.length() > 0 && part.renameTo(file)) {
+                    onProgress(100)
+                    file
+                } else {
+                    part.delete()
+                    null
+                }
+            } catch (failed: Throwable) {
+                part.delete()
+                null
+            }
+        }
+
+    private suspend fun camerasByName(): Map<String, String> {
+        val gate = _gate.value
+        return if (gate is Gate.Ready) {
+            gate.cameras.associate { it.name to it.title }
+        } else {
+            emptyMap()
+        }
+    }
+
     private suspend fun signIn(server: TvPrefs.Server) {
         val kept = server.token
         if (kept != null) {
@@ -227,5 +343,10 @@ class TvRepository(
     private fun Throwable.isAuthFailure(): Boolean {
         val status = (this as? TvException)?.status ?: return false
         return status == 401 || status == 403
+    }
+
+    private companion object {
+        const val TWO_DAYS = 2L * 24 * 60 * 60
+        const val DAY_MILLIS = 24L * 60 * 60 * 1000
     }
 }

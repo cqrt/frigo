@@ -114,7 +114,12 @@ private val RailWidth = 260.dp
  * picture goes back into the strip in the place its name gives it, not at the end.
  */
 @Composable
-fun CamerasScreen(repository: TvRepository, cameras: List<Camera>) {
+fun CamerasScreen(
+    repository: TvRepository,
+    cameras: List<Camera>,
+    newAlerts: Boolean = false,
+    onOpenAlerts: () -> Unit = {},
+) {
     var chosen by rememberSaveable { mutableStateOf<String?>(null) }
     var settingsOpen by remember { mutableStateOf(false) }
     var fullScreen by rememberSaveable { mutableStateOf(false) }
@@ -140,7 +145,12 @@ fun CamerasScreen(repository: TvRepository, cameras: List<Camera>) {
                 .fillMaxSize()
                 .padding(horizontal = 24.dp, vertical = 36.dp),
         ) {
-            Header(onSettings = { settingsOpen = true }, settingsFocus = settingsFocus)
+            Header(
+                newAlerts = newAlerts,
+                onAlerts = onOpenAlerts,
+                onSettings = { settingsOpen = true },
+                settingsFocus = settingsFocus,
+            )
             Spacer(Modifier.weight(1f))
             Text(
                 text = stringResource(R.string.tv_no_cameras),
@@ -218,7 +228,12 @@ fun CamerasScreen(repository: TvRepository, cameras: List<Camera>) {
         ) {
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 if (!fullScreen) {
-                    Header(onSettings = { settingsOpen = true }, settingsFocus = settingsFocus)
+                    Header(
+                        newAlerts = newAlerts,
+                        onAlerts = onOpenAlerts,
+                        onSettings = { settingsOpen = true },
+                        settingsFocus = settingsFocus,
+                    )
                     Spacer(Modifier.height(16.dp))
                 }
                 BigPicture(
@@ -418,9 +433,14 @@ private fun String.shortName(): String =
     removePrefix("https://").removePrefix("http://").trimEnd('/')
 
 
-/** Frigo on the left, the clock and Settings on the right, over the picture. */
+/** Frigo on the left, the clock, Alerts and Settings on the right, over the picture. */
 @Composable
-private fun Header(onSettings: () -> Unit, settingsFocus: FocusRequester) {
+private fun Header(
+    newAlerts: Boolean,
+    onAlerts: () -> Unit,
+    onSettings: () -> Unit,
+    settingsFocus: FocusRequester,
+) {
     var now by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) {
         while (isActive) {
@@ -444,7 +464,45 @@ private fun Header(onSettings: () -> Unit, settingsFocus: FocusRequester) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.width(16.dp))
+        AlertsPill(newAlerts = newAlerts, onClick = onAlerts)
+        Spacer(Modifier.width(10.dp))
         SettingsPill(onClick = onSettings, focusRequester = settingsFocus)
+    }
+}
+
+/**
+ * The way into the alerts, and a dot when something has come in since the page
+ * was last opened. It says nothing about how many: a television in a corner is
+ * not a place for a number that keeps changing.
+ */
+@Composable
+private fun AlertsPill(newAlerts: Boolean, onClick: () -> Unit) {
+    var focused by remember { mutableStateOf(false) }
+    val ink = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(999.dp)
+    Row(
+        modifier = Modifier
+            .clip(shape)
+            .background(if (focused) ink.primary else ink.surfaceContainerHighest)
+            .border(2.dp, if (focused) ink.primary else Color.Transparent, shape)
+            .onFocusChanged { focused = it.isFocused }
+            .clickable { onClick() }
+            .padding(horizontal = 18.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.alerts_title),
+            style = MaterialTheme.typography.labelLarge,
+            color = if (focused) ink.onPrimary else ink.onSurfaceVariant,
+        )
+        if (newAlerts) {
+            Spacer(Modifier.width(8.dp))
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .background(Color(0xFFFF5A5A), CircleShape),
+            )
+        }
     }
 }
 

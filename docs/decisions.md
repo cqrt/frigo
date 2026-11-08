@@ -3000,3 +3000,32 @@ Rejected: leaving the background focusable and letting the arrows find their
 way back into the card. A press that lands on the strip behind the card looks
 like the card ignoring you, and on a television there is no pointer to tell you
 where the focus went.
+
+## Alerts are a page, not a strip
+
+The cameras screen is about now: one picture, and the rest of the cameras one
+press away. An alerts strip along the side would take room from that picture for
+something you look at occasionally, so alerts got a page of their own, reached
+from the button beside Settings, with a dot when something has come in since the
+page was last opened.
+
+The page is the phone's Review cut down to the half a television wants: alerts
+only, no day picker, no filters, no search. A remote is a poor keyboard, so the
+only way in is the list. The list down the left is what has been flagged and not
+watched; the right is the chosen one, large, with Frigate's own words under it.
+Opening a clip marks it watched on the server, so the list is what is left to
+see rather than a log, and the phone's list agrees.
+
+Rejected: a filter row for cameras or days. It would be a row of chips to get
+lost in with a remote, and the list is short by design: the last day, unwatched.
+
+## The television fetches a clip before it plays
+
+Frigate cuts a clip out of the recordings as it sends it. A player given that
+directly can stall long enough to give up, which is why the phone fetches clips
+whole first; the television does the same. The clip is kept in the television's
+cache for a day, so a second look costs nothing, and the wait is drawn over the
+alert's own picture rather than over black.
+
+The clip counts as watched when it opens, not when it ends: the list is what is
+left to see, and going back should find it shorter.

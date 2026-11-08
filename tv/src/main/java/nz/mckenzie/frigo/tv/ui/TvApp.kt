@@ -48,6 +48,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nz.mckenzie.frigo.tv.BuildConfig
 import nz.mckenzie.frigo.tv.R
+import nz.mckenzie.frigo.tv.data.Alert
+import nz.mckenzie.frigo.tv.data.Camera
 import nz.mckenzie.frigo.tv.data.TvRepository
 import nz.mckenzie.frigo.tv.pair.PairingCode
 import nz.mckenzie.frigo.tv.pair.PairingServer
@@ -68,12 +70,15 @@ fun TvApp(repository: TvRepository) {
     LaunchedEffect(Unit) { repository.start() }
 
     // A camera added on the server reaches the television without it being
-    // restarted. A minute is often enough for something you set up once.
+    // restarted, and so does the dot that says something has been flagged. A
+    // minute is often enough for something you set up once.
     LaunchedEffect(gate) {
         if (gate is TvRepository.Gate.Ready) {
+            repository.refreshUnseenAlerts()
             while (isActive) {
                 delay(60_000)
                 repository.refreshCameras()
+                repository.refreshUnseenAlerts()
             }
         }
     }
@@ -86,9 +91,43 @@ fun TvApp(repository: TvRepository) {
         when (val showing = gate) {
             TvRepository.Gate.Loading -> SigningIn()
             TvRepository.Gate.Pairing -> PairingScreen(repository)
-            is TvRepository.Gate.Ready -> CamerasScreen(repository, showing.cameras)
+            is TvRepository.Gate.Ready -> ReadyScreens(repository, showing.cameras)
             is TvRepository.Gate.Problem -> ProblemScreen(repository, showing.refused)
         }
+    }
+}
+
+/** Where the television is: the cameras, the alerts, or one alert's clip. */
+private sealed interface TvPage {
+    data object Cameras : TvPage
+    data object Alerts : TvPage
+    data class Clip(val alert: Alert) : TvPage
+}
+
+@Composable
+private fun ReadyScreens(repository: TvRepository, cameras: List<Camera>) {
+    var page by remember { mutableStateOf<TvPage>(TvPage.Cameras) }
+    val unseen by repository.unseenAlerts.collectAsStateWithLifecycle()
+
+    when (val showing = page) {
+        TvPage.Cameras -> CamerasScreen(
+            repository = repository,
+            cameras = cameras,
+            newAlerts = unseen,
+            onOpenAlerts = { page = TvPage.Alerts },
+        )
+
+        TvPage.Alerts -> AlertsScreen(
+            repository = repository,
+            onBack = { page = TvPage.Cameras },
+            onPlay = { alert -> page = TvPage.Clip(alert) },
+        )
+
+        is TvPage.Clip -> AlertClipScreen(
+            repository = repository,
+            alert = showing.alert,
+            onClose = { page = TvPage.Alerts },
+        )
     }
 }
 

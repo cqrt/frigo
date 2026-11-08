@@ -2,6 +2,7 @@ package nz.mckenzie.frigo.tv.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.first
@@ -47,7 +48,19 @@ class TvPrefs(private val context: Context) {
         context.tvStore.edit { prefs -> prefs.remove(Keys.server) }
     }
 
+    /**
+     * When the alerts page was last opened, in epoch seconds, or null when it
+     * never has been. It is what the dot beside Alerts is worked out from: an
+     * alert younger than this is one you have not looked at.
+     */
+    suspend fun readAlertsSeen(): Long? = context.tvStore.data.first()[Keys.alertsSeen]
+
+    suspend fun writeAlertsSeen(at: Long) {
+        context.tvStore.edit { prefs -> prefs[Keys.alertsSeen] = at }
+    }
+
     private object Keys {
         val server = stringPreferencesKey("server")
+        val alertsSeen = longPreferencesKey("alerts_seen")
     }
 }

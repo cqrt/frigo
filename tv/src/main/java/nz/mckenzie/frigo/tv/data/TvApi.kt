@@ -3,6 +3,14 @@ package nz.mckenzie.frigo.tv.data
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -144,6 +152,64 @@ class TvApi {
             if (it.toHttpUrlOrNull() == null) throw TvException(0, "That address is not a web address.")
         }
 
+    /**
+     * The alerts Frigate has flagged since [after], newest first, and only the
+     * ones nobody has watched yet.
+     *
+     * Frigate's endpoint is `/api/review`, singular, while the one that marks
+     * them watched is `/api/reviews/viewed`, plural. That mismatch is the
+     * server's, not this file's.
+     */
+    fun alerts(baseUrl: String, token: String, after: Long, limit: Int = 25): List<Alert> {
+        val target = url(baseUrl, "/api/review").newBuilder()
+            .addQueryParameter("severity", "alert")
+            .addQueryParameter("limit", limit.toString())
+            .addQueryParameter("after", after.toString())
+            .addQueryParameter("reviewed", "0")
+            .build()
+        val request = Request.Builder()
+            .url(target)
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        val raw = client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw response.toException()
+            response.bodyText()
+        }
+        return runCatching {
+            json.parseToJsonElement(raw).jsonArray.mapNotNull { it.asAlert() }
+        }.getOrDefault(emptyList())
+    }
+
+    /** The picture of the thing an alert first saw, which is the alert's picture. */
+    fun eventThumbnail(baseUrl: String, token: String, eventId: String): ByteArray {
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/events/$eventId/thumbnail.jpg"))
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw response.toException()
+            return response.body?.bytes() ?: ByteArray(0)
+        }
+    }
+
+    /** Says an alert has been watched, which its own web page and the phone share. */
+    fun markReviewed(baseUrl: String, token: String, id: String) {
+        val body = """{"ids":["$id"],"reviewed":true}""".toRequestBody(JSON)
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/reviews/viewed"))
+            .header("Authorization", "Bearer $token")
+            .post(body)
+            .build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw response.toException()
+        }
+    }
+
+    /** Where a review's clip comes from. Frigate cuts it out of the recordings as it sends. */
+    fun clipPath(id: String): String = "/api/review/$id/clip.mp4"
+
     fun open(baseUrl: String, token: String, path: String): Response {
         val response = client.newCall(
             Request.Builder()
@@ -223,6 +289,59 @@ class TvApi {
 
 /** One camera, as the television shows it. */
 data class Camera(val name: String, val title: String)
+
+/**
+ * One moment Frigate flagged, as the television lists it.
+ *
+ * [eventId] is the first thing it saw, which is what its picture comes from on
+ * Frigate's API. [title] and [words] are what the server wrote about it a minute
+ * or two after it ended, and are empty until it has.
+ */
+data class Alert(
+    val id: String,
+    val camera: String,
+    val start: Long,
+    val end: Long?,
+    val title: String?,
+    val words: String,
+    val objects: List<String>,
+    val eventId: String?,
+)
+
+private fun JsonElement.textOrNull(): String? =
+    (this as? JsonPrimitive)?.contentOrNull
+
+private fun JsonElement.asStrings(): List<String> =
+    (this as? JsonArray)?.mapNotNull { it.textOrNull() }.orEmpty()
+
+/** A scene the model wrote as a sentence, or as a list holding that sentence. */
+private fun JsonElement.asScene(): String = when (this) {
+    is JsonArray -> mapNotNull { it.textOrNull() }.joinToString(" ")
+    else -> textOrNull().orEmpty()
+}
+
+private fun JsonElement.asAlert(): Alert? {
+    val row = runCatching { jsonObject }.getOrNull() ?: return null
+    val id = row["id"]?.textOrNull() ?: return null
+    val data = row["data"] as? JsonObject
+    val metadata = data?.get("metadata") as? JsonObject
+
+    val title = metadata?.get("title")?.textOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+    val summary = metadata?.get("short_summary")?.textOrNull()?.trim().orEmpty()
+    val scene = metadata?.get("scene")?.asScene()?.trim().orEmpty()
+    val words = listOf(summary, scene).firstOrNull { it.isNotEmpty() }.orEmpty()
+
+    return Alert(
+        id = id,
+        camera = row["camera"]?.textOrNull().orEmpty(),
+        start = (row["start_time"] as? JsonPrimitive)?.doubleOrNull?.toLong() ?: 0L,
+        end = (row["end_time"] as? JsonPrimitive)?.doubleOrNull?.toLong(),
+        title = title,
+        words = words,
+        objects = data?.get("objects")?.asStrings().orEmpty(),
+        eventId = (data?.get("detections") as? JsonArray)?.firstNotNullOfOrNull { it.textOrNull() },
+    )
+}
 
 @Serializable
 private data class Config(val cameras: Map<String, CameraConfig> = emptyMap())

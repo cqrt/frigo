@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.12.0
+
+- Alerts on the television are a page of their own: the list down the left, the chosen alert's picture and Frigate's description on the right.
+- The Alerts button beside Settings carries a dot when something has come in since you last looked.
+- Select plays the clip full screen with sound. Select pauses, the arrows step ten seconds, Back returns to the list, and watching one marks it watched on the server.
+
 ## 0.11.4
 
 - On the television, the arrows stay inside the Settings card while it is up, instead of wandering into the cameras behind it.

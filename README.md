@@ -157,6 +157,14 @@ Press left from a camera in the strip and Select, and that camera fills the
 screen. Its name and **Live** stay on the picture; Select or Back brings the strip
 back.
 
+**Alerts** is a page of its own, not a strip on the cameras. The button beside
+Settings opens it, with a dot when something has come in since you last looked.
+The alerts Frigate flagged are down the left, newest first; the one you've chosen
+is on the right, with its picture and Frigate's own words. Select plays the clip
+full screen with the sound, Select pauses, the arrows step ten seconds, and Back
+returns to the list. Watching a clip marks it watched on your server, so the list
+is what's still to see.
+
 The TV app is `frigo-tv-<version>.apk` on each release page. It installs beside
 the phone app under its own name, and updates on its own.
 
