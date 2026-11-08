@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -414,6 +413,10 @@ private fun SettingsPanel(
     val defaultCamera by repository.defaultCamera.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
+    // The camera the big picture opens on: the one that was picked, or the first
+    // in Frigate's list on a television that has never picked one.
+    val opening = cameras.firstOrNull { it.name == defaultCamera } ?: cameras.firstOrNull()
+
     var picking by remember { mutableStateOf(false) }
     // The card is the whole screen while it is up, so the arrows move between
     // its rows and nowhere else. They come back round, which on four rows is
@@ -478,7 +481,7 @@ private fun SettingsPanel(
                 if (picking) {
                     DefaultCameraPicker(
                         cameras = cameras,
-                        chosen = defaultCamera,
+                        chosen = opening?.name,
                         firstFocus = firstChoice,
                         onCancel = { closePicker() },
                         onPick = { name ->
@@ -504,8 +507,10 @@ private fun SettingsPanel(
                     SettingRow(
                         title = stringResource(R.string.tv_default_camera),
                         supporting = stringResource(R.string.tv_default_camera_note),
-                        value = cameras.firstOrNull { it.name == defaultCamera }?.title
-                            ?: stringResource(R.string.tv_default_first),
+                        // The row says the camera that will open, which on a
+                        // television that has never picked one is the first in
+                        // Frigate's list.
+                        value = opening?.title.orEmpty(),
                         chevron = true,
                         modifier = Modifier.focusRequester(rows[0]),
                         onFocused = { at = 0 },
@@ -542,14 +547,14 @@ private fun SettingsPanel(
     }
 }
 
-/** The camera list behind Default camera, with the television's own order on it. */
+/** The camera list behind Default camera, with the one that opens ticked. */
 @Composable
 private fun DefaultCameraPicker(
     cameras: List<Camera>,
     chosen: String?,
     firstFocus: FocusRequester,
     onCancel: () -> Unit,
-    onPick: (String?) -> Unit,
+    onPick: (String) -> Unit,
 ) {
     BackHandler(enabled = true, onBack = onCancel)
 
@@ -572,18 +577,12 @@ private fun DefaultCameraPicker(
         modifier = Modifier.heightIn(max = 340.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        item {
-            PickerRow(
-                label = stringResource(R.string.tv_default_first),
-                ticked = chosen == null,
-                modifier = Modifier.focusRequester(firstFocus),
-                onClick = { onPick(null) },
-            )
-        }
-        items(cameras, key = { it.name }) { camera ->
+        itemsIndexed(cameras, key = { _, camera -> camera.name }) { index, camera ->
+            val opens = if (chosen == null) index == 0 else camera.name == chosen
             PickerRow(
                 label = camera.title,
-                ticked = chosen == camera.name,
+                ticked = opens,
+                modifier = if (opens) Modifier.focusRequester(firstFocus) else Modifier,
                 onClick = { onPick(camera.name) },
             )
         }

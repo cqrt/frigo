@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.14.3
+
+- Default camera is a plain list of your cameras now, with no "first camera" row to wonder about.
+
 ## 0.14.2
 
 - The television opens on the camera you picked under Default camera, and the first press of the arrows lands on the camera strip instead of nowhere.
