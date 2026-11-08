@@ -23,14 +23,18 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -145,6 +149,9 @@ fun CamerasScreen(
     // A picture that changes by itself should not move the arrows.
     var skipFocus by remember { mutableStateOf(false) }
     val takeoverOn by repository.takeover.collectAsStateWithLifecycle(initialValue = true)
+    val soundOn by repository.liveSound.collectAsStateWithLifecycle(initialValue = true)
+    val defaultCamera by repository.defaultCamera.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
     fun takeOver(cameraName: String) {
         val now = System.currentTimeMillis()
@@ -159,9 +166,12 @@ fun CamerasScreen(
         takeoverUntil = now + TakeoverMillis
     }
 
-    LaunchedEffect(cameras) {
-        if (chosen == null || cameras.none { it.name == chosen }) {
-            chosen = cameras.firstOrNull()?.name
+    LaunchedEffect(cameras, defaultCamera) {
+        val wanted = chosen
+        if (wanted == null || cameras.none { it.name == wanted }) {
+            // The television opens on the camera Settings names, or on the first.
+            chosen = cameras.firstOrNull { it.name == defaultCamera }?.name
+                ?: cameras.firstOrNull()?.name
         }
     }
 
@@ -179,6 +189,8 @@ fun CamerasScreen(
         ) {
             Header(
                 newAlerts = newAlerts,
+                soundOn = soundOn,
+                onToggleSound = { scope.launch { repository.setLiveSound(!soundOn) } },
                 onAlerts = onOpenAlerts,
                 onSettings = { settingsOpen = true },
                 settingsFocus = settingsFocus,
@@ -194,7 +206,7 @@ fun CamerasScreen(
             Spacer(Modifier.weight(1f))
         }
         if (settingsOpen) {
-            SettingsPanel(repository, onClose = { settingsOpen = false })
+            SettingsPanel(repository, cameras, onClose = { settingsOpen = false })
         }
         return
     }
@@ -302,6 +314,8 @@ fun CamerasScreen(
                 if (!fullScreen) {
                     Header(
                         newAlerts = newAlerts,
+                        soundOn = soundOn,
+                        onToggleSound = { scope.launch { repository.setLiveSound(!soundOn) } },
                         onAlerts = onOpenAlerts,
                         onSettings = { settingsOpen = true },
                         settingsFocus = settingsFocus,
@@ -312,6 +326,7 @@ fun CamerasScreen(
                     repository = repository,
                     camera = current,
                     fullScreen = fullScreen,
+                    muted = !soundOn,
                     focusRequester = pictureFocus,
                     onToggle = {
                         // Filling the screen is a choice; it ends a takeover.
@@ -374,29 +389,45 @@ fun CamerasScreen(
         }
 
         if (settingsOpen) {
-            SettingsPanel(repository, onClose = { settingsOpen = false })
+            SettingsPanel(repository, cameras, onClose = { settingsOpen = false })
         }
     }
 }
 
-/** The server the television is signed in to, what it does with a newcomer, and the way out. */
+/** Settings: the server, the camera it opens on, and what a newcomer does. */
 @Composable
-private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
+private fun SettingsPanel(
+    repository: TvRepository,
+    cameras: List<Camera>,
+    onClose: () -> Unit,
+) {
     val session by repository.session.collectAsStateWithLifecycle()
     val takeoverOn by repository.takeover.collectAsStateWithLifecycle(initialValue = true)
+    val defaultCamera by repository.defaultCamera.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    val closeFocus = remember { FocusRequester() }
-    val pairFocus = remember { FocusRequester() }
-    val takeoverFocus = remember { FocusRequester() }
+
+    var picking by remember { mutableStateOf(false) }
     // The card is the whole screen while it is up, so the arrows move between
-    // its answers and nowhere else. Without this they walk out of the card and
-    // into the cameras behind it, which cannot be pressed anyway.
-    var at by remember { mutableIntStateOf(CloseAt) }
-    val stops = remember { listOf(takeoverFocus, pairFocus, closeFocus) }
+    // its rows and nowhere else. They come back round, which on four rows is
+    // kinder than stopping at an edge.
+    var at by remember { mutableIntStateOf(3) }
+    val rows = remember { List(4) { FocusRequester() } }
+    val firstChoice = remember { FocusRequester() }
+
+    // The list goes when a camera is picked, so the arrows come back to the row
+    // that opened it rather than to nothing.
+    fun closePicker() {
+        picking = false
+        at = 0
+        scope.launch {
+            delay(80)
+            runCatching { rows[0].requestFocus() }
+        }
+    }
 
     LaunchedEffect(Unit) {
         delay(80)
-        runCatching { closeFocus.requestFocus() }
+        runCatching { rows[3].requestFocus() }
     }
 
     Box(
@@ -404,21 +435,22 @@ private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.62f))
             .onPreviewKeyEvent { event ->
-                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                // While a camera is being picked, the picker's own list has the arrows.
+                if (picking || event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                 when (event.key) {
                     Key.DirectionLeft,
                     Key.DirectionUp,
                     -> {
-                        at = (at + stops.size - 1) % stops.size
-                        runCatching { stops[at].requestFocus() }
+                        at = (at + rows.size - 1) % rows.size
+                        runCatching { rows[at].requestFocus() }
                         true
                     }
 
                     Key.DirectionRight,
                     Key.DirectionDown,
                     -> {
-                        at = (at + 1) % stops.size
-                        runCatching { stops[at].requestFocus() }
+                        at = (at + 1) % rows.size
+                        runCatching { rows[at].requestFocus() }
                         true
                     }
 
@@ -432,49 +464,68 @@ private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
             shape = RoundedCornerShape(24.dp),
         ) {
             Column(
-                modifier = Modifier.width(620.dp).padding(32.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
+                modifier = Modifier.width(640.dp).padding(28.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    text = session?.baseUrl?.shortName().orEmpty(),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(
-                        R.string.tv_signed_in_note,
-                        session?.baseUrl?.shortName().orEmpty(),
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                TakeoverRow(
-                    on = takeoverOn,
-                    modifier = Modifier.focusRequester(takeoverFocus),
-                    onFocused = { at = 0 },
-                    onToggle = { scope.launch { repository.setTakeover(!takeoverOn) } },
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PanelAction(
-                        label = stringResource(R.string.tv_pair_again),
-                        filled = true,
-                        modifier = Modifier.focusRequester(pairFocus),
+                if (picking) {
+                    DefaultCameraPicker(
+                        cameras = cameras,
+                        chosen = defaultCamera,
+                        firstFocus = firstChoice,
+                        onCancel = { closePicker() },
+                        onPick = { name ->
+                            scope.launch { repository.setDefaultCamera(name) }
+                            closePicker()
+                        },
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.tv_settings).uppercase(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.tv_signed_in_note,
+                            session?.baseUrl?.shortName().orEmpty(),
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                    SettingRow(
+                        title = stringResource(R.string.tv_default_camera),
+                        supporting = stringResource(R.string.tv_default_camera_note),
+                        value = cameras.firstOrNull { it.name == defaultCamera }?.title
+                            ?: stringResource(R.string.tv_default_first),
+                        chevron = true,
+                        modifier = Modifier.focusRequester(rows[0]),
+                        onFocused = { at = 0 },
+                        onClick = { picking = true },
+                    )
+                    SettingRow(
+                        title = stringResource(R.string.tv_takeover),
+                        supporting = stringResource(R.string.tv_takeover_note),
+                        modifier = Modifier.focusRequester(rows[1]),
                         onFocused = { at = 1 },
+                        onClick = { scope.launch { repository.setTakeover(!takeoverOn) } },
+                        trailing = { Switch(checked = takeoverOn, onCheckedChange = null) },
+                    )
+                    SettingRow(
+                        title = stringResource(R.string.tv_pair_again),
+                        supporting = stringResource(R.string.tv_pair_again_note),
+                        modifier = Modifier.focusRequester(rows[2]),
+                        onFocused = { at = 2 },
                         onClick = {
                             onClose()
                             scope.launch { repository.forget() }
                         },
                     )
-                    PanelAction(
-                        label = stringResource(R.string.tv_close),
-                        filled = false,
-                        modifier = Modifier.focusRequester(closeFocus),
-                        onFocused = { at = CloseAt },
+                    SettingRow(
+                        title = stringResource(R.string.tv_close),
+                        supporting = null,
+                        modifier = Modifier.focusRequester(rows[3]),
+                        onFocused = { at = 3 },
                         onClick = onClose,
                     )
                 }
@@ -483,19 +534,65 @@ private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
     }
 }
 
-/** Where Close sits in the card's three answers. */
-private const val CloseAt = 2
-
-/**
- * A switch with a sentence: it is a row rather than a lone switch, because the
- * question is what a person walking past should do to the television.
- */
+/** The camera list behind Default camera, with the television's own order on it. */
 @Composable
-private fun TakeoverRow(
-    on: Boolean,
+private fun DefaultCameraPicker(
+    cameras: List<Camera>,
+    chosen: String?,
+    firstFocus: FocusRequester,
+    onCancel: () -> Unit,
+    onPick: (String?) -> Unit,
+) {
+    BackHandler(enabled = true, onBack = onCancel)
+
+    LaunchedEffect(Unit) {
+        delay(80)
+        runCatching { firstFocus.requestFocus() }
+    }
+
+    Text(
+        text = stringResource(R.string.tv_default_camera).uppercase(),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Text(
+        text = stringResource(R.string.tv_default_camera_note),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    LazyColumn(
+        modifier = Modifier.heightIn(max = 340.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item {
+            PickerRow(
+                label = stringResource(R.string.tv_default_first),
+                ticked = chosen == null,
+                modifier = Modifier.focusRequester(firstFocus),
+                onClick = { onPick(null) },
+            )
+        }
+        items(cameras, key = { it.name }) { camera ->
+            PickerRow(
+                label = camera.title,
+                ticked = chosen == camera.name,
+                onClick = { onPick(camera.name) },
+            )
+        }
+    }
+}
+
+/** One row of the Settings card: a name, a sentence, and sometimes a value or a switch. */
+@Composable
+private fun SettingRow(
+    title: String,
+    supporting: String?,
     modifier: Modifier = Modifier,
-    onFocused: () -> Unit,
-    onToggle: () -> Unit,
+    value: String? = null,
+    chevron: Boolean = false,
+    trailing: (@Composable () -> Unit)? = null,
+    onFocused: () -> Unit = {},
+    onClick: () -> Unit,
 ) {
     var focused by remember { mutableStateOf(false) }
     val ink = MaterialTheme.colorScheme
@@ -510,65 +607,88 @@ private fun TakeoverRow(
                 focused = it.isFocused
                 if (it.isFocused) onFocused()
             }
-            .clickable { onToggle() }
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .clickable { onClick() }
+            .padding(horizontal = 18.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                text = stringResource(R.string.tv_takeover),
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
                 color = ink.onSurface,
             )
-            Spacer(Modifier.height(4.dp))
+            if (supporting != null) {
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = supporting,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ink.onSurfaceVariant,
+                )
+            }
+        }
+        if (value != null) {
+            Spacer(Modifier.width(16.dp))
             Text(
-                text = stringResource(R.string.tv_takeover_note),
+                text = value,
                 style = MaterialTheme.typography.bodyMedium,
+                color = ink.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.widthIn(max = 200.dp),
+            )
+        }
+        if (chevron) {
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "›",
+                style = MaterialTheme.typography.titleLarge,
                 color = ink.onSurfaceVariant,
             )
         }
-        Spacer(Modifier.width(20.dp))
-        Switch(checked = on, onCheckedChange = null)
+        if (trailing != null) {
+            Spacer(Modifier.width(16.dp))
+            trailing()
+        }
     }
 }
 
-/** One choice in the Settings panel, wearing a ring while the arrows are on it. */
+/** One camera in the Default camera list, ticked when it is the one. */
 @Composable
-private fun PanelAction(
+private fun PickerRow(
     label: String,
-    filled: Boolean,
+    ticked: Boolean,
     modifier: Modifier = Modifier,
-    onFocused: () -> Unit = {},
     onClick: () -> Unit,
 ) {
     var focused by remember { mutableStateOf(false) }
     val ink = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(14.dp)
-    Box(
+    val shape = RoundedCornerShape(12.dp)
+    Row(
         modifier = modifier
+            .fillMaxWidth()
             .clip(shape)
-            .background(if (filled) ink.primary else ink.surfaceContainerHighest)
-            .border(
-                width = 2.dp,
-                color = if (focused) {
-                    if (filled) ink.onPrimary else ink.primary
-                } else {
-                    Color.Transparent
-                },
-                shape = shape,
-            )
-            .onFocusChanged {
-                focused = it.isFocused
-                if (it.isFocused) onFocused()
-            }
+            .background(if (focused) ink.primary else ink.surfaceContainerHighest)
+            .border(2.dp, if (focused) ink.primary else Color.Transparent, shape)
+            .onFocusChanged { focused = it.isFocused }
             .clickable { onClick() }
-            .padding(horizontal = 22.dp, vertical = 12.dp),
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.titleMedium,
-            color = if (filled) ink.onPrimary else ink.onSurface,
+            color = if (focused) ink.onPrimary else ink.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
         )
+        if (ticked) {
+            Text(
+                text = "✓",
+                style = MaterialTheme.typography.titleMedium,
+                color = if (focused) ink.onPrimary else ink.primary,
+            )
+        }
     }
 }
 
@@ -585,10 +705,12 @@ private fun seesPersonOrCar(objects: List<String>): Boolean = objects.any {
 }
 
 
-/** Frigo on the left, the clock, Alerts and Settings on the right, over the picture. */
+/** Frigo on the left, the clock, sound, Alerts and Settings on the right. */
 @Composable
 private fun Header(
     newAlerts: Boolean,
+    soundOn: Boolean,
+    onToggleSound: () -> Unit,
     onAlerts: () -> Unit,
     onSettings: () -> Unit,
     settingsFocus: FocusRequester,
@@ -616,9 +738,39 @@ private fun Header(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.width(16.dp))
+        SoundPill(on = soundOn, onClick = onToggleSound)
+        Spacer(Modifier.width(10.dp))
         AlertsPill(newAlerts = newAlerts, onClick = onAlerts)
         Spacer(Modifier.width(10.dp))
         SettingsPill(onClick = onSettings, focusRequester = settingsFocus)
+    }
+}
+
+/** Sound on or off for the live picture, with the word rather than a glyph. */
+@Composable
+private fun SoundPill(on: Boolean, onClick: () -> Unit) {
+    var focused by remember { mutableStateOf(false) }
+    val ink = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(999.dp)
+    Box(
+        modifier = Modifier
+            .clip(shape)
+            .background(if (focused) ink.primary else ink.surfaceContainerHighest)
+            .border(2.dp, if (focused) ink.primary else Color.Transparent, shape)
+            .onFocusChanged { focused = it.isFocused }
+            .clickable { onClick() }
+            .padding(horizontal = 18.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = stringResource(if (on) R.string.tv_sound else R.string.tv_muted),
+            style = MaterialTheme.typography.labelLarge,
+            color = when {
+                focused -> ink.onPrimary
+                on -> ink.onSurfaceVariant
+                // A television that stays quiet says so, in the colour of a warning.
+                else -> ink.error
+            },
+        )
     }
 }
 
@@ -697,6 +849,7 @@ private fun BigPicture(
     repository: TvRepository,
     camera: Camera,
     fullScreen: Boolean,
+    muted: Boolean,
     focusRequester: FocusRequester,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
@@ -751,6 +904,7 @@ private fun BigPicture(
             CameraStream(
                 url = url,
                 token = current.token,
+                muted = muted,
                 onPlaying = { playing = it },
                 onFailed = { feed = true },
                 modifier = Modifier.fillMaxSize(),
@@ -930,6 +1084,7 @@ private fun LivePill(playing: Boolean, modifier: Modifier = Modifier) {
 private fun CameraStream(
     url: String,
     token: String,
+    muted: Boolean,
     onPlaying: (Boolean) -> Unit,
     onFailed: () -> Unit,
     modifier: Modifier = Modifier,
@@ -1001,6 +1156,11 @@ private fun CameraStream(
         }
         lifecycle.addObserver(watcher)
         onDispose { lifecycle.removeObserver(watcher) }
+    }
+
+    // The sound pill changes the picture's sound without opening the stream again.
+    LaunchedEffect(player, muted) {
+        player.volume = if (muted) 0f else 1f
     }
 
     // A stream on its way is not a stream that has failed: it gets this long to

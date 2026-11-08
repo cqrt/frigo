@@ -3054,3 +3054,40 @@ The arrows keep the place they had while the picture changes by itself, and the
 camera that took over is not focused. A person pressing Select at that moment has
 chosen for the room, so that ends the takeover rather than waiting out the half
 minute.
+
+## The television's settings are a list of rows
+
+The card began as the pairing screen: the server, a sentence about it, and the two
+things you could do. Sound and a default camera made it more than that, so it is a
+list now: the server and its sentence at the top, then a row for each thing you
+can change or do. A row carries its own switch, its value, or a chevron into a
+short list, and the arrows wrap round the rows rather than stopping at an edge.
+
+Rejected: a settings page of its own on the television. The camera screen is
+behind the card, and a page would need its own way there and back; a card over the
+picture is one press from both.
+
+## The mute is in the corner, not on the picture
+
+The picture is already a focusable thing, with Select for filling the screen. A
+second control on it would be two focus targets in one place, and reaching the
+small one with a D-pad is what a television is bad at. So the sound is a pill in
+the corner beside Alerts, where the arrows already go, and the picture keeps one
+action.
+
+The mute belongs to the television and is remembered, so a box in a bedroom is
+not loud again in the morning. It mutes the live picture rather than the app: a
+clip you opened is something you asked for, and it carries its own sound.
+
+## The default camera is the television's own
+
+The phone has its own camera order and its own list, and neither travels to the
+television: a television is a different place in the house. Default camera picks
+the one the big picture opens on by Frigate's name. A camera that has since been
+hidden or removed falls back to the first in the list, and so does a television
+that has never picked one.
+
+Rejected: opening on whatever the television was showing when it was last
+switched off. A storm that left it on the door camera at midnight should not put
+the street on the screen the next evening, and a default is worth only what it
+keeps the same.

@@ -74,9 +74,32 @@ class TvPrefs(private val context: Context) {
         context.tvStore.edit { prefs -> prefs[Keys.takeover] = on }
     }
 
+    /**
+     * The camera the television opens on, by Frigate's own name, or null when it
+     * opens on the first one in the list. It is the television's own choice: the
+     * phone's order of cameras does not travel.
+     */
+    suspend fun readDefaultCamera(): String? = context.tvStore.data.first()[Keys.defaultCamera]
+
+    suspend fun writeDefaultCamera(name: String?) {
+        context.tvStore.edit { prefs ->
+            if (name == null) prefs.remove(Keys.defaultCamera) else prefs[Keys.defaultCamera] = name
+        }
+    }
+
+    /** Whether the live picture's sound is on. The remote's volume decides how loud. */
+    val liveSound: Flow<Boolean> =
+        context.tvStore.data.map { prefs -> prefs[Keys.liveSound] ?: true }
+
+    suspend fun writeLiveSound(on: Boolean) {
+        context.tvStore.edit { prefs -> prefs[Keys.liveSound] = on }
+    }
+
     private object Keys {
         val server = stringPreferencesKey("server")
         val alertsSeen = longPreferencesKey("alerts_seen")
         val takeover = booleanPreferencesKey("takeover")
+        val defaultCamera = stringPreferencesKey("default_camera")
+        val liveSound = booleanPreferencesKey("live_sound")
     }
 }

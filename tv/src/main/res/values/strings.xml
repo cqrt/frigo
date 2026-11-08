@@ -26,6 +26,12 @@
     <string name="tv_close">Close</string>
     <string name="tv_takeover">Bring a camera up</string>
     <string name="tv_takeover_note">A person or a car brings that camera to the big picture for half a minute.</string>
+    <string name="tv_default_camera">Default camera</string>
+    <string name="tv_default_camera_note">Opens on this camera when the television starts.</string>
+    <string name="tv_default_first">The first camera</string>
+    <string name="tv_pair_again_note">Use another server, or another account.</string>
+    <string name="tv_sound">Sound</string>
+    <string name="tv_muted">Muted</string>
 
     <string name="alerts_title">Alerts</string>
     <string name="alerts_reading">Reading the alerts</string>

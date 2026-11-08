@@ -64,6 +64,7 @@ class TvRepository(
 
     /** Called once, when the app opens. */
     suspend fun start() = withContext(Dispatchers.IO) {
+        _defaultCamera.value = prefs.readDefaultCamera()
         val server = prefs.readServer()
         if (server == null) {
             _gate.value = Gate.Pairing
@@ -228,6 +229,21 @@ class TvRepository(
     val takeover: Flow<Boolean> = prefs.takeover
 
     suspend fun setTakeover(on: Boolean) = prefs.writeTakeover(on)
+
+    private val _defaultCamera = MutableStateFlow<String?>(null)
+
+    /** The camera the television opens on, or null for the first in the list. */
+    val defaultCamera: StateFlow<String?> = _defaultCamera.asStateFlow()
+
+    suspend fun setDefaultCamera(name: String?) {
+        prefs.writeDefaultCamera(name)
+        _defaultCamera.value = name
+    }
+
+    /** Whether the live picture's sound is on. */
+    val liveSound: Flow<Boolean> = prefs.liveSound
+
+    suspend fun setLiveSound(on: Boolean) = prefs.writeLiveSound(on)
 
     /**
      * Asks whether anything has come in since the page was last opened. A

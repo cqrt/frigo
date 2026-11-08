@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.14.0
+
+- The live picture on the television has a mute button: Sound, then Muted, and it remembers which one you left it on.
+- Settings on the television is a list now: Default camera, Bring a camera up, Pair again, and Close.
+- Default camera chooses what the television opens on when it starts, or the first camera in the list.
+
 ## 0.13.0
 
 - A camera that sees a person or a car takes over the big picture on the television for half a minute, then the screen goes back to what it was showing.

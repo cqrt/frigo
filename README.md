@@ -149,9 +149,9 @@ live view, with its sound. The strip is a smaller feed, cheap enough for several
 at once. The television says **Live** over the big picture while it is arriving,
 and **Waiting for a picture** until the first frame does.
 
-Settings in the corner, or one press up from the first camera, says which server
-the television is on. **Pair again** puts the code back on screen, so another
-server or another account is a scan away.
+Settings in the corner, one press up from the first camera, is a list: **Default
+camera**, the camera the television opens on when it starts; **Bring a camera up**;
+and **Pair again** for another server or account. Back closes it.
 
 Press left from a camera in the strip and Select, and that camera fills the
 screen. Its name and **Live** stay on the picture; Select or Back brings the strip
@@ -160,6 +160,9 @@ back.
 A camera that sees a person or a car takes the big picture for half a minute, and
 the screen then goes back to the camera it was on. It's a switch under Settings,
 on unless you turn it off, and picking a camera by hand ends it early.
+
+**Sound** in the corner mutes the live picture, and past that it says **Muted**.
+It remembers which one you left it on.
 
 **Alerts** is a page of its own, not a strip on the cameras. The button beside
 Settings opens it, with a dot when something has come in since you last looked.
