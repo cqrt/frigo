@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.11.3
+
+- On the television, Select on the big picture fills the screen with it. Select or Back brings the strip and the name back.
+
 ## 0.11.2
 
 - On the television, the margins either side are smaller, and the line under the camera name is gone, so the picture takes more of the screen.

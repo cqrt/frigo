@@ -2969,3 +2969,21 @@ The strip already plays that feed, so the fallback costs no new code on the
 server side, and a camera whose own stream is refused is still one you can
 watch. Two failures is the threshold because a stream that drops once is
 usually a stream that came back; the reopen delay is three seconds.
+
+## The full screen picture is the same picture, moved
+
+Filling the screen could have been a second screen with its own player. That
+would reopen the stream on every press, which shows as a second of black at the
+moment you asked for the whole picture.
+
+So there is one picture, at one place in the layout, and the screen around it
+changes: the header, the name under it and the strip go, the padding goes to
+nothing, and the box it is drawn in goes from a 16:9 tile to the whole screen.
+The player is not told; it is only resized. The name moves onto the picture with
+a scrim, and the Live pill stays where it was, because a full screen with no
+word on it leaves you guessing which camera you are watching.
+
+The picture is focusable, which is also how a mouse or an air remote works it.
+Left from any camera in the strip finds it, and Select fills the screen; Select
+again, or Back, gives the strip back. Up from the first camera in the strip is
+Settings, which is the other thing the arrows have to reach.

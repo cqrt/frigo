@@ -8,9 +8,11 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,9 +53,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -108,7 +112,9 @@ private val RailWidth = 260.dp
 fun CamerasScreen(repository: TvRepository, cameras: List<Camera>) {
     var chosen by rememberSaveable { mutableStateOf<String?>(null) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var fullScreen by rememberSaveable { mutableStateOf(false) }
     val settingsFocus = remember { FocusRequester() }
+    val pictureFocus = remember { FocusRequester() }
     val current = cameras.firstOrNull { it.name == chosen } ?: cameras.firstOrNull()
 
     LaunchedEffect(cameras) {
@@ -118,9 +124,10 @@ fun CamerasScreen(repository: TvRepository, cameras: List<Camera>) {
     }
 
     // The television is paired once, so the way back to the code has to be a
-    // press away rather than a reinstall. Back closes it, as it closes anything
-    // laid on top of the screen.
+    // press away rather than a reinstall. Back closes what is on top of the
+    // screen: the Settings card, or the picture filling it.
     BackHandler(enabled = settingsOpen) { settingsOpen = false }
+    BackHandler(enabled = fullScreen) { fullScreen = false }
 
     if (current == null) {
         Column(
@@ -180,54 +187,86 @@ fun CamerasScreen(repository: TvRepository, cameras: List<Camera>) {
         }
     }
 
+    // The picture takes the focus when it fills the screen, and gives it back to
+    // the strip when the strip comes back.
+    LaunchedEffect(fullScreen) {
+        delay(80)
+        runCatching {
+            if (fullScreen) {
+                pictureFocus.requestFocus()
+            } else {
+                val target = others.getOrNull(focusAt) ?: others.firstOrNull()
+                target?.let { requesters[it.name]?.requestFocus() }
+            }
+        }
+    }
+
     Box(Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 36.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp),
+                .padding(
+                    horizontal = if (fullScreen) 0.dp else 24.dp,
+                    vertical = if (fullScreen) 0.dp else 36.dp,
+                ),
+            horizontalArrangement = Arrangement.spacedBy(if (fullScreen) 0.dp else 24.dp),
         ) {
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                Header(onSettings = { settingsOpen = true }, settingsFocus = settingsFocus)
-                Spacer(Modifier.height(16.dp))
-                BigPicture(repository, current)
-                Spacer(Modifier.height(18.dp))
-                Text(
-                    text = current.title,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                if (!fullScreen) {
+                    Header(onSettings = { settingsOpen = true }, settingsFocus = settingsFocus)
+                    Spacer(Modifier.height(16.dp))
+                }
+                BigPicture(
+                    repository = repository,
+                    camera = current,
+                    fullScreen = fullScreen,
+                    focusRequester = pictureFocus,
+                    onToggle = { fullScreen = !fullScreen },
+                    modifier = if (fullScreen) {
+                        Modifier.fillMaxSize()
+                    } else {
+                        Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+                    },
                 )
+                if (!fullScreen) {
+                    Spacer(Modifier.height(18.dp))
+                    Text(
+                        text = current.title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
 
-            LazyColumn(
-                modifier = Modifier.width(RailWidth).fillMaxHeight(),
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                itemsIndexed(others, key = { _, camera -> camera.name }) { index, camera ->
-                    val requester = requesters.getOrPut(camera.name) { FocusRequester() }
-                    CameraTile(
-                        repository = repository,
-                        camera = camera,
-                        modifier = Modifier
-                            .focusRequester(requester)
-                            .then(
-                                if (index == 0) {
-                                    // Up from the first camera reaches the button
-                                    // that leads back to the pairing code.
-                                    Modifier.focusProperties { up = settingsFocus }
-                                } else {
-                                    Modifier
+            if (!fullScreen) {
+                LazyColumn(
+                    modifier = Modifier.width(RailWidth).fillMaxHeight(),
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    itemsIndexed(others, key = { _, camera -> camera.name }) { index, camera ->
+                        val requester = requesters.getOrPut(camera.name) { FocusRequester() }
+                        CameraTile(
+                            repository = repository,
+                            camera = camera,
+                            modifier = Modifier
+                                .focusRequester(requester)
+                                .focusProperties {
+                                    // Left is the picture, from anywhere in the
+                                    // strip. Up from the first camera is the
+                                    // button that leads back to the pairing code.
+                                    left = pictureFocus
+                                    if (index == 0) up = settingsFocus
                                 },
-                            ),
-                        onFocused = { focusAt = index },
-                        onClick = {
-                            landing = index
-                            chosen = camera.name
-                        },
-                    )
+                            onFocused = { focusAt = index },
+                            onClick = {
+                                landing = index
+                                chosen = camera.name
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -403,16 +442,28 @@ private fun SettingsPill(onClick: () -> Unit, focusRequester: FocusRequester) {
  * which is what is on the screen until the first frame arrives. A camera whose
  * own stream this television cannot decode falls back to Frigate's feed, which
  * is always H.264's older cousin: slower, but a picture rather than a still.
+ *
+ * A press on it fills the screen with the picture, and the same press or Back
+ * brings the strip and the name back. The stream is not reopened for it: the
+ * same player is moved and stretched.
  */
 @Composable
-private fun BigPicture(repository: TvRepository, camera: Camera) {
+private fun BigPicture(
+    repository: TvRepository,
+    camera: Camera,
+    fullScreen: Boolean,
+    focusRequester: FocusRequester,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val session by repository.session.collectAsStateWithLifecycle()
     var playing by remember(camera.name) { mutableStateOf(false) }
     var feed by remember(camera.name) { mutableStateOf(false) }
     var feedLive by remember(camera.name) { mutableStateOf(false) }
     var still by remember(camera.name) { mutableStateOf<ImageBitmap?>(null) }
+    var focused by remember { mutableStateOf(false) }
     val live = playing || feedLive
-
+    val shape = RoundedCornerShape(20.dp)
 
     LaunchedEffect(camera.name, live, session?.token) {
         while (!live && isActive) {
@@ -422,11 +473,22 @@ private fun BigPicture(repository: TvRepository, camera: Camera) {
     }
 
     Box(
-        Modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f)
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color.Black),
+        modifier
+            .then(if (fullScreen) Modifier else Modifier.clip(shape))
+            .background(Color.Black)
+            .then(
+                if (!fullScreen && focused) {
+                    Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape)
+                } else {
+                    Modifier
+                },
+            )
+            .focusRequester(focusRequester)
+            .onFocusChanged { focused = it.isFocused }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) { onToggle() },
     ) {
         val picture = still
         if (picture != null) {
@@ -457,7 +519,77 @@ private fun BigPicture(repository: TvRepository, camera: Camera) {
             )
         }
 
-        LivePill(playing = live, modifier = Modifier.align(Alignment.TopStart).padding(16.dp))
+        LivePill(
+            playing = live,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(if (fullScreen) 24.dp else 16.dp),
+        )
+
+        if (fullScreen) {
+            // The name comes with the picture when the strip is gone, so the
+            // screen still says which camera this is.
+            Box(
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.Transparent,
+                            1f to Color.Black.copy(alpha = 0.7f),
+                        ),
+                    ),
+            )
+            Text(
+                text = camera.title,
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(horizontal = 28.dp, vertical = 22.dp),
+            )
+        } else {
+            ExpandMark(
+                active = focused,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(14.dp),
+            )
+        }
+    }
+}
+
+/** Four corners opening outwards: the press that fills the screen with the picture. */
+@Composable
+private fun ExpandMark(active: Boolean, modifier: Modifier = Modifier) {
+    val ink = if (active) Color.White else Color.White.copy(alpha = 0.6f)
+    Box(
+        modifier = modifier
+            .size(34.dp)
+            .clip(RoundedCornerShape(9.dp))
+            .background(Color.Black.copy(alpha = if (active) 0.55f else 0.35f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(Modifier.size(17.dp)) {
+            val arm = size.minDimension * 0.4f
+            val stroke = 2.dp.toPx()
+            listOf(
+                Triple(Offset(0f, arm), Offset(0f, 0f), Offset(arm, 0f)),
+                Triple(Offset(size.width - arm, 0f), Offset(size.width, 0f), Offset(size.width, arm)),
+                Triple(Offset(0f, size.height - arm), Offset(0f, size.height), Offset(arm, size.height)),
+                Triple(
+                    Offset(size.width - arm, size.height),
+                    Offset(size.width, size.height),
+                    Offset(size.width, size.height - arm),
+                ),
+            ).forEach { (start, corner, end) ->
+                drawLine(ink, start, corner, stroke, StrokeCap.Round)
+                drawLine(ink, corner, end, stroke, StrokeCap.Round)
+            }
+        }
     }
 }
 

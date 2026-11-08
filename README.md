@@ -153,6 +153,10 @@ Settings in the corner, or one press up from the first camera, says which server
 the television is on. **Pair again** puts the code back on screen, so another
 server or another account is a scan away.
 
+Press left from a camera in the strip and Select, and that camera fills the
+screen. Its name and **Live** stay on the picture; Select or Back brings the strip
+back.
+
 The TV app is `frigo-tv-<version>.apk` on each release page. It installs beside
 the phone app under its own name, and updates on its own.
 
