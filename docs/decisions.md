@@ -3029,3 +3029,28 @@ alert's own picture rather than over black.
 
 The clip counts as watched when it opens, not when it ends: the list is what is
 left to see, and going back should find it shorter.
+
+## A newcomer takes the picture for half a minute
+
+The television switches the big picture to a camera that has just seen a person or
+a car, and gives the screen back half a minute after the last thing it saw. It is
+the one thing on the cameras page that happens without a press, so it has a
+switch of its own in Settings and is easy to stop: a press on any camera takes the
+choice back.
+
+"Sees a person or a car" is Frigate's own alert reviews for those objects, not
+every event. Frigate's zones already decide what is worth telling anyone about,
+and a television that changed picture for every car in the street would be a
+television you turn off. `person-verified` counts as a person: that is what
+Frigate writes for a face it has named, and a list that only said `person` would
+leave those visitors out.
+
+The server is asked every eight seconds for reviews from the last few seconds.
+Rejected: holding Frigate's message feed open for this. The feed is a whole
+connection to keep alive on a small box that is already showing five cameras, and
+a picture eight seconds later is not much later than now.
+
+The arrows keep the place they had while the picture changes by itself, and the
+camera that took over is not focused. A person pressing Select at that moment has
+chosen for the room, so that ends the takeover rather than waiting out the half
+minute.

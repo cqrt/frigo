@@ -33,12 +33,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -106,6 +108,15 @@ private const val LiveStartMillis = 500
 /** The strip's width. Three cameras fit, and the fourth is a press of the arrow away. */
 private val RailWidth = 260.dp
 
+/** How long a camera that saw a person or a car keeps the big picture. */
+private const val TakeoverMillis = 30_000L
+
+/** How often the server is asked whether something has just been seen. */
+private const val TakeoverPollMillis = 8_000L
+
+/** The few seconds asked for twice, so an alert arriving between two asks is not missed. */
+private const val OverlapSeconds = 5L
+
 /**
  * The screen the television exists for: one camera big, the rest down the right.
  *
@@ -126,6 +137,27 @@ fun CamerasScreen(
     val settingsFocus = remember { FocusRequester() }
     val pictureFocus = remember { FocusRequester() }
     val current = cameras.firstOrNull { it.name == chosen } ?: cameras.firstOrNull()
+
+    // The picture that took over, and when it gives the screen back. A press on
+    // a camera by hand ends the takeover: the viewer has chosen.
+    var takeoverFrom by remember { mutableStateOf<String?>(null) }
+    var takeoverUntil by remember { mutableLongStateOf(0L) }
+    // A picture that changes by itself should not move the arrows.
+    var skipFocus by remember { mutableStateOf(false) }
+    val takeoverOn by repository.takeover.collectAsStateWithLifecycle(initialValue = true)
+
+    fun takeOver(cameraName: String) {
+        val now = System.currentTimeMillis()
+        val shown = current?.name ?: return
+        if (cameraName == shown) {
+            if (takeoverFrom != null) takeoverUntil = now + TakeoverMillis
+            return
+        }
+        if (takeoverFrom == null) takeoverFrom = shown
+        skipFocus = true
+        chosen = cameraName
+        takeoverUntil = now + TakeoverMillis
+    }
 
     LaunchedEffect(cameras) {
         if (chosen == null || cameras.none { it.name == chosen }) {
@@ -179,8 +211,12 @@ fun CamerasScreen(
 
     // The strip takes the focus when the screen opens, and keeps its place after
     // one camera replaces another: the press that moved a picture left the
-    // arrows where they were.
+    // arrows where they were. A picture that changed by itself leaves them be.
     LaunchedEffect(current.name) {
+        if (skipFocus) {
+            skipFocus = false
+            return@LaunchedEffect
+        }
         val wanted = landing ?: focusAt
         landing = null
         val target = others.getOrNull(wanted) ?: others.firstOrNull() ?: return@LaunchedEffect
@@ -189,6 +225,42 @@ fun CamerasScreen(
         delay(80)
         runCatching { requesters[target.name]?.requestFocus() }
         focusAt = at
+    }
+
+    // A person or a car on a camera this television shows brings that camera up
+    // for half a minute, then the screen goes back to what it was showing. Ask
+    // every few seconds rather than hold a message feed open: a press that waits
+    // eight seconds is not much of a wait for a picture, and the feed is a whole
+    // connection to keep alive for it.
+    LaunchedEffect(takeoverOn) {
+        if (!takeoverOn) return@LaunchedEffect
+        var since = System.currentTimeMillis() / 1_000 - OverlapSeconds
+        val seen = mutableSetOf<String>()
+        while (isActive) {
+            delay(TakeoverPollMillis)
+            val found = repository.alertTakeovers(since)
+            since = System.currentTimeMillis() / 1_000 - OverlapSeconds
+            val hit = found.firstOrNull { alert ->
+                seesPersonOrCar(alert.objects) &&
+                    cameras.any { it.name == alert.cameraName } &&
+                    seen.add(alert.id)
+            }
+            if (hit != null && !fullScreen && !settingsOpen) {
+                takeOver(hit.cameraName)
+            }
+        }
+    }
+
+    // The half minute is measured from the last thing seen, so a second visitor
+    // keeps the picture up rather than letting it fall back mid-way.
+    LaunchedEffect(takeoverUntil) {
+        if (takeoverUntil <= 0L || takeoverFrom == null) return@LaunchedEffect
+        delay(TakeoverMillis)
+        val back = takeoverFrom ?: return@LaunchedEffect
+        skipFocus = true
+        chosen = back
+        takeoverFrom = null
+        takeoverUntil = 0L
     }
 
     // Closing Settings puts the arrows back where they were, rather than leaving
@@ -241,7 +313,14 @@ fun CamerasScreen(
                     camera = current,
                     fullScreen = fullScreen,
                     focusRequester = pictureFocus,
-                    onToggle = { fullScreen = !fullScreen },
+                    onToggle = {
+                        // Filling the screen is a choice; it ends a takeover.
+                        if (!fullScreen) {
+                            takeoverFrom = null
+                            takeoverUntil = 0L
+                        }
+                        fullScreen = !fullScreen
+                    },
                     modifier = if (fullScreen) {
                         Modifier.fillMaxSize()
                     } else {
@@ -282,6 +361,9 @@ fun CamerasScreen(
                                 },
                             onFocused = { focusAt = index },
                             onClick = {
+                                // A press picks for the room, so the takeover ends here.
+                                takeoverFrom = null
+                                takeoverUntil = 0L
                                 landing = index
                                 chosen = camera.name
                             },
@@ -297,17 +379,20 @@ fun CamerasScreen(
     }
 }
 
-/** The server the television is signed in to, and the way out of it. */
+/** The server the television is signed in to, what it does with a newcomer, and the way out. */
 @Composable
 private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
     val session by repository.session.collectAsStateWithLifecycle()
+    val takeoverOn by repository.takeover.collectAsStateWithLifecycle(initialValue = true)
     val scope = rememberCoroutineScope()
     val closeFocus = remember { FocusRequester() }
     val pairFocus = remember { FocusRequester() }
+    val takeoverFocus = remember { FocusRequester() }
     // The card is the whole screen while it is up, so the arrows move between
-    // its two answers and nowhere else. Without this they walk out of the card
-    // and into the cameras behind it, which cannot be pressed anyway.
-    var onPair by remember { mutableStateOf(false) }
+    // its answers and nowhere else. Without this they walk out of the card and
+    // into the cameras behind it, which cannot be pressed anyway.
+    var at by remember { mutableIntStateOf(CloseAt) }
+    val stops = remember { listOf(takeoverFocus, pairFocus, closeFocus) }
 
     LaunchedEffect(Unit) {
         delay(80)
@@ -322,14 +407,18 @@ private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
                 if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                 when (event.key) {
                     Key.DirectionLeft,
-                    Key.DirectionRight,
                     Key.DirectionUp,
+                    -> {
+                        at = (at + stops.size - 1) % stops.size
+                        runCatching { stops[at].requestFocus() }
+                        true
+                    }
+
+                    Key.DirectionRight,
                     Key.DirectionDown,
                     -> {
-                        onPair = !onPair
-                        runCatching {
-                            (if (onPair) pairFocus else closeFocus).requestFocus()
-                        }
+                        at = (at + 1) % stops.size
+                        runCatching { stops[at].requestFocus() }
                         true
                     }
 
@@ -343,7 +432,7 @@ private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
             shape = RoundedCornerShape(24.dp),
         ) {
             Column(
-                modifier = Modifier.width(560.dp).padding(32.dp),
+                modifier = Modifier.width(620.dp).padding(32.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 Text(
@@ -364,12 +453,18 @@ private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                TakeoverRow(
+                    on = takeoverOn,
+                    modifier = Modifier.focusRequester(takeoverFocus),
+                    onFocused = { at = 0 },
+                    onToggle = { scope.launch { repository.setTakeover(!takeoverOn) } },
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     PanelAction(
                         label = stringResource(R.string.tv_pair_again),
                         filled = true,
                         modifier = Modifier.focusRequester(pairFocus),
-                        onFocused = { onPair = true },
+                        onFocused = { at = 1 },
                         onClick = {
                             onClose()
                             scope.launch { repository.forget() }
@@ -379,12 +474,61 @@ private fun SettingsPanel(repository: TvRepository, onClose: () -> Unit) {
                         label = stringResource(R.string.tv_close),
                         filled = false,
                         modifier = Modifier.focusRequester(closeFocus),
-                        onFocused = { onPair = false },
+                        onFocused = { at = CloseAt },
                         onClick = onClose,
                     )
                 }
             }
         }
+    }
+}
+
+/** Where Close sits in the card's three answers. */
+private const val CloseAt = 2
+
+/**
+ * A switch with a sentence: it is a row rather than a lone switch, because the
+ * question is what a person walking past should do to the television.
+ */
+@Composable
+private fun TakeoverRow(
+    on: Boolean,
+    modifier: Modifier = Modifier,
+    onFocused: () -> Unit,
+    onToggle: () -> Unit,
+) {
+    var focused by remember { mutableStateOf(false) }
+    val ink = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(14.dp)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(ink.surfaceContainerHighest)
+            .border(2.dp, if (focused) ink.primary else Color.Transparent, shape)
+            .onFocusChanged {
+                focused = it.isFocused
+                if (it.isFocused) onFocused()
+            }
+            .clickable { onToggle() }
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.tv_takeover),
+                style = MaterialTheme.typography.titleMedium,
+                color = ink.onSurface,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.tv_takeover_note),
+                style = MaterialTheme.typography.bodyMedium,
+                color = ink.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.width(20.dp))
+        Switch(checked = on, onCheckedChange = null)
     }
 }
 
@@ -431,6 +575,14 @@ private fun PanelAction(
 /** `https://frigate.home:5000` as `frigate.home:5000`. */
 private fun String.shortName(): String =
     removePrefix("https://").removePrefix("http://").trimEnd('/')
+
+/** Frigate names a face-recognised person `person-verified`; both count. */
+private fun seesPersonOrCar(objects: List<String>): Boolean = objects.any {
+    when (it.lowercase()) {
+        "person", "person-verified", "car" -> true
+        else -> false
+    }
+}
 
 
 /** Frigo on the left, the clock, Alerts and Settings on the right, over the picture. */

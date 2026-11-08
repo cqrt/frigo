@@ -24,6 +24,8 @@
     <string name="tv_signed_in_note">This television is signed in to %1$s. Pair it again to use another server, or another account.</string>
     <string name="tv_pair_again">Pair again</string>
     <string name="tv_close">Close</string>
+    <string name="tv_takeover">Bring a camera up</string>
+    <string name="tv_takeover_note">A person or a car brings that camera to the big picture for half a minute.</string>
 
     <string name="alerts_title">Alerts</string>
     <string name="alerts_reading">Reading the alerts</string>

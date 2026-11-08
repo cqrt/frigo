@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.13.0
+
+- A camera that sees a person or a car takes over the big picture on the television for half a minute, then the screen goes back to what it was showing.
+- Settings on the television has a switch for it, Bring a camera up. Picking a camera by hand ends a takeover early.
+
 ## 0.12.1
 
 - The live picture on the television comes with its sound on, and the remote's volume decides how loud.

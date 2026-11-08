@@ -299,6 +299,9 @@ data class Camera(val name: String, val title: String)
  */
 data class Alert(
     val id: String,
+    /** The camera as Frigate names it. */
+    val cameraName: String,
+    /** The camera as this television shows it. */
     val camera: String,
     val start: Long,
     val end: Long?,
@@ -330,10 +333,12 @@ private fun JsonElement.asAlert(): Alert? {
     val summary = metadata?.get("short_summary")?.textOrNull()?.trim().orEmpty()
     val scene = metadata?.get("scene")?.asScene()?.trim().orEmpty()
     val words = listOf(summary, scene).firstOrNull { it.isNotEmpty() }.orEmpty()
+    val camera = row["camera"]?.textOrNull().orEmpty()
 
     return Alert(
         id = id,
-        camera = row["camera"]?.textOrNull().orEmpty(),
+        cameraName = camera,
+        camera = camera,
         start = (row["start_time"] as? JsonPrimitive)?.doubleOrNull?.toLong() ?: 0L,
         end = (row["end_time"] as? JsonPrimitive)?.doubleOrNull?.toLong(),
         title = title,

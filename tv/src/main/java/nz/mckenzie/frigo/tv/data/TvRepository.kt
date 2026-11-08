@@ -205,9 +205,29 @@ class TvRepository(
         val current = sessionOrRenew() ?: throw TvException(0, "The TV is not signed in.")
         val since = System.currentTimeMillis() / 1_000 - TWO_DAYS
         val titles = camerasByName()
-        api.alerts(current.baseUrl, current.token, since)
-            .map { alert -> alert.copy(camera = titles[alert.camera] ?: alert.camera) }
+        api.alerts(current.baseUrl, current.token, since).map { it.named(titles) }
     }
+
+    /**
+     * Alerts that started after [after], for the picture that takes over when
+     * one is flagged. A server that does not answer answers with nothing: this
+     * runs quietly behind a screen that has other things to do.
+     */
+    suspend fun alertTakeovers(after: Long): List<Alert> = withContext(Dispatchers.IO) {
+        val current = sessionOrRenew() ?: return@withContext emptyList()
+        val titles = camerasByName()
+        runCatching { api.alerts(current.baseUrl, current.token, after, limit = 10) }
+            .getOrDefault(emptyList())
+            .map { it.named(titles) }
+    }
+
+    private fun Alert.named(titles: Map<String, String>): Alert =
+        copy(camera = titles[cameraName] ?: cameraName)
+
+    /** Whether a person or a car brings its camera up. */
+    val takeover: Flow<Boolean> = prefs.takeover
+
+    suspend fun setTakeover(on: Boolean) = prefs.writeTakeover(on)
 
     /**
      * Asks whether anything has come in since the page was last opened. A

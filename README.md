@@ -157,6 +157,10 @@ Press left from a camera in the strip and Select, and that camera fills the
 screen. Its name and **Live** stay on the picture; Select or Back brings the strip
 back.
 
+A camera that sees a person or a car takes the big picture for half a minute, and
+the screen then goes back to the camera it was on. It's a switch under Settings,
+on unless you turn it off, and picking a camera by hand ends it early.
+
 **Alerts** is a page of its own, not a strip on the cameras. The button beside
 Settings opens it, with a dot when something has come in since you last looked.
 The alerts Frigate flagged are down the left, newest first; the one you've chosen

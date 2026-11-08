@@ -1,11 +1,14 @@
 package nz.mckenzie.frigo.tv.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -59,8 +62,21 @@ class TvPrefs(private val context: Context) {
         context.tvStore.edit { prefs -> prefs[Keys.alertsSeen] = at }
     }
 
+    /**
+     * Whether a camera that sees a person or a car takes over the big picture.
+     * It belongs to the television rather than to the server: it is about what
+     * this screen does in this room.
+     */
+    val takeover: Flow<Boolean> =
+        context.tvStore.data.map { prefs -> prefs[Keys.takeover] ?: true }
+
+    suspend fun writeTakeover(on: Boolean) {
+        context.tvStore.edit { prefs -> prefs[Keys.takeover] = on }
+    }
+
     private object Keys {
         val server = stringPreferencesKey("server")
         val alertsSeen = longPreferencesKey("alerts_seen")
+        val takeover = booleanPreferencesKey("takeover")
     }
 }
