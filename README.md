@@ -149,6 +149,10 @@ live view. The strip is a smaller feed, cheap enough for several at once. The
 television says **Live** over the big picture while it is arriving, and **Waiting
 for a picture** until the first frame does.
 
+Settings in the corner, or one press up from the first camera, says which server
+the television is on. **Pair again** puts the code back on screen, so another
+server or another account is a scan away.
+
 The TV app is `frigo-tv-<version>.apk` on each release page. It installs beside
 the phone app under its own name, and updates on its own.
 

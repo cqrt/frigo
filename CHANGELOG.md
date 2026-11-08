@@ -8,6 +8,13 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.11.1
+
+- On the television, the big picture comes up as soon as its stream does, rather than sitting on a still.
+- Settings in the corner says which server the television is on, and Pair again puts the pairing code back on screen.
+- One press up from the first camera reaches Settings.
+- A camera whose own stream the television cannot play falls back to Frigate's smaller live feed.
+
 ## 0.11.0
 
 - Frigo on the TV: a second app for Android TV. One camera fills the screen, the others are live down the right, and the arrows choose the one to bring up.

@@ -2944,3 +2944,28 @@ list, Compose moves the focus to the first one, so the screen remembers which
 place the press came from and asks for the tile that is there afterwards. Without
 that, choosing the fourth camera and pressing Select lands the arrows back at the
 top of the strip.
+
+## The television asks the player whether the picture is up
+
+The big picture is a view of its own over a still of the same camera, and the
+still stands in until the video has a frame. The first version brought the view
+out on Media3's first-frame callback. On the lounge box the picture was decoded
+and playing, and the view stayed at nothing: the callback was not heard, or what
+it set was lost, and the screen sat on a still saying Waiting for a picture.
+
+So the view is shown because the player says so, asked four times a second: a
+player that is ready, playing, and knows the picture's shape has a picture. Once
+it is up it stays up, because a stream that rebuffers for a moment should not
+blink back to the still and back again.
+
+## A camera the television cannot play falls back to the feed
+
+Not every camera sends H.264, and not every box decodes everything. If the
+camera's own stream fails twice, the big picture asks Frigate's MJPEG feed for
+720p at five frames a second instead: slower, but a moving picture, which is
+more than a still passing for a live one.
+
+The strip already plays that feed, so the fallback costs no new code on the
+server side, and a camera whose own stream is refused is still one you can
+watch. Two failures is the threshold because a stream that drops once is
+usually a stream that came back; the reopen delay is three seconds.
