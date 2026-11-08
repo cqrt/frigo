@@ -28,9 +28,9 @@
     <string name="tv_takeover_note">Alerts on followed objects will switch to main view briefly.</string>
     <string name="tv_default_camera">Default camera</string>
     <string name="tv_default_camera_note">Opens on this camera when the app starts.</string>
-    <string name="tv_screen">Cameras on screen</string>
-    <string name="tv_screen_note">One big, or all the same size.</string>
-    <string name="tv_screen_one">One camera</string>
+    <string name="tv_screen">Camera Layout</string>
+    <string name="tv_screen_note">Select layout from Default or Grid.</string>
+    <string name="tv_screen_default">Default</string>
     <string name="tv_screen_grid">Grid</string>
     <string name="tv_pair_again_note">Use another server, or another account.</string>
     <string name="tv_sound">Sound</string>

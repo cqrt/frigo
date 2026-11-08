@@ -188,12 +188,17 @@ fun CamerasScreen(
     // screen: the Settings card, the camera opened over the wall, or the picture
     // filling it.
     BackHandler(enabled = settingsOpen) { settingsOpen = false }
-    BackHandler(enabled = screen == ScreenGrid && wallOpen && !fullScreen) {
-        // Back to the wall, with the arrows on the camera that was open.
+    BackHandler(enabled = screen == ScreenGrid && wallOpen) {
+        // In a wall, a camera opened from it is a visit: Back goes to the wall
+        // with the arrows on the tile that was pressed, not to a layout with a
+        // strip nobody asked for.
         wallAt = current?.name
+        fullScreen = false
         wallOpen = false
     }
-    BackHandler(enabled = fullScreen) { fullScreen = false }
+    BackHandler(enabled = fullScreen && !(screen == ScreenGrid && wallOpen)) {
+        fullScreen = false
+    }
 
     if (current == null) {
         Column(
@@ -259,7 +264,9 @@ fun CamerasScreen(
     // one camera replaces another: the press that moved a picture left the
     // arrows where they were. A picture that changed by itself leaves them be.
     LaunchedEffect(current.name, stripShown) {
-        if (!stripShown) return@LaunchedEffect
+        // The card has the arrows while it is up, so it is not for the strip to
+        // take them, and a switch of layout would otherwise pull them behind it.
+        if (settingsOpen || !stripShown || fullScreen) return@LaunchedEffect
         if (skipFocus) {
             skipFocus = false
             return@LaunchedEffect
@@ -277,7 +284,7 @@ fun CamerasScreen(
     // wall that has just appeared on the television opens on the camera Settings
     // names.
     LaunchedEffect(stripShown, cameras.size) {
-        if (stripShown) return@LaunchedEffect
+        if (settingsOpen || stripShown) return@LaunchedEffect
         delay(60)
         val wanted = wallAt?.takeIf { name -> cameras.any { it.name == name } } ?: current.name
         focusTile(wallRequesters, wanted)
@@ -319,6 +326,13 @@ fun CamerasScreen(
         takeoverUntil = 0L
     }
 
+    // A change of layout starts the page again: a wall is a wall, not the camera
+    // that happened to be open before the setting was touched.
+    LaunchedEffect(screen) {
+        wallOpen = false
+        fullScreen = false
+    }
+
     // Closing Settings puts the arrows back where they were, rather than leaving
     // nothing focused for the next press to fall into.
     LaunchedEffect(settingsOpen) {
@@ -336,6 +350,7 @@ fun CamerasScreen(
     // The picture takes the focus when it fills the screen, and gives it back to
     // the strip when the strip comes back.
     LaunchedEffect(fullScreen) {
+        if (settingsOpen) return@LaunchedEffect
         delay(80)
         if (fullScreen) {
             runCatching { pictureFocus.requestFocus() }
@@ -359,12 +374,12 @@ fun CamerasScreen(
                 requesters = wallRequesters,
                 onFocused = { wallAt = it },
                 onOpen = { camera ->
-                    // The press asks for one camera, which is the layout with the
-                    // picture and the strip. Back brings the wall back.
+                    // The press asks for one camera, so it fills the screen. Back
+                    // brings the wall back rather than a layout nobody asked for.
                     chosen = camera.name
                     wallAt = camera.name
-                    landing = 0
                     wallOpen = true
+                    fullScreen = true
                 },
             )
         } else {
@@ -396,12 +411,20 @@ fun CamerasScreen(
                         muted = !soundOn,
                         focusRequester = pictureFocus,
                         onToggle = {
-                            // Filling the screen is a choice; it ends a takeover.
-                            if (!fullScreen) {
-                                takeoverFrom = null
-                                takeoverUntil = 0L
+                            if (screen == ScreenGrid && wallOpen) {
+                                // The press that filled the screen again puts the
+                                // wall back, since the strip is not part of a wall.
+                                wallAt = current.name
+                                fullScreen = false
+                                wallOpen = false
+                            } else {
+                                // Filling the screen is a choice; it ends a takeover.
+                                if (!fullScreen) {
+                                    takeoverFrom = null
+                                    takeoverUntil = 0L
+                                }
+                                fullScreen = !fullScreen
                             }
-                            fullScreen = !fullScreen
                         },
                         modifier = if (fullScreen) {
                             Modifier.fillMaxSize()
@@ -486,7 +509,29 @@ private fun SettingsPanel(
     // kinder than stopping at an edge.
     var at by remember { mutableIntStateOf(CardRows - 1) }
     val rows = remember { List(CardRows) { FocusRequester() } }
-    val firstChoice = remember { FocusRequester() }
+    // A short list holds the arrows the same way. Without this a press beside it
+    // finds nothing to land on and the focus walks out into the cameras behind
+    // the card, where the arrows then move the cameras page instead.
+    var pickerAt by remember { mutableIntStateOf(0) }
+    var pickerCount by remember { mutableIntStateOf(2) }
+    val pickerRows = remember { mutableStateMapOf<Int, FocusRequester>() }
+
+    // A row answers only once it has been laid out, and changing the layout lays
+    // the page out again, so ask again until the request lands.
+    suspend fun focusRow(index: Int) {
+        repeat(10) {
+            if (runCatching { rows[index].requestFocus() }.isSuccess) return
+            delay(60)
+        }
+    }
+
+    suspend fun focusChoice(index: Int) {
+        repeat(10) {
+            val requester = pickerRows[index]
+            if (requester != null && runCatching { requester.requestFocus() }.isSuccess) return
+            delay(60)
+        }
+    }
 
     // The list goes when a choice is made, so the arrows come back to the row
     // that opened it rather than to nothing.
@@ -494,14 +539,27 @@ private fun SettingsPanel(
         picking = null
         at = returnTo
         scope.launch {
-            delay(80)
-            runCatching { rows[returnTo].requestFocus() }
+            // Let the list go first: a focused row taken away moves the arrows to
+            // whichever row had them before, which is not the one that opened it.
+            delay(90)
+            focusRow(returnTo)
         }
     }
 
+    fun openPicker(which: CardPicker, startAt: Int, count: Int) {
+        pickerAt = startAt
+        pickerCount = count
+        picking = which
+    }
+
+    LaunchedEffect(picking, pickerCount) {
+        if (picking == null) return@LaunchedEffect
+        delay(60)
+        focusChoice(pickerAt)
+    }
+
     LaunchedEffect(Unit) {
-        delay(80)
-        runCatching { rows[CardRows - 1].requestFocus() }
+        focusRow(CardRows - 1)
     }
 
     Box(
@@ -509,28 +567,50 @@ private fun SettingsPanel(
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.62f))
             .onPreviewKeyEvent { event ->
-                // While a short list is up, its own rows have the arrows.
-                if (picking != null || event.type != KeyEventType.KeyDown) {
-                    return@onPreviewKeyEvent false
-                }
-                when (event.key) {
-                    Key.DirectionLeft,
-                    Key.DirectionUp,
-                    -> {
-                        at = (at + rows.size - 1) % rows.size
-                        runCatching { rows[at].requestFocus() }
-                        true
-                    }
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                if (picking != null) {
+                    // Up and down walk the list and come round; left and right
+                    // have nothing beside them and are taken so nothing behind
+                    // the card can have them.
+                    when (event.key) {
+                        Key.DirectionUp -> {
+                            pickerAt = (pickerAt + pickerCount - 1) % pickerCount
+                            scope.launch { focusChoice(pickerAt) }
+                            true
+                        }
 
-                    Key.DirectionRight,
-                    Key.DirectionDown,
-                    -> {
-                        at = (at + 1) % rows.size
-                        runCatching { rows[at].requestFocus() }
-                        true
-                    }
+                        Key.DirectionDown -> {
+                            pickerAt = (pickerAt + 1) % pickerCount
+                            scope.launch { focusChoice(pickerAt) }
+                            true
+                        }
 
-                    else -> false
+                        Key.DirectionLeft,
+                        Key.DirectionRight,
+                        -> true
+
+                        else -> false
+                    }
+                } else {
+                    when (event.key) {
+                        Key.DirectionLeft,
+                        Key.DirectionUp,
+                        -> {
+                            at = (at + rows.size - 1) % rows.size
+                            scope.launch { focusRow(at) }
+                            true
+                        }
+
+                        Key.DirectionRight,
+                        Key.DirectionDown,
+                        -> {
+                            at = (at + 1) % rows.size
+                            scope.launch { focusRow(at) }
+                            true
+                        }
+
+                        else -> false
+                    }
                 }
             },
         contentAlignment = Alignment.Center,
@@ -547,7 +627,7 @@ private fun SettingsPanel(
                     CardPicker.DefaultCamera -> DefaultCameraPicker(
                         cameras = cameras,
                         chosen = opening?.name,
-                        firstFocus = firstChoice,
+                        requesters = { pickerRows.getOrPut(it) { FocusRequester() } },
                         onCancel = { closePicker(DefaultCameraAt) },
                         onPick = { name ->
                             scope.launch { repository.setDefaultCamera(name) }
@@ -557,7 +637,7 @@ private fun SettingsPanel(
 
                     CardPicker.Screen -> ScreenPicker(
                         screen = screen,
-                        firstFocus = firstChoice,
+                        requesters = { pickerRows.getOrPut(it) { FocusRequester() } },
                         onCancel = { closePicker(ScreenAt) },
                         onPick = { value ->
                             scope.launch { repository.setScreen(value) }
@@ -592,19 +672,31 @@ private fun SettingsPanel(
                             chevron = true,
                             modifier = Modifier.focusRequester(rows[DefaultCameraAt]),
                             onFocused = { at = DefaultCameraAt },
-                            onClick = { picking = CardPicker.DefaultCamera },
+                            onClick = {
+                                // The list opens on the camera that is ticked.
+                                val startAt = cameras
+                                    .indexOfFirst { it.name == opening?.name }
+                                    .coerceAtLeast(0)
+                                openPicker(CardPicker.DefaultCamera, startAt, cameras.size)
+                            },
                         )
                         SettingRow(
                             title = stringResource(R.string.tv_screen),
                             supporting = stringResource(R.string.tv_screen_note),
                             value = stringResource(
                                 if (screen == ScreenGrid) R.string.tv_screen_grid
-                                else R.string.tv_screen_one,
+                                else R.string.tv_screen_default,
                             ),
                             chevron = true,
                             modifier = Modifier.focusRequester(rows[ScreenAt]),
                             onFocused = { at = ScreenAt },
-                            onClick = { picking = CardPicker.Screen },
+                            onClick = {
+                                openPicker(
+                                    CardPicker.Screen,
+                                    if (screen == ScreenGrid) 1 else 0,
+                                    count = 2,
+                                )
+                            },
                         )
                         SettingRow(
                             title = stringResource(R.string.tv_takeover),
@@ -649,20 +741,15 @@ private const val CardRows = 5
 /** A short list that takes the card's place while it is up. */
 private enum class CardPicker { DefaultCamera, Screen }
 
-/** One camera at a time with the rest beside it, or all of them on a wall. */
+/** One big picture, or a wall of every camera. Both hold the arrows while up. */
 @Composable
 private fun ScreenPicker(
     screen: String,
-    firstFocus: FocusRequester,
+    requesters: (Int) -> FocusRequester,
     onCancel: () -> Unit,
     onPick: (String) -> Unit,
 ) {
     BackHandler(enabled = true, onBack = onCancel)
-
-    LaunchedEffect(Unit) {
-        delay(80)
-        runCatching { firstFocus.requestFocus() }
-    }
 
     Text(
         text = stringResource(R.string.tv_screen).uppercase(),
@@ -676,13 +763,13 @@ private fun ScreenPicker(
     )
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
-            ScreenOne to R.string.tv_screen_one,
+            ScreenOne to R.string.tv_screen_default,
             ScreenGrid to R.string.tv_screen_grid,
         ).forEachIndexed { index, (value, label) ->
             PickerRow(
                 label = stringResource(label),
                 ticked = screen == value,
-                modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
+                modifier = Modifier.focusRequester(requesters(index)),
                 onClick = { onPick(value) },
             )
         }
@@ -694,16 +781,11 @@ private fun ScreenPicker(
 private fun DefaultCameraPicker(
     cameras: List<Camera>,
     chosen: String?,
-    firstFocus: FocusRequester,
+    requesters: (Int) -> FocusRequester,
     onCancel: () -> Unit,
     onPick: (String) -> Unit,
 ) {
     BackHandler(enabled = true, onBack = onCancel)
-
-    LaunchedEffect(Unit) {
-        delay(80)
-        runCatching { firstFocus.requestFocus() }
-    }
 
     Text(
         text = stringResource(R.string.tv_default_camera).uppercase(),
@@ -724,7 +806,7 @@ private fun DefaultCameraPicker(
             PickerRow(
                 label = camera.title,
                 ticked = opens,
-                modifier = if (opens) Modifier.focusRequester(firstFocus) else Modifier,
+                modifier = Modifier.focusRequester(requesters(index)),
                 onClick = { onPick(camera.name) },
             )
         }
@@ -1549,13 +1631,12 @@ private fun CameraTile(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
-                .padding(horizontal = if (wall) 18.dp else 12.dp, vertical = if (wall) 14.dp else 9.dp),
+                .padding(horizontal = 14.dp, vertical = if (wall) 11.dp else 9.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = camera.title,
-                style = if (wall) MaterialTheme.typography.titleLarge
-                else MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium,
                 color = Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

@@ -150,7 +150,7 @@ at once. The television says **Live** over the big picture while it is arriving,
 and **Waiting for a picture** until the first frame does.
 
 Settings in the corner, one press up from the first camera, is a list: **Default
-camera**, the camera the television opens on when it starts; **Cameras on screen**;
+camera**, the camera the television opens on when it starts; **Camera Layout**;
 **Camera auto switch**; and **Pair again** for another server or account. Back
 closes it.
 
@@ -158,11 +158,10 @@ Press left from a camera in the strip and Select, and that camera fills the
 screen. Its name and **Live** stay on the picture; Select or Back brings the strip
 back.
 
-**Cameras on screen** is where the wall is turned on. A wall is every camera at
-the same size, fitted to how many you have: four make a 2×2, six make two rows of
-three. The strip goes while the wall is up, and Select on a tile opens that camera
-with the strip beside it. Back brings the wall back with the arrows on the camera
-you left.
+**Camera Layout** is where the wall is turned on: **Default**, or **Grid**. A grid
+is every camera at the same size, fitted to how many you have: four make a 2×2,
+six make two rows of three. Select on a tile fills the screen with that camera,
+and Back brings the wall back with the arrows on the camera you left.
 
 A camera that sees a person or a car takes the big picture for half a minute, and
 the screen then goes back to the camera it was on. **Camera auto switch** under

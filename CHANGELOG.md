@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.15.1
+
+- Select on a camera in the wall fills the screen with that camera, and Back goes straight back to the wall.
+- Settings calls the row Camera Layout, and the arrows stay inside its short list instead of wandering out to the cameras behind.
+
 ## 0.15.0
 
 - The cameras page on the television can be a wall of every camera at once: Settings, Cameras on screen, Grid. Four cameras fill a 2x2, six make two rows of three.

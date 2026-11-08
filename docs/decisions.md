@@ -3001,6 +3001,13 @@ way back into the card. A press that lands on the strip behind the card looks
 like the card ignoring you, and on a television there is no pointer to tell you
 where the focus went.
 
+The short lists inside it hold the arrows the same way, and for the same reason.
+There is nothing beside a list, so left and right are taken rather than spent on
+a focus search that ends behind the card; up and down walk the list and come round
+at the ends. A row that is taken away when the list closes hands the arrows back
+to the row that opened it, so a choice leaves you where you were rather than at
+the top of the card.
+
 ## Alerts are a page, not a strip
 
 The cameras screen is about now: one picture, and the rest of the cameras one
@@ -3107,13 +3114,16 @@ notices, and the count is the only thing that decides where it goes.
 The wall keeps the strip's feed, 360p at two frames a second, rather than nine of
 the big streams. The box is a small one, and a wall is watched the way a window is.
 
-## Select on the wall is another way into the same camera page
+## Select on the wall fills the screen with that camera
 
 Every camera is on the wall, so a press on a tile has to mean something else. It
-opens that camera in the one-camera layout, the picture with the strip beside it,
-which is where a person goes when the glance turns into watching something. Back
-returns to the wall with the arrows on the camera that was open. The wall and the
-strip are two ways to the same page rather than two pages.
+fills the screen with that camera.
+
+The first version opened it in the one-camera layout, picture and strip. That read
+as a step sideways: the press asked for one camera and got the other three beside
+it, and a strip is what the default layout has rather than something a wall leads
+to. Back goes to the wall, on the tile that was pressed, so a wall is never more
+than one press away from the camera you were watching.
 
 Camera auto switch does nothing while the wall is up: the camera that saw someone
 is already on the screen, and taking it over would shrink two others to make a
