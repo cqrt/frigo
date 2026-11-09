@@ -2,13 +2,13 @@
 <resources>
     <string name="app_name">Frigo TV</string>
 
-    <string name="pairing_title">Put your cameras on the TV</string>
-    <string name="pairing_how">On your phone, open Frigo. Settings, then Link a TV. Point it at the code.</string>
-    <string name="pairing_code_label">This TV</string>
+    <string name="pairing_title">Put your cameras on Android TV</string>
+    <string name="pairing_how">On your phone, open Frigo. Settings, then Link an Android TV. Point it at the code.</string>
+    <string name="pairing_code_label">This Android TV</string>
     <string name="pairing_waiting">Waiting for your phone</string>
-    <string name="pairing_no_network">This TV is not on your home network.</string>
+    <string name="pairing_no_network">This Android TV is not on your home network.</string>
     <string name="pairing_retry">Try again</string>
-    <string name="pairing_trouble">The TV could not start pairing.</string>
+    <string name="pairing_trouble">The Android TV could not start pairing.</string>
 
     <string name="tv_live">Live</string>
     <string name="tv_offline">Offline</string>

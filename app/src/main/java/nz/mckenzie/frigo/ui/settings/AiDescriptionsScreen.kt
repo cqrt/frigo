@@ -163,10 +163,10 @@ fun AiDescriptionsScreen(
                     Item(
                         icon = FrigoIcons.Sparkle,
                         title = stringResource(R.string.ai_describe_alerts),
-                        supporting = if (service != null) {
-                            stringResource(R.string.ai_describe_supporting)
-                        } else {
+                        supporting = if (service == null) {
                             stringResource(R.string.ai_describe_no_model)
+                        } else {
+                            null
                         },
                         // With nothing set up there is nothing to switch, so the
                         // line leads to the model instead.

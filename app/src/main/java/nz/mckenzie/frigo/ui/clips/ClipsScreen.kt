@@ -207,11 +207,6 @@ fun ClipsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                         text = stringResource(R.string.clips_nothing_saved),
                         style = MaterialTheme.typography.bodyLarge,
                     )
-                    Text(
-                        text = stringResource(R.string.clips_nothing_saved_supporting),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
 
                 else -> LazyColumn(

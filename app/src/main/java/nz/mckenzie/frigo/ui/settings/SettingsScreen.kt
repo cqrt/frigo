@@ -868,10 +868,6 @@ fun SettingsScreen(
                         colour = if (backupProblem != null) MaterialTheme.colorScheme.error else null,
                     )
                 }
-
-                CardDivider()
-
-                Note(text = stringResource(R.string.backup_note))
             }
 
             Group(stringResource(R.string.settings_about)) {

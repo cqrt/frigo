@@ -161,12 +161,6 @@ fun AlertObjectsScreen(
                     )
                 }
 
-                // Said in the card, under the list, because it is about every row
-                // above it rather than about one of them.
-                if (!state.loading) {
-                    CardDivider()
-                    Note(stringResource(R.string.alert_objects_phone_only))
-                }
             }
 
             Spacer(Modifier.height(24.dp))

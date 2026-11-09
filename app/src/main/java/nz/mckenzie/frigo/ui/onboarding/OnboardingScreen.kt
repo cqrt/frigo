@@ -269,12 +269,6 @@ private fun WelcomeStep(onStart: () -> Unit) {
             text = stringResource(R.string.onboard_welcome_lead),
             style = MaterialTheme.typography.bodyLarge,
         )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = stringResource(R.string.onboard_welcome_note),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         Spacer(Modifier.height(28.dp))
         Button(
             onClick = onStart,

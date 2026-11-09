@@ -234,7 +234,6 @@ private fun Numbers(
                 Item(
                     icon = FrigoIcons.Server,
                     title = stringResource(R.string.system_restart_frigate),
-                    supporting = stringResource(R.string.system_restart_supporting),
                     colour = MaterialTheme.colorScheme.error,
                     onClick = onRestart,
                     trailing = { OpenMark() },

@@ -124,9 +124,8 @@ fun AlertPeopleScreen(
                 // What ticking anyone here costs: the alert waits for the sentence
                 // Frigate writes, which is where a recognised name turns up. A server
                 // that writes none has no name for the phone to go on.
-                when (state.describes) {
-                    false -> Note(stringResource(R.string.alert_people_no_descriptions))
-                    else -> Note(stringResource(R.string.alert_people_wait))
+                if (state.describes == false) {
+                    Note(stringResource(R.string.alert_people_no_descriptions))
                 }
 
                 // No Everyone row: with nobody ticked the list is empty, and a row
@@ -155,8 +154,6 @@ fun AlertPeopleScreen(
                         // A server with no faces learned yet has nothing to offer, and
                         // an empty card would look like a page that failed.
                         Note(stringResource(R.string.explore_no_people))
-                    } else {
-                        Note(stringResource(R.string.alert_objects_phone_only))
                     }
                 }
             }

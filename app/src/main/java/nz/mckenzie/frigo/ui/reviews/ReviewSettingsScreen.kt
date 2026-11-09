@@ -81,7 +81,6 @@ fun ReviewSettingsScreen(
         LabelPicker(
             kind = choosing,
             objects = page?.settings?.objects.orEmpty(),
-            tracked = page?.settings?.tracked.orEmpty(),
             initial = when (choosing) {
                 ReviewLabels.Alerts -> shown.alertLabels
                 ReviewLabels.Detections -> shown.detectionLabels.orEmpty()
@@ -296,7 +295,6 @@ fun ReviewSettingsScreen(
 private fun LabelPicker(
     kind: ReviewLabels,
     objects: List<String>,
-    tracked: Set<String>,
     initial: List<String>,
     modifier: Modifier = Modifier,
     onDone: (List<String>) -> Unit,
@@ -369,22 +367,10 @@ private fun LabelPicker(
                         title = prettyLabel(label),
                         onClick = { toggle(label) },
                         trailing = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            ) {
-                                if (label in tracked) {
-                                    Text(
-                                        text = stringResource(R.string.revset_tracked),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                                Checkbox(
-                                    checked = label in chosen,
-                                    onCheckedChange = null,
-                                )
-                            }
+                            Checkbox(
+                                checked = label in chosen,
+                                onCheckedChange = null,
+                            )
                         },
                     )
                 }

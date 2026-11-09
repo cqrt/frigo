@@ -68,14 +68,12 @@
     <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">Dein Server antwortet nicht, deshalb steht hier nur, was du angehakt hast.</string>
     <string name="alert_objects_hint">Wähle mindestens ein Objekt.</string>
-    <string name="alert_objects_phone_only">Diese Liste gehört nur zu diesem Telefon. Dein Server und seine anderen Telefone bleiben unverändert.</string>
 
     <!-- Die eigene Liste dieses Telefons: Personen, über die es still bleibt. -->
     <string name="alert_people_title">Personen auslassen</string>
     <string name="alert_people_nobody">Niemand</string>
     <string name="alert_people_search">Anna, Max…</string>
     <string name="alert_people_cant_read">Dein Server antwortet nicht, deshalb steht hier nur, wer angehakt ist.</string>
-    <string name="alert_people_wait">Solange jemand auf dieser Liste steht, wartet ein Alarm, bis dein Server genannt hat, wen er gesehen hat. Er kann also etwas später kommen.</string>
     <string name="alert_people_no_descriptions">Dein Server beschreibt seine Alarme nicht, deshalb kennt diese Liste nur Personen, deren Name am Alarm steht.</string>
 
     <string name="settings_live_view">Livebild</string>
@@ -132,7 +130,6 @@
     <string name="backup_restore_detail">Alles, was du hier eingestellt hast, wird durch die Datei ersetzt. Auf deinem Server ändert sich nichts.</string>
     <string name="backup_restore_confirm">Wiederherstellen</string>
     <string name="backup_cancel">Abbrechen</string>
-    <string name="backup_note">In der Datei steht keine Anmeldung, und nichts davon geht an deinen Server.</string>
     <string name="backup_restored">Deine Einstellungen sind zurück.</string>
     <string name="backup_restored_elsewhere">Deine Einstellungen sind zurück. Die Datei wurde auf %1$s gesichert.</string>
     <string name="backup_empty">Diese Datei enthält nichts, was diese Version wiederherstellen kann.</string>
@@ -201,7 +198,6 @@
     <!-- Der Schalter, der Alarme beschreibt, mit und ohne Modell dahinter. -->
     <string name="ai_alerts">Alarme</string>
     <string name="ai_describe_alerts">Alarme beschreiben</string>
-    <string name="ai_describe_supporting">Zu jedem Alarm bekommst du einen Satz, was die Kamera gesehen hat.</string>
     <string name="ai_describe_no_model">Leg ein Modell fest, dann kann jeder Alarm sagen, was passiert ist.</string>
 
     <!-- Die Zeile, die zur Modellseite führt. -->
@@ -331,7 +327,6 @@
     <!-- Clips: wenn die Liste leer ist oder der Server nicht antwortet. -->
     <string name="clips_try_again">Nochmal</string>
     <string name="clips_nothing_saved">Noch nichts gespeichert.</string>
-    <string name="clips_nothing_saved_supporting">Wenn eine Aufnahme auf dem Bild ist, fragt Speichern, wohin sie soll: auf dieses Handy oder auf den Server. Was der Server behält, wartet hier, und Frigate hält es fest, wenn seine Aufräumung die Aufnahmen nimmt.</string>
 
     <!-- Clips: was eine Zeile sagt, während ein Clip zum Handy unterwegs ist. -->
     <string name="clips_cutting">Frigate schneidet ihn aus.</string>
@@ -395,7 +390,6 @@
     <!-- ===== onboard ===== -->
     <!-- Die Willkommensseite. -->
     <string name="onboard_welcome_lead">Deine Frigate-Kameras auf deinem Handy.</string>
-    <string name="onboard_welcome_note">Es spricht mit dem Server, den du schon hast. Deine Anmeldung bleibt auf diesem Handy.</string>
     <string name="onboard_get_started">Los geht\'s</string>
 
     <!-- Dein Server. -->
@@ -645,7 +639,6 @@
     <string name="revset_detections_hint">Keins angehakt heißt jedes andere Objekt.</string>
     <string name="revset_no_match">Hier heißt nichts so.</string>
     <string name="revset_only_detected">Hier steht nur, was dein Server verfolgt und worauf er hört.</string>
-    <string name="revset_tracked">Verfolgt</string>
 
     <!-- ===== sys ===== -->
     <!-- Die Systemseite: ein Stand der Serverwerte, in Worten. -->
@@ -764,7 +757,6 @@
     <!-- Die Zeile, die den Server neu startet, für einen Admin. -->
     <string name="system_this_server">Dieser Server</string>
     <string name="system_restart_frigate">Frigate neu starten</string>
-    <string name="system_restart_supporting">Alarme stehen etwa eine halbe Minute</string>
 
     <!-- ===== Systemprotokolle ===== -->
     <!-- Die Zeile unter System und die Seite, die sie öffnet. -->

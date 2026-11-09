@@ -67,14 +67,12 @@
     <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">O seu servidor não responde, então aqui só aparece o que você marcou.</string>
     <string name="alert_objects_hint">Escolha pelo menos um objeto.</string>
-    <string name="alert_objects_phone_only">Esta lista é só deste telefone. O seu servidor e os outros telefones ficam como estão.</string>
 
     <!-- A lista própria deste telefone: as pessoas por quem ele fica calado. -->
     <string name="alert_people_title">Pessoas a ignorar</string>
     <string name="alert_people_nobody">Ninguém</string>
     <string name="alert_people_search">Ana, Luís…</string>
     <string name="alert_people_cant_read">O seu servidor não responde, por isso aqui só aparecem as pessoas que marcou.</string>
-    <string name="alert_people_wait">Enquanto houver alguém nesta lista, o alerta espera que o seu servidor diga quem viu, por isso pode chegar um pouco mais tarde.</string>
     <string name="alert_people_no_descriptions">O seu servidor não descreve os seus alertas, por isso esta lista só conhece quem vem nomeado no alerta.</string>
 
     <string name="settings_live_view">Visualização ao vivo</string>
@@ -131,7 +129,6 @@
     <string name="backup_restore_detail">Tudo o que você escolheu aqui é substituído pelo arquivo. Nada muda no seu servidor.</string>
     <string name="backup_restore_confirm">Restaurar</string>
     <string name="backup_cancel">Cancelar</string>
-    <string name="backup_note">Nenhum login fica no arquivo, e nada disto vai para o seu servidor.</string>
     <string name="backup_restored">Seus ajustes estão de volta.</string>
     <string name="backup_restored_elsewhere">Seus ajustes estão de volta. O arquivo foi salvo em %1$s.</string>
     <string name="backup_empty">Esse arquivo não tem nada que esta versão possa restaurar.</string>
@@ -200,7 +197,6 @@
     <!-- The switch that describes alerts, with and without a model behind it. -->
     <string name="ai_alerts">Alertas</string>
     <string name="ai_describe_alerts">Descrever alertas</string>
-    <string name="ai_describe_supporting">Você recebe uma frase com cada alerta, dizendo o que a câmera viu.</string>
     <string name="ai_describe_no_model">Defina um modelo e cada alerta pode dizer o que aconteceu.</string>
 
     <!-- The row that leads to the model page. -->
@@ -330,7 +326,6 @@
     <!-- Clips: when the list is empty, or the server didn't answer. -->
     <string name="clips_try_again">Tentar de novo</string>
     <string name="clips_nothing_saved">Nada salvo ainda.</string>
-    <string name="clips_nothing_saved_supporting">Com uma gravação na tela, Salvar pergunta onde guardar: neste celular ou no servidor. O que o servidor guarda aparece aqui, e o Frigate mantém quando a limpeza leva as gravações.</string>
 
     <!-- Clips: what a row says while a clip is on its way to the phone. -->
     <string name="clips_cutting">O Frigate está cortando.</string>
@@ -394,7 +389,6 @@
     <!-- ===== onboard ===== -->
     <!-- The welcome page. -->
     <string name="onboard_welcome_lead">Suas câmeras Frigate no seu celular.</string>
-    <string name="onboard_welcome_note">Ele fala com o servidor que você já usa. Seu login fica neste celular.</string>
     <string name="onboard_get_started">Começar</string>
 
     <!-- Your server. -->
@@ -644,7 +638,6 @@
     <string name="revset_detections_hint">Nenhum marcado significa todos os outros objetos.</string>
     <string name="revset_no_match">Nada aqui tem esse nome.</string>
     <string name="revset_only_detected">Aqui só aparece o que o seu servidor segue e escuta.</string>
-    <string name="revset_tracked">Rastreado</string>
 
     <!-- ===== sys ===== -->
     <!-- The System page: one reading of the server's stats, said in words. -->
@@ -763,7 +756,6 @@
     <!-- The row that restarts the server, for an admin. -->
     <string name="system_this_server">Este servidor</string>
     <string name="system_restart_frigate">Reiniciar o Frigate</string>
-    <string name="system_restart_supporting">Os alertas param por cerca de meio minuto</string>
 
     <!-- ===== registos do sistema ===== -->
     <!-- A linha sob Sistema e a página que abre. -->

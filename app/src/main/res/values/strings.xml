@@ -32,20 +32,20 @@
 
     <!-- Linking a television: the phone reads the code on the TV's screen and
          hands it the server and sign-in to use. -->
-    <string name="link_tv_title">Link a TV</string>
-    <string name="link_tv_supporting">Put your cameras on your television.</string>
+    <string name="link_tv_title">Link an Android TV</string>
+    <string name="link_tv_supporting">View your cameras on your Android TV.</string>
     <string name="link_tv_scan">Point your phone at the code on the TV.</string>
     <string name="link_tv_scan_again">Scan again</string>
-    <string name="link_tv_tv_at">TV at %1$s</string>
+    <string name="link_tv_tv_at">Android TV at %1$s</string>
     <string name="link_tv_signs_in">Signs in as %1$s on %2$s.</string>
     <string name="link_tv_password">Frigate password</string>
-    <string name="link_tv_pair">Pair the TV</string>
-    <string name="link_tv_paired">Paired. The TV is signing in.</string>
+    <string name="link_tv_pair">Pair the Android TV</string>
+    <string name="link_tv_paired">Paired. The Android TV is signing in.</string>
     <string name="link_tv_done">Done</string>
     <string name="link_tv_allow">Allow the camera</string>
     <string name="link_tv_camera_off">Frigo needs the camera to read the code on the TV.</string>
     <string name="link_tv_camera_denied">The camera is off for Frigo. Turn it on in Android\'s settings, then come back.</string>
-    <string name="link_tv_no_answer">The TV did not answer. Check that it is on and on the same network.</string>
+    <string name="link_tv_no_answer">The Android TV did not answer. Check that it is on and on the same network.</string>
     <string name="settings_signed_in">Signed in</string>
 
     <string name="settings_notifications">Notifications</string>
@@ -54,27 +54,25 @@
     <string name="settings_ai">AI descriptions</string>
     <string name="settings_ai_supporting">Using Artificial Intelligence, Frigo will describe what it sees in your alerts</string>
     <string name="settings_alerts_and_detections">Alerts and detections</string>
-    <string name="settings_alerts_supporting">The lists your server makes an alert from.</string>
-    <string name="settings_all_cameras_off">Every camera is off on your server\'s notifications page, so nothing will buzz.</string>
+    <string name="settings_alerts_supporting">The objects your server makes an alert from.</string>
+    <string name="settings_all_cameras_off">Every camera is off on your server\'s notifications page, so nothing will notify.</string>
     <string name="settings_quiet_times">Quiet times</string>
     <string name="settings_battery_note">Frigo runs in the background to keep the alerts coming. So that Android doesn\'t shut it down to save battery, turn off battery optimization for Frigo.</string>
     <string name="settings_battery_settings">Battery settings</string>
 
     <!-- This phone's own list of the objects that may buzz it. -->
-    <string name="alert_objects_title">Only these objects</string>
+    <string name="alert_objects_title">People to ignore</string>
     <string name="alert_objects_everything">Everything your server sends</string>
     <string name="alert_objects_per_camera">Set per camera</string>
     <string name="alert_objects_search">Person, car…</string>
     <string name="alert_objects_cant_read">Your server isn\'t answering, so this lists only what you\'ve ticked.</string>
     <string name="alert_objects_hint">Pick at least one object.</string>
-    <string name="alert_objects_phone_only">This list is this phone\'s own. Your server and its other phones are unchanged.</string>
 
     <!-- This phone's own list of the people it stays quiet about, by the name Frigate knows them by. -->
     <string name="alert_people_title">People to leave out</string>
     <string name="alert_people_nobody">No one</string>
     <string name="alert_people_search">Angie, Matt…</string>
     <string name="alert_people_cant_read">Your server isn\'t answering, so this lists only the people you\'ve ticked.</string>
-    <string name="alert_people_wait">While anyone is on this list, an alert waits until your server has named who it saw, so it can arrive a little later.</string>
     <string name="alert_people_no_descriptions">Your server doesn\'t describe its alerts, so this list only knows people whose name is on the alert.</string>
 
     <string name="settings_live_view">Live view</string>
@@ -92,7 +90,7 @@
     <string name="settings_system_supporting">Memory, disks, cameras, and the processes behind them</string>
 
     <string name="settings_privacy">Privacy</string>
-    <string name="settings_lock">Lock Frigo</string>
+    <string name="settings_lock">Biometrics</string>
     <string name="settings_lock_supporting">Frigo asks for your fingerprint before it opens.</string>
     <string name="settings_lock_no_screen_lock">Set up a screen lock on your phone first, then turn this on.</string>
     <string name="settings_lock_gone">Your phone no longer has a screen lock, so Frigo opens without asking.</string>
@@ -126,12 +124,11 @@
     <string name="backup_save_supporting">One file you can bring to another phone.</string>
     <string name="backup_saved_to">Saved %1$s to %2$s</string>
     <string name="backup_restore">Restore from a file</string>
-    <string name="backup_restore_supporting">Replaces what you\'ve chosen here.</string>
+    <string name="backup_restore_supporting">Replaces your current settings.</string>
     <string name="backup_restore_question">Replace your settings?</string>
     <string name="backup_restore_detail">Everything you\'ve chosen here is replaced by the file. Nothing on your server changes.</string>
     <string name="backup_restore_confirm">Restore</string>
     <string name="backup_cancel">Cancel</string>
-    <string name="backup_note">No sign-in is in the file, and nothing here goes to your server.</string>
     <string name="backup_restored">Your settings are back.</string>
     <string name="backup_restored_elsewhere">Your settings are back. The file was saved on %1$s.</string>
     <string name="backup_empty">That file has nothing in it this version can restore.</string>
@@ -148,7 +145,7 @@
     <!-- Choosing the language. -->
     <string name="language_title">Language</string>
     <string name="language_heading">Language</string>
-    <string name="language_follow_phone">Follow the phone</string>
+    <string name="language_follow_phone">System default</string>
     <string name="language_note">Frigo opens in your phone\'s language unless you pick one.</string>
     <string name="language_chosen">Chosen</string>
 
@@ -200,8 +197,7 @@
     <!-- The switch that describes alerts, with and without a model behind it. -->
     <string name="ai_alerts">Alerts</string>
     <string name="ai_describe_alerts">Describe alerts</string>
-    <string name="ai_describe_supporting">You get a sentence with each alert, saying what the camera saw.</string>
-    <string name="ai_describe_no_model">Set a model, and every alert can say what happened.</string>
+    <string name="ai_describe_no_model">Set a model, and every alert can be described.</string>
 
     <!-- The row that leads to the model page. -->
     <string name="ai_model">Model</string>
@@ -230,11 +226,11 @@
     <string name="alerts_tap_to_watch">%1$s. Tap to watch it.</string>
 
     <!-- What the quiet notification says when nothing will buzz. -->
-    <string name="alerts_all_cameras_off">Every camera is off on your server\'s notifications page, so nothing will buzz.</string>
-    <string name="alerts_no_alerts_on">No camera has alerts on, so nothing will buzz.</string>
-    <string name="alerts_no_alert_objects">No camera has any alert objects, so nothing will buzz.</string>
-    <string name="alerts_only_objects">Your list of objects is why nothing will buzz. Change it in Settings, Only these objects.</string>
-    <string name="alerts_all_cameras_hidden">Every camera that would buzz is turned off on this phone, so nothing will buzz. Turn one back on in Settings, Cameras.</string>
+    <string name="alerts_all_cameras_off">Every camera is off on your server\'s notifications page, so nothing will notify.</string>
+    <string name="alerts_no_alerts_on">No camera has alerts on, so nothing will notify.</string>
+    <string name="alerts_no_alert_objects">No camera has any alert objects, so nothing will notify.</string>
+    <string name="alerts_only_objects">Your list of objects is why nothing will notify. Change it in Settings, Only these objects.</string>
+    <string name="alerts_all_cameras_hidden">Every camera that would notify is turned off on this phone, so nothing will notify. Turn one back on in Settings, Cameras.</string>
 
     <!-- What it says when something will: the cameras, the objects, and the connection. -->
     <plurals name="alerts_cameras">
@@ -284,8 +280,8 @@
     <string name="api_live_view_returned">Live view returned %1$d</string>
 
     <!-- Clips. -->
-    <string name="api_wouldnt_keep">Frigate wouldn\'t keep that stretch.</string>
-    <string name="api_no_recording">Frigate has no recording of that stretch.</string>
+    <string name="api_wouldnt_keep">Frigate wouldn\'t keep that stretch of time.</string>
+    <string name="api_no_recording">Frigate has no recording of that stretch of time.</string>
     <string name="api_no_clip">Frigate has no clip for this one any more. It cuts clips out of your recordings, so an old one goes when the recordings do.</string>
     <string name="api_clip_gone">That clip isn\'t on the server any more.</string>
     <string name="api_clip_too_big">This clip is too long to fetch, at over 400 MB. Reviews stay open while something keeps being seen, so an old one can cover hours of recording.</string>
@@ -330,7 +326,6 @@
     <!-- Clips: when the list is empty, or the server didn't answer. -->
     <string name="clips_try_again">Try again</string>
     <string name="clips_nothing_saved">Nothing saved yet.</string>
-    <string name="clips_nothing_saved_supporting">With a recording on screen, Save asks where to put it: on this phone, or on the server. Whatever the server keeps waits here, and Frigate holds onto it when its clean-up takes the recordings.</string>
 
     <!-- Clips: what a row says while a clip is on its way to the phone. -->
     <string name="clips_cutting">Frigate is cutting it out.</string>
@@ -349,7 +344,7 @@
     <string name="clips_rename_title">Name this clip</string>
     <string name="clips_rename_label">Name</string>
     <string name="clips_delete_title">Delete this clip?</string>
-    <string name="clips_delete_body">It goes from the server. A copy you saved to the phone stays where it is. This can\'t be put back.</string>
+    <string name="clips_delete_body">This clip will be deleted from the server. Save a copy to your phone if you want to keep it.</string>
 
     <!-- ===== login ===== -->
     <!-- Signing in, and signing in to another server. -->
@@ -366,7 +361,7 @@
     <string name="login_keeps_sign_in">Frigo keeps your sign-in on this phone only. It talks to your server and nothing else.</string>
 
     <string name="login_add_server">Add a server</string>
-    <string name="login_add_server_note">Sign in to another Frigate server. The one you are on keeps its sign-in, so you can switch back from Settings.</string>
+    <string name="login_add_server_note">Add another Frigate server. Seamless switch between your servers.</string>
     <string name="login_add">Add</string>
 
     <!-- The filter chips, and the tick that says which choice is on. -->
@@ -394,7 +389,6 @@
     <!-- ===== onboard ===== -->
     <!-- The welcome page. -->
     <string name="onboard_welcome_lead">Your Frigate cameras on your phone.</string>
-    <string name="onboard_welcome_note">It talks to the server you already run. Your sign-in stays on this phone.</string>
     <string name="onboard_get_started">Get started</string>
 
     <!-- Your server. -->
@@ -408,7 +402,7 @@
     <string name="onboard_alerts_lead">Your phone tells you when your server reports an alert.</string>
     <string name="onboard_alerts_allowed">Notifications allowed</string>
     <string name="onboard_alerts_notifications">Notifications</string>
-    <string name="onboard_alerts_where">Which cameras and objects buzz is set on your server. Its notifications page and its alerts page decide.</string>
+    <string name="onboard_alerts_where">Which cameras and objects notify is set on your server. Its notifications page and its alerts page decide.</string>
     <string name="onboard_alerts_asks_once">Android asks about notifications once.</string>
     <string name="onboard_alerts_turn_on">Turn on alerts</string>
     <string name="onboard_alerts_not_now">Not now</string>
@@ -422,7 +416,7 @@
 
     <!-- Battery. -->
     <string name="onboard_battery_title">Battery</string>
-    <string name="onboard_battery_lead">Android stops apps to save battery, which stops the alerts. Turn battery optimization off for Frigo.</string>
+    <string name="onboard_battery_lead">Android regularly shuts down apps to save battery, which stops the alerts. Turn battery optimization off for Frigo.</string>
     <string name="onboard_battery_optimization">Battery optimization</string>
     <string name="onboard_battery_off">Off for Frigo</string>
     <string name="onboard_battery_on">On for Frigo</string>
@@ -444,7 +438,7 @@
     <string name="onboard_tour_cameras">Cameras</string>
     <string name="onboard_tour_cameras_words">All four cameras at once, so a glance tells you whether anyone is about. Tap one for live view.</string>
     <string name="onboard_tour_live">Live and playback</string>
-    <string name="onboard_tour_live_words">Tap a camera and the picture goes live. The bar underneath is the day; drag it to go back through it. Turn the phone on its side for the whole screen.</string>
+    <string name="onboard_tour_live_words">Tap a camera and the picture goes live. The bar underneath is the day; drag it to go back through it. Turn the phone on its side for landscape mode.</string>
     <string name="onboard_tour_review">Review</string>
     <string name="onboard_tour_review_words">The moments Frigate thought were worth a look, newest first. Tap one to watch it, and it leaves the list once you\'ve seen it.</string>
     <string name="onboard_tour_explore">Explore</string>
@@ -502,12 +496,12 @@
     <!-- The sheet that asks where a stretch should go. -->
     <string name="playback_this_stretch">This stretch</string>
     <string name="playback_save_to_phone">Save to this phone</string>
-    <string name="playback_save_to_phone_note">A file you can move or share, like any other.</string>
-    <string name="playback_keep_on_server">Keep on the server</string>
-    <string name="playback_keep_note">Frigate holds it after its clean-up takes the recordings.</string>
+    <string name="playback_save_to_phone_note">A file you can move or share.</string>
+    <string name="playback_keep_on_server">Save on the server</string>
+    <string name="playback_keep_note">Frigate holds this clip, saved from server clean-up.</string>
     <string name="playback_keeping">Frigate is cutting it out.</string>
-    <string name="playback_kept">Kept. It waits on the Clips tab.</string>
-    <string name="playback_clips_kept">Clips kept already</string>
+    <string name="playback_kept">Saved. View it on the Clips tab.</string>
+    <string name="playback_clips_kept">Clips saved already</string>
 
     <!-- Playing a recording: what goes wrong, and the speed button. -->
     <string name="playback_recording_failed">That recording wouldn\'t come.</string>
@@ -520,7 +514,7 @@
     <string name="player_connecting">Connecting…</string>
     <string name="player_retrying">Retrying</string>
     <string name="player_stream_stopped">The stream stopped.</string>
-    <string name="player_small_picture">The camera\'s own stream didn\'t answer, so this is the small picture.</string>
+    <string name="player_small_picture">The camera\'s hi-res stream didn\'t answer, so this is the low-res stream.</string>
 
     <!-- The sound, and the button that turns it on and off. -->
     <string name="player_sound_on">Turn the sound on</string>
@@ -573,7 +567,7 @@
     <string name="camsw_name_heading">This phone</string>
     <string name="camsw_name">Name</string>
     <string name="camsw_name_title">Name this camera</string>
-    <string name="camsw_name_detail">Only this phone uses it. Frigate keeps the name it has.</string>
+    <string name="camsw_name_detail">This renames the camera locally.</string>
     <string name="camsw_name_save">Save</string>
     <string name="camsw_name_use_server">Use the server\'s name</string>
 
@@ -644,7 +638,6 @@
     <string name="revset_detections_hint">None ticked means every other object.</string>
     <string name="revset_no_match">Nothing here goes by that name.</string>
     <string name="revset_only_detected">Only what your server tracks and listens for is listed.</string>
-    <string name="revset_tracked">Tracked</string>
 
     <!-- ===== sys ===== -->
     <!-- The System page: one reading of the server's stats, said in words. -->
@@ -709,7 +702,7 @@
     <string name="camera_switch_birdseye">Birdseye</string>
     <string name="camera_switch_face_recognition">Face recognition</string>
     <string name="camera_switch_license_plate">License plate recognition</string>
-    <string name="camera_off_for_server">Off for the whole server.</string>
+    <string name="camera_off_for_server">Disabled. Re-enable on your frigate server.</string>
     <string name="camera_all_on">Everything on</string>
     <string name="camera_one_off">%1$s off</string>
     <string name="camera_two_off">%1$s and %2$s off</string>
@@ -763,7 +756,6 @@
     <!-- The row that restarts the server, for an admin. -->
     <string name="system_this_server">This server</string>
     <string name="system_restart_frigate">Restart Frigate</string>
-    <string name="system_restart_supporting">Alerts stop for about half a minute</string>
 
     <!-- ===== system logs ===== -->
     <!-- The row under System, and the page it opens. -->
