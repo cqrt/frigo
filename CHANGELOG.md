@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.17.2
+
+- AI descriptions works with a model out on the internet as well as one on your own network, and the page says where the model lives instead of assuming Ollama.
+
 ## 0.17.1
 
 - The television is an Android TV wherever the app names it, and alerts say notify rather than buzz.
@@ -220,10 +224,6 @@ explain, leave out.
 
 - The Settings icon in the bar carries a small red dot while a newer Frigo is waiting.
 - Frigo asks GitHub when it opens and when you come back after an hour, so the dot is right before you go looking.
-
-## 0.10.16
-
-- AI descriptions works with a model out on the internet as well as one on your own network, and the page says where the model lives instead of assuming Ollama.
 
 ## 0.10.15
 
