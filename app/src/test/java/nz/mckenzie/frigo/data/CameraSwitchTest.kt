@@ -115,8 +115,8 @@ class CameraSwitchTest {
             licensePlateOff = true,
         )
 
-        assertEquals("Off for the whole server.", page.blocked(context, CameraSwitch.FaceRecognition))
-        assertEquals("Off for the whole server.", page.blocked(context, CameraSwitch.LicensePlate))
+        assertEquals("Disabled. Re-enable on your Frigate server.", page.blocked(context, CameraSwitch.FaceRecognition))
+        assertEquals("Disabled. Re-enable on your Frigate server.", page.blocked(context, CameraSwitch.LicensePlate))
         assertNull(page.blocked(context, CameraSwitch.Recording))
     }
 

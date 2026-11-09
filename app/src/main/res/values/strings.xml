@@ -206,7 +206,7 @@
     <string name="ai_pictures_note">The pictures go from your server to that model, never through this phone.</string>
 
     <!-- The model page: its two fields, the save, and the way to a cloud service. -->
-    <string name="ai_ollama_heading">Ollama on your network</string>
+    <string name="ai_ollama_heading">The model service</string>
     <string name="ai_field_address">Address</string>
     <string name="ai_save">Save</string>
     <string name="ai_saving">Saving</string>
@@ -216,7 +216,7 @@
     <string name="ai_cloud_supporting">Set it up in Frigate, then come back. The key stays on your server.</string>
 
     <!-- What a save says before it is sent, when a field is empty. -->
-    <string name="ai_error_address">Enter the address of your Ollama server.</string>
+    <string name="ai_error_address">Enter an address for the model.</string>
     <string name="ai_error_model">Enter the name of a model.</string>
 
     <!-- ===== alerts ===== -->
@@ -702,7 +702,7 @@
     <string name="camera_switch_birdseye">Birdseye</string>
     <string name="camera_switch_face_recognition">Face recognition</string>
     <string name="camera_switch_license_plate">License plate recognition</string>
-    <string name="camera_off_for_server">Disabled. Re-enable on your frigate server.</string>
+    <string name="camera_off_for_server">Disabled. Re-enable on your Frigate server.</string>
     <string name="camera_all_on">Everything on</string>
     <string name="camera_one_off">%1$s off</string>
     <string name="camera_two_off">%1$s and %2$s off</string>

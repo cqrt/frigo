@@ -221,6 +221,10 @@ explain, leave out.
 - The Settings icon in the bar carries a small red dot while a newer Frigo is waiting.
 - Frigo asks GitHub when it opens and when you come back after an hour, so the dot is right before you go looking.
 
+## 0.10.16
+
+- AI descriptions works with a model out on the internet as well as one on your own network, and the page says where the model lives instead of assuming Ollama.
+
 ## 0.10.15
 
 - Settings has a System page for an admin: what the server is running, how hard the box is working, each camera's health, the disks, and Frigate's own processes.

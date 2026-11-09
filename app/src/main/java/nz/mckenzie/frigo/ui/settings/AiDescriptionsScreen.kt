@@ -311,12 +311,16 @@ fun AiModelScreen(
 
                 Note(stringResource(R.string.ai_ollama_note))
 
-                Group(stringResource(R.string.ai_or)) {
-                    Item(
-                        icon = FrigoIcons.Server,
-                        title = stringResource(R.string.ai_cloud),
-                        supporting = stringResource(R.string.ai_cloud_supporting),
-                    )
+                // Only worth saying while the model is one on the network: a server
+                // already using a service out on the internet has nothing to add.
+                if (state.service == null || state.service?.provider == "ollama") {
+                    Group(stringResource(R.string.ai_or)) {
+                        Item(
+                            icon = FrigoIcons.Server,
+                            title = stringResource(R.string.ai_cloud),
+                            supporting = stringResource(R.string.ai_cloud_supporting),
+                        )
+                    }
                 }
             }
         }

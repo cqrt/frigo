@@ -410,9 +410,9 @@ can be half a minute later. That one has the whole clip to go on, so it replaces
 quick sentence on the same notification.
 
 AI descriptions in Settings is where this is set up. The page says whether your server
-has a model to describe with, turns it on and off, and points it at an Ollama model on
-your own network without leaving the app. Turn it off and the pictures stop going to
-the model, from the server and from the phone.
+has a model to describe with, turns it on and off, and points it at a model: one on
+your own network, or a service out on the internet. Turn it off and the pictures stop
+going to the model, from the server and from the phone.
 
 Android can stop a background app to save battery, and it will do that after a
 while on its own. If alerts go quiet, open the app once and they start again.

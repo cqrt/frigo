@@ -61,7 +61,7 @@ class WatchStateTest {
         )
 
         assertEquals(
-            "Every camera is off on your server's notifications page, so nothing will buzz.",
+            "Every camera is off on your server's notifications page, so nothing will notify.",
             WatchState.Connected.text(context, rules),
         )
     }
@@ -76,7 +76,7 @@ class WatchStateTest {
         )
 
         assertEquals(
-            "Every camera that would buzz is turned off on this phone, so nothing will buzz. " +
+            "Every camera that would notify is turned off on this phone, so nothing will notify. " +
                 "Turn one back on in Settings, Cameras.",
             text,
         )
@@ -144,7 +144,7 @@ class WatchStateTest {
         )
 
         assertEquals(
-            "Your list of objects is why nothing will buzz. " +
+            "Your list of objects is why nothing will notify. " +
                 "Change it in Settings, Only these objects.",
             text,
         )

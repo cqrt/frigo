@@ -1162,7 +1162,10 @@ data class GenaiService(
             R.string.ai_ollama_at,
             baseUrl.removePrefix("http://").removePrefix("https://").trimEnd('/'),
         )
-        baseUrl.isNotBlank() -> baseUrl.trimEnd('/')
+        baseUrl.isNotBlank() -> baseUrl
+            .removePrefix("http://")
+            .removePrefix("https://")
+            .trimEnd('/')
         provider.isNotBlank() -> provider.replaceFirstChar { it.uppercase() }
         else -> ""
     }
