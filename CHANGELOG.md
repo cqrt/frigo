@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.17.0
+
+- Settings, Backup, saves what this phone has chosen to a file you pick, so a new phone can be set up from it.
+- The file holds your alert lists and quiet hours, the cameras you've hidden and the names you gave them, the layout, the colours and the language, and each camera's picture size.
+- No sign-in is in the file: you sign in to your server first, then restore. It lands on the server you're signed in to, and nothing there changes.
+
 ## 0.16.1
 
 - People to leave out follows every message about a review while an alert is waiting, so a name that arrives a second after the alert starts is seen. That was the person still getting a notification.

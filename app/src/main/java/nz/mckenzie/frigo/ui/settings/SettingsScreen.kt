@@ -1,10 +1,12 @@
 package nz.mckenzie.frigo.ui.settings
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.OpenableColumns
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,6 +29,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -50,6 +54,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,15 +68,20 @@ import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nz.mckenzie.frigo.BuildConfig
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.Camera
 import nz.mckenzie.frigo.data.CameraState
 import nz.mckenzie.frigo.data.CameraSwitchPage
 import nz.mckenzie.frigo.data.FrigoRepository
+import nz.mckenzie.frigo.data.LastSave
 import nz.mckenzie.frigo.data.Language
 import nz.mckenzie.frigo.data.ServerPrefs
+import nz.mckenzie.frigo.data.SettingsBackup
+import nz.mckenzie.frigo.data.SettingsFile
 import nz.mckenzie.frigo.data.Update
 import nz.mckenzie.frigo.data.UpdateWatch
 import nz.mckenzie.frigo.data.askToInstallApps
@@ -91,6 +101,7 @@ import nz.mckenzie.frigo.ui.components.OpenMark
 import nz.mckenzie.frigo.ui.components.attention
 import nz.mckenzie.frigo.ui.theme.ThemeMode
 import java.io.File
+import java.io.IOException
 import kotlin.math.abs
 
 /**
@@ -270,6 +281,61 @@ fun SettingsScreen(
     LifecycleResumeEffect(Unit) {
         if (needsPermission && canInstallApps(context)) needsPermission = false
         onPauseOrDispose { }
+    }
+
+    // The backup group's own answers: where the last file went, what came of the
+    // last save or restore, and the file waiting on a yes or no.
+    var lastSave by remember { mutableStateOf(LastSave()) }
+    var backupProblem by remember { mutableStateOf<String?>(null) }
+    var backupDone by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingRestore by remember { mutableStateOf<SettingsBackup?>(null) }
+
+    LaunchedEffect(Unit) { lastSave = repository.lastSave() }
+
+    // Saving asks where first, the same way saving a clip does: nothing is written
+    // until the phone has a place to write it.
+    val savePlace = remember { ActivityResultContracts.CreateDocument(SettingsFile.Mime) }
+    val chooseSavePlace = rememberLauncherForActivityResult(savePlace) { place ->
+        if (place == null) return@rememberLauncherForActivityResult
+        backupProblem = null
+        backupDone = null
+        scope.launch {
+            runCatching {
+                val name = displayName(context, place) ?: SettingsFile.suggestedName()
+                val file = repository.backup()
+                withContext(Dispatchers.IO) {
+                    writeBackup(context, SettingsFile.write(file), place)
+                }
+                name
+            }
+                .onSuccess { kept ->
+                    repository.noteSaved(kept)
+                    lastSave = repository.lastSave()
+                }
+                .onFailure {
+                    backupProblem = context.getString(R.string.backup_couldnt_save)
+                }
+        }
+    }
+
+    // A file is read as soon as it is picked, and nothing on the phone changes until
+    // the question under it is answered.
+    val openPlace = remember { ActivityResultContracts.OpenDocument() }
+    val chooseOpenPlace = rememberLauncherForActivityResult(openPlace) { place ->
+        if (place == null) return@rememberLauncherForActivityResult
+        backupProblem = null
+        backupDone = null
+        scope.launch {
+            val text = withContext(Dispatchers.IO) {
+                runCatching { readBackup(context, place) }.getOrNull()
+            }
+            val file = text?.let { SettingsFile.read(it) }
+            when {
+                text == null -> backupProblem = context.getString(R.string.backup_couldnt_read)
+                file == null -> backupProblem = context.getString(R.string.backup_not_frigo)
+                else -> pendingRestore = file
+            }
+        }
     }
 
     Column(modifier.fillMaxSize()) {
@@ -764,6 +830,50 @@ fun SettingsScreen(
                 }
             }
 
+            // Your settings as one file: the phone's own answers rather than the
+            // server's, so they can be put back on the next phone.
+            Group(stringResource(R.string.settings_backup)) {
+                Item(
+                    icon = FrigoIcons.Save,
+                    title = stringResource(R.string.backup_save),
+                    supporting = if (lastSave.any) {
+                        context.getString(
+                            R.string.backup_saved_to,
+                            relativeTime(lastSave.at).lowercase(),
+                            lastSave.name,
+                        )
+                    } else {
+                        stringResource(R.string.backup_save_supporting)
+                    },
+                    onClick = { chooseSavePlace.launch(SettingsFile.suggestedName()) },
+                )
+
+                CardDivider()
+
+                Item(
+                    icon = Icons.Filled.Refresh,
+                    title = stringResource(R.string.backup_restore),
+                    supporting = stringResource(R.string.backup_restore_supporting),
+                    onClick = { chooseOpenPlace.launch(arrayOf("*/*")) },
+                    trailing = { OpenMark() },
+                )
+
+                // What came of the last save or restore sits under both rows, so it
+                // never looks like it belongs to the one it is nearest.
+                val said = backupProblem ?: backupDone
+                if (said != null) {
+                    CardDivider()
+                    Note(
+                        text = said,
+                        colour = if (backupProblem != null) MaterialTheme.colorScheme.error else null,
+                    )
+                }
+
+                CardDivider()
+
+                Note(text = stringResource(R.string.backup_note))
+            }
+
             Group(stringResource(R.string.settings_about)) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -785,7 +895,79 @@ fun SettingsScreen(
             Spacer(Modifier.height(24.dp))
         }
     }
+
+    // The one thing a restore asks. It says what goes and what stays, because a file
+    // picked by mistake is the only way this can surprise you.
+    pendingRestore?.let { file ->
+        AlertDialog(
+            onDismissRequest = { pendingRestore = null },
+            title = { Text(stringResource(R.string.backup_restore_question)) },
+            text = { Text(stringResource(R.string.backup_restore_detail)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingRestore = null
+                        scope.launch {
+                            val answer = repository.restoreSettings(file)
+                            if (!answer.applied) {
+                                backupProblem = context.getString(R.string.backup_empty)
+                                return@launch
+                            }
+                            // The language is Android's own, so it is picked here, in
+                            // the composition that is redrawn by it, rather than in
+                            // the store.
+                            answer.language?.let { tag -> Language.choose(Language.named(tag)) }
+                            val from = file.from.address
+                            backupDone = if (from.isNotBlank() && from != baseUrl) {
+                                context.getString(
+                                    R.string.backup_restored_elsewhere,
+                                    from.shortName(),
+                                )
+                            } else {
+                                context.getString(R.string.backup_restored)
+                            }
+                        }
+                    },
+                ) {
+                    Text(stringResource(R.string.backup_restore_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRestore = null }) {
+                    Text(stringResource(R.string.backup_cancel))
+                }
+            },
+        )
+    }
 }
+
+/** Writes the settings file into the place the phone's save screen handed back. */
+private fun writeBackup(context: Context, file: ByteArray, place: Uri) {
+    val out = context.contentResolver.openOutputStream(place)
+        ?: throw IOException("nowhere to write it")
+    out.use { it.write(file) }
+}
+
+/** The file the phone's open screen handed back, read as words. */
+private fun readBackup(context: Context, place: Uri): String? =
+    context.contentResolver.openInputStream(place)
+        ?.use { it.readBytes().toString(Charsets.UTF_8) }
+
+/**
+ * What the phone calls the file, which is what the row says once it has been
+ * saved. A place that won't say keeps the name the app suggested.
+ */
+private fun displayName(context: Context, place: Uri): String? =
+    context.contentResolver
+        .query(place, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+        ?.use { found ->
+            val column = found.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (column < 0 || !found.moveToFirst()) {
+                null
+            } else {
+                found.getString(column).takeIf { it.isNotBlank() }
+            }
+        }
 
 /**
  * One camera on the manage list: a grip, the camera, a switch that turns it off on

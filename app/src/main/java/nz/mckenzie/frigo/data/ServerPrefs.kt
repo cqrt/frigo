@@ -342,6 +342,51 @@ class ServerPrefs(private val context: Context) {
     }
 
     /**
+     * Every camera's picture size at once, as camera to (height, rate).
+     *
+     * A backup reads and writes the lot in one go, where the player only ever
+     * asks about the one camera it is showing.
+     */
+    suspend fun readStreamChoices(): Map<String, Pair<Int, Int>> =
+        context.dataStore.data.first()[Keys.streamChoices].orEmpty().mapNotNull { entry ->
+            val camera = entry.substringBefore('=', "")
+            val parts = entry.substringAfter('=', "").split('x')
+            val height = parts.getOrNull(0)?.toIntOrNull()
+            val rate = parts.getOrNull(1)?.toIntOrNull()
+            if (camera.isEmpty() || height == null || rate == null) {
+                null
+            } else {
+                camera to (height to rate)
+            }
+        }.toMap()
+
+    suspend fun writeStreamChoices(choices: Map<String, Pair<Int, Int>>) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.streamChoices] =
+                choices.map { (camera, size) -> "$camera=${size.first}x${size.second}" }.toSet()
+        }
+    }
+
+    /**
+     * The last backup written from this phone, or an empty answer when there has
+     * never been one.
+     *
+     * It is about the file rather than about a server, so switching servers does
+     * not make the row forget where your settings went.
+     */
+    suspend fun readLastSave(): LastSave {
+        val stored = context.dataStore.data.first()[Keys.lastSave] ?: return LastSave()
+        return runCatching { BlockJson.decodeFromString(LastSave.serializer(), stored) }
+            .getOrDefault(LastSave())
+    }
+
+    suspend fun writeLastSave(save: LastSave) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.lastSave] = BlockJson.encodeToString(LastSave.serializer(), save)
+        }
+    }
+
+    /**
      * The newest release GitHub named, and when it said so. Kept so the Settings tab
      * can show a dot before GitHub has been asked again, and so a launch on a phone
      * with no signal still knows what it knew last time.
@@ -407,6 +452,9 @@ class ServerPrefs(private val context: Context) {
         val lock = booleanPreferencesKey("lock")
         val onboarded = booleanPreferencesKey("onboarded")
         val streamChoices = stringSetPreferencesKey("stream_choices")
+
+        // Where the last backup went, which is about the file rather than a server.
+        val lastSave = stringPreferencesKey("last_save")
 
         // The release check, which is about the app rather than any one server.
         val updateAnswer = stringPreferencesKey("update_answer")

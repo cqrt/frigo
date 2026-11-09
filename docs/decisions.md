@@ -3186,3 +3186,50 @@ cases get simpler with the same change:
 
 The settings are read when the buzz goes out rather than when the review arrived, so
 ticking someone during a hold counts for the alert already waiting.
+## Your settings, as a file you keep
+
+Settings has a Backup group. **Save my settings** writes what this phone has chosen
+to a file you pick with Android's own save screen, and **Restore from a file** puts
+one back. The point of it is a new phone, or a reinstall.
+
+What travels:
+
+- The alerts switch, Only these objects, People to leave out, and the quiet hours.
+- The camera list: which cameras are hidden here, what this phone calls them, their
+  order.
+- The layout, the colours, the language, live tiles, Show reviewed.
+- Every camera's picture size.
+
+What does not: the fingerprint lock, the welcome tour, the update answer, the
+tokens, and the phone's copy of the server's settings. The lock has to be granted
+on the new phone itself, the tour is about arriving, and the copy of the server's
+settings is stale the moment it is written and is read again on the next launch.
+
+Rejected: the sign-in in the file. Frigate's session lasts a day, so a token saved
+today is no use on the new phone tomorrow, and a file that signs you in is a file
+you cannot leave in a shared folder. The address and the username are written as a
+label and never matched, so a restore lands on whatever server you are signed in
+to. A restore from another house's file says which address it came from, rather
+than refusing.
+
+Rejected: a merge. Replace is one answer every time, and a restore either gives you
+the file's settings or asks you to pick again. Nothing is kept to undo it.
+
+The groups are nullable so a file can leave one out, and this version always writes
+all four. A group a file does not mention is left as it is, and keys it does not
+know are ignored, so a file from a newer Frigo restores what this version
+understands. A file that does not say `"app": "frigo"` is turned down rather than
+half-read, because half of someone else's JSON in the settings is worse than none.
+
+The hush from **Quiet for an hour** is left out of the file both ways. It is about
+the next hour rather than about how the phone is set up, and a hush restored a week
+later would mean nothing.
+
+The restore re-reads the six account values by the same path the launch uses, so
+the screens and the alert service move together rather than the app showing one
+thing and holding another. The language is applied by the screen instead, because
+it is Android's per-app language list rather than one of the app's stored keys, and
+picking it redraws the app.
+
+The file is plain JSON with the day in its name, so it can be opened and read on a
+computer.

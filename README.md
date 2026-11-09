@@ -124,7 +124,14 @@ Appearance you choose the
 colours: System follows the phone, Day stays light, and Night stays dark. The
 language sits there too: English, Spanish, French, German and Portuguese, or the
 phone's own. Under
-Updates it says which version you're on, and whether there's a newer one to
+**Backup**, **Save my settings** writes what this phone has chosen to a file you
+pick, and **Restore from a file** puts it back. The file holds your alert lists
+and quiet hours, the cameras you've hidden and the names you gave them, the
+layout, the colours and the language, and each camera's picture size. No sign-in
+is in it: you sign in to your server first, then restore. It lands on the server
+you're signed in to, and nothing there changes.
+Under
+**Updates** it says which version you're on, and whether there's a newer one to
 install. A small red dot on the Settings icon in the bar means a newer version is
 waiting.
 
@@ -642,6 +649,7 @@ is ever committed. Backup: there's a copy of the key and its password at
 - `data/FrigoRepository.kt` - tokens, renewal, and the calls the screens make.
 - `data/Language.kt` - the languages the app speaks, and the words for the places that aren't a screen.
 - `data/ServerPrefs.kt` - what the phone keeps: the servers and their sign-ins, each one's choices, and the copy of its settings.
+- `data/Backup.kt` - the settings file: what it carries, how it is read and written, and the name it is offered under.
 - `data/MjpegReader.kt` - pulls JPEG frames out of the live stream.
 - `data/Updates.kt` - asks GitHub for the newest release, fetches its APK, and hands it to Android's installer.
 - `data/UpdateWatch.kt` - keeps the answer across launches, decides when to ask again, and whether the Settings tab shows its dot.

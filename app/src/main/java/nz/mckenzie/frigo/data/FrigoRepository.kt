@@ -10,11 +10,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Response
+import nz.mckenzie.frigo.BuildConfig
 import nz.mckenzie.frigo.R
 import java.io.File
 import java.io.IOException
@@ -903,6 +905,104 @@ class FrigoRepository(
 
     suspend fun setStreamChoice(camera: String, height: Int, rate: Int) =
         prefs.writeStreamChoice(camera, height, rate)
+
+    /**
+     * Everything this account has set on this phone, ready to be written to a file.
+     *
+     * It is read from the answers the screens already have rather than from the
+     * store, so the file says what the app shows: something changed a moment ago
+     * is in it.
+     */
+    suspend fun backup(): SettingsBackup {
+        val server = activeServer()
+        return SettingsBackup(
+            savedAt = System.currentTimeMillis(),
+            version = BuildConfig.VERSION_NAME,
+            from = Where(
+                address = server?.baseUrl.orEmpty(),
+                username = server?.username.orEmpty(),
+            ),
+            alerts = AlertsBlock(
+                on = _alerts.value.on,
+                // A hush is about the next hour, not about how this phone is set up.
+                quietTimes = _quietTimes.value.copy(hushUntil = 0L),
+                objects = _alertObjects.value,
+                people = _alertPeople.value,
+            ),
+            cameras = _cameraList.value,
+            looks = LooksBlock(
+                layout = server?.let { prefs.readCameraLayout(it) } ?: 0,
+                theme = prefs.theme.first(),
+                language = Language.current().tag,
+                liveTiles = prefs.liveTiles.first(),
+                showReviewed = prefs.readShowReviewed(),
+            ),
+            sizes = prefs.readStreamChoices().mapValues { (_, size) ->
+                PictureSize(height = size.first, rate = size.second)
+            },
+        )
+    }
+
+    /**
+     * Puts [backup] in place of this account's settings, and reads them again.
+     *
+     * Every group the file carries is written, and one it leaves out is left as it
+     * is. The values the screens and the alert service read are then read again,
+     * so the cameras, the quiet hours and the watching line move together rather
+     * than waiting for a restart.
+     *
+     * A file with nothing in it for this version writes nothing and says so. The
+     * language is handed back rather than picked here: it is Android's own choice,
+     * and picking it redraws the app, which is the screen's business.
+     */
+    suspend fun restoreSettings(backup: SettingsBackup): RestoreResult {
+        val server = activeServer() ?: return RestoreResult()
+        var applied = false
+
+        backup.alerts?.let { block ->
+            prefs.writeAlerts(server, ServerPrefs.Alerts(on = block.on))
+            // Whatever the file says, the hush it was saved mid-way through stays
+            // behind: it is a moment, and the moment has long gone.
+            prefs.writeQuietTimes(server, block.quietTimes.copy(hushUntil = 0L))
+            prefs.writeAlertObjects(server, block.objects)
+            prefs.writeAlertPeople(server, block.people)
+            applied = true
+        }
+
+        backup.cameras?.let { list ->
+            prefs.writeCameraList(server, list)
+            applied = true
+        }
+
+        backup.looks?.let { looks ->
+            prefs.writeCameraLayout(server, looks.layout)
+            prefs.writeTheme(looks.theme)
+            prefs.writeLiveTiles(looks.liveTiles)
+            prefs.writeShowReviewed(looks.showReviewed)
+            applied = true
+        }
+
+        backup.sizes?.let { sizes ->
+            prefs.writeStreamChoices(
+                sizes.filterValues { it.height > 0 && it.rate > 0 }
+                    .mapValues { (_, size) -> size.height to size.rate },
+            )
+            applied = true
+        }
+
+        if (!applied) return RestoreResult()
+
+        loadChoices()
+        return RestoreResult(applied = true, language = backup.looks?.language)
+    }
+
+    /** When a backup was last written from this phone, and the name it was given. */
+    suspend fun lastSave(): LastSave = prefs.readLastSave()
+
+    /** Notes where a backup went, so the row can say where your settings are. */
+    suspend fun noteSaved(name: String) {
+        prefs.writeLastSave(LastSave(at = System.currentTimeMillis(), name = name))
+    }
 
     suspend fun latestFrame(camera: String, height: Int = 360): ByteArray? = runCatching {
         authorized { baseUrl, token -> api.latestFrame(baseUrl, token, camera, height) }

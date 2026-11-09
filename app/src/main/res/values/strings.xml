@@ -120,6 +120,25 @@
     <string name="settings_couldnt_fetch">Couldn\'t fetch it. Check your connection and try again.</string>
     <string name="settings_no_installer">Android wouldn\'t open the installer.</string>
 
+    <!-- Your settings as a file you can keep. -->
+    <string name="settings_backup">Backup</string>
+    <string name="backup_save">Save my settings</string>
+    <string name="backup_save_supporting">One file you can bring to another phone.</string>
+    <string name="backup_saved_to">Saved %1$s to %2$s</string>
+    <string name="backup_restore">Restore from a file</string>
+    <string name="backup_restore_supporting">Replaces what you\'ve chosen here.</string>
+    <string name="backup_restore_question">Replace your settings?</string>
+    <string name="backup_restore_detail">Everything you\'ve chosen here is replaced by the file. Nothing on your server changes.</string>
+    <string name="backup_restore_confirm">Restore</string>
+    <string name="backup_cancel">Cancel</string>
+    <string name="backup_note">No sign-in is in the file, and nothing here goes to your server.</string>
+    <string name="backup_restored">Your settings are back.</string>
+    <string name="backup_restored_elsewhere">Your settings are back. The file was saved on %1$s.</string>
+    <string name="backup_empty">That file has nothing in it this version can restore.</string>
+    <string name="backup_not_frigo">That file isn\'t one of Frigo\'s.</string>
+    <string name="backup_couldnt_save">Couldn\'t save it. Try another place.</string>
+    <string name="backup_couldnt_read">Couldn\'t read that file.</string>
+
     <string name="settings_about">About</string>
     <string name="settings_version">Version</string>
     <string name="settings_author">Author</string>

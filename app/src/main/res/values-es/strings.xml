@@ -120,6 +120,25 @@
     <string name="settings_couldnt_fetch">No se pudo descargar. Comprueba tu conexión e inténtalo otra vez.</string>
     <string name="settings_no_installer">Android no abrió el instalador.</string>
 
+    <!-- Tus ajustes como un archivo que puedes guardar. -->
+    <string name="settings_backup">Copia de seguridad</string>
+    <string name="backup_save">Guardar mis ajustes</string>
+    <string name="backup_save_supporting">Un archivo para llevar a otro teléfono.</string>
+    <string name="backup_saved_to">Guardado %1$s en %2$s</string>
+    <string name="backup_restore">Restaurar desde un archivo</string>
+    <string name="backup_restore_supporting">Reemplaza lo que has elegido aquí.</string>
+    <string name="backup_restore_question">¿Reemplazar tus ajustes?</string>
+    <string name="backup_restore_detail">Todo lo que has elegido aquí se cambia por lo del archivo. Nada cambia en tu servidor.</string>
+    <string name="backup_restore_confirm">Restaurar</string>
+    <string name="backup_cancel">Cancelar</string>
+    <string name="backup_note">El archivo no lleva ningún inicio de sesión, y nada de esto va a tu servidor.</string>
+    <string name="backup_restored">Tus ajustes están de vuelta.</string>
+    <string name="backup_restored_elsewhere">Tus ajustes están de vuelta. El archivo se guardó en %1$s.</string>
+    <string name="backup_empty">Ese archivo no tiene nada que esta versión pueda restaurar.</string>
+    <string name="backup_not_frigo">Ese archivo no es de Frigo.</string>
+    <string name="backup_couldnt_save">No se pudo guardar. Prueba en otro sitio.</string>
+    <string name="backup_couldnt_read">No se pudo leer ese archivo.</string>
+
     <string name="settings_about">Acerca de</string>
     <string name="settings_version">Versión</string>
     <string name="settings_author">Autor</string>

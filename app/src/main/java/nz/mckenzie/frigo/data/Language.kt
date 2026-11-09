@@ -66,6 +66,13 @@ enum class Language(val tag: String) {
                 },
             )
         }
+
+        /**
+         * The language a saved tag stands for. Anything this version doesn't know,
+         * including the empty tag a backup writes for following the phone, reads as
+         * [System].
+         */
+        fun named(tag: String): Language = entries.firstOrNull { it.tag == tag } ?: System
     }
 }
 

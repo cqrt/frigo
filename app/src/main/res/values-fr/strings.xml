@@ -120,6 +120,25 @@
     <string name="settings_couldnt_fetch">Impossible de le récupérer. Vérifiez votre connexion et réessayez.</string>
     <string name="settings_no_installer">Android n\'a pas voulu ouvrir l\'installateur.</string>
 
+    <!-- Vos réglages dans un fichier à garder. -->
+    <string name="settings_backup">Sauvegarde</string>
+    <string name="backup_save">Enregistrer mes réglages</string>
+    <string name="backup_save_supporting">Un fichier à emporter sur un autre téléphone.</string>
+    <string name="backup_saved_to">Enregistré %1$s dans %2$s</string>
+    <string name="backup_restore">Restaurer depuis un fichier</string>
+    <string name="backup_restore_supporting">Remplace ce que vous avez choisi ici.</string>
+    <string name="backup_restore_question">Remplacer vos réglages ?</string>
+    <string name="backup_restore_detail">Tout ce que vous avez choisi ici est remplacé par le fichier. Rien ne change sur votre serveur.</string>
+    <string name="backup_restore_confirm">Restaurer</string>
+    <string name="backup_cancel">Annuler</string>
+    <string name="backup_note">Le fichier ne contient aucune connexion, et rien de tout cela ne va sur votre serveur.</string>
+    <string name="backup_restored">Vos réglages sont revenus.</string>
+    <string name="backup_restored_elsewhere">Vos réglages sont revenus. Le fichier a été enregistré sur %1$s.</string>
+    <string name="backup_empty">Ce fichier ne contient rien que cette version puisse restaurer.</string>
+    <string name="backup_not_frigo">Ce fichier n\'est pas un fichier Frigo.</string>
+    <string name="backup_couldnt_save">Impossible de l\'enregistrer. Essayez ailleurs.</string>
+    <string name="backup_couldnt_read">Impossible de lire ce fichier.</string>
+
     <string name="settings_about">À propos</string>
     <string name="settings_version">Version</string>
     <string name="settings_author">Auteur</string>
