@@ -74,8 +74,8 @@
     <string name="alert_people_nobody">Ninguém</string>
     <string name="alert_people_search">Ana, Luís…</string>
     <string name="alert_people_cant_read">O seu servidor não responde, por isso aqui só aparecem as pessoas que marcou.</string>
-    <string name="alert_people_wait">Enquanto houver alguém nesta lista, os alertas esperam a descrição do seu servidor, por isso chegam cerca de vinte segundos mais tarde.</string>
-    <string name="alert_people_no_descriptions">O seu servidor não descreve os seus alertas, por isso esta lista não consegue ignorar ninguém.</string>
+    <string name="alert_people_wait">Enquanto houver alguém nesta lista, o alerta espera que o seu servidor diga quem viu, por isso pode chegar um pouco mais tarde.</string>
+    <string name="alert_people_no_descriptions">O seu servidor não descreve os seus alertas, por isso esta lista só conhece quem vem nomeado no alerta.</string>
 
     <string name="settings_live_view">Visualização ao vivo</string>
     <string name="settings_live_supporting">Reproduz vídeo na aba Câmeras. Usa mais bateria e dados.</string>

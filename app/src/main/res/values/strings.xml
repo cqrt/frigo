@@ -74,8 +74,8 @@
     <string name="alert_people_nobody">No one</string>
     <string name="alert_people_search">Angie, Matt…</string>
     <string name="alert_people_cant_read">Your server isn\'t answering, so this lists only the people you\'ve ticked.</string>
-    <string name="alert_people_wait">While anyone is on this list, alerts wait for your server\'s description, so they arrive about twenty seconds later.</string>
-    <string name="alert_people_no_descriptions">Your server doesn\'t describe its alerts, so this list can\'t leave anyone out.</string>
+    <string name="alert_people_wait">While anyone is on this list, an alert waits until your server has named who it saw, so it can arrive a little later.</string>
+    <string name="alert_people_no_descriptions">Your server doesn\'t describe its alerts, so this list only knows people whose name is on the alert.</string>
 
     <string name="settings_live_view">Live view</string>
     <string name="settings_live_supporting">Plays video on the Cameras tab. It uses more battery and data.</string>

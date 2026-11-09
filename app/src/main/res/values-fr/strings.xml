@@ -74,8 +74,8 @@
     <string name="alert_people_nobody">Personne</string>
     <string name="alert_people_search">Anne, Louis…</string>
     <string name="alert_people_cant_read">Votre serveur ne répond pas, donc cette liste ne montre que les personnes cochées.</string>
-    <string name="alert_people_wait">Tant que quelqu\'un figure sur cette liste, les alertes attendent la description de votre serveur : elles arrivent environ vingt secondes plus tard.</string>
-    <string name="alert_people_no_descriptions">Votre serveur ne décrit pas ses alertes, donc cette liste ne peut ignorer personne.</string>
+    <string name="alert_people_wait">Tant que quelqu\'un figure sur cette liste, une alerte attend que votre serveur ait nommé la personne vue : elle peut arriver un peu plus tard.</string>
+    <string name="alert_people_no_descriptions">Votre serveur ne décrit pas ses alertes, donc cette liste ne connaît que les personnes dont le nom figure sur l\'alerte.</string>
 
     <string name="settings_live_view">Vue en direct</string>
     <string name="settings_live_supporting">Lit la vidéo dans l\'onglet Caméras. Ça consomme plus de batterie et de données.</string>

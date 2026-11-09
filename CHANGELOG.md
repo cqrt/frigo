@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.16.1
+
+- People to leave out follows every message about a review while an alert is waiting, so a name that arrives a second after the alert starts is seen. That was the person still getting a notification.
+- A review that ends with a name is decided at the end: someone on your list is dropped there, and everyone else buzzes without waiting for a description.
+- The list is read when an alert goes out, not when it arrived, so ticking someone during the wait counts.
+
 ## 0.16.0
 
 - The television answers a doorbell. Settings, Doorbell, is an address Home Assistant can post to, and that camera fills the screen for half a minute.

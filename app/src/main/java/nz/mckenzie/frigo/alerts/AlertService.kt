@@ -31,9 +31,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import nz.mckenzie.frigo.FrigoApplication
 import nz.mckenzie.frigo.R
-import nz.mckenzie.frigo.data.AlertObjects
-import nz.mckenzie.frigo.data.AlertPeople
-import nz.mckenzie.frigo.data.AlertRules
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.StreamSource
@@ -308,24 +305,27 @@ class AlertService : Service() {
      * One review, when the buzz is per happening the server calls an alert. The
      * rule itself lives in [ReviewBuzz], so it can be tried without a phone.
      *
-     * Frigate puts a recognised person's name in the sentence it writes about a
-     * review, and writes that when the review ends. So when this phone's list has
-     * anyone on it, the review is held until the description arrives (or the review
-     * ends and a little grace has passed), and the copy that decides is the latest
-     * the server sent.
+     * A review Frigate has matched a face to carries the person's name from its
+     * second message on, and that name is why this phone holds an alert at all. So
+     * a review already being held takes every later copy the server sends, whatever
+     * a rule alone would make of it, and the alert is decided on the newest one.
      */
     private fun onReview(message: JsonObject) {
         val after = (message["after"] as? JsonObject) ?: return
         val review = runCatching {
             json.decodeFromString(FrigateReview.serializer(), after.toString())
         }.getOrNull() ?: return
+        val end = message.text("type") == "end"
 
-        // The end is what the description follows, so a hold waits a little longer
-        // for it rather than giving up the moment the review closes.
-        if (message.text("type") == "end") {
-            endSoon(review.id)
+        // A held review is kept up to date rather than judged: the message that
+        // names the person is exactly the one the rule would turn down.
+        if (review.id in held) {
+            held[review.id] = review
+            if (end) decideAtEnd(review)
             return
         }
+
+        if (end) return
 
         val rules = container.repository.alertRules.value
         val now = System.currentTimeMillis()
@@ -339,7 +339,7 @@ class AlertService : Service() {
         // With nobody left out there is nothing to wait for, and every alert arrives
         // as it always did.
         if (leftOut.everyone) {
-            buzz(review, rules, hidden, only, leftOut)
+            buzz(review)
             return
         }
 
@@ -353,13 +353,17 @@ class AlertService : Service() {
         // breath never starts a second hold for one review.
         val job = scope.launch(start = CoroutineStart.LAZY) {
             try {
-                // A server with no descriptions has none to wait for, and its alerts
-                // arrive as they always did.
-                if (container.repository.describesAlerts()) {
-                    withTimeoutOrNull(DescriptionWait) { done.await() }
+                // A server that writes no descriptions still names people on the
+                // review itself, a second or two in, so the wait is shorter there
+                // rather than none at all.
+                val wait = if (container.repository.describesAlerts()) {
+                    DescriptionWait
+                } else {
+                    NameGrace
                 }
+                withTimeoutOrNull(wait) { done.await() }
                 val latest = held.remove(review.id) ?: return@launch
-                buzz(latest, rules, hidden, only, leftOut)
+                buzz(latest)
             } finally {
                 waiting.remove(review.id)
                 holding.remove(review.id)
@@ -367,6 +371,23 @@ class AlertService : Service() {
         }
         holding[review.id] = job
         job.start()
+    }
+
+    /**
+     * The review has ended, and its last copy says who Frigate matched.
+     *
+     * A copy with a name is the answer, so the alert is decided now: that is the
+     * name Frigate would put on a buzz, and the phone may be staying quiet about
+     * it. A copy without one may still gain a name in the sentence Frigate writes
+     * about the clip, so the alert waits a little longer for that.
+     */
+    private fun decideAtEnd(review: FrigateReview) {
+        val done = waiting[review.id] ?: return
+        if (review.data.subLabels.isNotEmpty()) {
+            done.complete(Unit)
+        } else {
+            endSoon(review.id)
+        }
     }
 
     /**
@@ -386,14 +407,15 @@ class AlertService : Service() {
      * word, and it is answered before anything is fetched or written: no
      * notification, no picture, no sentence asked for. The review is still on the
      * server, and still in Review.
+     *
+     * The settings are read here rather than passed in: an alert can wait a while,
+     * and what the phone lets through may have changed in the meantime.
      */
-    private fun buzz(
-        review: FrigateReview,
-        rules: AlertRules,
-        hidden: Set<String>,
-        only: AlertObjects,
-        leftOut: AlertPeople,
-    ) {
+    private fun buzz(review: FrigateReview) {
+        val rules = container.repository.alertRules.value
+        val hidden = container.repository.cameraList.value.hidden
+        val only = container.repository.alertObjects.value
+        val leftOut = container.repository.alertPeople.value
         val now = System.currentTimeMillis()
         // Asked as a new message: an update that turned into an alert was already
         // checked against the window when it arrived.
@@ -601,6 +623,13 @@ class AlertService : Service() {
          * ends the wait as soon as it lands.
          */
         private const val EndGrace = 15_000L
+
+        /**
+         * How long an alert waits for a name on a server that writes no descriptions.
+         * Frigate names a person a second or two in, and the message carrying the
+         * name follows the alert.
+         */
+        private const val NameGrace = 5_000L
 
         /** Turns the service on. Safe to call when it is already running. */
         fun start(context: Context) {

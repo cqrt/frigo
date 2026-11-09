@@ -653,22 +653,26 @@ class Handler(BaseHTTPRequestHandler):
         self.send_frame(json.dumps(message).encode())
 
     def send_review(self, pending):
-        """One review, and every other one turns into an alert three seconds in.
+        """One review, sent the way a real server sends it.
 
-        A review that starts as a detection is the ordinary case for a zone: the
-        object has to step into the driveway before the server calls it an alert.
-        The app has a window for exactly that, so the second message is what tries
-        it.
+        An odd one is an alert from its first message but carries no name yet: the
+        face is matched a second or two later, and the name arrives on an update.
+        An even one starts as a detection and turns into an alert three seconds in,
+        which is the ordinary case for a zone, and the app has a window for it.
 
-        Every review then ends, and Frigate writes a description shortly after,
-        which is where a recognised person's name is. A phone that holds an alert
-        so it can leave somebody out is waiting for that.
+        Every review then ends at eight seconds, and Frigate writes a description
+        two seconds later. A phone that holds an alert so it can leave somebody out
+        is waiting for the name, and the name can arrive on any of those messages.
         """
         Handler.reviews_sent += 1
         number = Handler.reviews_sent
         if number % 2:
+            started = review_body(number, "alert", named=False)
+            self.send_frame(json.dumps(review_message("new", started)).encode())
             body = review_body(number, "alert")
-            self.send_frame(json.dumps(review_message("new", body)).encode())
+            body["start_time"] = started["start_time"]
+            body["id"] = started["id"]
+            pending.append((time.time() + 2, review_message("update", body)))
         else:
             # The name arrives with the turn into an alert and not before, which is
             # the case a phone that waits for it is built for.

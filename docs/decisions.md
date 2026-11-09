@@ -3160,3 +3160,29 @@ already the household's answer to someone at the door.
 It is the same half minute and the same return, so the two arrivals share the code
 that puts the screen back. When the bell came in over a wall, the room gets the
 wall back rather than a layout it did not ask for.
+
+## A held alert was decided on a copy that predated the name
+
+Frigate sends a review in several messages. A door_cam alert on 9 Nov arrived as
+`new` with no name, then an `update` a second later with `sub_labels: ["Matt"]`,
+then `end` with the name still on it, then `genai` two seconds after the end.
+
+The hold only ever stored the message that started it. Every later message went
+through the rule first, and a message naming someone on the list is exactly what the
+rule turns down, so the update was dropped before it reached the hold. That left the
+alert deciding on the name-less first copy, and it buzzed for a person the phone was
+supposed to stay quiet about.
+
+Now a review that is already held takes every later copy of itself whatever the rule
+would make of that message, and the newest copy is what decides. Two of the handover
+cases get simpler with the same change:
+
+- An `end` carrying a name is the answer, so the alert is decided there rather than
+  waiting for the sentence. Someone on the list is dropped at the end of the review,
+  and anyone else buzzes then.
+- Only an `end` with no name at all waits for the description, because that is the
+  case where the sentence is the only place the name can turn up. That wait is
+  fifteen seconds, and the sentence usually lands two seconds into it.
+
+The settings are read when the buzz goes out rather than when the review arrived, so
+ticking someone during a hold counts for the alert already waiting.

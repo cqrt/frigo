@@ -343,20 +343,22 @@ The cameras offered are the ones that make an alert. One whose Alerts switch is 
 in Alerts and detections never makes one, and one with no alert objects has nothing
 to make one from, so neither is there to set.
 
-**People to leave out** sits under it. Frigate names a person it recognises in the
-sentence it writes about an alert, and this phone can stay quiet about that name.
-Pick someone and their alerts never buzz here, while everyone else still does.
+**People to leave out** sits under it. Frigate works out who a person is, and puts
+the name on the review a second or so after the alert starts, or in the sentence it
+writes when the review ends. Pick someone and their alerts never buzz here, while
+everyone else still does.
 Frigate can't do this itself: its alerts are chosen by object and by zone, and its
 own push sends every alert. Nothing on your server or its other phones changes.
 
-With someone on that list, an alert waits for that sentence before it goes, so the
-name is known before the phone decides. Frigate writes it when the review ends, so
-alerts arrive about twenty seconds later than they used to while the list has
-anyone on it. A review still open after a minute is decided without the sentence,
-so an alert is never lost. With nobody on the list, nothing waits.
+With someone on that list, an alert waits until the name is in hand, so the phone
+knows who it is looking at before it decides. A person Frigate names straight away
+is decided within a second or two. One it doesn't name only turns up in the
+sentence, so that alert waits for the review to end, about twenty seconds later. A
+review still open after a minute is decided without either, so an alert is never
+lost. With nobody on the list, nothing waits.
 
-The list needs your server's descriptions. Turn them off and the phone has no name
-to go on, so the list can't leave anyone out, and the page says so.
+The list needs your server's descriptions. Turn them off and the phone has only the
+name on the review to go on, and the page says so.
 
 Frigate's own web page shows the same values, so a change made in a browser is
 picked up the next time the app opens or reconnects.
