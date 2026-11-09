@@ -8,13 +8,17 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.17.1
+
+- The television is an Android TV wherever the app names it, and alerts say notify rather than buzz.
+- People to ignore is what Settings calls the names it keeps quiet, and lock is called Biometrics.
+- The notes under a list that only repeated what was already on screen have gone.
+
 ## 0.17.0
 
 - Settings, Backup, saves what this phone has chosen to a file you pick, so a new phone can be set up from it.
 - The file holds your alert lists and quiet hours, the cameras you've hidden and the names you gave them, the layout, the colours and the language, and each camera's picture size.
 - No sign-in is in the file: you sign in to your server first, then restore. It lands on the server you're signed in to, and nothing there changes.
-- The television is an Android TV wherever the app names it, and alerts say notify rather than buzz.
-- People to ignore is what Settings calls the names it keeps quiet, and lock is called Biometrics.
 
 ## 0.16.1
 
