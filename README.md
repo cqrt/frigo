@@ -108,7 +108,7 @@ and detections, AI descriptions, and System, which is how the box is doing.
 newest at the bottom.
 Then come two switches: one for notifications, and one that plays the home page
 tiles live. Under notifications sit **Only these objects**, the list this phone
-narrows its alerts by, then **People to leave out**, the names it stays quiet
+narrows its alerts by, then **People to ignore**, the names it stays quiet
 about, then **Quiet times**, the hours it keeps quiet and the cameras it keeps
 quiet.
 Under **Cameras** is every camera your server has, in the order
@@ -350,7 +350,7 @@ The cameras offered are the ones that make an alert. One whose Alerts switch is 
 in Alerts and detections never makes one, and one with no alert objects has nothing
 to make one from, so neither is there to set.
 
-**People to leave out** sits under it. Frigate works out who a person is, and puts
+**People to ignore** sits under it. Frigate works out who a person is, and puts
 the name on the review a second or so after the alert starts, or in the sentence it
 writes when the review ends. Pick someone and their alerts never buzz here, while
 everyone else still does.

@@ -61,7 +61,7 @@
     <string name="settings_battery_settings">Battery settings</string>
 
     <!-- This phone's own list of the objects that may buzz it. -->
-    <string name="alert_objects_title">People to ignore</string>
+    <string name="alert_objects_title">Only these objects</string>
     <string name="alert_objects_everything">Everything your server sends</string>
     <string name="alert_objects_per_camera">Set per camera</string>
     <string name="alert_objects_search">Person, car…</string>
@@ -69,7 +69,7 @@
     <string name="alert_objects_hint">Pick at least one object.</string>
 
     <!-- This phone's own list of the people it stays quiet about, by the name Frigate knows them by. -->
-    <string name="alert_people_title">People to leave out</string>
+    <string name="alert_people_title">People to ignore</string>
     <string name="alert_people_nobody">No one</string>
     <string name="alert_people_search">Angie, Matt…</string>
     <string name="alert_people_cant_read">Your server isn\'t answering, so this lists only the people you\'ve ticked.</string>
