@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.17.3
+
+- Frigo has a new icon: a lens with its blades open. Frigo TV has the same lens in a screen on a stand.
+- An alert in the status bar shows that lens too, so the notification and the app look like each other.
+
 ## 0.17.2
 
 - AI descriptions works with a model out on the internet as well as one on your own network, and the page says where the model lives instead of assuming Ollama.

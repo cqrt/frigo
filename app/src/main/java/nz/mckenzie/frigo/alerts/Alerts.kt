@@ -59,7 +59,7 @@ object Alerts {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         return NotificationCompat.Builder(context, CHANNEL_WATCHING)
-            .setSmallIcon(R.drawable.ic_stat_watch)
+            .setSmallIcon(R.drawable.ic_stat_lens)
             .setContentTitle(context.words(R.string.alerts_watching_title))
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -215,7 +215,7 @@ object Alerts {
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_EVENTS)
-            .setSmallIcon(R.drawable.ic_stat_watch)
+            .setSmallIcon(R.drawable.ic_stat_lens)
             .setContentTitle(title)
             .setContentText(text)
             .setContentIntent(open)

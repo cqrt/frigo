@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Drawn by tools/make_art.ps1. Edit the script, not this file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- A stand, so it reads as a television rather than a tablet. -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,68 L54,74 M47,74 L61,74"
+        android:strokeColor="#6FE9FF"
+        android:strokeAlpha="0.45"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+
+    <!-- The screen. -->
+    <path
+        android:fillColor="#0A2129"
+        android:pathData="M32,36 H76 A6,6 0 0,1 82,42 V62 A6,6 0 0,1 76,68 H32 A6,6 0 0,1 26,62 V42 A6,6 0 0,1 32,36 Z"
+        android:strokeColor="#6FE9FF"
+        android:strokeWidth="3" />
+
+    <!-- The glass, with the opening cut out of it so the plate shows through. -->
+    <path
+        android:fillColor="#0E3A4A"
+        android:fillType="evenOdd"
+        android:pathData="M54,40 A12,12 0 1,1 53.9,40 Z M54,47.7 A4.3,4.3 0 1,1 53.9,47.7 Z" />
+
+    <!-- The ring around it. -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,40 A12,12 0 1,1 53.9,40 Z"
+        android:strokeColor="#6FE9FF"
+        android:strokeWidth="2.4" />
+
+    <!-- Six blades, each a fifth of a turn on from the one before. -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,41.3 L57,47.3 M63.3,46.6 L59.6,52.2 M63.3,57.4 L56.6,56.9 M54,62.7 L51,56.7 M44.7,57.4 L48.4,51.8 M44.7,46.6 L51.4,47.1"
+        android:strokeColor="#6FE9FF"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round" />
+</vector>

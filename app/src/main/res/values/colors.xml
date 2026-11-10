@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="window_background">#FFF7F9FC</color>
-    <color name="ic_launcher_background">#FF0B1220</color>
+
+    <!-- ic_launcher_background lives in ic_launcher_colors.xml, which
+         tools/make_art.ps1 writes. -->
 
     <!-- The alert notification draws its own opened layout, and notification views
          are read with the app's resources but sit on the system's card. These
