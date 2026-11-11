@@ -131,7 +131,9 @@ pick, and **Restore from a file** puts it back. The file holds your alert lists
 and quiet hours, the cameras you've hidden and the names you gave them, the
 layout, the colours and the language, and each camera's picture size. No sign-in
 is in it: you sign in to your server first, then restore. It lands on the server
-you're signed in to, and nothing there changes.
+you're signed in to, and nothing there changes. The file belongs to the account
+that saved it, so a phone two people use won't put one person's settings on the
+other.
 Under
 **Updates** it says which version you're on, and whether there's a newer one to
 install. A small red dot on the Settings icon in the bar means a newer version is

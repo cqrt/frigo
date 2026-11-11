@@ -1017,6 +1017,14 @@ class FrigoRepository(
      */
     suspend fun restoreSettings(backup: SettingsBackup): RestoreResult {
         val server = activeServer() ?: return RestoreResult()
+
+        // The file says who made it. Two people can share one phone, so a file made
+        // by the other one is turned down rather than dropping their hidden cameras,
+        // their names and their quiet hours onto this account.
+        if (!backup.belongsTo(server.username)) {
+            return RestoreResult(savedBy = backup.from.username.trim())
+        }
+
         var applied = false
 
         backup.alerts?.let { block ->
@@ -1056,12 +1064,14 @@ class FrigoRepository(
         return RestoreResult(applied = true, language = backup.looks?.language)
     }
 
-    /** When a backup was last written from this phone, and the name it was given. */
-    suspend fun lastSave(): LastSave = prefs.readLastSave()
+    /** When a backup was last written from this account, and the name it was given. */
+    suspend fun lastSave(): LastSave =
+        activeServer()?.let { prefs.readLastSave(it) } ?: LastSave()
 
     /** Notes where a backup went, so the row can say where your settings are. */
     suspend fun noteSaved(name: String) {
-        prefs.writeLastSave(LastSave(at = System.currentTimeMillis(), name = name))
+        val server = activeServer() ?: return
+        prefs.writeLastSave(server, LastSave(at = System.currentTimeMillis(), name = name))
     }
 
     suspend fun latestFrame(camera: String, height: Int = 360): ByteArray? = runCatching {

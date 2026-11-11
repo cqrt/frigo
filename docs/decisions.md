@@ -3209,11 +3209,20 @@ settings is stale the moment it is written and is read again on the next launch.
 
 Rejected: the sign-in in the file. A token saved today is stale by the time the
 file is opened on a new phone, and a file that signs you in is a file you cannot
-leave in a shared folder. The password the phone keeps for its own sign-ins is
-left out for the same reason. The address and the username are written as a
-label and never matched, so a restore lands on whatever server you are signed in
-to. A restore from another house's file says which address it came from, rather
-than refusing.
+leave in a shared folder. The address is written as a label and never matched, so a
+restore lands on whatever server you are signed in to, and a file from another
+house says which address it came from rather than being refused.
+
+The username is matched, and that is the one thing about the file that is checked.
+Two people can share one phone, each with their own hidden cameras, their own names
+for them and their own quiet hours. The file says who wrote it, so an admin's file
+picked by someone else is turned down with a sentence rather than dropping one
+person's choices onto another's account. A file that names nobody is one the app
+cannot place, and is taken as yours. The name is compared without case, because a
+sign-in that differs only in capitals is the same person.
+
+The line under **Save my settings** is kept per account for the same reason: it is
+about a file you made, and it should not be the other person's save read out to you.
 
 Rejected: a merge. Replace is one answer every time, and a restore either gives you
 the file's settings or asks you to pick again. Nothing is kept to undo it.

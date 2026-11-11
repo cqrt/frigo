@@ -138,6 +138,7 @@
     <string name="backup_restored">Seus ajustes estão de volta.</string>
     <string name="backup_restored_elsewhere">Seus ajustes estão de volta. O arquivo foi salvo em %1$s.</string>
     <string name="backup_empty">Esse arquivo não tem nada que esta versão possa restaurar.</string>
+    <string name="backup_other_account">Esse arquivo foi salvo por %1$s. Ele só é restaurado nessa conta.</string>
     <string name="backup_not_frigo">Esse arquivo não é do Frigo.</string>
     <string name="backup_couldnt_save">Não deu para salvar. Tente outro lugar.</string>
     <string name="backup_couldnt_read">Não deu para ler esse arquivo.</string>

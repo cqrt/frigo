@@ -93,6 +93,11 @@ data class RestoreResult(
     val applied: Boolean = false,
     /** The language to pick, or null when the file says nothing about it. */
     val language: String? = null,
+    /**
+     * The name the file was saved by, when it is not the one signed in here. It is
+     * what the screen says instead of putting one person's settings on another's.
+     */
+    val savedBy: String = "",
 )
 
 /** The last file a backup was written to from this phone: when, and what it was called. */
@@ -103,6 +108,24 @@ data class LastSave(
 ) {
     /** Whether there is a save worth saying out loud. */
     val any: Boolean get() = at > 0L && name.isNotBlank()
+}
+
+/**
+ * Whether this file was made by the account named [username].
+ *
+ * Two people can share one phone, and each keeps their own answers on a server: the
+ * cameras they hid, what they call them, the hours they keep quiet. The file names
+ * the account that wrote it, so one person's settings are not put back over
+ * another's by picking the wrong file.
+ *
+ * A file that names nobody is one this version cannot place, so it is taken as
+ * yours. The name is compared without case, because a sign-in that differs only in
+ * capitals is the same person.
+ */
+fun SettingsBackup.belongsTo(username: String): Boolean {
+    val saved = from.username.trim()
+    if (saved.isEmpty()) return true
+    return saved.equals(username.trim(), ignoreCase = true)
 }
 
 /**

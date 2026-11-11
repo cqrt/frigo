@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.18.1
+
+- A settings file belongs to the account that saved it. Picked up while signed in as someone else on the same phone, it is turned down rather than putting one person's cameras and quiet hours onto another.
+- The line saying where your last save went is yours alone, so a phone two people use doesn't show you the other person's save.
+
 ## 0.18.0
 
 - Frigo stays signed in. It keeps your password on the phone and signs itself back in when your server's session runs out, so a day away no longer ends on the sign-in page.

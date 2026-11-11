@@ -138,6 +138,7 @@
     <string name="backup_restored">Your settings are back.</string>
     <string name="backup_restored_elsewhere">Your settings are back. The file was saved on %1$s.</string>
     <string name="backup_empty">That file has nothing in it this version can restore.</string>
+    <string name="backup_other_account">That file was saved by %1$s. It only restores on that account.</string>
     <string name="backup_not_frigo">That file isn\'t one of Frigo\'s.</string>
     <string name="backup_couldnt_save">Couldn\'t save it. Try another place.</string>
     <string name="backup_couldnt_read">Couldn\'t read that file.</string>

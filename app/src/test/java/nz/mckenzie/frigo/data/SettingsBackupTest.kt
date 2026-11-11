@@ -110,4 +110,24 @@ class SettingsBackupTest {
         assertFalse(LastSave(at = 1_793_420_000_000L).any)
         assertTrue(LastSave(at = 1_793_420_000_000L, name = "frigo-settings-2026-11-09.json").any)
     }
+
+    /**
+     * The file says who saved it, so two people who share a phone do not put one
+     * another's hidden cameras and quiet hours back over their own.
+     */
+    @Test
+    fun aFileBelongsToTheAccountThatSavedIt() {
+        val file = backup()
+
+        assertTrue(file.belongsTo("matt"))
+        assertTrue(file.belongsTo(" Matt "))
+        assertTrue(file.belongsTo("MATT"))
+        assertFalse(file.belongsTo("angie"))
+    }
+
+    /** A file that names nobody is one this version cannot place, so it is taken as yours. */
+    @Test
+    fun aFileWithNoNameIsTakenAsYours() {
+        assertTrue(SettingsBackup().belongsTo("angie"))
+    }
 }

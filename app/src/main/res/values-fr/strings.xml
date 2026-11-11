@@ -138,6 +138,7 @@
     <string name="backup_restored">Vos réglages sont revenus.</string>
     <string name="backup_restored_elsewhere">Vos réglages sont revenus. Le fichier a été enregistré sur %1$s.</string>
     <string name="backup_empty">Ce fichier ne contient rien que cette version puisse restaurer.</string>
+    <string name="backup_other_account">Ce fichier a été enregistré par %1$s. Il ne se restaure que sur ce compte.</string>
     <string name="backup_not_frigo">Ce fichier n\'est pas un fichier Frigo.</string>
     <string name="backup_couldnt_save">Impossible de l\'enregistrer. Essayez ailleurs.</string>
     <string name="backup_couldnt_read">Impossible de lire ce fichier.</string>

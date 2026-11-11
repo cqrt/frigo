@@ -139,6 +139,7 @@
     <string name="backup_restored">Deine Einstellungen sind zurück.</string>
     <string name="backup_restored_elsewhere">Deine Einstellungen sind zurück. Die Datei wurde auf %1$s gesichert.</string>
     <string name="backup_empty">Diese Datei enthält nichts, was diese Version wiederherstellen kann.</string>
+    <string name="backup_other_account">Diese Datei wurde von %1$s gesichert. Sie lässt sich nur auf diesem Konto wiederherstellen.</string>
     <string name="backup_not_frigo">Diese Datei ist keine von Frigo.</string>
     <string name="backup_couldnt_save">Konnte nicht gesichert werden. Versuch es woanders.</string>
     <string name="backup_couldnt_read">Diese Datei ließ sich nicht lesen.</string>

@@ -384,21 +384,22 @@ class ServerPrefs(private val context: Context) {
     }
 
     /**
-     * The last backup written from this phone, or an empty answer when there has
-     * never been one.
+     * The last backup written from this account, or an empty answer when it has
+     * never written one.
      *
-     * It is about the file rather than about a server, so switching servers does
-     * not make the row forget where your settings went.
+     * It sits under the account rather than under the phone for one reason: two
+     * people who share a phone keep their own settings there, and the line saying
+     * where your file went should not be the other person's save.
      */
-    suspend fun readLastSave(): LastSave {
-        val stored = context.dataStore.data.first()[Keys.lastSave] ?: return LastSave()
+    suspend fun readLastSave(server: Stored): LastSave {
+        val stored = context.dataStore.data.first()[lastSaveKey(server)] ?: return LastSave()
         return runCatching { BlockJson.decodeFromString(LastSave.serializer(), stored) }
             .getOrDefault(LastSave())
     }
 
-    suspend fun writeLastSave(save: LastSave) {
+    suspend fun writeLastSave(server: Stored, save: LastSave) {
         context.dataStore.edit { prefs ->
-            prefs[Keys.lastSave] = BlockJson.encodeToString(LastSave.serializer(), save)
+            prefs[lastSaveKey(server)] = BlockJson.encodeToString(LastSave.serializer(), save)
         }
     }
 
@@ -445,6 +446,7 @@ class ServerPrefs(private val context: Context) {
     private fun alertPeopleKey(server: Stored) = stringPreferencesKey("alert_people:${who(server)}")
     private fun cameraListKey(server: Stored) = stringPreferencesKey("camera_list:${who(server)}")
     private fun cameraLayoutKey(server: Stored) = intPreferencesKey("camera_layout:${who(server)}")
+    private fun lastSaveKey(server: Stored) = stringPreferencesKey("last_save:${who(server)}")
 
     private fun alertRulesKey(baseUrl: String) = stringPreferencesKey("alert_rules:$baseUrl")
     private fun settingsKey(baseUrl: String) = stringPreferencesKey("settings:$baseUrl")
@@ -468,9 +470,6 @@ class ServerPrefs(private val context: Context) {
         val lock = booleanPreferencesKey("lock")
         val onboarded = booleanPreferencesKey("onboarded")
         val streamChoices = stringSetPreferencesKey("stream_choices")
-
-        // Where the last backup went, which is about the file rather than a server.
-        val lastSave = stringPreferencesKey("last_save")
 
         // The release check, which is about the app rather than any one server.
         val updateAnswer = stringPreferencesKey("update_answer")

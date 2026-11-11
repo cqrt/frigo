@@ -957,7 +957,14 @@ fun SettingsScreen(
                         scope.launch {
                             val answer = repository.restoreSettings(file)
                             if (!answer.applied) {
-                                backupProblem = context.getString(R.string.backup_empty)
+                                backupProblem = when {
+                                    answer.savedBy.isNotEmpty() -> context.getString(
+                                        R.string.backup_other_account,
+                                        answer.savedBy,
+                                    )
+
+                                    else -> context.getString(R.string.backup_empty)
+                                }
                                 return@launch
                             }
                             // The language is Android's own, so it is picked here, in
