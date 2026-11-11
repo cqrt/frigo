@@ -15,9 +15,8 @@ import java.time.format.DateTimeFormatter
  * It is the phone's answers rather than the server's: the alert lists, the quiet
  * hours, which cameras are hidden and what they are called, how the app looks,
  * and the picture size picked for each camera. Nothing on Frigate is in here, and
- * no sign-in is either. Frigate's session lasts a day, so a saved token would be
- * stale by the time the file was opened, and a file that signs you in is a file
- * you cannot leave in a shared folder.
+ * no sign-in is either: a file that signs you in is a file you cannot leave in a
+ * shared folder, and the password this phone keeps is not the file's business.
  *
  * The groups are nullable so a file can leave one out, which is how a file from a
  * Frigo that never wrote that group leaves it alone on the phone. Our own files

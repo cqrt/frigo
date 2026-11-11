@@ -29,6 +29,12 @@
     <string name="settings_add_server">Add a server</string>
     <string name="settings_sign_out">Sign out</string>
     <string name="settings_sign_out_this">Sign out of this server</string>
+    <string name="settings_stay_signed_in">Stay signed in</string>
+    <string name="settings_stay_signed_in_supporting">Frigo signs you in again when your server\'s session runs out.</string>
+    <string name="settings_stay_signed_in_off">You sign in again when your server\'s session runs out.</string>
+    <string name="settings_stay_signed_in_ask">Frigo needs your password once more to keep you signed in.</string>
+    <string name="settings_stay_signed_in_keep">Keep me signed in</string>
+    <string name="settings_stay_signed_in_cancel">Cancel</string>
 
     <!-- Linking a television: the phone reads the code on the TV's screen and
          hands it the server and sign-in to use. -->
@@ -261,6 +267,7 @@
     <string name="api_sign_in_rejected">That username and password weren\'t accepted</string>
     <string name="api_no_token">Your server accepted the sign-in but sent no token</string>
     <string name="api_session_expired">Your session has expired. Sign in again.</string>
+    <string name="api_kept_password_refused">Your server didn\'t accept the password Frigo kept. Sign in again.</string>
     <string name="api_not_signed_in">Not signed in</string>
     <string name="api_no_settings_yet">Your server isn\'t answering, and this phone hasn\'t read its settings yet.</string>
 

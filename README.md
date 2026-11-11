@@ -99,11 +99,13 @@ camera grid.
 **Settings.** Holds the servers you've signed in to, one under the other, with the
 one you're on ticked. On an admin account, tap another and the app switches to
 it, with its own sign-in, its own alerts switch and its own camera layout, and
-**Add a server** signs in to one more. **Sign out** takes you off the server you're
-on, and the next one takes over. **Link a TV** puts your cameras on an Android TV:
-point the phone at the code on the television's screen, and type your Frigate
-password once. Under Servers, an admin finds **Frigate**: Alerts
-and detections, AI descriptions, and System, which is how the box is doing.
+**Add a server** signs in to one more. **Stay signed in** keeps the password on
+this phone, so the app signs itself in again when a session runs out. **Sign out**
+takes you off the server you're on, and the next one takes over. **Link a TV** puts
+your cameras on an Android TV: point the phone at the code on the television's
+screen, and type your Frigate password once. Under Servers, an admin finds
+**Frigate**: Alerts and detections, AI descriptions, and System, which is how the
+box is doing.
 **System logs** under System shows what frigate, go2rtc and nginx have been saying,
 newest at the bottom.
 Then come two switches: one for notifications, and one that plays the home page
@@ -219,9 +221,10 @@ Frigate's own certificate is one it made for itself, and a phone refuses those. 
 the app says it doesn't trust the certificate, sign in through the address your
 proxy serves, which has a certificate from a real authority.
 
-Frigate's session lasts a day, and it is lengthened every time you open the app.
-Leave it longer than that and you sign in again, with your address and username
-already filled in.
+Frigate's session lasts a day. The app keeps your password, so it signs in again
+by itself and you stay signed in. The switch for that is Stay signed in, under
+Settings, Servers. Turn it off and the password goes; a session that runs out
+then puts the sign-in page up, with your address and username already filled in.
 
 ## More than one server
 

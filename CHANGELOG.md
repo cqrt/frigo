@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.18.0
+
+- Frigo stays signed in. It keeps your password on the phone and signs itself back in when your server's session runs out, so a day away no longer ends on the sign-in page.
+- Stay signed in, under Settings, Servers, is the switch. Turning it off deletes the password.
+- Alerts keep coming overnight: when the session runs out the alert service signs in again for itself instead of stopping until you next open the app.
+
 ## 0.17.3
 
 - Frigo has a new icon: a lens with its blades open. Frigo TV has the same lens in a screen on a stand.

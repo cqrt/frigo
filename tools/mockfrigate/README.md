@@ -118,12 +118,16 @@ Sign-in behaves like Frigate 0.18: a JSON body of `user` and `password`, and the
 session as a JWT in a `Set-Cookie` header. Send it a form body and it answers
 with the same 422 a real server gives, which is the point of the exercise.
 
-To watch the app notice an expired session, restart the server with a different
-token, then open the app:
+To watch the app sign itself back in, turn Stay signed in on, then restart the
+server with a different token and open the app. The saved session is refused and
+the kept password gets a new one, so it lands on the cameras:
 
 ```
 MOCK_TOKEN=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0In0.b3RoZXI python tools/mockfrigate/mock.py
 ```
+
+With the switch off there is no password to use, so the same restart puts the
+sign-in page up, with the address and username already filled in.
 
 The app assumes HTTPS unless you type a scheme, so include `http://` when you
 point it at this.

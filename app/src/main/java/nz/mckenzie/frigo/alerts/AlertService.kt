@@ -197,9 +197,16 @@ class AlertService : Service() {
             when (val outcome = runSession(source)) {
                 Session.Closed -> wait = RECONNECT_FIRST
                 Session.Refused -> {
-                    // No point knocking: Frigate will keep saying no until you sign in.
-                    setState(WatchState.SignedOut)
-                    return
+                    // The session has run out. The password this phone kept signs in
+                    // again, so a night of alerts doesn't end here; with none to use,
+                    // Frigate will keep saying no until you sign in.
+                    val renewed = runCatching { container.repository.signInAgain() }
+                        .getOrDefault(false)
+                    if (!renewed) {
+                        setState(WatchState.SignedOut)
+                        return
+                    }
+                    wait = RECONNECT_FIRST
                 }
                 is Session.Failed -> {
                     wait = (wait * 2).coerceAtMost(RECONNECT_LONGEST)

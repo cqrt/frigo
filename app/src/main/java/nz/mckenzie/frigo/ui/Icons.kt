@@ -269,6 +269,15 @@ object FrigoIcons {
         }
     }
 
+    /** A key, for the password the phone keeps so it can sign in again. */
+    val Key: ImageVector by lazy {
+        vector("Key") {
+            path("M5.2 12a3.4 3.4 0 1 0 6.8 0 3.4 3.4 0 1 0-6.8 0z", strokeWidth = 1.7f)
+            path("M12 12h8.8", strokeWidth = 1.7f)
+            path("M16.2 12v3.4M19.2 12v2.4", strokeWidth = 1.7f)
+        }
+    }
+
     /** A line that jumps and settles, for motion. */
     val Motion: ImageVector by lazy {
         vector("Motion") {

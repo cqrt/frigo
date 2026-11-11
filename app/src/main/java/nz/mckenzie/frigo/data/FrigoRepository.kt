@@ -57,9 +57,10 @@ data class StreamSource(val url: String, val token: String)
  * screens plain data.
  *
  * Frigate 0.18 has no refresh endpoint: the sign-in issues one JWT that lasts a
- * day, and the server lengthens it whenever a request arrives near the end of
- * that day. So the token is kept and updated when the server hands back a fresh
- * one, and when it finally does expire you sign in again.
+ * day, and the server lengthens it only for a token that arrives as a cookie,
+ * which a bearer token never is. The clock starts at the sign-in and stops a day
+ * later. The way past it is the password this phone keeps: when the session has
+ * run out the app signs in again with it, and nothing reaches you.
  */
 class FrigoRepository(
     /**
@@ -393,35 +394,26 @@ class FrigoRepository(
         }
         _onboarded.value = done
 
-        if (saved == null || saved.token.isNullOrBlank()) {
-            _gate.value = Gate.SignedOut(
-                address = saved?.baseUrl.orEmpty(),
-                username = saved?.username.orEmpty(),
-            )
+        if (saved == null) {
+            _gate.value = Gate.SignedOut()
             return
         }
 
-        val result = runCatching {
-            withContext(Dispatchers.IO) { api.checkToken(saved.baseUrl, saved.token) }
-        }
+        // The token is offered first, and a session that has run out is signed in
+        // again with the password this phone kept, so a night away from the app
+        // doesn't end on the sign-in page.
+        val signedIn = runCatching { mutex.withLock { renewLocked() } }
 
-        result.onSuccess { fresh ->
-            if (fresh != null) saveToken(fresh)
+        signedIn.onSuccess {
             _gate.value = Gate.SignedIn(saved.baseUrl, saved.username)
             refreshAlertRules()
         }.onFailure { error ->
+            // The session ran out and there was no password to sign in with. The
+            // gate has already been told why.
+            if (error is FrigateException && error.isAuthFailure) return@onFailure
             // A server that cannot be reached is not a sign-out: the phone may be
             // out of signal, and the screens show their own errors for that.
-            if (error is FrigateException && error.isAuthFailure) {
-                forgetToken()
-                _gate.value = Gate.SignedOut(
-                    message = context.words(R.string.api_session_expired),
-                    address = saved.baseUrl,
-                    username = saved.username,
-                )
-            } else {
-                _gate.value = Gate.SignedIn(saved.baseUrl, saved.username)
-            }
+            _gate.value = Gate.SignedIn(saved.baseUrl, saved.username)
         }
     }
 
@@ -429,12 +421,22 @@ class FrigoRepository(
      * Signs in to a server, adding it to the list if it isn't there and making it
      * the one the app is on. Signing in to a server you already have replaces its
      * token and leaves the rest of the list alone.
+     *
+     * The password is kept, unless this server's Stay signed in switch is off, so
+     * this is usually the last one you type.
      */
     suspend fun signIn(address: String, username: String, password: String) {
         val baseUrl = normalizeBaseUrl(address)
         val token = withContext(Dispatchers.IO) { api.login(baseUrl, username, password) }
-        val saved = ServerPrefs.Stored(baseUrl = baseUrl, username = username, token = token)
         mutex.withLock {
+            val keep = known().firstOrNull { it.baseUrl == baseUrl }?.keepPassword ?: true
+            val saved = ServerPrefs.Stored(
+                baseUrl = baseUrl,
+                username = username,
+                token = token,
+                password = password.takeIf { keep },
+                keepPassword = keep,
+            )
             val servers = known()
                 .filterNot { it.baseUrl == baseUrl } + saved
             stored = saved
@@ -445,6 +447,47 @@ class FrigoRepository(
         loadChoices()
         _gate.value = Gate.SignedIn(baseUrl, username)
         refreshAlertRules()
+    }
+
+    /**
+     * Whether the phone keeps the password, and keeps it from now on. Off drops
+     * the password and the intent, so a session then lasts its day as it did
+     * before. On asks Frigate with the password typed, so a wrong one is refused
+     * here rather than three in the morning when the session runs out.
+     */
+    suspend fun setKeepSignedIn(on: Boolean, password: String? = null) {
+        val server = stored ?: activeServer() ?: return
+        if (!on) {
+            mutex.withLock {
+                val next = server.copy(password = null, keepPassword = false)
+                stored = next
+                keep(next)
+            }
+            return
+        }
+        val typed = password?.takeIf { it.isNotBlank() } ?: server.password ?: return
+        // The sign-in proves the password and starts a fresh day at the same time.
+        val token = withContext(Dispatchers.IO) {
+            api.login(server.baseUrl, server.username, typed)
+        }
+        mutex.withLock {
+            val next = server.copy(password = typed, keepPassword = true, token = token)
+            stored = next
+            keep(next)
+        }
+    }
+
+    /**
+     * Signs in again with the password this phone kept, for a session that has run
+     * out. Answers whether there is a working session now. The alert service asks
+     * this rather than stopping for the night when its socket is turned down.
+     */
+    suspend fun signInAgain(): Boolean {
+        activeServer() ?: return false
+        return mutex.withLock {
+            val current = stored ?: return@withLock false
+            signInLocked(current) != null
+        }
     }
 
     /**
@@ -464,6 +507,23 @@ class FrigoRepository(
         limits.clear()
         statsAt = null
         loadChoices()
+
+        // A server whose session ran out is signed in again from the password this
+        // phone kept, so moving to it is a tap rather than a sign-in.
+        if (next.token.isNullOrBlank() && next.password != null) {
+            val renewed = runCatching { mutex.withLock { renewLocked() } }
+            val failure = renewed.exceptionOrNull()
+            _gate.value = when {
+                renewed.isSuccess -> Gate.SignedIn(next.baseUrl, next.username)
+                // A server that cannot be reached opens as it is, and its screens say so.
+                failure !is FrigateException || !failure.isAuthFailure ->
+                    Gate.SignedIn(next.baseUrl, next.username)
+                // The sign-in page is already up, with the reason on it.
+                else -> return
+            }
+            return
+        }
+
         _gate.value = if (next.token.isNullOrBlank()) {
             Gate.SignedOut(address = next.baseUrl, username = next.username)
         } else {
@@ -1367,8 +1427,8 @@ class FrigoRepository(
     }
 
     /**
-     * Runs [block] with the session token. A 401 means the token aged out, so we
-     * ask the server whether it has a fresh one before giving up on the session.
+     * Runs [block] with the session token. A 401 means the token aged out, so the
+     * session is renewed before giving up on it.
      */
     private suspend fun <T> authorized(block: suspend (baseUrl: String, token: String) -> T): T {
         val current = activeServer() ?: throw FrigateException(401, notSignedIn)
@@ -1377,33 +1437,78 @@ class FrigoRepository(
             withContext(Dispatchers.IO) { block(current.baseUrl, token) }
         } catch (e: FrigateException) {
             if (!e.isAuthFailure) throw e
-            val renewed = renewSession()
+            val renewed = mutex.withLock { renewLocked() }
             withContext(Dispatchers.IO) { block(current.baseUrl, renewed) }
         }
     }
 
     /**
-     * Frigate refreshes a session in place rather than issuing a new one, so the
-     * only recovery is asking /api/auth and keeping whatever token comes back.
+     * A session that works, starting from the token in hand.
+     *
+     * Frigate lengthens a session in place but only while it still has time on it,
+     * and only for a token sent as a cookie, which is not how this app sends one.
+     * So a token that has run out is answered with a sign-in from the password the
+     * phone kept. A phone with no password kept gets the sign-in page instead.
+     *
+     * Called with the mutex held, so a screenful of failed requests makes one
+     * sign-in rather than one each.
      */
-    private suspend fun renewSession(): String = mutex.withLock {
+    private suspend fun renewLocked(): String {
         val current = stored ?: throw FrigateException(401, notSignedIn)
-        val token = current.token ?: throw FrigateException(401, notSignedIn)
 
-        val fresh = runCatching {
-            withContext(Dispatchers.IO) { api.checkToken(current.baseUrl, token) }
-        }.getOrElse {
-            forgetToken()
-            _gate.value = Gate.SignedOut(
-                message = context.words(R.string.api_session_expired),
-                address = current.baseUrl,
-                username = current.username,
-            )
-            throw FrigateException(401, context.words(R.string.api_session_expired))
+        current.token?.let { token ->
+            val fresh = runCatching {
+                withContext(Dispatchers.IO) { api.checkToken(current.baseUrl, token) }
+            }.getOrNull()
+            if (fresh != null) {
+                if (fresh != token) saveToken(fresh)
+                return fresh
+            }
         }
 
-        if (fresh != null && fresh != token) saveToken(fresh)
-        fresh ?: token
+        signInLocked(current)?.let { return it }
+
+        forgetToken()
+        val refused = current.password != null
+        val words = context.words(
+            if (refused) R.string.api_kept_password_refused else R.string.api_session_expired,
+        )
+        _gate.value = Gate.SignedOut(
+            message = words,
+            address = current.baseUrl,
+            username = current.username,
+        )
+        throw FrigateException(401, words)
+    }
+
+    /**
+     * Signs in with the password kept on the phone, and answers the token it comes
+     * back with, or null when there is no password or the server turned it down.
+     *
+     * A password that is turned down is dropped, along with the intent to keep it:
+     * it has been changed on the server, and asking again at every launch would
+     * only be told the same thing, while Frigate counts failed sign-ins.
+     *
+     * Called with the mutex held. A server that cannot be reached is thrown rather
+     * than answered, since that says nothing about the password.
+     */
+    private suspend fun signInLocked(current: ServerPrefs.Stored): String? {
+        val password = current.password ?: return null
+        val token = try {
+            withContext(Dispatchers.IO) {
+                api.login(current.baseUrl, current.username, password)
+            }
+        } catch (refused: FrigateException) {
+            if (!refused.isAuthFailure) throw refused
+            val next = current.copy(token = null, password = null, keepPassword = false)
+            stored = next
+            keep(next)
+            return null
+        }
+        val next = current.copy(token = token)
+        stored = next
+        keep(next)
+        return token
     }
 
     private suspend fun saveToken(token: String) {

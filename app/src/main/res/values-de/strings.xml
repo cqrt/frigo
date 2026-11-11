@@ -30,6 +30,12 @@
     <string name="settings_add_server">Server hinzufügen</string>
     <string name="settings_sign_out">Abmelden</string>
     <string name="settings_sign_out_this">Von diesem Server abmelden</string>
+    <string name="settings_stay_signed_in">Angemeldet bleiben</string>
+    <string name="settings_stay_signed_in_supporting">Frigo meldet dich wieder an, wenn die Sitzung deines Servers abläuft.</string>
+    <string name="settings_stay_signed_in_off">Du meldest dich wieder an, wenn die Sitzung deines Servers abläuft.</string>
+    <string name="settings_stay_signed_in_ask">Frigo braucht dein Passwort noch einmal, damit du angemeldet bleibst.</string>
+    <string name="settings_stay_signed_in_keep">Angemeldet bleiben</string>
+    <string name="settings_stay_signed_in_cancel">Abbrechen</string>
     <!-- Einen Fernseher verbinden: das Telefon liest den Code vom Bildschirm und
          übergibt Server und Anmeldung. -->
     <string name="link_tv_title">Fernseher verbinden</string>
@@ -262,6 +268,7 @@
     <string name="api_sign_in_rejected">Benutzername und Passwort wurden nicht angenommen</string>
     <string name="api_no_token">Dein Server hat die Anmeldung angenommen, aber kein Token geschickt</string>
     <string name="api_session_expired">Deine Sitzung ist abgelaufen. Melde dich neu an.</string>
+    <string name="api_kept_password_refused">Dein Server hat das Passwort, das Frigo gespeichert hat, nicht akzeptiert. Melde dich neu an.</string>
     <string name="api_not_signed_in">Nicht angemeldet</string>
     <string name="api_no_settings_yet">Dein Server antwortet nicht, und dieses Handy hat seine Einstellungen noch nicht gelesen.</string>
 

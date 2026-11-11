@@ -12,8 +12,10 @@ POST /api/login
 ```
 
 It answers with an empty body and the session as a JWT in a `Set-Cookie` header.
-There is no `/api/refresh` endpoint; the token lasts a day, and `/api/auth`
-lengthens it when a request arrives inside the last half hour.
+There is no `/api/refresh` endpoint, and the token lasts a day. `/api/auth`
+lengthens a session only when the token arrives as a cookie, which a bearer token
+never does, so nothing this app sends moves the clock; the kept password is what
+gets past the end of it.
 
 Rejected: a form post with `username` and `password`, which is what the app did
 first. Frigate validates the body against a model, so a form posted to 0.18 comes
@@ -3205,9 +3207,10 @@ tokens, and the phone's copy of the server's settings. The lock has to be grante
 on the new phone itself, the tour is about arriving, and the copy of the server's
 settings is stale the moment it is written and is read again on the next launch.
 
-Rejected: the sign-in in the file. Frigate's session lasts a day, so a token saved
-today is no use on the new phone tomorrow, and a file that signs you in is a file
-you cannot leave in a shared folder. The address and the username are written as a
+Rejected: the sign-in in the file. A token saved today is stale by the time the
+file is opened on a new phone, and a file that signs you in is a file you cannot
+leave in a shared folder. The password the phone keeps for its own sign-ins is
+left out for the same reason. The address and the username are written as a
 label and never matched, so a restore lands on whatever server you are signed in
 to. A restore from another house's file says which address it came from, rather
 than refusing.
@@ -3233,3 +3236,43 @@ picking it redraws the app.
 
 The file is plain JSON with the day in its name, so it can be opened and read on a
 computer.
+
+## The phone keeps the password too
+
+Frigate's session is a JWT that lasts a day, and `/api/auth` lengthens a session
+only when the token arrives as a cookie. The app sends a bearer token, so the
+clock starts at the sign-in, stops a day later, and no amount of opening the app
+moves it. Every day ended on the sign-in page.
+
+The password is kept, as it is on the television, and the app signs in again with
+it when a session has run out: at launch, on the first 401, and when the alert
+service's socket is turned down, so alerts carry on overnight instead of stopping
+until the app is next opened. The token is still what goes out on every request;
+the password is only used to get another one.
+
+It sits in DataStore beside the token, in the app's own storage, which no other
+app can read. Backup is off in the manifest, and Settings, Backup does not write
+it into the file, so it does not leave the phone that way either. It is not
+encrypted on top of that, which is the same answer the television gives: the key
+would have to live on the same phone, locked to the same app.
+
+A password Frigate turns down is dropped along with the intent to keep it. It has
+been changed on the server, and asking again at every launch would only be told
+the same thing, while Frigate counts failed sign-ins. The sign-in page then says
+the kept password was refused, rather than the vaguer line about an expired
+session.
+
+Stay signed in, under Settings, Servers, is the switch. Off deletes the password
+and the intent, so a later sign-in by hand does not quietly put it back. On asks
+for the password, because the phone cannot know one it never kept, and the
+sign-in that checks it also starts a fresh day.
+
+Rejected: sending the token as a cookie so Frigate lengthens it. It would work,
+and needs no password on the phone, but it leans on a cookie name that
+`auth.cookie_name` makes configurable and on a proxy that passes cookies through.
+A session that stops being lengthened fails quietly, as a sign-in page the next
+morning.
+
+Rejected: a longer `auth.session_length` on the server. It is the one change that
+needs no release, and docs say so for anyone who wants it, but it only makes the
+walk to the sign-in page longer, and a token that leaks lives longer with it.

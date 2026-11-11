@@ -176,9 +176,12 @@ fun SignInForm(
  * One line of the form: an icon, the name of the thing, and what is typed in it.
  * It is a filled block rather than a box with an outline, which is how every
  * other card in the app is drawn.
+ *
+ * The password question under Stay signed in asks with the same block, so a
+ * password is typed in one place and looks the same wherever it is asked for.
  */
 @Composable
-private fun Field(
+internal fun Field(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,

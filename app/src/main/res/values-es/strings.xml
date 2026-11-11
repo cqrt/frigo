@@ -29,6 +29,12 @@
     <string name="settings_add_server">Añadir un servidor</string>
     <string name="settings_sign_out">Cerrar sesión</string>
     <string name="settings_sign_out_this">Cerrar sesión en este servidor</string>
+    <string name="settings_stay_signed_in">Mantener la sesión</string>
+    <string name="settings_stay_signed_in_supporting">Frigo vuelve a iniciar sesión por ti cuando caduca la sesión de tu servidor.</string>
+    <string name="settings_stay_signed_in_off">Vuelves a iniciar sesión cuando caduca la sesión de tu servidor.</string>
+    <string name="settings_stay_signed_in_ask">Frigo necesita tu contraseña otra vez para mantener tu sesión.</string>
+    <string name="settings_stay_signed_in_keep">Mantener mi sesión</string>
+    <string name="settings_stay_signed_in_cancel">Cancelar</string>
     <!-- Enlazar un televisor: el teléfono lee el código de la pantalla y le pasa
          el servidor y el inicio de sesión. -->
     <string name="link_tv_title">Vincular un TV</string>
@@ -261,6 +267,7 @@
     <string name="api_sign_in_rejected">Ese usuario y esa contraseña no se aceptaron</string>
     <string name="api_no_token">Tu servidor aceptó el inicio de sesión pero no envió ningún token</string>
     <string name="api_session_expired">Tu sesión ha caducado. Inicia sesión otra vez.</string>
+    <string name="api_kept_password_refused">Tu servidor no aceptó la contraseña que Frigo guardó. Inicia sesión otra vez.</string>
     <string name="api_not_signed_in">Sin sesión</string>
     <string name="api_no_settings_yet">Tu servidor no responde, y este teléfono aún no ha leído sus ajustes.</string>
 

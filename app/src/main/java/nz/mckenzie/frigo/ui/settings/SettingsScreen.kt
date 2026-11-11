@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -34,6 +35,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -63,6 +65,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
@@ -89,8 +95,10 @@ import nz.mckenzie.frigo.data.canInstallApps
 import nz.mckenzie.frigo.data.cameraState
 import nz.mckenzie.frigo.data.installUpdate
 import nz.mckenzie.frigo.ui.FrigoIcons
+import nz.mckenzie.frigo.ui.friendlyMessage
 import nz.mckenzie.frigo.ui.lock.rememberAskForLock
 import nz.mckenzie.frigo.ui.lock.rememberLockAvailable
+import nz.mckenzie.frigo.ui.login.Field
 import nz.mckenzie.frigo.ui.openBatterySettings
 import nz.mckenzie.frigo.ui.relativeTime
 import nz.mckenzie.frigo.ui.components.CardDivider
@@ -290,6 +298,14 @@ fun SettingsScreen(
     var backupDone by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingRestore by remember { mutableStateOf<SettingsBackup?>(null) }
 
+    // The one question Stay signed in asks: the password, which the phone cannot
+    // know, and what came of the last try.
+    var stayOn by remember { mutableStateOf(false) }
+    var stayPassword by remember { mutableStateOf("") }
+    var stayShown by remember { mutableStateOf(false) }
+    var stayBusy by remember { mutableStateOf(false) }
+    var stayProblem by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(Unit) { lastSave = repository.lastSave() }
 
     // Saving asks where first, the same way saving a clip does: nothing is written
@@ -391,6 +407,41 @@ fun SettingsScreen(
                 }
 
                 if (servers.isNotEmpty()) CardDivider()
+
+                // The password this phone keeps is what signs it back in when the
+                // session runs out, so the row says what you get from it rather
+                // than what is stored.
+                val keptOn = servers.firstOrNull { it.baseUrl == baseUrl }?.password != null
+                Item(
+                    icon = FrigoIcons.Key,
+                    title = stringResource(R.string.settings_stay_signed_in),
+                    supporting = stringResource(
+                        if (keptOn) {
+                            R.string.settings_stay_signed_in_supporting
+                        } else {
+                            R.string.settings_stay_signed_in_off
+                        },
+                    ),
+                    trailing = {
+                        Switch(
+                            checked = keptOn,
+                            onCheckedChange = { on ->
+                                if (!on) {
+                                    scope.launch { repository.setKeepSignedIn(false) }
+                                    return@Switch
+                                }
+                                // Keeping it needs the password, which the phone
+                                // cannot know, so it is asked for once.
+                                stayPassword = ""
+                                stayShown = false
+                                stayProblem = null
+                                stayOn = true
+                            },
+                        )
+                    },
+                )
+
+                CardDivider()
 
                 Item(
                     icon = FrigoIcons.Television,
@@ -931,6 +982,94 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(onClick = { pendingRestore = null }) {
                     Text(stringResource(R.string.backup_cancel))
+                }
+            },
+        )
+    }
+
+    // Staying signed in cannot be switched on without the password, so the switch
+    // asks for it once. Frigate is asked before it is kept, so a wrong password is
+    // refused here rather than the next time the session runs out.
+    if (stayOn) {
+        AlertDialog(
+            onDismissRequest = { if (!stayBusy) stayOn = false },
+            title = { Text(stringResource(R.string.settings_stay_signed_in)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = stringResource(R.string.settings_stay_signed_in_ask),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Field(
+                        value = stayPassword,
+                        onValueChange = { stayPassword = it },
+                        label = stringResource(R.string.login_password),
+                        icon = FrigoIcons.Lock,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done,
+                        ),
+                        visualTransformation = if (stayShown) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
+                        trailing = {
+                            IconButton(
+                                onClick = { stayShown = !stayShown },
+                                modifier = Modifier.size(40.dp),
+                            ) {
+                                Icon(
+                                    imageVector = if (stayShown) {
+                                        FrigoIcons.EyeOff
+                                    } else {
+                                        FrigoIcons.Eye
+                                    },
+                                    contentDescription = stringResource(
+                                        if (stayShown) {
+                                            R.string.login_hide_password
+                                        } else {
+                                            R.string.login_show_password
+                                        },
+                                    ),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(22.dp),
+                                )
+                            }
+                        },
+                    )
+                    stayProblem?.let { said ->
+                        Text(
+                            text = said,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = stayPassword.isNotBlank() && !stayBusy,
+                    onClick = {
+                        scope.launch {
+                            stayBusy = true
+                            stayProblem = null
+                            runCatching { repository.setKeepSignedIn(true, stayPassword) }
+                                .onSuccess {
+                                    stayOn = false
+                                    stayPassword = ""
+                                }
+                                .onFailure { stayProblem = it.friendlyMessage(context) }
+                            stayBusy = false
+                        }
+                    },
+                ) {
+                    Text(stringResource(R.string.settings_stay_signed_in_keep))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { stayOn = false }, enabled = !stayBusy) {
+                    Text(stringResource(R.string.settings_stay_signed_in_cancel))
                 }
             },
         )

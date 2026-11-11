@@ -26,6 +26,10 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
  * The address and username outlive the token. When Frigate expires the session
  * you sign in again, and those two fields are already filled in.
  *
+ * The password is what the app signs in with on its own, so a session that has
+ * run out never reaches you. It is kept under the same terms as the token, in
+ * this app's own storage, and the switch on the Servers card is what decides.
+ *
  * What you chose for yourself on a server - the alerts switch, quiet hours, the
  * lists, the cameras and how they are laid out - is kept under the server and
  * your username together, so signing out and back in finds it again, and a phone
@@ -33,6 +37,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
  *
  * The token sits in DataStore, which lives in this app's private storage and is
  * not readable by other apps. Backup is off in the manifest for the same reason.
+ * The password sits beside it, on the same terms.
  */
 class ServerPrefs(private val context: Context) {
 
@@ -41,6 +46,17 @@ class ServerPrefs(private val context: Context) {
         val baseUrl: String,
         val username: String,
         val token: String? = null,
+        /**
+         * Kept so the app can sign itself back in. Null until it has one: a server
+         * saved by an earlier version has a token and nothing else.
+         */
+        val password: String? = null,
+        /**
+         * Whether the password is to be kept. True for a server saved now, so the
+         * next sign-in keeps it. Turning the switch off writes false, and a
+         * sign-in by hand after that leaves it false.
+         */
+        val keepPassword: Boolean = true,
     )
 
     /** Every server on the phone, and the one the app is on. */

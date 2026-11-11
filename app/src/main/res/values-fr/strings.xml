@@ -29,6 +29,12 @@
     <string name="settings_add_server">Ajouter un serveur</string>
     <string name="settings_sign_out">Se déconnecter</string>
     <string name="settings_sign_out_this">Se déconnecter de ce serveur</string>
+    <string name="settings_stay_signed_in">Rester connecté</string>
+    <string name="settings_stay_signed_in_supporting">Frigo vous reconnecte quand la session de votre serveur expire.</string>
+    <string name="settings_stay_signed_in_off">Vous vous reconnectez quand la session de votre serveur expire.</string>
+    <string name="settings_stay_signed_in_ask">Frigo a besoin de votre mot de passe une fois de plus pour vous garder connecté.</string>
+    <string name="settings_stay_signed_in_keep">Garder ma connexion</string>
+    <string name="settings_stay_signed_in_cancel">Annuler</string>
     <!-- Associer un téléviseur : le téléphone lit le code de l'écran et lui
          transmet le serveur et la connexion. -->
     <string name="link_tv_title">Associer un téléviseur</string>
@@ -261,6 +267,7 @@
     <string name="api_sign_in_rejected">Ce nom d\'utilisateur et ce mot de passe n\'ont pas été acceptés</string>
     <string name="api_no_token">Votre serveur a accepté la connexion mais n\'a envoyé aucun jeton</string>
     <string name="api_session_expired">Votre session a expiré. Reconnectez-vous.</string>
+    <string name="api_kept_password_refused">Votre serveur n\'a pas accepté le mot de passe que Frigo a gardé. Reconnectez-vous.</string>
     <string name="api_not_signed_in">Non connecté</string>
     <string name="api_no_settings_yet">Votre serveur ne répond pas, et ce téléphone n\'a pas encore lu ses réglages.</string>
 
