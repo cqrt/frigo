@@ -393,6 +393,10 @@
     <string name="comp_clip_incomplete">O clipe chegou incompleto. Baixe de novo.</string>
     <string name="comp_clip_unfinished">O Frigate não terminou de gravar este clipe, então ele para no meio. Baixar de novo daria o mesmo arquivo quebrado.</string>
     <string name="comp_clip_wouldnt_play">Não foi possível reproduzir esse clipe.</string>
+    <string name="comp_clip_play">Reproduzir</string>
+    <string name="comp_clip_pause">Pausa</string>
+    <string name="comp_clip_show_all">Mostrar tudo</string>
+    <string name="comp_clip_seek">Posição no clipe</string>
 
     <!-- ===== onboard ===== -->
     <!-- The welcome page. -->

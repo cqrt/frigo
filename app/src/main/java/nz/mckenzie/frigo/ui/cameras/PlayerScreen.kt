@@ -6,8 +6,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,20 +48,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -88,6 +79,8 @@ import nz.mckenzie.frigo.data.joined
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.data.ratesFor
 import nz.mckenzie.frigo.ui.FrigoIcons
+import nz.mckenzie.frigo.ui.components.ZoomablePicture
+import nz.mckenzie.frigo.ui.components.rememberPictureZoom
 import nz.mckenzie.frigo.ui.components.HideSystemBars
 import nz.mckenzie.frigo.ui.components.LiveSound
 import nz.mckenzie.frigo.ui.components.StatusBarIcons
@@ -100,16 +93,12 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.floor
-import kotlin.math.roundToInt
 
 /**
  * The heights and rates the player offers, biggest first. What it actually shows is
  * these narrowed to the camera's own picture and frame rate, so nothing is offered
  * that the server would have to invent.
  */
-
-/** How far in a pinch can go. Past this the picture is just soft pixels. */
-private const val MaxZoom = 5f
 
 /**
  * The size and rate a camera opens at the first time it is watched, when it has both.
@@ -1172,83 +1161,11 @@ private fun MenuChoice(text: String, chosen: Boolean, onClick: () -> Unit) {
 }
 
 /**
- * A picture you can pinch into, a drag to move around it, and a double tap to go
- * back to the whole frame.
+ * Frigate's stills, in the pinchable frame.
  *
- * [aspect] is the picture's own shape, so it is drawn whole inside the box and
- * fitted rather than cropped: a pinch has something to move into. [picture] is
- * either a stream's frames or the player the camera's own video arrives in, and the
- * zoom belongs to the screen rather than to any one frame, so what is drawn
- * underneath can change without the view moving.
+ * The pinch belongs to the screen rather than to this still: the camera's own
+ * video replaces it once it has a frame, and the view stays where it was.
  */
-@Composable
-internal fun ZoomablePicture(
-    camera: String,
-    aspect: Float,
-    modifier: Modifier = Modifier,
-    picture: @Composable () -> Unit,
-) {
-    val density = LocalDensity.current
-    var scale by remember(camera) { mutableFloatStateOf(1f) }
-    var offset by remember(camera) { mutableStateOf(Offset.Zero) }
-    var viewport by remember(camera) { mutableStateOf(IntSize.Zero) }
-    val fitted = fitPicture(aspect, viewport)
-
-    // Zooming keeps the point between your fingers where it is, which is what
-    // makes a pinch feel like it is grabbing the picture.
-    fun zoomTo(next: Float, around: Offset, drag: Offset = Offset.Zero) {
-        val factor = next / scale
-        val centre = Offset(viewport.width / 2f, viewport.height / 2f)
-        val fromCentre = around - centre
-        val moved = fromCentre - (fromCentre - offset) * factor + drag
-        scale = next
-        offset = keepInside(moved, next, fitted, viewport)
-    }
-
-    Box(
-        modifier
-            .fillMaxSize()
-            .clipToBounds()
-            .onSizeChanged { viewport = it }
-            .pointerInput(camera) {
-                detectTapGestures(
-                    onDoubleTap = { point ->
-                        if (scale > 1f) {
-                            scale = 1f
-                            offset = Offset.Zero
-                        } else {
-                            zoomTo(2.5f, point)
-                        }
-                    },
-                )
-            }
-            .pointerInput(camera) {
-                detectTransformGestures { centroid, pan, zoom, _ ->
-                    val next = (scale * zoom).coerceIn(1f, MaxZoom)
-                    zoomTo(next, centroid, pan)
-                }
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            Modifier
-                .size(
-                    width = with(density) { fitted.width.toDp() },
-                    height = with(density) { fitted.height.toDp() },
-                )
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offset.x,
-                    translationY = offset.y,
-                ),
-        ) {
-            picture()
-        }
-    }
-}
-
-/** Frigate's stills, in the pinchable frame. */
 @Composable
 private fun ZoomableStill(
     bitmap: ImageBitmap,
@@ -1256,7 +1173,7 @@ private fun ZoomableStill(
     modifier: Modifier = Modifier,
 ) {
     ZoomablePicture(
-        camera = camera,
+        zoom = rememberPictureZoom(camera),
         aspect = bitmap.width.toFloat() / bitmap.height,
         modifier = modifier,
     ) {
@@ -1269,26 +1186,3 @@ private fun ZoomableStill(
     }
 }
 
-/** The rectangle a picture of [aspect] is drawn in, fitted inside [viewport]. */
-private fun fitPicture(aspect: Float, viewport: IntSize): IntSize {
-    if (viewport.width <= 0 || viewport.height <= 0 || aspect <= 0f) return IntSize.Zero
-    val height = (viewport.width / aspect).roundToInt()
-    return if (height <= viewport.height) {
-        IntSize(viewport.width, height)
-    } else {
-        IntSize((viewport.height * aspect).roundToInt(), viewport.height)
-    }
-}
-
-/**
- * Stops the picture being dragged away from the screen: it can move until its
- * edge meets the edge of the view, and no further.
- */
-private fun keepInside(offset: Offset, scale: Float, fitted: IntSize, viewport: IntSize): Offset {
-    val roomX = ((fitted.width * scale - viewport.width) / 2f).coerceAtLeast(0f)
-    val roomY = ((fitted.height * scale - viewport.height) / 2f).coerceAtLeast(0f)
-    return Offset(
-        x = offset.x.coerceIn(-roomX, roomX),
-        y = offset.y.coerceIn(-roomY, roomY),
-    )
-}

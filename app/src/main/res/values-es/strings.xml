@@ -393,6 +393,10 @@
     <string name="comp_clip_incomplete">El clip llegó incompleto. Descárgalo otra vez.</string>
     <string name="comp_clip_unfinished">Frigate no terminó de escribir este clip, así que se corta a mitad. Descargarlo otra vez daría el mismo archivo roto.</string>
     <string name="comp_clip_wouldnt_play">Ese clip no se reprodujo.</string>
+    <string name="comp_clip_play">Reproducir</string>
+    <string name="comp_clip_pause">Pausa</string>
+    <string name="comp_clip_show_all">Mostrar todo</string>
+    <string name="comp_clip_seek">Posición en el clip</string>
 
     <!-- ===== onboard ===== -->
     <!-- La página de bienvenida. -->

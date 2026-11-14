@@ -393,6 +393,10 @@
     <string name="comp_clip_incomplete">Le clip est arrivé incomplet. Récupérez-le à nouveau.</string>
     <string name="comp_clip_unfinished">Frigate n\'a pas fini d\'écrire ce clip, donc il s\'arrête en route. Le récupérer à nouveau donnerait le même fichier cassé.</string>
     <string name="comp_clip_wouldnt_play">Ce clip n\'a pas voulu se lire.</string>
+    <string name="comp_clip_play">Lire</string>
+    <string name="comp_clip_pause">Pause</string>
+    <string name="comp_clip_show_all">Tout afficher</string>
+    <string name="comp_clip_seek">Position dans le clip</string>
 
     <!-- ===== onboard ===== -->
     <!-- La page d'accueil. -->

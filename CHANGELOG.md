@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.19.0
+
+- Pinch a clip to zoom in, drag to move around, and double tap, or Show all, to go back to the whole picture.
+- The bar over a clip sits out of the way while it plays and comes back when you tap the picture.
+
 ## 0.18.1
 
 - A settings file belongs to the account that saved it. Picked up while signed in as someone else on the same phone, it is turned down rather than putting one person's cameras and quiet hours onto another.

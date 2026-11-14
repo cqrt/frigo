@@ -3,7 +3,15 @@ package nz.mckenzie.frigo.ui.components
 import android.content.Context
 import android.content.res.Configuration
 import android.net.Uri
+import android.view.LayoutInflater
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -26,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -38,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -47,12 +57,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -66,12 +86,14 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.FrigateException
 import nz.mckenzie.frigo.data.words
+import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.friendlyMessage
 import java.io.File
 
@@ -111,6 +133,9 @@ data class ClipSubject(
  * Explore and Clips leave it false and get the full screen clip they always had.
  * On its side a sheet becomes the full screen clip too. The tree is the same
  * either way, so turning the phone doesn't fetch or restart the clip.
+ *
+ * A clip is pinched, dragged and double tapped the way a camera's picture is, so
+ * a face or a number plate can be looked at closely without leaving the page.
  */
 @Composable
 fun ClipViewer(
@@ -635,9 +660,24 @@ private fun FootNote(text: String, modifier: Modifier = Modifier, dark: Boolean 
     )
 }
 
+/** The shape a clip is taken for until its own video says otherwise. */
+private const val DefaultPictureAspect = 16f / 9f
+
+/** How long the bar stays up over a clip that is playing. */
+private const val BarStaysMillis = 2_600L
+
 /**
  * The clip itself, played from a file on the phone. There is no token and no
  * network in here: by the time the player starts, the whole clip is on disk.
+ *
+ * The picture is pinched, dragged and double tapped the same way a camera's is,
+ * so looking at a number plate or a face is the gesture you already know. A pinch
+ * goes around the point between your fingers and the clip plays on underneath.
+ * While the picture is pinched in, Show all brings the whole of it back.
+ *
+ * The bar along the bottom is drawn here rather than by the player, because the
+ * player's own controls take the touches a pinch needs. It steps aside while the
+ * clip plays and comes back on a tap.
  */
 @Composable
 private fun ClipPlayer(
@@ -654,6 +694,21 @@ private fun ClipPlayer(
     val watchedHalf by rememberUpdatedState(onHalfWatched)
     var wasPlaying by remember { mutableStateOf(false) }
 
+    // The picture's own shape, so it is drawn whole and a pinch has something to
+    // move into. A clip keeps the shape its camera recorded.
+    var aspect by remember(file) { mutableFloatStateOf(DefaultPictureAspect) }
+    val zoom = rememberPictureZoom(file)
+
+    // What the bar says, and whether it is up. It is down while the clip plays
+    // and up when it is paused, because that is when its controls are wanted.
+    var playing by remember(file) { mutableStateOf(false) }
+    var position by remember(file) { mutableLongStateOf(0L) }
+    var length by remember(file) { mutableLongStateOf(0L) }
+    var shown by remember(file) { mutableStateOf(true) }
+    // Counts the touches the bar should stay up for, so a drag inside it does not
+    // count as time passing.
+    var touched by remember(file) { mutableIntStateOf(0) }
+
     val player = remember(file) {
         ExoPlayer.Builder(context)
             .build()
@@ -667,7 +722,17 @@ private fun ClipPlayer(
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) currentStarted()
+                when (playbackState) {
+                    Player.STATE_READY -> currentStarted()
+                    // The end is where the bar is wanted: there is something to play again.
+                    Player.STATE_ENDED -> shown = true
+                }
+            }
+
+            override fun onVideoSizeChanged(size: VideoSize) {
+                if (size.width > 0 && size.height > 0) {
+                    aspect = size.width * size.pixelWidthHeightRatio / size.height
+                }
             }
 
             override fun onPlayerError(error: PlaybackException) {
@@ -681,18 +746,36 @@ private fun ClipPlayer(
         }
     }
 
-    // Half the clip is where Frigate counts a review as watched, so a clip left
-    // part way through the first half stays in the list. The player reports its
-    // position twice a second, and the check waits until the length is known.
+    // The bar reads where the clip has got to, and the review is counted watched
+    // the moment it passes half. The player reports its position often enough to
+    // watch, and asking four times a second keeps the clock moving with it.
     LaunchedEffect(player) {
+        var saidHalf = false
         while (true) {
-            val length = player.duration
-            if (length > 0 && player.currentPosition * 2 >= length) {
+            playing = player.isPlaying
+            position = player.currentPosition.coerceAtLeast(0L)
+            length = player.duration.takeIf { it > 0 } ?: 0L
+            if (!saidHalf && length > 0 && position * 2 >= length) {
+                saidHalf = true
                 watchedHalf?.invoke()
-                return@LaunchedEffect
             }
-            delay(500)
+            delay(250)
         }
+    }
+
+    // The bar goes once the clip is playing and nothing has been touched for a
+    // moment, and a tap on the picture brings it back.
+    LaunchedEffect(shown, playing, touched) {
+        if (shown && playing) {
+            delay(BarStaysMillis)
+            shown = false
+        }
+    }
+
+    // A pause is a moment for the bar: the picture is standing still, so there is
+    // nothing to see past it, and the way back to playing is on it.
+    LaunchedEffect(playing) {
+        if (!playing) shown = true
     }
 
     // Watching a clip is no reason to keep playing in the background.
@@ -712,17 +795,215 @@ private fun ClipPlayer(
         onDispose { lifecycle.removeObserver(observer) }
     }
 
-    AndroidView(
-        factory = { context ->
-            PlayerView(context).apply {
-                this.player = player
-                useController = true
-                setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
-                keepScreenOn = true
+    Box(modifier) {
+        ZoomablePicture(
+            zoom = zoom,
+            aspect = aspect,
+            modifier = Modifier.fillMaxSize(),
+            onTap = {
+                shown = !shown
+                touched++
+            },
+            overlay = {
+                if (zoom.zoomed) {
+                    ShowWholePicture(
+                        onClick = {
+                            zoom.fit()
+                            touched++
+                        },
+                        modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
+                    )
+                }
+            },
+        ) {
+            AndroidView(
+                factory = { context ->
+                    (LayoutInflater.from(context).inflate(R.layout.clip_video, null) as PlayerView)
+                        .apply {
+                            this.player = player
+                            keepScreenOn = true
+                        }
+                },
+                update = { view -> view.player = player },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        AnimatedVisibility(
+            visible = shown && length > 0,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            ClipBar(
+                playing = playing,
+                position = position,
+                length = length,
+                onPlayPause = {
+                    if (player.isPlaying) {
+                        player.pause()
+                    } else {
+                        if (player.playbackState == Player.STATE_ENDED) player.seekTo(0)
+                        player.play()
+                    }
+                    touched++
+                },
+                onSeek = { fraction ->
+                    player.seekTo((length * fraction).toLong())
+                    touched++
+                },
+            )
+        }
+    }
+}
+
+/**
+ * The bar over the bottom of a clip: play or pause, where it has got to, and how
+ * long it runs. It is white on a shade, so it reads over whatever the picture is.
+ */
+@Composable
+private fun ClipBar(
+    playing: Boolean,
+    position: Long,
+    length: Long,
+    onPlayPause: () -> Unit,
+    onSeek: (Float) -> Unit,
+) {
+    val fraction = if (length > 0) {
+        (position.toFloat() / length).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.62f)),
+                ),
+            )
+            // A touch on the bar is a touch on the bar. Without this it would
+            // reach the picture underneath and put the bar away.
+            .pointerInput(Unit) { detectTapGestures { } }
+            .padding(start = 4.dp, end = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onPlayPause) {
+            Icon(
+                imageVector = if (playing) FrigoIcons.Pause else Icons.Filled.PlayArrow,
+                contentDescription = stringResource(
+                    if (playing) R.string.comp_clip_pause else R.string.comp_clip_play,
+                ),
+                tint = Color.White,
+            )
+        }
+        SeekLine(
+            fraction = fraction,
+            onSeek = onSeek,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 8.dp),
+        )
+        Text(
+            text = "${clipClock(position)} / ${clipClock(length)}",
+            color = Color.White.copy(alpha = 0.9f),
+            style = MaterialTheme.typography.labelSmall,
+        )
+    }
+}
+
+/**
+ * Where in the clip you are, as a line you can tap or drag. Its place is also
+ * read out to a screen reader, which can move it without a finger.
+ */
+@Composable
+private fun SeekLine(
+    fraction: Float,
+    onSeek: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val label = stringResource(R.string.comp_clip_seek)
+    val report by rememberUpdatedState(onSeek)
+    var width by remember { mutableStateOf(0f) }
+
+    fun at(x: Float) {
+        if (width > 0f) report((x / width).coerceIn(0f, 1f))
+    }
+
+    Canvas(
+        modifier
+            .height(32.dp)
+            .onSizeChanged { width = it.width.toFloat() }
+            .semantics {
+                contentDescription = label
+                progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
+                setProgress { value ->
+                    report(value.coerceIn(0f, 1f))
+                    true
+                }
             }
-        },
+            .pointerInput(Unit) { detectTapGestures { at(it.x) } }
+            .pointerInput(Unit) {
+                detectDragGestures(onDragStart = { at(it.x) }) { change, _ ->
+                    at(change.position.x)
+                }
+            },
+    ) {
+        val middle = size.height / 2f
+        val stroke = 2.dp.toPx()
+        drawLine(
+            color = Color.White.copy(alpha = 0.32f),
+            start = Offset(0f, middle),
+            end = Offset(size.width, middle),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = Color.White,
+            start = Offset(0f, middle),
+            end = Offset(size.width * fraction, middle),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
+        )
+        drawCircle(
+            color = Color.White,
+            radius = 4.5.dp.toPx(),
+            center = Offset(size.width * fraction, middle),
+        )
+    }
+}
+
+/** The way back to the whole picture while it is pinched in. */
+@Composable
+private fun ShowWholePicture(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        onClick = onClick,
         modifier = modifier,
-    )
+        color = Color.Black.copy(alpha = 0.58f),
+        contentColor = Color.White,
+        shape = RoundedCornerShape(999.dp),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.28f)),
+    ) {
+        Text(
+            text = stringResource(R.string.comp_clip_show_all),
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        )
+    }
+}
+
+/** Where in the clip, as a player says it: 0:12, or 1:02:03 for a long one. */
+private fun clipClock(millis: Long): String {
+    val total = (millis / 1000).coerceAtLeast(0)
+    val seconds = (total % 60).toInt()
+    val minutes = (total / 60 % 60).toInt()
+    val hours = (total / 3600).toInt()
+    return if (hours > 0) {
+        "%d:%02d:%02d".format(hours, minutes, seconds)
+    } else {
+        "%d:%02d".format(minutes, seconds)
+    }
 }
 
 /** Why the fetch failed, in a sentence with something to do about it. */

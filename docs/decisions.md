@@ -2,6 +2,32 @@
 
 Why the app is built the way it is. Things that were tried, rejected, or measured.
 
+## A clip's pinch is the camera's pinch, and the clip's bar is drawn by the app
+
+The gesture lives in one place, `ui/components/Zoomable.kt`, which the live picture
+and a clip both hand their own picture to. Pinch, drag and double tap then behave
+the same on a camera and on a clip.
+
+The player's own controls could not stay. `PlayerView` shows its controller on the
+first finger down and gives it the rest of the touch, so a second finger never
+reaches Compose and a pinch never starts. The controller is off, and the bar under
+a clip is drawn in Compose: play or pause, a line to move through the clip, and the
+clock. It hides while the clip plays and comes back on a tap; paused, it stays up.
+
+Rejected: keeping the controller and putting a magnifier on the clip that opens it
+across the page to pinch. It costs a tap before every look, and it is not needed: a
+1920 wide clip in a 336dp frame on a 3x screen is still one source pixel per screen
+pixel at 2x, so pinching in place is as sharp as the clip gets.
+
+The clip's picture is a texture (`clip_video.xml`) rather than a surface, for the
+same reason the live picture is: a surface is drawn over the page by the system,
+and Compose cannot scale or clip it.
+
+Show all sits on the corner of the picture rather than the corner of the frame,
+because a clip is fitted inside a frame of its own shape and the two are not always
+the same rectangle. It is drawn over the picture in a box the size of the picture,
+so it stays on that corner while the picture is pinched.
+
 ## Sign-in is a JSON body and a cookie, which is what 0.18 wants
 
 Frigate 0.18 takes the sign-in as JSON:

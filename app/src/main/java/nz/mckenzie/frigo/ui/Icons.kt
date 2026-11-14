@@ -79,6 +79,13 @@ object FrigoIcons {
         }
     }
 
+    /** Two upright bars, for stopping a clip where it is. */
+    val Pause: ImageVector by lazy {
+        vector("Pause") {
+            path("M7 5h3.4v14H7zM13.6 5H17v14h-3.4z")
+        }
+    }
+
     /** A wide frame with the name written on it, shown on the button that goes from the list to the wide look. */
     val Wide: ImageVector by lazy {
         vector("Wide") {

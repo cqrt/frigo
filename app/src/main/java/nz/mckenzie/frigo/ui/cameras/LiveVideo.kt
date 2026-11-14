@@ -35,6 +35,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.ClipSource
+import nz.mckenzie.frigo.ui.components.ZoomablePicture
+import nz.mckenzie.frigo.ui.components.rememberPictureZoom
 
 /**
  * How much of the stream the player keeps, and how much of it has to be in hand
@@ -255,7 +257,11 @@ internal fun LiveVideo(
         }
     }
 
-    ZoomablePicture(camera = camera, aspect = aspect, modifier = modifier) {
+    ZoomablePicture(
+        zoom = rememberPictureZoom(camera),
+        aspect = aspect,
+        modifier = modifier,
+    ) {
         AndroidView(
             factory = { context ->
                 (LayoutInflater.from(context).inflate(R.layout.live_video, null) as PlayerView)

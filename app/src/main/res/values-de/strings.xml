@@ -394,6 +394,10 @@
     <string name="comp_clip_incomplete">Der Clip kam unvollständig an. Hol ihn nochmal.</string>
     <string name="comp_clip_unfinished">Frigate hat den Clip nicht fertig geschrieben, also bricht er mittendrin ab. Nochmal holen gäbe dieselbe kaputte Datei.</string>
     <string name="comp_clip_wouldnt_play">Der Clip ließ sich nicht abspielen.</string>
+    <string name="comp_clip_play">Abspielen</string>
+    <string name="comp_clip_pause">Pause</string>
+    <string name="comp_clip_show_all">Alles zeigen</string>
+    <string name="comp_clip_seek">Stelle im Clip</string>
 
     <!-- ===== onboard ===== -->
     <!-- Die Willkommensseite. -->

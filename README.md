@@ -62,9 +62,11 @@ before it closes, and its last line goes to the clips you've kept already.
 **Review.** The moments Frigate thought were worth a look, newest first. Frigate
 groups what it saw into these, so a visitor who stays a while is one review
 rather than twenty events. Tap one to watch the clip of that time, in a frame
-clear of the status bar. What Frigate made of it sits under the clip: a name for
-what happened, and the whole story under the name. Under the clip are the other
-cameras at that same moment, and a tap on one opens it there. The card also says
+clear of the status bar. Pinch the clip to zoom in, drag to move around, and
+double tap, or Show all, to go back to the whole picture. What Frigate made of it
+sits under the clip: a name for what happened, and the whole story under the
+name. Under the clip are the other cameras at that same moment, and a tap on one
+opens it there. The card also says
 what was seen, where, how long it ran, and anything else Frigate noticed. In the
 list, a review it has described is named by its own title rather than by the
 objects it saw. Frigate writes that a minute or two after a review ends, so one
@@ -83,8 +85,9 @@ the Explore page on the server has it. Narrow it by camera, by what was seen, by
 the person Frigate recognised, and by day: today, yesterday, or a day you pick
 from a calendar. Pull the list down to run the search again. Tap an event to
 watch it. An event with a play mark on its thumbnail has a clip, and the clip
-plays with a scrub bar. On its side the clip fills the screen and the close mark
-sits on the picture. One without a play mark shows the still Frigate kept.
+plays with a scrub bar. Pinch it to zoom in, the same as on Review. On its side
+the clip fills the screen and the close mark sits on the picture. One without a
+play mark shows the still Frigate kept.
 
 **Clips.** The stretches you've kept on the server, newest first, each with the
 picture Frigate made of it and the moment it starts. Tap one to watch it. The three
@@ -661,6 +664,7 @@ is ever committed. Backup: there's a copy of the key and its password at
 - `alerts/` - the service that holds the message feed and the notifications it posts.
 - `ui/` - one folder per screen, Compose throughout.
 - `ui/components/ClipViewer.kt` - the full screen clip player that an event, a review or a kept clip opens.
+- `ui/components/Zoomable.kt` - a picture you pinch, drag and double tap, for a camera and for a clip alike.
 - `ui/components/LiveSound.kt` - the camera's sound for the speaker button, when the picture is the stills stream.
 - `ui/cameras/LiveVideo.kt` - the camera's own video, its sound, and keeping the picture up with the clock.
 - `ui/cameras/Playback.kt` - the day's bar under a camera, its spikes, the moment's picture, and the other cameras.
