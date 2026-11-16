@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.19.3
+
+- The line about a clip this phone can't decode says why in fewer words.
+
 ## 0.19.2
 
 - A clip that won't play says so on the picture itself, with Try again at the bottom of it, so you see it without scrolling down the page.

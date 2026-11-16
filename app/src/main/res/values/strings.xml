@@ -388,7 +388,7 @@
     <string name="comp_try_again">Try again</string>
     <string name="comp_clip_getting">Getting the clip…</string>
     <string name="comp_clip_detail_status">the server answered %1$d</string>
-    <string name="comp_clip_cant_play">This phone can\'t play this clip\'s video. Frigate copies what the camera recorded rather than converting it, so these clips are H.265, and not every phone can decode that.</string>
+    <string name="comp_clip_cant_play">This phone can\'t play this clip\'s video. This clip was recorded in H.265, and not every phone can decode that.</string>
     <string name="comp_clip_gone">The clip has gone from the phone. Fetch it again.</string>
     <string name="comp_clip_incomplete">The clip arrived incomplete. Fetch it again.</string>
     <string name="comp_clip_unfinished">Frigate didn\'t finish writing this clip, so it stops part way through. Fetching it again would give the same broken file.</string>
