@@ -1259,11 +1259,16 @@ class FrigoRepository(
     /**
      * A review's clip. Frigate cuts it from your recordings when it is asked for
      * one, so the period it covers is the review's start and end.
+     *
+     * This asks for the stretch the way the Playback tab does, rather than through
+     * Frigate's own review address. Its review address answers with an empty clip
+     * for a review shorter than a second, where the same stretch asked for this way
+     * comes back with the frames in it.
      */
-    fun reviewClipSource(reviewId: String): ClipSource {
-        val current = stored ?: throw FrigateException(401, notSignedIn)
-        val token = current.token ?: throw FrigateException(401, notSignedIn)
-        return ClipSource(url = "${current.baseUrl}/api/review/$reviewId/clip.mp4", token = token)
+    fun reviewClipSource(review: FrigateReview): ClipSource {
+        val end = review.endTime?.takeIf { it > review.startTime }
+            ?: (System.currentTimeMillis() / 1000.0)
+        return recordingClipSource(review.camera, review.startTime, end)
     }
 
     /**
@@ -1379,8 +1384,15 @@ class FrigoRepository(
             // A clip kept from an earlier version, or one that arrived sound,
             // gets the same check. It costs a few milliseconds and does nothing
             // at all to a file that is already right.
-            ClipRepair.repair(clip)
-            return@withContext clip
+            //
+            // A file with no frames in it is the one exception: a cut that holds
+            // nothing is fetched again rather than played, since the server can
+            // cut the same stretch properly now.
+            if (ClipRepair.hasFrames(clip)) {
+                ClipRepair.repair(clip)
+                return@withContext clip
+            }
+            clip.delete()
         }
 
         clipDir.mkdirs()
@@ -1390,6 +1402,12 @@ class FrigoRepository(
         val job = coroutineContext[Job]
         try {
             api.downloadClip(source, part, onProgress, { job?.isActive != false }, notThere)
+            // A cut of a stretch the server has no picture of arrives as a movie
+            // with nothing in it. That is not a clip that arrived short: there is
+            // nothing to watch in it at all, so it is not kept.
+            if (!ClipRepair.hasFrames(part)) {
+                throw FrigateException(0, context.words(R.string.api_empty_clip))
+            }
             // The clip arrives with the recordings' timing, which can leave a
             // player holding the first frame for hours. Straightening it costs a
             // moment and changes nothing on a clip that is already sound.

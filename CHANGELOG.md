@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.20.1
+
+- A review's clip is asked for the way the Playback tab asks, so a review of well under a second plays instead of arriving as an empty file.
+- A clip the server can't cut because it has no recording of that moment says so, rather than saying the clip has gone.
+
 ## 0.20.0
 
 - A review's clip can be kept: Save, beside Close, puts it on this phone as a file, or on the server where Frigate's clean-up cannot reach it.

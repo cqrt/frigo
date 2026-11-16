@@ -352,7 +352,17 @@ class FrigateApi(
             // endpoint" or "that username and password weren't accepted", neither
             // of which is what happened.
             if (response.code == 400 || response.code == 404) {
-                throw FrigateException(response.code, notThere ?: noClip)
+                // Frigate says in the body why it couldn't cut the clip, and no
+                // recording of that moment is a different thing from a clip that
+                // has gone. Its own address for a clip is the one that says so.
+                val said = runCatching { response.body?.string().orEmpty() }.getOrDefault("")
+                val message = when {
+                    said.contains("No recordings", ignoreCase = true) ->
+                        context.words(R.string.api_no_recording)
+
+                    else -> notThere ?: noClip
+                }
+                throw FrigateException(response.code, message)
             }
             if (response.code == 401 || response.code == 403) {
                 throw FrigateException(response.code, context.words(R.string.api_session_expired))

@@ -49,6 +49,43 @@ internal object ClipRepair {
     }.getOrDefault(false)
 
     /**
+     * Whether there are any frames in the clip at all.
+     *
+     * Frigate answers a clip request it cannot cut with a file that is a valid
+     * movie and holds nothing: a `moov` and the index, no `mdat` and no `moof`. A
+     * player opens that and says the clip is broken, so it is worth knowing before
+     * it is played, and before it is kept on the phone as the clip.
+     *
+     * Only the top of the file is walked, a box header at a time, so this costs a
+     * few reads rather than reading the clip.
+     */
+    fun hasFrames(clip: File): Boolean = runCatching {
+        RandomAccessFile(clip, "r").use { file ->
+            val length = file.length()
+            val header = ByteArray(16)
+            var at = 0L
+            var found = false
+            while (!found && at + 8 <= length) {
+                file.seek(at)
+                file.readFully(header, 0, 8)
+                var size = u32(header, 0)
+                val type = String(header, 4, 4, Charsets.US_ASCII)
+                if (size == 1L) {
+                    if (at + 16 > length) break
+                    file.readFully(header, 8, 8)
+                    size = u64(header, 8)
+                } else if (size == 0L) {
+                    size = length - at
+                }
+                if (size < 8) break
+                if (type == "moof" || type == "mdat") found = true
+                at += size
+            }
+            found
+        }
+    }.getOrDefault(true)
+
+    /**
      * One clip, opened for reading and for the few writes it may need.
      *
      * A clip is a chain of boxes, each saying how long it is: `moov` describes the

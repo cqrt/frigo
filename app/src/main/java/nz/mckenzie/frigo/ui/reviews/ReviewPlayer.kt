@@ -90,7 +90,7 @@ fun ReviewPlayerDialog(
     // Where the clip comes from, asked for once: the viewer fetches it, and saving it
     // to the phone copies off the same file rather than asking for it again.
     val source = remember(review.id) {
-        runCatching { repository.reviewClipSource(review.id) }.getOrNull()
+        runCatching { repository.reviewClipSource(review) }.getOrNull()
     }
     val subject = remember(review.id) {
         ClipSubject(
