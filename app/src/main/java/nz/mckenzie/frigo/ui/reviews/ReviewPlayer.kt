@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.Camera
+import nz.mckenzie.frigo.data.ClipSource
 import nz.mckenzie.frigo.data.FrigateReview
 import nz.mckenzie.frigo.data.FrigoRepository
 import nz.mckenzie.frigo.data.ReviewKind
@@ -34,12 +36,20 @@ import nz.mckenzie.frigo.data.aiTitle
 import nz.mckenzie.frigo.data.description
 import nz.mckenzie.frigo.data.prettyCameraName
 import nz.mckenzie.frigo.data.uptimeText
+import nz.mckenzie.frigo.ui.cameras.ClipFetch
+import nz.mckenzie.frigo.ui.cameras.SaveClipButton
+import nz.mckenzie.frigo.ui.cameras.clock
+import nz.mckenzie.frigo.ui.cameras.stamp
 import nz.mckenzie.frigo.ui.components.CachedImage
 import nz.mckenzie.frigo.ui.components.ClipSubject
 import nz.mckenzie.frigo.ui.components.ClipViewer
 import nz.mckenzie.frigo.ui.components.attention
 import nz.mckenzie.frigo.ui.components.prettyLabel
 import nz.mckenzie.frigo.ui.relativeTime
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 /**
  * One review, on a page of its own: the clip of the time it covers in a frame,
@@ -53,6 +63,10 @@ import nz.mckenzie.frigo.ui.relativeTime
  *
  * Past halfway the review is marked watched on the server, which is what the
  * Frigate web page does, so it leaves the list there too.
+ *
+ * The clip can be kept from here, beside Close: as a file on the phone, or on the
+ * server where Frigate's clean-up cannot reach it. What is kept is the stretch the
+ * review covers, so what you watched is what you get.
  */
 @Composable
 fun ReviewPlayerDialog(
@@ -63,16 +77,22 @@ fun ReviewPlayerDialog(
     onDismiss: () -> Unit,
     onHalfWatched: () -> Unit,
     onOpenCamera: (String, Double) -> Unit,
+    onOpenClips: () -> Unit = {},
 ) {
     val watched = rememberUpdatedState(onHalfWatched)
     val title = review.title()
+    val zone = remember { ZoneId.systemDefault() }
     val subtitle = stringResource(
         R.string.reviews_player_subtitle,
         prettyCameraName(review.camera),
         relativeTime(review.startedAtMillis),
     )
+    // Where the clip comes from, asked for once: the viewer fetches it, and saving it
+    // to the phone copies off the same file rather than asking for it again.
+    val source = remember(review.id) {
+        runCatching { repository.reviewClipSource(review.id) }.getOrNull()
+    }
     val subject = remember(review.id) {
-        val source = runCatching { repository.reviewClipSource(review.id) }.getOrNull()
         ClipSubject(
             title = title,
             subtitle = subtitle,
@@ -104,13 +124,90 @@ fun ReviewPlayerDialog(
         { ReviewWords(review = review, title = aiTitle, description = description) }
     }
 
+    // Save is offered only when Frigate has a clip to save. What it saves is the
+    // stretch the review covers, which for a review still going is up to now.
+    val save = if (source == null) {
+        null
+    } else {
+        rememberSaveForReview(repository = repository, review = review, source = source, zone = zone)
+    }
+
     ClipViewer(
         subject = subject,
         onDismiss = onDismiss,
         sheet = true,
         around = around,
         details = details,
+        headerAction = save?.let { saving ->
+            { ready ->
+                SaveClipButton(
+                    name = saving.fileName,
+                    stretch = stringResource(
+                        R.string.player_stretch,
+                        clock(review.startTime, zone),
+                        clock(saving.endsAt, zone),
+                    ),
+                    enabled = ready,
+                    fetch = saving.fetch,
+                    keep = saving.keep,
+                    onOpenClips = {
+                        onDismiss()
+                        onOpenClips()
+                    },
+                    compact = true,
+                )
+            }
+        },
     )
+}
+
+/** How the clip of this review is saved, as what it is called and the two ways to keep it. */
+private class ReviewSave(
+    val fileName: String,
+    val endsAt: Double,
+    val fetch: ClipFetch,
+    val keep: suspend () -> Unit,
+)
+
+/**
+ * Saving the clip of one review: the file it is offered under, and the stretch the
+ * server is asked to keep.
+ *
+ * A review Frigate is still watching has no end yet, so its clip runs to now, which
+ * is the same stretch the viewer plays.
+ */
+@Composable
+private fun rememberSaveForReview(
+    repository: FrigoRepository,
+    review: FrigateReview,
+    source: ClipSource,
+    zone: ZoneId,
+): ReviewSave {
+    val locale = LocalConfiguration.current.locales[0]
+    val stampFormat = remember(locale) { DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm", locale) }
+    val endsAt = review.endTime?.takeIf { it > review.startTime }
+        ?: (System.currentTimeMillis() / 1000.0)
+
+    return remember(review.id, endsAt) {
+        val at = LocalDateTime.ofInstant(Instant.ofEpochSecond(review.startTime.toLong()), zone)
+        ReviewSave(
+            // The camera and the moment it starts, so a folder of them sorts itself
+            // by date and time, the same as a clip saved from Playback.
+            fileName = "frigo-${review.camera}-${at.format(stampFormat)}.mp4",
+            endsAt = endsAt,
+            fetch = { onProgress ->
+                repository.clipFile(source, "review-${review.id}", onProgress)
+            },
+            keep = {
+                repository.keepClip(
+                    camera = review.camera,
+                    start = review.startTime,
+                    end = endsAt,
+                    name = "${prettyCameraName(review.camera)} ${stamp(review.startTime, zone)}",
+                )
+            },
+        )
+    }
 }
 
 /**

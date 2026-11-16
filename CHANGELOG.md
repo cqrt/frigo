@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.20.0
+
+- A review's clip can be kept: Save, beside Close, puts it on this phone as a file, or on the server where Frigate's clean-up cannot reach it.
+- What is kept is the stretch the review covers, so a review Frigate is still watching saves up to the moment you press it.
+
 ## 0.19.4
 
 - A clip the server no longer has says so in fewer words.

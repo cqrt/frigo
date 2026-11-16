@@ -134,6 +134,11 @@ data class ClipSubject(
  * On its side a sheet becomes the full screen clip too. The tree is the same
  * either way, so turning the phone doesn't fetch or restart the clip.
  *
+ * [headerAction] is a page's own control for the clip, such as saving it, and sits
+ * in the line beside Close. It is handed whether the clip is on the phone yet, since
+ * most of what a page does with a clip needs the file. On its side that line goes, so
+ * it moves onto the picture with the way out.
+ *
  * A clip is pinched, dragged and double tapped the way a camera's picture is, so
  * a face or a number plate can be looked at closely without leaving the page.
  */
@@ -144,6 +149,7 @@ fun ClipViewer(
     sheet: Boolean = false,
     around: (@Composable () -> Unit)? = null,
     details: (@Composable () -> Unit)? = null,
+    headerAction: (@Composable (ready: Boolean) -> Unit)? = null,
 ) {
     val state = remember(subject.stillKey) { ClipState() }
     // On its side, the clip gets the whole screen. Turning the phone is the button.
@@ -195,6 +201,7 @@ fun ClipViewer(
                 navBar = navBar,
                 around = around,
                 details = details,
+                headerAction = headerAction,
                 onDismiss = onDismiss,
             )
         } else {
@@ -302,6 +309,7 @@ private fun SheetClip(
     navBar: Dp,
     around: (@Composable () -> Unit)?,
     details: (@Composable () -> Unit)?,
+    headerAction: (@Composable (ready: Boolean) -> Unit)?,
     onDismiss: () -> Unit,
 ) {
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -338,7 +346,14 @@ private fun SheetClip(
                                 text = subject.subtitle,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
+                        }
+                        if (headerAction != null) {
+                            // Saving a clip needs the file, so the page is told
+                            // whether it has arrived rather than finding out itself.
+                            headerAction(state.file != null && state.problem == null)
                         }
                         IconButton(onClick = onDismiss) {
                             Icon(
@@ -413,7 +428,11 @@ private fun SheetClip(
         }
 
         if (landscape) {
-            CloseOnPicture(onDismiss)
+            CloseOnPicture(
+                onDismiss = onDismiss,
+                ready = state.file != null && state.problem == null,
+                action = headerAction,
+            )
         }
     }
 }
@@ -496,23 +515,43 @@ private fun PictureContent(
     }
 }
 
-/** The way out when the header is gone, drawn on the picture itself. */
+/** The way out when the header is gone, drawn on the picture itself, with the page's own control beside it. */
 @Composable
-private fun BoxScope.CloseOnPicture(onDismiss: () -> Unit) {
-    IconButton(
-        onClick = onDismiss,
+private fun BoxScope.CloseOnPicture(
+    onDismiss: () -> Unit,
+    ready: Boolean = false,
+    action: (@Composable (ready: Boolean) -> Unit)? = null,
+) {
+    Row(
         modifier = Modifier
             .align(Alignment.TopEnd)
             .statusBarsPadding()
             .displayCutoutPadding()
-            .padding(12.dp)
-            .background(Color.Black.copy(alpha = 0.42f), CircleShape),
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Icon(
-            imageVector = Icons.Filled.Close,
-            contentDescription = stringResource(R.string.comp_close),
-            tint = Color.White,
-        )
+        // The page's own control goes on the picture too, on a shade of its own so
+        // it reads over whatever the clip happens to show.
+        action?.let {
+            Box(
+                Modifier
+                    .background(Color.Black.copy(alpha = 0.42f), RoundedCornerShape(50))
+                    .padding(3.dp),
+            ) {
+                it(ready)
+            }
+        }
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier.background(Color.Black.copy(alpha = 0.42f), CircleShape),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = stringResource(R.string.comp_close),
+                tint = Color.White,
+            )
+        }
     }
 }
 

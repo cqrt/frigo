@@ -243,6 +243,7 @@ private fun MainScaffold(
                     onOpenCamera = { camera, moment ->
                         navController.navigate("$PLAYER_PREFIX$camera?at=${momentParam(moment)}")
                     },
+                    onOpenClips = { navController.switchTo("clips") },
                 )
             }
             composable("review-settings") {

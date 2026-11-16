@@ -79,6 +79,7 @@ fun ReviewsScreen(
     modifier: Modifier = Modifier,
     onOpenSettings: () -> Unit,
     onOpenCamera: (String, Double) -> Unit,
+    onOpenClips: () -> Unit = {},
 ) {
     val viewModel: ReviewsViewModel = viewModel(factory = ReviewsViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -316,6 +317,7 @@ fun ReviewsScreen(
                 viewModel.close()
                 onOpenCamera(camera, moment)
             },
+            onOpenClips = onOpenClips,
         )
     }
 

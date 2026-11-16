@@ -408,6 +408,9 @@ internal fun ModePill(
  * watched in it is copied off the phone rather than asked for again. [keep] asks the
  * server to hold the stretch, and the server does the cutting, so the phone can be
  * put down while it runs.
+ *
+ * [compact] is the same button for a line of a page, such as a review's: the icon
+ * alone until there is something to say, and the words only while saving has news.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -418,6 +421,7 @@ internal fun SaveClipButton(
     fetch: ClipFetch,
     keep: suspend () -> Unit,
     onOpenClips: () -> Unit,
+    compact: Boolean = false,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -471,6 +475,17 @@ internal fun SaveClipButton(
         failed = false
     }
 
+    // What the pill says. A compact one holds its tongue until saving has news,
+    // which is what keeps it the width of an icon in a line of a page.
+    val saying = when {
+        saving && received > 0 ->
+            stringResource(R.string.playback_saving_size, megabytes(received))
+        saving -> stringResource(R.string.playback_saving)
+        saved -> stringResource(R.string.playback_saved)
+        failed -> stringResource(R.string.playback_couldnt_save)
+        else -> if (compact) null else stringResource(R.string.playback_save)
+    }
+
     val ready = enabled && !saving
     val ink = MaterialTheme.colorScheme.onBackground
     val tone = when {
@@ -492,7 +507,10 @@ internal fun SaveClipButton(
                 keepProblem = null
                 sheet = true
             }
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .padding(
+                horizontal = if (saying == null) 9.dp else 14.dp,
+                vertical = if (saying == null) 7.dp else 8.dp,
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (saving) {
@@ -504,25 +522,24 @@ internal fun SaveClipButton(
         } else {
             Icon(
                 imageVector = FrigoIcons.Save,
-                contentDescription = null,
+                contentDescription = if (saying == null) {
+                    stringResource(R.string.playback_save_this_clip)
+                } else {
+                    null
+                },
                 tint = tone,
                 modifier = Modifier.size(15.dp),
             )
         }
-        Text(
-            text = when {
-                saving && received > 0 ->
-                    stringResource(R.string.playback_saving_size, megabytes(received))
-                saving -> stringResource(R.string.playback_saving)
-                saved -> stringResource(R.string.playback_saved)
-                failed -> stringResource(R.string.playback_couldnt_save)
-                else -> stringResource(R.string.playback_save)
-            },
-            color = tone,
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
-            modifier = Modifier.padding(start = 6.dp),
-        )
+        if (saying != null) {
+            Text(
+                text = saying,
+                color = tone,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                modifier = Modifier.padding(start = 6.dp),
+            )
+        }
     }
 
     if (sheet) {

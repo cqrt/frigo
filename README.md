@@ -70,7 +70,10 @@ opens it there. The card also says
 what was seen, where, how long it ran, and anything else Frigate noticed. In the
 list, a review it has described is named by its own title rather than by the
 objects it saw. Frigate writes that a minute or two after a review ends, so one
-that has no words yet opens on the clip and the other cameras alone. Alerts
+that has no words yet opens on the clip and the other cameras alone. Save, beside
+Close, keeps the clip: on this phone as a file, or on the server where Frigate's
+clean-up cannot reach it. What it keeps is the stretch the review covers, so a
+review still going saves up to the moment you press it. Alerts
 and detections are separate halves of the list, and each half says how many are
 left. Watch past halfway and the review counts as watched, here and on the web
 page, so it leaves the list. Show reviewed brings the watched ones back. When
