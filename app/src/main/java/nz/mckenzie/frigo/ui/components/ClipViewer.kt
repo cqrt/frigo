@@ -244,50 +244,39 @@ private fun FullScreenClip(
         PictureContent(
             subject = subject,
             state = state,
+            onDismiss = onDismiss,
             modifier = Modifier.fillMaxSize().padding(bottom = navBar),
         )
 
-        Column(Modifier.fillMaxSize()) {
-            if (!landscape) {
-                Row(
-                    modifier = Modifier
-                        .statusBarsPadding()
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 4.dp, top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = subject.title,
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = subject.subtitle,
-                            color = Color.White.copy(alpha = 0.7f),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            Icons.Filled.Close,
-                            contentDescription = stringResource(R.string.comp_close),
-                            tint = Color.White,
-                        )
-                    }
+        if (!landscape) {
+            Row(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 4.dp, top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = subject.title,
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = subject.subtitle,
+                        color = Color.White.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
-            }
-
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                ClipStatus(
-                    subject = subject,
-                    state = state,
-                    dark = true,
-                    onDismiss = onDismiss,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.comp_close),
+                        tint = Color.White,
+                    )
+                }
             }
         }
 
@@ -378,6 +367,7 @@ private fun SheetClip(
                     PictureContent(
                         subject = subject,
                         state = state,
+                        onDismiss = onDismiss,
                         // Keeps the player's own controls clear of the gesture bar.
                         modifier = Modifier
                             .fillMaxSize()
@@ -413,37 +403,16 @@ private fun SheetClip(
                             .padding(horizontal = 20.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
+                        // The card is what Frigate made of the review, and nothing
+                        // else. How the clip is going is said in the frame above,
+                        // where a scroll can't put it out of sight.
                         details.invoke()
-                        // The picture says when the clip is on its way. Anything
-                        // that goes wrong is read down here instead.
-                        ClipStatus(
-                            subject = subject,
-                            state = state,
-                            dark = false,
-                            onDismiss = onDismiss,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
                     }
                 }
-            } else if (!landscape) {
-                ClipStatus(
-                    subject = subject,
-                    state = state,
-                    dark = false,
-                    onDismiss = onDismiss,
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                )
             }
         }
 
         if (landscape) {
-            ClipStatus(
-                subject = subject,
-                state = state,
-                dark = true,
-                onDismiss = onDismiss,
-                modifier = Modifier.fillMaxSize(),
-            )
             CloseOnPicture(onDismiss)
         }
     }
@@ -452,20 +421,24 @@ private fun SheetClip(
 /**
  * The picture in its frame: the clip once it is on the phone, the still until then.
  *
- * A clip being fetched says so in this frame rather than further down the page, so
- * the message and the video that follows it are in the same place. Nothing moves
- * when the clip arrives, and you don't have to scroll to find out it is coming.
+ * Everything the viewer has to say about the clip is said in this frame, over the
+ * still: that it is on its way and how much of it has arrived, that the player is
+ * opening it, that it won't play, and why. The card under the picture is a scroll
+ * away, so a message there goes unread.
  */
 @Composable
 private fun PictureContent(
     subject: ClipSubject,
     state: ClipState,
+    onDismiss: () -> Unit,
     modifier: Modifier,
 ) {
     val ready = state.file
-    val working = state.problem == null
+    val problem = state.problem
+    val working = problem == null
     val fetching = working && subject.clip != null && ready == null
     val preparing = working && ready != null && !state.started
+    val note = subject.note.takeIf { subject.clip == null }
 
     Box(modifier, contentAlignment = Alignment.Center) {
         // A clip that failed to play leaves its own controls behind, so the still
@@ -508,6 +481,18 @@ private fun PictureContent(
         if (preparing) {
             CircularProgressIndicator(color = Color.White)
         }
+
+        if (problem != null) {
+            ProblemPanel(
+                problem = problem,
+                onRetry = { state.retry() },
+                onClose = onDismiss,
+            )
+        }
+
+        if (note != null) {
+            FootNote(text = note, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp))
+        }
     }
 }
 
@@ -528,47 +513,6 @@ private fun BoxScope.CloseOnPicture(onDismiss: () -> Unit) {
             contentDescription = stringResource(R.string.comp_close),
             tint = Color.White,
         )
-    }
-}
-
-/**
- * The part of the viewer that isn't the picture: why a clip won't play, or that
- * there is no clip at all. [dark] says it is being read over a picture, so it takes
- * white ink and a see-through panel; on the page and its card it takes the theme's
- * own. How the fetch is going is said on the picture itself, in
- * [PictureContent].
- */
-@Composable
-private fun ClipStatus(
-    subject: ClipSubject,
-    state: ClipState,
-    dark: Boolean,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val problem = state.problem
-    val note = subject.note.takeIf { subject.clip == null }
-    if (problem == null && note == null) return
-
-    Box(modifier, contentAlignment = Alignment.Center) {
-        if (problem != null) {
-            ProblemPanel(
-                problem = problem,
-                onRetry = { state.retry() },
-                onClose = onDismiss,
-                dark = dark,
-            )
-        } else {
-            FootNote(
-                text = note.orEmpty(),
-                dark = dark,
-                modifier = if (dark) {
-                    Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp)
-                } else {
-                    Modifier
-                },
-            )
-        }
     }
 }
 
@@ -597,82 +541,73 @@ private fun GettingClip(received: Long) {
 
 internal fun megabytes(bytes: Long): String = "%.1f MB".format(bytes / 1048576.0)
 
+/**
+ * Why a clip won't play, said on the picture itself: what happened, what is known
+ * about it, and the two things you can do.
+ *
+ * The buttons stay at the bottom of the frame and the words scroll above them,
+ * because the frame is only as tall as a 16:9 slot on a phone, and a message with
+ * no way out of it is worth nothing.
+ */
 @Composable
 private fun ProblemPanel(
     problem: Problem,
     onRetry: () -> Unit,
     onClose: () -> Unit,
-    dark: Boolean = true,
 ) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(if (dark) 32.dp else 0.dp)
-            // Readable over whatever the still happens to be, and a raised
-            // surface when it sits on the page.
-            .background(
-                if (dark) {
-                    Color.Black.copy(alpha = 0.8f)
-                } else {
-                    MaterialTheme.colorScheme.surfaceContainerHighest
-                },
-                if (dark) MaterialTheme.shapes.large else MaterialTheme.shapes.medium,
-            )
-            .padding(24.dp),
+            .fillMaxSize()
+            // Readable over whatever the still happens to be.
+            .background(Color.Black.copy(alpha = 0.78f))
+            .padding(horizontal = 20.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = problem.message,
-            color = if (dark) Color.White else MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = problem.detail,
-            color = if (dark) {
-                Color.White.copy(alpha = 0.45f)
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = problem.message,
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = problem.detail,
+                    color = Color.White.copy(alpha = 0.5f),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             if (problem.canRetry) {
                 Button(onClick = onRetry) { Text(stringResource(R.string.comp_try_again)) }
             }
             TextButton(onClick = onClose) {
-                Text(
-                    text = stringResource(R.string.comp_close),
-                    color = if (dark) Color.White else MaterialTheme.colorScheme.primary,
-                )
+                Text(text = stringResource(R.string.comp_close), color = Color.White)
             }
         }
     }
 }
 
+/** Said at the bottom of the picture when there is no clip to play at all. */
 @Composable
-private fun FootNote(text: String, modifier: Modifier = Modifier, dark: Boolean = true) {
+private fun FootNote(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        color = if (dark) {
-            Color.White.copy(alpha = 0.8f)
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        },
+        color = Color.White.copy(alpha = 0.85f),
         style = MaterialTheme.typography.bodyMedium,
         textAlign = TextAlign.Center,
         modifier = modifier
-            .then(
-                if (dark) {
-                    Modifier
-                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                } else {
-                    Modifier
-                },
-            ),
+            .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
     )
 }
 
