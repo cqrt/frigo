@@ -166,6 +166,7 @@
 
     <!-- The day chip on Review and Explore. -->
     <string name="period_all_time">Todo o período</string>
+    <string name="period_last_24_hours">Últimas 24 horas</string>
     <string name="period_today">Hoje</string>
     <string name="period_yesterday">Ontem</string>
 

@@ -285,7 +285,8 @@ class FrigateApi(
     /**
      * How many reviews each day held, and how many of them have been watched,
      * narrowed the way the list is. `last24Hours` is the one entry that isn't a
-     * day, so it is left out rather than counted twice.
+     * day, and it is kept: the last twenty-four hours is a period the page offers,
+     * and that entry is where its count comes from.
      *
      * Days are cut on the phone's own clock. Asked for with no timezone, the
      * server would cut them somewhere else and the numbers wouldn't match the day
@@ -312,7 +313,6 @@ class FrigateApi(
             request.okBody(),
         )
         return counted.map { (day, count) -> count.copy(day = day) }
-            .filter { it.day != "last24Hours" }
     }
 
     /**

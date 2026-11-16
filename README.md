@@ -76,7 +76,10 @@ clean-up cannot reach it. What it keeps is the stretch the review covers, so a
 review still going saves up to the moment you press it. Alerts
 and detections are separate halves of the list, and each half says how many are
 left. Watch past halfway and the review counts as watched, here and on the web
-page, so it leaves the list. Show reviewed brings the watched ones back. When
+page, so it leaves the list. The day chip is where the stretch of time is
+chosen: the last 24 hours to begin with, the same as Frigate's own page, or
+today, yesterday, a day you pick, or all time. Show reviewed brings the watched
+ones back. When
 you've seen enough of a day, Mark all as reviewed clears the rest without playing
 any of it, and Put them back undoes that. Pull the list down for what has happened
 since. The tune icon in the corner opens Alerts and detections, which is the

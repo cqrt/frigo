@@ -286,7 +286,7 @@ object SceneText : KSerializer<String> {
  *
  * The answer holds a day per key, plus one entry for the last twenty-four hours
  * which isn't a day at all. [day] is filled in from the key, and that entry is
- * left out by the caller.
+ * named by [Last24HoursDay] rather than by a date.
  */
 @Serializable
 data class ReviewDayCount(
@@ -296,6 +296,9 @@ data class ReviewDayCount(
     @SerialName("total_detection") val totalDetections: Int = 0,
     @SerialName("reviewed_detection") val reviewedDetections: Int = 0,
 )
+
+/** The one key in Frigate's answer that is a stretch of time rather than a day. */
+const val Last24HoursDay: String = "last24Hours"
 
 /**
  * A clip Frigate has cut out of a camera's recordings and kept in its own folder,

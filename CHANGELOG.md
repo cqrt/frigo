@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.20.2
+
+- Review opens on the last 24 hours, the stretch Frigate's own page opens on, so the counts over the tabs can be compared with it. Today, Yesterday and All time are still there.
+- Coming back to Review asks the server again once the page has been sitting for a minute, so the counts aren't the ones from this morning.
+
 ## 0.20.1
 
 - A review's clip is asked for the way the Playback tab asks, so a review of well under a second plays instead of arriving as an empty file.

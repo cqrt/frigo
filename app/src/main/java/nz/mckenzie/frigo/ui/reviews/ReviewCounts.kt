@@ -1,5 +1,6 @@
 package nz.mckenzie.frigo.ui.reviews
 
+import nz.mckenzie.frigo.data.Last24HoursDay
 import nz.mckenzie.frigo.data.ReviewDayCount
 import nz.mckenzie.frigo.data.ReviewKind
 import nz.mckenzie.frigo.ui.Period
@@ -13,14 +14,22 @@ import java.time.ZoneId
  * a period of everything adds them up. Days are named the way the summary names
  * them, which is the phone's own calendar because that is what the day buttons
  * use.
+ *
+ * A rolling day is the one stretch that isn't a day: it has its own entry in the
+ * answer, which is the whole of the last twenty-four hours however many calendar
+ * days that crosses.
  */
 internal fun List<ReviewDayCount>.left(
     kind: ReviewKind,
     period: Period,
     today: LocalDate = LocalDate.now(ZoneId.systemDefault()),
 ): Int {
+    if (period == Period.Last24Hours) {
+        return firstOrNull { it.day == Last24HoursDay }?.left(kind) ?: 0
+    }
     val days = period.days(today)
-    return filter { days == null || it.day in days }.sumOf { it.left(kind) }
+    return filter { it.day != Last24HoursDay && (days == null || it.day in days) }
+        .sumOf { it.left(kind) }
 }
 
 /** What one day has left of one kind. */
@@ -38,6 +47,7 @@ internal fun ReviewKind.emptyLeft(): String = when (this) {
 /** The days that still have something of one kind, for the calendar's dots. */
 internal fun List<ReviewDayCount>.daysWithLeft(kind: ReviewKind): Set<LocalDate> =
     mapNotNull { count ->
+        if (count.day == Last24HoursDay) return@mapNotNull null
         if (count.left(kind) <= 0) return@mapNotNull null
         runCatching { LocalDate.parse(count.day) }.getOrNull()
     }.toSet()
@@ -55,5 +65,7 @@ private fun Period.days(today: LocalDate): Set<String>? = when (this) {
     Period.All -> null
     Period.Today -> setOf(today.toString())
     Period.Yesterday -> setOf(today.minusDays(1).toString())
+    // Counted from its own entry in the answer, before any of this.
+    Period.Last24Hours -> null
     is Period.On -> setOf(day.toString())
 }

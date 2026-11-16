@@ -166,6 +166,7 @@
 
     <!-- La puce de jour sur Revue et Explorer. -->
     <string name="period_all_time">Tout le temps</string>
+    <string name="period_last_24_hours">Dernières 24 heures</string>
     <string name="period_today">Aujourd\'hui</string>
     <string name="period_yesterday">Hier</string>
 

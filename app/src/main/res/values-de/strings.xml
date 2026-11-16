@@ -167,6 +167,7 @@
 
     <!-- Der Tages-Chip in Prüfen und Entdecken. -->
     <string name="period_all_time">Gesamt</string>
+    <string name="period_last_24_hours">Letzte 24 Stunden</string>
     <string name="period_today">Heute</string>
     <string name="period_yesterday">Gestern</string>
 

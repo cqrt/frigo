@@ -144,7 +144,12 @@ fun PeriodChip(period: Period, onChoose: (Period) -> Unit, onPickDay: () -> Unit
             trailingIcon = { Arrow() },
         )
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            listOf(Period.All, Period.Today, Period.Yesterday).forEach { choice ->
+            listOf(
+                Period.Last24Hours,
+                Period.Today,
+                Period.Yesterday,
+                Period.All,
+            ).forEach { choice ->
                 DropdownMenuItem(
                     text = { Text(choice.said()) },
                     onClick = {

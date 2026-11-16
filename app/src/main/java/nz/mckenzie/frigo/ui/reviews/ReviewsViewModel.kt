@@ -35,7 +35,8 @@ data class ReviewsUiState(
     /** The camera being looked at, or null for all of them. */
     val camera: String? = null,
     val chosenLabels: Set<String> = emptySet(),
-    val period: Period = Period.All,
+    /** The last twenty-four hours to begin with, which is where Frigate's own page opens. */
+    val period: Period = Period.Last24Hours,
     val loading: Boolean = true,
     val loadingMore: Boolean = false,
     val error: String? = null,
@@ -65,7 +66,9 @@ data class ReviewsUiState(
 
     /** Whether a filter narrows the list at all. */
     val narrowed: Boolean
-        get() = camera != null || chosenLabels.isNotEmpty() || period != Period.All
+        get() = camera != null ||
+            chosenLabels.isNotEmpty() ||
+            period != Period.Last24Hours
 
     /** How much of one tab is left to look at, or null while the server hasn't said. */
     fun left(kind: ReviewKind): Int? {
@@ -82,6 +85,9 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
 
     private val _state = MutableStateFlow(ReviewsUiState())
     val state = _state.asStateFlow()
+
+    /** When the list on screen was last asked for, so a return to the page can tell. */
+    private var readAt = 0L
 
     init {
         viewModelScope.launch {
@@ -148,7 +154,7 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
             it.copy(
                 camera = null,
                 chosenLabels = emptySet(),
-                period = Period.All,
+                period = Period.Last24Hours,
                 justRead = emptyList(),
             )
         }
@@ -187,6 +193,7 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
                 )
             }
                 .onSuccess { reviews ->
+                    readAt = System.currentTimeMillis()
                     _state.update {
                         it.copy(
                             reviews = reviews,
@@ -199,6 +206,19 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
                     _state.update { it.copy(loading = false, error = error.friendlyMessage(repository.context)) }
                 }
         }
+    }
+
+    /**
+     * Asks the server again when what is on screen has had time to go out of date.
+     *
+     * The page is asked for once when it opens and then kept, so coming back to it
+     * after an hour would otherwise show an hour-old list and, worse, an hour-old
+     * count over the tabs. A minute is long enough that flipping between tabs
+     * doesn't ask again and lose the place in the list.
+     */
+    fun refreshIfStale() {
+        if (System.currentTimeMillis() - readAt < StaleAfterMillis) return
+        refresh()
     }
 
     /**
@@ -424,6 +444,9 @@ class ReviewsViewModel(private val repository: FrigoRepository) : ViewModel() {
 
         /** What "Mark these as read" will clear in one go. More than this is not a phone's job. */
         private const val MARK_LIMIT = 2000
+
+        /** How long a list and its counts are taken as current. */
+        private const val StaleAfterMillis = 60_000L
 
         fun factory(container: AppContainer) = viewModelFactory {
             initializer { ReviewsViewModel(container.repository) }

@@ -166,6 +166,7 @@
 
     <!-- The day chip on Review and Explore. -->
     <string name="period_all_time">All time</string>
+    <string name="period_last_24_hours">Last 24 hours</string>
     <string name="period_today">Today</string>
     <string name="period_yesterday">Yesterday</string>
 

@@ -47,6 +47,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import nz.mckenzie.frigo.R
@@ -84,6 +85,13 @@ fun ReviewsScreen(
     val viewModel: ReviewsViewModel = viewModel(factory = ReviewsViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
     var pickingDay by remember { mutableStateOf(false) }
+
+    // Coming back to the page asks the server again when what is on screen has
+    // been there a while. Hours-old counts over the tabs are worse than none.
+    LifecycleResumeEffect(Unit) {
+        viewModel.refreshIfStale()
+        onPauseOrDispose { }
+    }
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
