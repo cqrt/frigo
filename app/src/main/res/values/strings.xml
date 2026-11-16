@@ -290,7 +290,7 @@
     <!-- Clips. -->
     <string name="api_wouldnt_keep">Frigate wouldn\'t keep that stretch of time.</string>
     <string name="api_no_recording">Frigate has no recording of that stretch of time.</string>
-    <string name="api_no_clip">Frigate has no clip for this one any more. It cuts clips out of your recordings, so an old one goes when the recordings do.</string>
+    <string name="api_no_clip">Frigate has no clip for this one any more. The recording was deleted, along with the clip.</string>
     <string name="api_clip_gone">That clip isn\'t on the server any more.</string>
     <string name="api_clip_too_big">This clip is too long to fetch, at over 400 MB. Reviews stay open while something keeps being seen, so an old one can cover hours of recording.</string>
     <string name="api_empty_clip">The server sent an empty clip. Its recordings may not cover that moment yet, so try again in a moment.</string>

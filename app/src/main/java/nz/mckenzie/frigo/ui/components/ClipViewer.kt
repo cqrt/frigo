@@ -960,17 +960,21 @@ private fun clipClock(millis: Long): String {
 /** Why the fetch failed, in a sentence with something to do about it. */
 private fun problemFrom(failure: Throwable, context: Context): Problem {
     val status = (failure as? FrigateException)?.status ?: 0
+    val message = failure.friendlyMessage(context)
+    val said = failure.message
     val detail = buildString {
         if (status > 0) append(context.words(R.string.comp_clip_detail_status, status))
         else append(failure.javaClass.simpleName)
-        failure.message?.takeIf { it.isNotBlank() }?.let {
+        // What the server or the app already says in the message is not worth
+        // saying again, smaller. What is left of the detail is for a report.
+        said?.takeIf { it.isNotBlank() && it != message }?.let {
             append(": ").append(it.take(90))
         }
     }
     android.util.Log.w("Frigo", "clip fetch failed: $detail", failure)
 
     return Problem(
-        message = failure.friendlyMessage(context),
+        message = message,
         // A refused token needs a new sign-in, not another try.
         canRetry = status != 401 && status != 403,
         detail = detail,

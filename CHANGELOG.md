@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.19.4
+
+- A clip the server no longer has says so in fewer words.
+- The small line under a clip's message only gives the server's answer, rather than saying the message again.
+
 ## 0.19.3
 
 - The line about a clip this phone can't decode says why in fewer words.
