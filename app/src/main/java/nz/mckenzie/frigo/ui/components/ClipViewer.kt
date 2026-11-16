@@ -414,8 +414,8 @@ private fun SheetClip(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         details.invoke()
-                        // Anything that isn't the picture is read down here rather
-                        // than squeezed into the frame above it.
+                        // The picture says when the clip is on its way. Anything
+                        // that goes wrong is read down here instead.
                         ClipStatus(
                             subject = subject,
                             state = state,
@@ -449,7 +449,13 @@ private fun SheetClip(
     }
 }
 
-/** The picture in its frame: the clip once it is on the phone, the still until then. */
+/**
+ * The picture in its frame: the clip once it is on the phone, the still until then.
+ *
+ * A clip being fetched says so in this frame rather than further down the page, so
+ * the message and the video that follows it are in the same place. Nothing moves
+ * when the clip arrives, and you don't have to scroll to find out it is coming.
+ */
 @Composable
 private fun PictureContent(
     subject: ClipSubject,
@@ -457,24 +463,51 @@ private fun PictureContent(
     modifier: Modifier,
 ) {
     val ready = state.file
-    // A clip that failed to play leaves its own controls behind, so the still goes
-    // back up and the reason is read over that.
-    if (ready != null && state.problem == null) {
-        ClipPlayer(
-            file = ready,
-            onStarted = { state.started = true },
-            onProblem = { state.problem = it },
-            onHalfWatched = subject.onHalfWatched,
-            modifier = modifier,
-        )
-    } else {
-        CachedImage(
-            cacheKey = subject.stillKey,
-            modifier = modifier,
-            contentScale = ContentScale.Fit,
-            background = Color.Black,
-            load = subject.still,
-        )
+    val working = state.problem == null
+    val fetching = working && subject.clip != null && ready == null
+    val preparing = working && ready != null && !state.started
+
+    Box(modifier, contentAlignment = Alignment.Center) {
+        // A clip that failed to play leaves its own controls behind, so the still
+        // goes back up and the reason is read over that.
+        if (ready != null && working) {
+            ClipPlayer(
+                file = ready,
+                onStarted = { state.started = true },
+                onProblem = { state.problem = it },
+                onHalfWatched = subject.onHalfWatched,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            CachedImage(
+                cacheKey = subject.stillKey,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit,
+                background = Color.Black,
+                load = subject.still,
+            )
+        }
+
+        AnimatedVisibility(
+            visible = fetching,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            // The still stays underneath, dimmed, so the frame still shows what the
+            // clip is about while the clip itself is on its way.
+            Box(
+                Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.66f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                GettingClip(received = state.received)
+            }
+        }
+
+        // The file is here and the player is opening it, which is a moment even on
+        // a fast phone.
+        if (preparing) {
+            CircularProgressIndicator(color = Color.White)
+        }
     }
 }
 
@@ -499,10 +532,11 @@ private fun BoxScope.CloseOnPicture(onDismiss: () -> Unit) {
 }
 
 /**
- * The part of the viewer that isn't the picture: why a clip won't play, how much
- * of it has arrived, or that there is no clip at all. [dark] says it is being read
- * over a picture, so it takes white ink and a see-through panel; on the page and
- * its card it takes the theme's own.
+ * The part of the viewer that isn't the picture: why a clip won't play, or that
+ * there is no clip at all. [dark] says it is being read over a picture, so it takes
+ * white ink and a see-through panel; on the page and its card it takes the theme's
+ * own. How the fetch is going is said on the picture itself, in
+ * [PictureContent].
  */
 @Composable
 private fun ClipStatus(
@@ -513,66 +547,48 @@ private fun ClipStatus(
     modifier: Modifier = Modifier,
 ) {
     val problem = state.problem
-    val hasClip = subject.clip != null
-    val shows = problem != null ||
-        (!hasClip && subject.note != null) ||
-        (hasClip && state.file == null) ||
-        (hasClip && state.file != null && !state.started)
-    if (!shows) return
+    val note = subject.note.takeIf { subject.clip == null }
+    if (problem == null && note == null) return
 
     Box(modifier, contentAlignment = Alignment.Center) {
-        when {
-            problem != null -> ProblemPanel(
+        if (problem != null) {
+            ProblemPanel(
                 problem = problem,
                 onRetry = { state.retry() },
                 onClose = onDismiss,
                 dark = dark,
             )
-
-            !hasClip -> subject.note?.let {
-                FootNote(
-                    text = it,
-                    dark = dark,
-                    modifier = if (dark) {
-                        Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp)
-                    } else {
-                        Modifier
-                    },
-                )
-            }
-
-            state.file == null -> GettingClip(received = state.received, dark = dark)
-
-            !state.started -> CircularProgressIndicator(
-                color = if (dark) Color.White else MaterialTheme.colorScheme.primary,
+        } else {
+            FootNote(
+                text = note.orEmpty(),
+                dark = dark,
+                modifier = if (dark) {
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp)
+                } else {
+                    Modifier
+                },
             )
         }
     }
 }
 
-/** Said while the clip is being fetched, with how much has arrived. */
+/** Said on the picture while the clip is being fetched, with how much has arrived. */
 @Composable
-private fun GettingClip(received: Long, dark: Boolean = true) {
+private fun GettingClip(received: Long) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        CircularProgressIndicator(
-            color = if (dark) Color.White else MaterialTheme.colorScheme.primary,
-        )
+        CircularProgressIndicator(color = Color.White)
         Text(
             text = stringResource(R.string.comp_clip_getting),
-            color = if (dark) Color.White else MaterialTheme.colorScheme.onSurface,
+            color = Color.White,
             style = MaterialTheme.typography.bodyLarge,
         )
         if (received > 0) {
             Text(
                 text = megabytes(received),
-                color = if (dark) {
-                    Color.White.copy(alpha = 0.6f)
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
+                color = Color.White.copy(alpha = 0.6f),
                 style = MaterialTheme.typography.bodySmall,
             )
         }

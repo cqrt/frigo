@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.19.1
+
+- A clip says it is on its way on the picture itself, over a dimmed still, so you can see it working without scrolling down the page.
+
 ## 0.19.0
 
 - Pinch a clip to zoom in, drag to move around, and double tap, or Show all, to go back to the whole picture.
