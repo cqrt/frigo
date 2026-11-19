@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.20.3
+
+- Frigo TV shows its lens beside the name, in the corner of the cameras page and on the page that pairs it.
+
 ## 0.20.2
 
 - Review opens on the last 24 hours, the stretch Frigate's own page opens on, so the counts over the tabs can be compared with it. Today, Yesterday and All time are still there.

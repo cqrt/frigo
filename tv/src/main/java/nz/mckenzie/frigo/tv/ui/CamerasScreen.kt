@@ -71,6 +71,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -1038,6 +1039,12 @@ private fun Header(
         DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).format(now)
     }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Image(
+            painter = painterResource(R.drawable.ic_mark_lens),
+            contentDescription = null,
+            modifier = Modifier.size(30.dp),
+        )
+        Spacer(Modifier.width(10.dp))
         Text(
             text = "FRIGO",
             style = MaterialTheme.typography.labelLarge,

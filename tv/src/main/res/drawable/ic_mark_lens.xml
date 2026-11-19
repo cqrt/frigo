@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Drawn by tools/make_art.ps1. Edit the script, not this file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="30dp"
+    android:height="30dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+
+    <!-- The glass, with the opening cut out of it so the plate shows through. -->
+    <path
+        android:fillColor="#0E3A4A"
+        android:fillType="evenOdd"
+        android:pathData="M16,2 A14,14 0 1,1 15.9,2 Z M16,11 A5,5 0 1,1 15.9,11 Z" />
+
+    <!-- The ring around it. -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M16,2 A14,14 0 1,1 15.9,2 Z"
+        android:strokeColor="#6FE9FF"
+        android:strokeWidth="2" />
+
+    <!-- Six blades, each a fifth of a turn on from the one before. -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M16,3.5 L19.4,10.5 M26.8,9.8 L22.5,16.2 M26.8,22.2 L19.1,21.7 M16,28.5 L12.6,21.5 M5.2,22.2 L9.5,15.8 M5.2,9.7 L12.9,10.3"
+        android:strokeColor="#6FE9FF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+</vector>

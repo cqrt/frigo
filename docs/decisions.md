@@ -3311,3 +3311,26 @@ morning.
 Rejected: a longer `auth.session_length` on the server. It is the one change that
 needs no release, and docs say so for anyone who wants it, but it only makes the
 walk to the sign-in page longer, and a token that leaks lives longer with it.
+
+## The lens beside the name on the television
+
+The television's header read FRIGO and nothing else. The app's icon is a lens, and the
+banner is that lens with the name next to it, so the one screen you look at all evening
+was the only place the mark was missing.
+
+The mark is its own vector, written by `tools/make_art.ps1` along with the icons: the
+ring, the glass and the six blades, at 26dp. That is the size of the name beside it
+rather than a size the file is scaled down to, because a stroke scaled down with the
+rest is what turns a small lens grey.
+
+The ring and blades keep the brand cyan. The name keeps the theme's blue, so the mark
+is the app and the name is the page it is on. Tinting the lens in the theme's blue was
+the other way, and it lost the one colour the app is recognised by.
+
+The opening in the glass is cut out of the fill rather than painted, so whatever is
+behind the mark shows through. That is what lets the same file sit on the header and on
+the pairing page without a plate around it.
+
+Rejected: the banner's picture, cropped to the lens. It is a bitmap, so it would need a
+size for every density and a lighter version for the pairing page, and it would be the
+only photograph in an interface that is otherwise drawn.

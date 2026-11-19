@@ -10,6 +10,7 @@
 #   app/src/main/res/drawable/ic_stat_lens.xml
 #   tv/src/main/res/drawable/ic_launcher_foreground.xml
 #   tv/src/main/res/values/ic_launcher_colors.xml
+#   tv/src/main/res/drawable/ic_mark_lens.xml
 #   tv/src/main/res/drawable-xhdpi/tv_banner.png
 #
 # Every one of those carries a comment saying it was drawn here. Editing them by
@@ -248,6 +249,31 @@ $statIcon = @"
 "@
 
 Write-Art "app/src/main/res/drawable/ic_stat_lens.xml" $statIcon
+
+# --- the mark beside the name -----------------------------------------------
+#
+# The lens on its own, for the television's header and its pairing page: the
+# same ring, glass and blades as the icon, with nothing around it. The glass has
+# its opening cut out, so the page behind the mark shows through, whatever the
+# page's colour is. It is drawn at the 30dp it is used at rather than scaled down
+# to it, so the ring and the blades keep their weight beside the name.
+
+$markLens = Lens 16 16 14 2 2
+
+$mark = @"
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Drawn by tools/make_art.ps1. Edit the script, not this file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="30dp"
+    android:height="30dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+
+$(Indent $markLens 4)
+</vector>
+"@
+
+Write-Art "tv/src/main/res/drawable/ic_mark_lens.xml" $mark
 
 # --- the television's banner ------------------------------------------------
 #
