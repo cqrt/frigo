@@ -2,6 +2,7 @@ package nz.mckenzie.frigo.tv.ui
 
 import android.view.LayoutInflater
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -15,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -54,17 +56,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -103,6 +111,8 @@ import nz.mckenzie.frigo.tv.data.TvRepository
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlin.math.cos
+import kotlin.math.sin
 
 /** A small live picture on the right: enough to see somebody walk in. */
 private const val TileHeight = 360
@@ -120,6 +130,9 @@ private const val TakeoverMillis = 30_000L
 
 /** How often the server is asked whether something has just been seen. */
 private const val TakeoverPollMillis = 8_000L
+
+/** How long a picture takes to slide aside for the next one. */
+private const val SlideMillis = 700
 
 /** The few seconds asked for twice, so an alert arriving between two asks is not missed. */
 private const val OverlapSeconds = 5L
@@ -144,6 +157,7 @@ fun CamerasScreen(
     var fullScreen by rememberSaveable { mutableStateOf(false) }
     val settingsFocus = remember { FocusRequester() }
     val pictureFocus = remember { FocusRequester() }
+    val symbolFocus = remember { FocusRequester() }
     val current = cameras.firstOrNull { it.name == chosen } ?: cameras.firstOrNull()
 
     // A wall is every camera at once, so there is nothing to open on unless a
@@ -165,6 +179,7 @@ fun CamerasScreen(
     val takeoverOn by repository.takeover.collectAsStateWithLifecycle(initialValue = true)
     val soundOn by repository.liveSound.collectAsStateWithLifecycle(initialValue = true)
     val defaultCamera by repository.defaultCamera.collectAsStateWithLifecycle()
+    val rotation by repository.rotation.collectAsStateWithLifecycle(initialValue = 0)
     val scope = rememberCoroutineScope()
 
     fun takeOver(cameraName: String) {
@@ -178,6 +193,19 @@ fun CamerasScreen(
         skipFocus = true
         chosen = cameraName
         takeoverUntil = now + TakeoverMillis
+    }
+
+    // One camera along, the way an arrow press asks. A press is a choice, so it
+    // ends a takeover and stops the loop where it is.
+    fun stepBy(delta: Int) {
+        val at = cameras.indexOfFirst { it.name == chosen }
+        if (at < 0) return
+        val next = cameras[Math.floorMod(at + delta, cameras.size)]
+        takeoverFrom = null
+        takeoverUntil = 0L
+        skipFocus = true
+        chosen = next.name
+        if (rotation > 0) scope.launch { repository.setRotation(0) }
     }
 
     LaunchedEffect(cameras, defaultCamera) {
@@ -240,6 +268,64 @@ fun CamerasScreen(
     // Whether the one-camera layout is the one up: always unless the wall is on
     // and nothing has been opened from it.
     val stripShown = screen != ScreenGrid || wallOpen
+    // Whether the picture is filling the screen and moving round by itself.
+    val looping = fullScreen && stripShown && rotation > 0 && cameras.size > 1
+
+    // The press that fills the screen, and the press that gives it back. On a
+    // wall it puts the wall back rather than a layout nobody asked for.
+    fun togglePicture() {
+        val name = current?.name ?: return
+        if (screen == ScreenGrid && wallOpen) {
+            wallAt = name
+            fullScreen = false
+            wallOpen = false
+        } else {
+            // Filling the screen is a choice; it ends a takeover.
+            if (!fullScreen) {
+                takeoverFrom = null
+                takeoverUntil = 0L
+                // The loop always opens on the camera Settings names as the
+                // default, the way the television itself opens on it.
+                if (rotation > 0 && cameras.size > 1) {
+                    val first = cameras.firstOrNull { it.name == defaultCamera }?.name
+                    if (first != null) {
+                        skipFocus = true
+                        chosen = first
+                    }
+                }
+            }
+            fullScreen = !fullScreen
+        }
+    }
+
+    // While the picture fills the screen the arrows belong to it: left and right
+    // walk the cameras, and up reaches the symbol that turns the loop on and off.
+    fun fullScreenKey(event: KeyEvent): Boolean {
+        if (event.type != KeyEventType.KeyDown) return false
+        return when (event.key) {
+            Key.DirectionLeft -> {
+                stepBy(-1)
+                true
+            }
+
+            Key.DirectionRight -> {
+                stepBy(1)
+                true
+            }
+
+            Key.DirectionUp -> {
+                scope.launch { runCatching { symbolFocus.requestFocus() } }
+                true
+            }
+
+            Key.DirectionDown -> {
+                scope.launch { runCatching { pictureFocus.requestFocus() } }
+                true
+            }
+
+            else -> false
+        }
+    }
     var focusAt by remember { mutableIntStateOf(0) }
     // The place a press asked for, kept apart from where the focus happened to
     // be when the picture changed: a tile taken out of the list hands its focus
@@ -314,7 +400,7 @@ fun CamerasScreen(
                     cameras.any { it.name == alert.cameraName } &&
                     seen.add(alert.id)
             }
-            if (hit != null && !fullScreen && !settingsOpen && stripShown) {
+            if (hit != null && !settingsOpen && stripShown && (!fullScreen || rotation > 0)) {
                 takeOver(hit.cameraName)
             }
         }
@@ -335,6 +421,20 @@ fun CamerasScreen(
         }
         takeoverFrom = null
         takeoverUntil = 0L
+    }
+
+    // The loop: every camera's stream is held open, so the picture that slides in
+    // is already playing. A takeover, a bell or Settings holds the loop where it
+    // is, and it carries on from that camera afterwards.
+    LaunchedEffect(looping, rotation, takeoverFrom, cameras) {
+        if (!looping || takeoverFrom != null) return@LaunchedEffect
+        while (isActive) {
+            delay(rotation * 1_000L + SlideMillis)
+            val at = cameras.indexOfFirst { it.name == chosen }
+            if (at < 0) return@LaunchedEffect
+            skipFocus = true
+            chosen = cameras[(at + 1) % cameras.size].name
+        }
     }
 
     // A bell is the takeover's louder cousin: it fills the screen for the same
@@ -389,7 +489,17 @@ fun CamerasScreen(
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .then(
+                if (fullScreen && stripShown && !settingsOpen) {
+                    Modifier.onPreviewKeyEvent { event -> fullScreenKey(event) }
+                } else {
+                    Modifier
+                },
+            ),
+    ) {
         if (!stripShown) {
             CameraWall(
                 repository = repository,
@@ -433,34 +543,30 @@ fun CamerasScreen(
                         )
                         Spacer(Modifier.height(16.dp))
                     }
-                    BigPicture(
-                        repository = repository,
-                        camera = current,
-                        fullScreen = fullScreen,
-                        muted = !soundOn,
-                        focusRequester = pictureFocus,
-                        onToggle = {
-                            if (screen == ScreenGrid && wallOpen) {
-                                // The press that filled the screen again puts the
-                                // wall back, since the strip is not part of a wall.
-                                wallAt = current.name
-                                fullScreen = false
-                                wallOpen = false
+                    if (looping) {
+                        RotationBand(
+                            repository = repository,
+                            cameras = cameras,
+                            chosen = current.name,
+                            focusRequester = pictureFocus,
+                            onToggle = { togglePicture() },
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        BigPicture(
+                            repository = repository,
+                            camera = current,
+                            fullScreen = fullScreen,
+                            muted = !soundOn,
+                            focusRequester = pictureFocus,
+                            onToggle = { togglePicture() },
+                            modifier = if (fullScreen) {
+                                Modifier.fillMaxSize()
                             } else {
-                                // Filling the screen is a choice; it ends a takeover.
-                                if (!fullScreen) {
-                                    takeoverFrom = null
-                                    takeoverUntil = 0L
-                                }
-                                fullScreen = !fullScreen
-                            }
-                        },
-                        modifier = if (fullScreen) {
-                            Modifier.fillMaxSize()
-                        } else {
-                            Modifier.fillMaxWidth().aspectRatio(16f / 9f)
-                        },
-                    )
+                                Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+                            },
+                        )
+                    }
                     if (!fullScreen) {
                         Spacer(Modifier.height(18.dp))
                         Text(
@@ -508,6 +614,17 @@ fun CamerasScreen(
             }
         }
 
+        if (fullScreen && stripShown && cameras.size > 1) {
+            RotationSymbol(
+                running = rotation > 0,
+                focusRequester = symbolFocus,
+                onClick = { scope.launch { repository.toggleRotation() } },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(24.dp),
+            )
+        }
+
         if (settingsOpen) {
             SettingsPanel(repository, cameras, onClose = { settingsOpen = false })
         }
@@ -525,6 +642,7 @@ private fun SettingsPanel(
     val takeoverOn by repository.takeover.collectAsStateWithLifecycle(initialValue = true)
     val defaultCamera by repository.defaultCamera.collectAsStateWithLifecycle()
     val screen by repository.screen.collectAsStateWithLifecycle(initialValue = ScreenOne)
+    val rotation by repository.rotation.collectAsStateWithLifecycle(initialValue = 0)
     val ringUrl by repository.ringUrl.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
@@ -650,12 +768,12 @@ private fun SettingsPanel(
             shape = RoundedCornerShape(24.dp),
         ) {
             Column(
-                // Six rows and the server line have to fit a 1080p screen, so
+                // Seven rows and the server line have to fit a 1080p screen, so
                 // the card is tight rather than comfortable.
                 modifier = Modifier
                     .width(640.dp)
-                    .padding(horizontal = 24.dp, vertical = 18.dp),
-                verticalArrangement = Arrangement.spacedBy(7.dp),
+                    .padding(horizontal = 24.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 when (picking) {
                     CardPicker.DefaultCamera -> DefaultCameraPicker(
@@ -682,6 +800,16 @@ private fun SettingsPanel(
                     CardPicker.Doorbell -> DoorbellAddress(
                         url = ringUrl,
                         onCancel = { closePicker(DoorbellAt) },
+                    )
+
+                    CardPicker.Rotation -> RotationPicker(
+                        seconds = rotation,
+                        requesters = { pickerRows.getOrPut(it) { FocusRequester() } },
+                        onCancel = { closePicker(RotationAt) },
+                        onPick = { value ->
+                            scope.launch { repository.setRotation(value) }
+                            closePicker(RotationAt)
+                        },
                     )
 
                     null -> {
@@ -757,6 +885,28 @@ private fun SettingsPanel(
                             onClick = { scope.launch { repository.setTakeover(!takeoverOn) } },
                             trailing = { Switch(checked = takeoverOn, onCheckedChange = null) },
                         )
+                        // One plain line: the card has no room for a sentence under
+                        // a seventh row, so the list that opens says what it does.
+                        SettingRow(
+                            title = stringResource(R.string.tv_rotation),
+                            supporting = null,
+                            value = if (rotation > 0) {
+                                stringResource(R.string.tv_rotation_seconds, rotation)
+                            } else {
+                                stringResource(R.string.tv_rotation_off)
+                            },
+                            chevron = true,
+                            modifier = Modifier.focusRequester(rows[RotationAt]),
+                            onFocused = { at = RotationAt },
+                            onClick = {
+                                // The list opens on the length that is set.
+                                openPicker(
+                                    CardPicker.Rotation,
+                                    RotationLengths.indexOf(rotation).coerceAtLeast(0),
+                                    RotationLengths.size,
+                                )
+                            },
+                        )
                         SettingRow(
                             title = stringResource(R.string.tv_pair_again),
                             supporting = stringResource(R.string.tv_pair_again_note),
@@ -786,12 +936,16 @@ private const val DefaultCameraAt = 0
 private const val ScreenAt = 1
 private const val DoorbellAt = 2
 private const val TakeoverAt = 3
-private const val PairAt = 4
-private const val CloseAt = 5
-private const val CardRows = 6
+private const val RotationAt = 4
+private const val PairAt = 5
+private const val CloseAt = 6
+private const val CardRows = 7
+
+/** The lengths the rotation row offers, and Off. */
+private val RotationLengths = listOf(0, 3, 5, 10)
 
 /** Something that takes the card's place while it is up. */
-private enum class CardPicker { DefaultCamera, Screen, Doorbell }
+private enum class CardPicker { DefaultCamera, Screen, Doorbell, Rotation }
 
 /** One big picture, or a wall of every camera. Both hold the arrows while up. */
 @Composable
@@ -828,10 +982,45 @@ private fun ScreenPicker(
     }
 }
 
+/** How long each camera keeps the screen, or Off. */
+@Composable
+private fun RotationPicker(
+    seconds: Int,
+    requesters: (Int) -> FocusRequester,
+    onCancel: () -> Unit,
+    onPick: (Int) -> Unit,
+) {
+    BackHandler(enabled = true, onBack = onCancel)
+
+    Text(
+        text = stringResource(R.string.tv_rotation).uppercase(),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Text(
+        text = stringResource(R.string.tv_rotation_what),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        RotationLengths.forEachIndexed { index, value ->
+            PickerRow(
+                label = if (value == 0) {
+                    stringResource(R.string.tv_rotation_off)
+                } else {
+                    stringResource(R.string.tv_rotation_seconds, value)
+                },
+                ticked = seconds == value,
+                modifier = Modifier.focusRequester(requesters(index)),
+                onClick = { onPick(value) },
+            )
+        }
+    }
+}
+
 /** The address to give Home Assistant, and what posting to it does. */
 @Composable
-private fun DoorbellAddress(url: String?, onCancel: () -> Unit) {
-    BackHandler(enabled = true, onBack = onCancel)
+private fun DoorbellAddress(url: String?, onCancel: () -> Unit) {    BackHandler(enabled = true, onBack = onCancel)
 
     Text(
         text = stringResource(R.string.tv_doorbell).uppercase(),
@@ -921,7 +1110,7 @@ private fun SettingRow(
                 if (it.isFocused) onFocused()
             }
             .clickable { onClick() }
-            .padding(horizontal = 18.dp, vertical = 7.dp),
+            .padding(horizontal = 18.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -1154,6 +1343,161 @@ private fun SettingsPill(onClick: () -> Unit, focusRequester: FocusRequester) {
 }
 
 /**
+ * The picture while the loop runs: every camera's stream held open and laid out
+ * side by side, with one of them in the frame. Moving the row is the change, so
+ * the camera leaving is still playing as it goes and the one arriving is already
+ * live.
+ *
+ * A copy of the last camera sits before the first, and a copy of the first after
+ * the last, so going round the end is one step like every other change rather
+ * than a sweep back across the whole row.
+ */
+@Composable
+private fun RotationBand(
+    repository: TvRepository,
+    cameras: List<Camera>,
+    chosen: String,
+    focusRequester: FocusRequester,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val count = cameras.size
+    val band = remember(cameras) {
+        listOf(cameras.last()) + cameras + listOf(cameras.first())
+    }
+    // Where the row sits, counted in pictures: one is the first camera.
+    val at = remember {
+        Animatable((cameras.indexOfFirst { it.name == chosen } + 1).toFloat().coerceAtLeast(1f))
+    }
+
+    LaunchedEffect(chosen, cameras) {
+        val target = cameras.indexOfFirst { it.name == chosen } + 1
+        if (target <= 0) return@LaunchedEffect
+        val showing = Math.round(at.value)
+        if (showing == target) {
+            at.snapTo(target.toFloat())
+            return@LaunchedEffect
+        }
+        when {
+            // Round the end: slide onto the copy, then start again at the first.
+            showing == count && target == 1 -> {
+                at.animateTo((count + 1).toFloat(), tween(SlideMillis))
+                at.snapTo(1f)
+            }
+
+            showing == 1 && target == count -> {
+                at.animateTo(0f, tween(SlideMillis))
+                at.snapTo(count.toFloat())
+            }
+
+            else -> at.animateTo(target.toFloat(), tween(SlideMillis))
+        }
+    }
+
+    BoxWithConstraints(
+        modifier
+            .clipToBounds()
+            .focusRequester(focusRequester)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) { onToggle() },
+    ) {
+        val width = maxWidth
+        band.forEachIndexed { index, camera ->
+            Box(
+                Modifier
+                    .width(width)
+                    .fillMaxHeight()
+                    .graphicsLayer { translationX = (index - at.value) * width.toPx() },
+            ) {
+                BigPicture(
+                    repository = repository,
+                    camera = camera,
+                    fullScreen = true,
+                    muted = true,
+                    // The two copies at the ends are only on screen while a slide
+                    // passes them, so they show a still and leave the streams to
+                    // the cameras that are really in the row.
+                    stream = index != 0 && index != count + 1,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The rotation switch, over the picture's top right corner. Blue while the loop
+ * runs, white while the picture holds still, so the corner says which state the
+ * room is in without a word.
+ */
+@Composable
+private fun RotationSymbol(
+    running: Boolean,
+    focusRequester: FocusRequester,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var focused by remember { mutableStateOf(false) }
+    val spoken = stringResource(
+        if (running) R.string.tv_rotation_running else R.string.tv_rotation_stopped,
+    )
+    val tint = if (running) MaterialTheme.colorScheme.primary else Color.White
+    val shape = RoundedCornerShape(999.dp)
+    Box(
+        modifier = modifier
+            .focusRequester(focusRequester)
+            .clip(shape)
+            .background(Color.Black.copy(alpha = 0.55f))
+            .border(
+                width = 3.dp,
+                color = if (focused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = shape,
+            )
+            .onFocusChanged { focused = it.isFocused }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) { onClick() }
+            .padding(12.dp)
+            .semantics { contentDescription = spoken },
+    ) {
+        Canvas(Modifier.size(34.dp)) {
+            val stroke = 3.5.dp.toPx()
+            val inset = stroke + 2.dp.toPx()
+            val box = Size(size.width - inset * 2, size.height - inset * 2)
+            // A gap at the top right, and a head on the end of the arc, so the
+            // mark reads as something going round rather than as a circle.
+            drawArc(
+                color = tint,
+                startAngle = 40f,
+                sweepAngle = 290f,
+                useCenter = false,
+                topLeft = Offset(inset, inset),
+                size = box,
+                style = Stroke(width = stroke, cap = StrokeCap.Round),
+            )
+            val radius = box.minDimension / 2
+            val centre = Offset(inset + radius, inset + radius)
+            val angle = Math.toRadians(40.0)
+            val tip = Offset(
+                centre.x + (radius * cos(angle)).toFloat(),
+                centre.y + (radius * sin(angle)).toFloat(),
+            )
+            val head = 6.dp.toPx()
+            val point = Path().apply {
+                moveTo(tip.x, tip.y - head)
+                lineTo(tip.x + head, tip.y + head * 0.4f)
+                lineTo(tip.x - head * 0.9f, tip.y + head * 0.5f)
+                close()
+            }
+            drawPath(point, tint)
+        }
+    }
+}
+
+/**
  * The big one. The camera's own stream plays over a still of the same camera,
  * which is what is on the screen until the first frame arrives. A camera whose
  * own stream this television cannot decode falls back to Frigate's feed, which
@@ -1169,8 +1513,14 @@ private fun BigPicture(
     camera: Camera,
     fullScreen: Boolean,
     muted: Boolean,
-    focusRequester: FocusRequester,
-    onToggle: () -> Unit,
+    focusRequester: FocusRequester? = null,
+    onToggle: (() -> Unit)? = null,
+    /**
+     * Whether this picture plays the camera's stream. The copies either end of
+     * the band are only on screen while a slide goes past them, so they show a
+     * still and leave the streams to the real slots.
+     */
+    stream: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val session by repository.session.collectAsStateWithLifecycle()
@@ -1200,12 +1550,20 @@ private fun BigPicture(
                     Modifier
                 },
             )
-            .focusRequester(focusRequester)
+            .then(
+                if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier,
+            )
             .onFocusChanged { focused = it.isFocused }
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) { onToggle() },
+            .then(
+                if (onToggle != null) {
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) { onToggle() }
+                } else {
+                    Modifier
+                },
+            ),
     ) {
         val picture = still
         if (picture != null) {
@@ -1219,7 +1577,7 @@ private fun BigPicture(
 
         val current = session
         val url = current?.let { repository.streamUrl(camera.name) }
-        if (current != null && url != null && !feed) {
+        if (stream && current != null && url != null && !feed) {
             CameraStream(
                 url = url,
                 token = current.token,
@@ -1229,7 +1587,7 @@ private fun BigPicture(
                 modifier = Modifier.fillMaxSize(),
             )
         }
-        if (feed) {
+        if (stream && feed) {
             BigFeed(
                 repository = repository,
                 camera = camera.name,

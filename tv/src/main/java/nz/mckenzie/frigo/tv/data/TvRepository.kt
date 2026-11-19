@@ -69,6 +69,8 @@ class TvRepository(
     suspend fun start() = withContext(Dispatchers.IO) {
         _defaultCamera.value = prefs.readDefaultCamera()
         _screen.value = prefs.readScreen()
+        _rotation.value = prefs.readRotation()
+        _rotationLength.value = prefs.readRotationLength()
         val server = prefs.readServer()
         if (server == null) {
             _gate.value = Gate.Pairing
@@ -257,6 +259,34 @@ class TvRepository(
     suspend fun setScreen(value: String) {
         prefs.writeScreen(value)
         _screen.value = value
+    }
+
+    private val _rotation = MutableStateFlow(0)
+
+    /** Seconds each camera keeps the whole screen, or 0 when the picture holds still. */
+    val rotation: StateFlow<Int> = _rotation.asStateFlow()
+
+    private val _rotationLength = MutableStateFlow(3)
+
+    /** The length the loop ran at last, for the symbol to come back on at. */
+    val rotationLength: StateFlow<Int> = _rotationLength.asStateFlow()
+
+    /**
+     * Sets the loop's length, or stops it with 0. Stopping keeps the length, so
+     * the symbol on the picture and the row in Settings come back to it.
+     */
+    suspend fun setRotation(seconds: Int) {
+        prefs.writeRotation(seconds)
+        if (seconds > 0) {
+            prefs.writeRotationLength(seconds)
+            _rotationLength.value = seconds
+        }
+        _rotation.value = seconds
+    }
+
+    /** The symbol on the picture: on at the length it last ran at, or off. */
+    suspend fun toggleRotation() {
+        setRotation(if (_rotation.value > 0) 0 else _rotationLength.value)
     }
 
     private val _ringUrl = MutableStateFlow<String?>(null)

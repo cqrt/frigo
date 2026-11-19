@@ -171,8 +171,8 @@ and **Waiting for a picture** until the first frame does.
 
 Settings in the corner, one press up from the first camera, is a list: **Default
 camera**, the camera the television opens on when it starts; **Camera Layout**;
-**Camera auto switch**; and **Pair again** for another server or account. Back
-closes it.
+**Camera rotation**; **Camera auto switch**; and **Pair again** for another server
+or account. Back closes it.
 
 Press left from a camera in the strip and Select, and that camera fills the
 screen. Its name and **Live** stay on the picture; Select or Back brings the strip
@@ -182,6 +182,17 @@ back.
 is every camera at the same size, fitted to how many you have: four make a 2×2,
 six make two rows of three. Select on a tile fills the screen with that camera,
 and Back brings the wall back with the arrows on the camera you left.
+
+**Camera rotation** moves the picture from camera to camera while it fills the
+screen. Press the picture to fill the screen, then Up to reach the mark in the
+corner. Select starts the loop and Select stops it. The mark is blue while the
+picture is moving and white while it holds still. Left and right walk the cameras
+one at a time, and either one stops the loop where it lands. Under Settings the
+row sets how long each camera keeps the screen: 3, 5 or 10 seconds.
+
+Every camera's stream is open while the loop runs, so the picture that arrives is
+already playing. That is four streams on four cameras, which a television on a
+cable handles and a small box over Wi-Fi may not.
 
 **Doorbell** shows an address for Home Assistant. Post to it when someone presses
 the bell, and that camera fills the screen for half a minute. The address carries

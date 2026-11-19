@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.21.0
+
+- Frigo TV moves the picture from camera to camera while a camera fills the screen, so a wall of cameras can be watched one at a time.
+- Left and right on the remote walk the cameras in full screen, and the mark in the corner starts and stops the loop.
+- Settings has a Camera rotation row, set to 3, 5 or 10 seconds a camera, or off.
+
 ## 0.20.3
 
 - Frigo TV shows its lens beside the name, in the corner of the cameras page and on the page that pairs it.

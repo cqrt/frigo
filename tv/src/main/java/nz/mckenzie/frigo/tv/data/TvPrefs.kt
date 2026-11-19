@@ -3,6 +3,7 @@ package nz.mckenzie.frigo.tv.data
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -107,6 +108,28 @@ class TvPrefs(private val context: Context) {
     }
 
     /**
+     * How many seconds each camera keeps the whole screen while the picture moves
+     * round by itself, or 0 when it doesn't. It belongs to the television, like
+     * the layout and the camera it opens on.
+     */
+    suspend fun readRotation(): Int = context.tvStore.data.first()[Keys.rotation] ?: 0
+
+    suspend fun writeRotation(seconds: Int) {
+        context.tvStore.edit { prefs -> prefs[Keys.rotation] = seconds }
+    }
+
+    /**
+     * The length the loop last ran at, so pressing the symbol back on returns the
+     * loop to the length that was chosen rather than to three seconds every time.
+     */
+    suspend fun readRotationLength(): Int =
+        context.tvStore.data.first()[Keys.rotationLength] ?: 3
+
+    suspend fun writeRotationLength(seconds: Int) {
+        context.tvStore.edit { prefs -> prefs[Keys.rotationLength] = seconds }
+    }
+
+    /**
      * The key in the doorbell address, made once and kept. It is what keeps a
      * neighbour's automation on the same Wi-Fi from ringing this television.
      */
@@ -127,6 +150,8 @@ class TvPrefs(private val context: Context) {
         val liveSound = booleanPreferencesKey("live_sound")
         val screen = stringPreferencesKey("screen")
         val ringKey = stringPreferencesKey("ring_key")
+        val rotation = intPreferencesKey("rotation")
+        val rotationLength = intPreferencesKey("rotation_length")
     }
 }
 

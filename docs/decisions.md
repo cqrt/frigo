@@ -3334,3 +3334,56 @@ the pairing page without a plate around it.
 Rejected: the banner's picture, cropped to the lens. It is a bitmap, so it would need a
 size for every density and a lighter version for the pairing page, and it would be the
 only photograph in an interface that is otherwise drawn.
+
+## The television's loop keeps every stream open
+
+A camera's stream takes a moment to put up a picture, and the still of that camera
+stands in until it does. At three seconds a camera, a stream started fresh at each
+change would spend most of its turn waiting, so the loop holds every camera's stream
+open for as long as it runs. The picture that slides in is already playing, and the
+one sliding out is still playing as it leaves.
+
+The cost is bandwidth and decoders: four streams and four decoders at once, on a box
+that may have hardware for two. What is left is the app's own fallback, which already
+exists: a camera whose stream fails twice drops to the small JPEG feed, so a box that
+cannot keep up shows a slower picture rather than a black one. The streams are opened
+only while the loop runs and while the picture fills the screen, so the cost is paid
+only by a television that has been asked to do it.
+
+Rejected: one player moved from camera to camera. It is what the screen does with a
+single picture today, and it is the cheapest thing to write, but at three seconds
+every change would show a still and then a stream catching up.
+
+The slide is a row of pictures moved sideways, with a copy of the last camera before
+the first and a copy of the first after the last. Without the copies, going round the
+end would sweep the row back across every camera in seven tenths of a second, which
+reads as a fault rather than as a change. The two copies show a still rather than a
+stream, since they are only in the frame while a slide passes them.
+
+The three seconds is the still picture; the slide is added on top, so a camera is on
+screen for about three and seven tenths. The alternative, counting the slide inside
+the three, gives a rhythm that never varies but shortens the time the picture stands
+still, which is what the eye is actually reading.
+
+The rotation mark in the corner is the switch, and it is also the report: blue while
+the picture moves, white while it holds. Every arrow press stops the loop, because a
+press is the viewer taking over, and the mark is the way back on. That means the loop
+turns itself off after a minute of flicking about, which is the cost of not having a
+second kind of pause to explain.
+
+Rejected: a pause that lasts while the screen is full. It reads better for one look,
+but it is a second state that the row in Settings and the mark on the picture would
+then have to agree about, and the two would drift.
+
+The seventh row on the Settings card is one line, with no sentence under it, because
+six rows were already as tall as the card could be. The list it opens says what the
+loop does, which is where that sentence belongs once there is no room on the card for
+it.
+
+A camera whose stream will not play keeps its turn and shows Offline. Skipping it
+would make the rhythm change at the one moment the viewer is trying to work out which
+camera is out.
+
+A person or a car still brings its camera up for half a minute, now in full screen as
+well, and the loop carries on from that camera afterwards. The bell does the same. Both
+were the reason the takeover exists, and a loop is no reason to stop answering them.

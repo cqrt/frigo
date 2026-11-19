@@ -26,6 +26,12 @@
     <string name="tv_close">Close</string>
     <string name="tv_takeover">Camera auto switch</string>
     <string name="tv_takeover_note">Alerts on followed objects will switch to main view briefly.</string>
+    <string name="tv_rotation">Camera rotation</string>
+    <string name="tv_rotation_off">Off</string>
+    <string name="tv_rotation_seconds">%1$d sec</string>
+    <string name="tv_rotation_what">The picture moves to the next camera while it fills the screen. Select or Back stops it.</string>
+    <string name="tv_rotation_running">Rotation on. Select stops it.</string>
+    <string name="tv_rotation_stopped">Rotation off. Select starts it.</string>
     <string name="tv_default_camera">Default camera</string>
     <string name="tv_default_camera_note">Opens on this camera when the app starts.</string>
     <string name="tv_screen">Camera Layout</string>
