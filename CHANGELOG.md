@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.21.1
+
+- The arrows in full screen move the cameras and leave the focus on the picture, so Select still gives the screen back.
+
 ## 0.21.0
 
 - Frigo TV moves the picture from camera to camera while a camera fills the screen, so a wall of cameras can be watched one at a time.

@@ -301,7 +301,11 @@ fun CamerasScreen(
     // While the picture fills the screen the arrows belong to it: left and right
     // walk the cameras, and up reaches the symbol that turns the loop on and off.
     fun fullScreenKey(event: KeyEvent): Boolean {
-        if (event.type != KeyEventType.KeyDown) return false
+        val arrow = event.key == Key.DirectionLeft || event.key == Key.DirectionRight ||
+            event.key == Key.DirectionUp || event.key == Key.DirectionDown
+        // Both halves of a press are taken, so an arrow moves the cameras without
+        // the focus walking off to the corner on its own.
+        if (event.type != KeyEventType.KeyDown) return arrow
         return when (event.key) {
             Key.DirectionLeft -> {
                 stepBy(-1)
