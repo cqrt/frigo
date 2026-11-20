@@ -427,9 +427,8 @@ fun CamerasScreen(
             val found = repository.alertTakeovers(since)
             since = System.currentTimeMillis() / 1_000 - OverlapSeconds
             val hit = found.firstOrNull { alert ->
-                seesFollowedObject(alert.objects) &&
-                    shown.any { it.name == alert.cameraName } &&
-                    seen.add(alert.id)
+                val camera = shown.firstOrNull { it.name == alert.cameraName }
+                camera != null && camera.follows(alert.objects) && seen.add(alert.id)
             }
             if (hit != null && !settingsOpen && stripShown && (!fullScreen || rotation > 0)) {
                 takeOver(hit.cameraName)
@@ -1022,10 +1021,7 @@ private fun SettingsPanel(
                         )
                         SettingRow(
                             title = stringResource(R.string.tv_takeover),
-                            supporting = stringResource(
-                                R.string.tv_takeover_note,
-                                Followed.joinToString(", "),
-                            ),
+                            supporting = stringResource(R.string.tv_takeover_note),
                             modifier = placed(TakeoverAt),
                             onFocused = {
                                 at = TakeoverAt
@@ -1282,6 +1278,16 @@ private fun CamerasPicker(
                 label = camera.title,
                 ticked = false,
                 dimmed = off,
+                // What this camera answers, read from Frigate, so the row says
+                // which object brings it up rather than repeating one list.
+                supporting = if (camera.objects.isEmpty()) {
+                    stringResource(R.string.tv_camera_no_alerts)
+                } else {
+                    stringResource(
+                        R.string.tv_camera_follows,
+                        camera.objects.joinToString(", "),
+                    )
+                },
                 modifier = Modifier.focusRequester(requesters(index)),
                 onClick = { onToggle(camera.name, !off) },
                 // The focused row is the primary colour, and a switch in the
@@ -1418,6 +1424,8 @@ private fun PickerRow(
     label: String,
     ticked: Boolean,
     modifier: Modifier = Modifier,
+    /** A line under the name, for a list that has something to say about each row. */
+    supporting: String? = null,
     /** A camera that is turned off reads quieter, so the switch is not the only thing saying it. */
     dimmed: Boolean = false,
     /** What sits at the end of the row, told whether the arrows are on it. */
@@ -1438,18 +1446,29 @@ private fun PickerRow(
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium,
-            color = when {
-                focused -> ink.onPrimary
-                dimmed -> ink.onSurfaceVariant
-                else -> ink.onSurface
-            },
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                color = when {
+                    focused -> ink.onPrimary
+                    dimmed -> ink.onSurfaceVariant
+                    else -> ink.onSurface
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (supporting != null) {
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = supporting,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (focused) ink.onPrimary.copy(alpha = 0.8f) else ink.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
         if (ticked) {
             Text(
                 text = "✓",
@@ -1469,16 +1488,16 @@ private fun String.shortName(): String =
     removePrefix("https://").removePrefix("http://").trimEnd('/')
 
 /**
- * The objects the television takes over on, named the way the Settings line names
- * them. Frigate's `person-verified`, a face it knows, counts as a person, so it is
- * not spelled out to the viewer as a fourth thing.
+ * Whether anything this alert saw is one of the objects its camera makes an alert
+ * from. Frigate reports a face it knows as `person-verified`, while the camera's
+ * own list names what it is: `person`.
+ *
+ * The list is the server's, per camera, so a camera set to person only takes the
+ * screen for a person, and a camera with its alerts off takes it for nothing.
  */
-private val Followed = listOf("person", "car")
-
-/** Whether anything here is worth the half minute. */
-private fun seesFollowedObject(objects: List<String>): Boolean = objects.any {
-    val name = it.lowercase()
-    name in Followed || name == "person-verified"
+private fun Camera.follows(objects: List<String>): Boolean = objects.any { seen ->
+    val name = seen.lowercase()
+    this.objects.any { it == name || (name == "person-verified" && it == "person") }
 }
 
 

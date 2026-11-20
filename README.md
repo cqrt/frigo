@@ -181,6 +181,9 @@ still shows it, and Frigate is not changed. An alert on a camera you've switched
 off doesn't take the screen, and neither does the bell. Switch them all off and the
 page says so, and where to go to turn one back on.
 
+Each camera on that list says what it follows, in Frigate's words: **Follows
+person**, **Follows car, person**, or **Alerts are off on this camera**.
+
 Press left from a camera in the strip and Select, and that camera fills the
 screen. Its name and **Live** stay on the picture; Select or Back brings the strip
 back.
@@ -206,9 +209,11 @@ the bell, and that camera fills the screen for half a minute. The address carrie
 a key the television made for itself, so it only answers its own house
 ([how to wire it up](docs/doorbell.md)).
 
-A camera that sees a person or a car takes the big picture for half a minute, and
-the screen then goes back to the camera it was on. **Camera auto switch** under
-Settings is where it is turned off, and picking a camera by hand ends it early.
+A camera that sees one of the objects it follows takes the big picture for half a
+minute, and the screen then goes back to the camera it was on. What each camera
+follows is Frigate's own setting, so the door camera can follow person while the
+drive follows person and car. **Camera auto switch** under Settings turns the whole
+thing off, and picking a camera by hand ends it early.
 
 **Sound** in the corner mutes the live picture, and past that it says **Muted**.
 It remembers which one you left it on.

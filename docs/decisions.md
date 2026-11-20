@@ -3446,3 +3446,30 @@ has to be redesigned every time a row is added is a card that puts off the next 
 
 Rejected: a scrollbar that fades out. A person on a sofa looking for a setting does
 not know the card scrolls until they have already missed the row they wanted.
+
+## The auto switch follows Frigate's own object lists
+
+The television used to keep a short list of its own: person and car, for every camera.
+It could not be right. A house with one camera set to person and another set to person
+and car has two answers, and a television that says car on all of them is telling the
+person watching something the server will never send.
+
+The list is read from the server now, one per camera, out of the same `/api/config`
+answer the camera list already comes from. A camera that names its own alert labels
+uses them, one that names none follows the list at the top of the settings, and one
+whose alerts are off makes alerts for nothing, so it never takes the screen. Frigate
+starts every server on person and car, and that is the list used when nothing is
+named anywhere.
+
+The cameras list in Settings says it back, camera by camera: Follows person, Follows
+car, person, or Alerts are off on this camera. That is where the words under Camera
+auto switch went: a single line could not name objects that differ per camera, so it
+says followed objects, and the list below says which ones.
+
+A face Frigate knows arrives as `person-verified` while the camera's list names the
+object it is, `person`. Both count the same, the way the phone's own alert rules count
+them.
+
+Rejected: leaving person and car in the television and calling it a preference. It
+is not a preference, it is a copy of one answer, and it goes stale the moment a camera
+is set up differently.

@@ -26,7 +26,7 @@
     <string name="tv_pair_again">Pair again</string>
     <string name="tv_close">Close</string>
     <string name="tv_takeover">Camera auto switch</string>
-    <string name="tv_takeover_note">These followed objects [%1$s] will trigger auto switch.</string>
+    <string name="tv_takeover_note">Followed objects take the big picture for half a minute.</string>
     <string name="tv_rotation">Camera rotation</string>
     <string name="tv_rotation_off">Off</string>
     <string name="tv_rotation_seconds">%1$d sec</string>
@@ -39,6 +39,8 @@
     <string name="tv_cameras_note">The cameras this TV shows.</string>
     <string name="tv_cameras_shown">%1$d of %2$d</string>
     <string name="tv_cameras_what">Switch a camera off and it leaves this television. It still records, and your phone still shows it. Select a row to switch it.</string>
+    <string name="tv_camera_follows">Follows %1$s</string>
+    <string name="tv_camera_no_alerts">Alerts are off on this camera</string>
     <string name="tv_screen">Camera Layout</string>
     <string name="tv_screen_note">Select layout from Default or Grid.</string>
     <string name="tv_screen_default">Default</string>

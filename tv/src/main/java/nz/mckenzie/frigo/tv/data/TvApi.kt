@@ -96,7 +96,13 @@ class TvApi {
         return config.cameras
             .filterValues { it.enabled }
             .filter { (name, _) -> allowed == null || name in allowed }
-            .map { (name, camera) -> Camera(name, camera.friendlyName ?: prettyName(name)) }
+            .map { (name, camera) ->
+                Camera(
+                    name = name,
+                    title = camera.friendlyName ?: prettyName(name),
+                    objects = alertObjects(camera, config.review),
+                )
+            }
             .sortedBy { it.title.lowercase() }
     }
 
@@ -288,7 +294,16 @@ class TvApi {
 }
 
 /** One camera, as the television shows it. */
-data class Camera(val name: String, val title: String)
+data class Camera(
+    val name: String,
+    val title: String,
+    /**
+     * The objects Frigate makes an alert from on this camera. They are the ones
+     * that bring it up, and the ones its row in Settings names. Empty means the
+     * camera's alerts are off, so nothing it sees is worth the screen.
+     */
+    val objects: List<String> = emptyList(),
+)
 
 /**
  * One moment Frigate flagged, as the television lists it.
@@ -349,13 +364,47 @@ private fun JsonElement.asAlert(): Alert? {
 }
 
 @Serializable
-private data class Config(val cameras: Map<String, CameraConfig> = emptyMap())
+private data class Config(
+    val cameras: Map<String, CameraConfig> = emptyMap(),
+    val review: ReviewConfig = ReviewConfig(),
+)
 
 @Serializable
 private data class CameraConfig(
     val enabled: Boolean = true,
     @SerialName("friendly_name") val friendlyName: String? = null,
+    val review: ReviewConfig = ReviewConfig(),
 )
+
+/** What makes an alert on a camera, or on every camera. */
+@Serializable
+private data class ReviewConfig(val alerts: AlertLabels = AlertLabels())
+
+@Serializable
+private data class AlertLabels(
+    val enabled: Boolean = true,
+    /** Null on a camera means it follows the list at the top of the settings. */
+    val labels: List<String>? = null,
+)
+
+/**
+ * The objects this camera makes an alert from.
+ *
+ * A camera that names its own list uses it, one that names none follows the list
+ * for every camera, and a camera whose alerts are off makes none. Frigate starts
+ * every server on person and car, which is the list used when nothing is named.
+ */
+private fun alertObjects(camera: CameraConfig, shared: ReviewConfig): List<String> {
+    val alerts = camera.review.alerts
+    if (!alerts.enabled) return emptyList()
+    val labels = alerts.labels?.takeIf { it.isNotEmpty() }
+        ?: shared.alerts.labels?.takeIf { it.isNotEmpty() }
+        ?: DefaultAlertLabels
+    return labels.map { it.lowercase() }.distinct()
+}
+
+/** Frigate's own starting list, for a server that names none. */
+private val DefaultAlertLabels = listOf("person", "car")
 
 @Serializable
 private data class Profile(

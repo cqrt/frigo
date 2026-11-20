@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.23.0
+
+- The television takes a camera's picture up for the objects that camera follows in Frigate, not for a fixed person and car.
+- The cameras list in Settings says what each camera follows, and says so when a camera's alerts are off.
+- Camera auto switch says followed objects, because what they are differs from camera to camera.
+
 ## 0.22.2
 
 - The line under Camera auto switch names the objects it answers: person, and car.
