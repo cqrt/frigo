@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.23.1
+
+- The line under Camera auto switch reads plainly: your followed objects will trigger the camera auto switch.
+
 ## 0.23.0
 
 - The television takes a camera's picture up for the objects that camera follows in Frigate, not for a fixed person and car.
