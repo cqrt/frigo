@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.22.1
+
+- Camera auto switch on the television says what it does: a person or a car takes the big picture for half a minute.
+
 ## 0.22.0
 
 - Frigo TV's Settings has a Cameras row: a switch on each camera, and switching one off takes it off this television.

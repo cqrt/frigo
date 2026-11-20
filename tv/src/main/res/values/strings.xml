@@ -26,7 +26,7 @@
     <string name="tv_pair_again">Pair again</string>
     <string name="tv_close">Close</string>
     <string name="tv_takeover">Camera auto switch</string>
-    <string name="tv_takeover_note">Alerts on followed objects will switch to main view briefly.</string>
+    <string name="tv_takeover_note">A person or a car takes the big picture for half a minute.</string>
     <string name="tv_rotation">Camera rotation</string>
     <string name="tv_rotation_off">Off</string>
     <string name="tv_rotation_seconds">%1$d sec</string>
