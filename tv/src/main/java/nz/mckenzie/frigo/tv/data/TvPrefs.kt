@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -48,8 +49,31 @@ class TvPrefs(private val context: Context) {
         context.tvStore.edit { prefs -> prefs[Keys.server] = stored }
     }
 
+    /**
+     * Pairing again is another server or another account, so the cameras that
+     * were turned off here go with it. The phone forgets its own list the same
+     * way when you sign out.
+     */
     suspend fun clear() {
-        context.tvStore.edit { prefs -> prefs.remove(Keys.server) }
+        context.tvStore.edit { prefs ->
+            prefs.remove(Keys.server)
+            prefs.remove(Keys.hidden)
+        }
+    }
+
+    /**
+     * The cameras this television leaves out, by Frigate's own name. It belongs
+     * to the television rather than to the server, the way the layout and the
+     * camera it opens on do: a screen in a bedroom has no business showing the
+     * street.
+     *
+     * A camera is kept by the name the server gives it, so one the server renames
+     * comes back into view rather than staying off for ever.
+     */
+    suspend fun readHidden(): Set<String> = context.tvStore.data.first()[Keys.hidden] ?: emptySet()
+
+    suspend fun writeHidden(cameras: Set<String>) {
+        context.tvStore.edit { prefs -> prefs[Keys.hidden] = cameras }
     }
 
     /**
@@ -152,6 +176,7 @@ class TvPrefs(private val context: Context) {
         val ringKey = stringPreferencesKey("ring_key")
         val rotation = intPreferencesKey("rotation")
         val rotationLength = intPreferencesKey("rotation_length")
+        val hidden = stringSetPreferencesKey("hidden")
     }
 }
 

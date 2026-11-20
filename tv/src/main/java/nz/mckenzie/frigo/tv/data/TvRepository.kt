@@ -67,6 +67,7 @@ class TvRepository(
 
     /** Called once, when the app opens. */
     suspend fun start() = withContext(Dispatchers.IO) {
+        _hidden.value = prefs.readHidden()
         _defaultCamera.value = prefs.readDefaultCamera()
         _screen.value = prefs.readScreen()
         _rotation.value = prefs.readRotation()
@@ -156,7 +157,25 @@ class TvRepository(
     suspend fun forget() = withContext(Dispatchers.IO) {
         prefs.clear()
         _session.value = null
+        _hidden.value = emptySet()
         _gate.value = Gate.Pairing
+    }
+
+    private val _hidden = MutableStateFlow<Set<String>>(emptySet())
+
+    /**
+     * The cameras this television leaves out, by Frigate's own name. The server's
+     * list stays as it is: a hidden camera is still in [Gate.Ready], because the
+     * alerts page names every camera Frigate flagged and the two lists in
+     * Settings still have to reach the one you turned off.
+     */
+    val hidden: StateFlow<Set<String>> = _hidden.asStateFlow()
+
+    /** Turns a camera off this television, or back on. */
+    suspend fun setCameraHidden(camera: String, off: Boolean) {
+        val next = if (off) _hidden.value + camera else _hidden.value - camera
+        prefs.writeHidden(next)
+        _hidden.value = next
     }
 
     /** Where the big picture plays from, and the token it sends. */

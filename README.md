@@ -170,9 +170,16 @@ at once. The television says **Live** over the big picture while it is arriving,
 and **Waiting for a picture** until the first frame does.
 
 Settings in the corner, one press up from the first camera, is a list: **Default
-camera**, the camera the television opens on when it starts; **Camera Layout**;
-**Camera rotation**; **Camera auto switch**; and **Pair again** for another server
-or account. Back closes it.
+camera**, the camera the television opens on when it starts; **Cameras**, the ones
+this television shows; **Camera Layout**; **Camera rotation**; **Camera auto
+switch**; and **Pair again** for another server or account. Back closes it, and the
+list scrolls with a bar on its edge when there are more rows than the screen shows.
+
+**Cameras** has a switch on each one. Switch a camera off and it leaves this
+television: the big picture, the strip and the wall. It still records, your phone
+still shows it, and Frigate is not changed. An alert on a camera you've switched
+off doesn't take the screen, and neither does the bell. Switch them all off and the
+page says so, and where to go to turn one back on.
 
 Press left from a camera in the strip and Select, and that camera fills the
 screen. Its name and **Live** stay on the picture; Select or Back brings the strip

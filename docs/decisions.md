@@ -3387,3 +3387,62 @@ camera is out.
 A person or a car still brings its camera up for half a minute, now in full screen as
 well, and the loop carries on from that camera afterwards. The bell does the same. Both
 were the reason the takeover exists, and a loop is no reason to stop answering them.
+
+## A hidden camera is this television's own
+
+The phone already has a list of cameras it leaves out, and it lives on the phone:
+Frigate's own two switches for this, `ui.dashboard` and `ui.review`, need an admin
+and change every phone and browser on the account. The television's list is its own
+for the same reason, and for one more: a screen in a bedroom showing the street is
+a different complaint from a phone showing it, and the two are set in different rooms.
+
+So Settings has a **Cameras** row, under **Default camera**, with a switch on each
+camera and a line above saying how many of the server's cameras this television
+shows. A press on a switch takes the camera off the big picture, the strip, the
+wall and the rotation. It stays in the alerts page, and the alert names it, because
+an alert is something Frigate already decided was worth telling the house about,
+and the page that answers it is not the page that hides things.
+
+Hiding wins over the Camera auto switch. A camera turned off here never takes the
+screen, however certain Frigate is that someone walked past it. That is what being
+turned off means; a takeover that showed the camera anyway would make the switch a
+decoration. The switch itself is untouched for the cameras that are shown.
+
+The bell is the one that does not fall back. An address that names that camera
+leaves the screen alone rather than ringing up the first camera instead, because
+the automation named a picture and the house said no to it. An address that names
+no camera still opens on the default camera, or the first one shown.
+
+Every camera turned off is not a server with no cameras, and the page says so in
+those words: the note names Settings, Cameras rather than reading as a server the
+app cannot reach. Turning the last one off is allowed, because a television that
+refused would be a switch that argues.
+
+The list is kept by Frigate's name for a camera, so one the server renames comes
+back into view rather than staying off for ever. A television that is paired again
+forgets the list, the way the phone forgets its own on signing out: another server
+or another account is a different set of cameras, and a name left behind would hide
+whichever camera happened to share it.
+
+Rejected: Frigate's `ui.dashboard` and `ui.review`. They need an admin, they change
+every phone on the account, and they stop at the web page.
+
+## The settings card is a page, so it scrolls
+
+Eight rows and the server line are taller than a 1080p screen at the television's
+type size, and the ninth row added next year would be off the glass without
+anything on the screen saying so. The card now keeps the glass's height less a
+margin and scrolls, with a bar down its right edge whenever the rows run past the
+bottom: a faint track for the whole card and a solid thumb for the part that is
+showing.
+
+A television has no finger to flick, so the arrows are the scroll. A row only
+brings the card up to meet itself when it is below the fold, which is why the card
+opens on the first row rather than the last: a page that opens scrolled to its
+bottom is a page whose title nobody sees.
+
+Rejected: trimming the rows to fit. The list only grows from here, and a card that
+has to be redesigned every time a row is added is a card that puts off the next row.
+
+Rejected: a scrollbar that fades out. A person on a sofa looking for a setting does
+not know the card scrolls until they have already missed the row they wanted.

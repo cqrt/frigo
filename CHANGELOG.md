@@ -8,6 +8,13 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.22.0
+
+- Frigo TV's Settings has a Cameras row: a switch on each camera, and switching one off takes it off this television.
+- A camera you've switched off leaves the big picture, the strip and the wall, and stops the alert takeover and the bell from putting it up.
+- Every camera switched off says so, and names Settings, Cameras.
+- The television's settings card scrolls when its rows are more than the screen shows, with a bar down its edge.
+
 ## 0.21.1
 
 - The arrows in full screen move the cameras and leave the focus on the picture, so Select still gives the screen back.
