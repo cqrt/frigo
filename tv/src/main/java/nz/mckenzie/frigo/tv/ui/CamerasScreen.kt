@@ -427,7 +427,7 @@ fun CamerasScreen(
             val found = repository.alertTakeovers(since)
             since = System.currentTimeMillis() / 1_000 - OverlapSeconds
             val hit = found.firstOrNull { alert ->
-                seesPersonOrCar(alert.objects) &&
+                seesFollowedObject(alert.objects) &&
                     shown.any { it.name == alert.cameraName } &&
                     seen.add(alert.id)
             }
@@ -1022,7 +1022,10 @@ private fun SettingsPanel(
                         )
                         SettingRow(
                             title = stringResource(R.string.tv_takeover),
-                            supporting = stringResource(R.string.tv_takeover_note),
+                            supporting = stringResource(
+                                R.string.tv_takeover_note,
+                                Followed.joinToString(", "),
+                            ),
                             modifier = placed(TakeoverAt),
                             onFocused = {
                                 at = TakeoverAt
@@ -1465,12 +1468,17 @@ private fun PickerRow(
 private fun String.shortName(): String =
     removePrefix("https://").removePrefix("http://").trimEnd('/')
 
-/** Frigate names a face-recognised person `person-verified`; both count. */
-private fun seesPersonOrCar(objects: List<String>): Boolean = objects.any {
-    when (it.lowercase()) {
-        "person", "person-verified", "car" -> true
-        else -> false
-    }
+/**
+ * The objects the television takes over on, named the way the Settings line names
+ * them. Frigate's `person-verified`, a face it knows, counts as a person, so it is
+ * not spelled out to the viewer as a fourth thing.
+ */
+private val Followed = listOf("person", "car")
+
+/** Whether anything here is worth the half minute. */
+private fun seesFollowedObject(objects: List<String>): Boolean = objects.any {
+    val name = it.lowercase()
+    name in Followed || name == "person-verified"
 }
 
 

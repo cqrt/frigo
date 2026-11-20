@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.22.2
+
+- The line under Camera auto switch names the objects it answers: person, and car.
+
 ## 0.22.1
 
 - Camera auto switch on the television says what it does: a person or a car takes the big picture for half a minute.
