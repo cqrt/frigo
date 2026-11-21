@@ -269,7 +269,7 @@ private fun PairingScreen(repository: TvRepository) {
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    text = "FRIGO",
+                    text = "Frigo",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
