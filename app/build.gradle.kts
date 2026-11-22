@@ -138,5 +138,8 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    // A stand-in Home Assistant on the loopback address, so what the app puts on
+    // the wire is read back as the box would read it.
+    testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(libs.androidx.junit)
 }

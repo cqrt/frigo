@@ -239,7 +239,7 @@
     <string name="ha_address_placeholder">http://homeassistant.local:8123</string>
     <string name="ha_address_note">À la maison, l\'adresse du boîtier ; ailleurs, le proxy que vous mettez devant.</string>
     <string name="ha_token">Jeton de longue durée</string>
-    <string name="ha_token_note">Dans Home Assistant, ouvrez votre profil et créez-en un dans Jetons d\'accès de longue durée.</string>
+    <string name="ha_token_note">Dans Home Assistant, ouvrez votre profil, puis Sécurité, et créez-y un jeton de longue durée.</string>
     <string name="ha_save">Enregistrer</string>
     <string name="ha_saving">Enregistrement</string>
     <string name="ha_forget">Oublier Home Assistant</string>

@@ -5,8 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.addJsonObject
-import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -80,13 +79,11 @@ class HomeAssistantApi(
     }
 
     /**
-     * Turns one light on or off. Home Assistant takes either as a service call with
+     * Turns one light on or off. Home Assistant takes either as an action call with
      * the entity it applies to, and answers at once: the light itself catches up.
      */
     fun turn(address: String, token: String, entity: String, on: Boolean) {
-        val body = buildJsonArray { addJsonObject { put("entity_id", entity) } }
-            .toString()
-            .toRequestBody(JSON)
+        val body = lightCallBody(entity).toRequestBody(JSON)
         val path = if (on) "/api/services/light/turn_on" else "/api/services/light/turn_off"
         request(address, token, path).post(body).build().okText()
     }
@@ -106,11 +103,23 @@ class HomeAssistantApi(
         }
     }
 
+    /**
+     * What Home Assistant says when it turns the call down. Its own words are passed
+     * on where it gave any: a service call it refused names the reason, and that is
+     * more use than a sentence saying it didn't answer.
+     */
     private fun okhttp3.Response.toException(): HomeAssistantException {
-        val text = if (code == 401 || code == 403) {
-            context.words(R.string.ha_token_wrong)
-        } else {
-            context.words(R.string.ha_no_answer)
+        val said = runCatching {
+            (HaJson.parseToJsonElement(body?.string().orEmpty()) as? JsonObject)
+                ?.get("message")
+                ?.jsonPrimitive
+                ?.contentOrNull
+        }.getOrNull()?.takeIf { it.isNotBlank() }
+
+        val text = when {
+            code == 401 || code == 403 -> context.words(R.string.ha_token_wrong)
+            said != null -> said
+            else -> context.words(R.string.ha_no_answer)
         }
         return HomeAssistantException(text)
     }
@@ -124,6 +133,16 @@ private val HaJson = Json {
     ignoreUnknownKeys = true
     isLenient = true
 }
+
+/**
+ * The action data Home Assistant expects: one object naming the entity.
+ *
+ * Not a list of them, which is how a service call can be written elsewhere. The
+ * REST endpoint reads the body as the action's own data and turns a list down with
+ * a 400, which arrives as the light silently refusing to come on.
+ */
+internal fun lightCallBody(entity: String): String =
+    buildJsonObject { put("entity_id", entity) }.toString()
 
 /**
  * The lights in an `/api/states` answer: everything whose entity id says it is a

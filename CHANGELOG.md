@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.24.1
+
+- The floodlight button turns the light on and off: Home Assistant was being asked in a shape it turned down, so nothing happened.
+- When Home Assistant turns a call down, its own reason is shown rather than a line saying it didn't answer.
+
 ## 0.24.0
 
 - A floodlight button sits in live view's top bar, left of the speaker: one tap turns the light on, and it goes blue while the light is on.

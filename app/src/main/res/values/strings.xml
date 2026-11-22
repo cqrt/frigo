@@ -239,7 +239,7 @@
     <string name="ha_address_placeholder">http://homeassistant.local:8123</string>
     <string name="ha_address_note">The box\'s own address at home, or the proxy you put in front of it away from home.</string>
     <string name="ha_token">Long-lived token</string>
-    <string name="ha_token_note">In Home Assistant, open your profile and create one under Long-lived access tokens.</string>
+    <string name="ha_token_note">In Home Assistant, open your profile, then Security, and create a long-lived access token.</string>
     <string name="ha_save">Save</string>
     <string name="ha_saving">Saving</string>
     <string name="ha_forget">Forget Home Assistant</string>

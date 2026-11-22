@@ -240,7 +240,7 @@
     <string name="ha_address_placeholder">http://homeassistant.local:8123</string>
     <string name="ha_address_note">Zuhause die Adresse des Geräts, von unterwegs der Proxy davor.</string>
     <string name="ha_token">Langlebiges Token</string>
-    <string name="ha_token_note">Öffne in Home Assistant dein Profil und erstelle eins unter Langlebige Zugangstoken.</string>
+    <string name="ha_token_note">Öffne in Home Assistant dein Profil, dann Sicherheit, und erstelle dort ein langlebiges Token.</string>
     <string name="ha_save">Speichern</string>
     <string name="ha_saving">Wird gespeichert</string>
     <string name="ha_forget">Home Assistant entfernen</string>
