@@ -84,6 +84,11 @@
     <string name="settings_live_view">Visualização ao vivo</string>
     <string name="settings_live_supporting">Reproduz vídeo na aba Câmeras. Usa mais bateria e dados.</string>
 
+    <!-- The other box in the house, which knows about a camera's floodlight. -->
+    <string name="settings_floodlights">Holofotes</string>
+    <string name="settings_home_assistant">Home Assistant</string>
+    <string name="settings_home_assistant_off">Não configurado</string>
+
     <string name="settings_cameras">Câmeras</string>
     <string name="settings_cameras_stale">Seu servidor não está respondendo. Estas são as câmeras que o celular leu por último, %1$s.</string>
     <string name="settings_cameras_offline">Seu servidor não está respondendo, então não dá para ler as câmeras.</string>
@@ -226,6 +231,26 @@
     <!-- What a save says before it is sent, when a field is empty. -->
     <string name="ai_error_address">Digite o endereço do seu servidor Ollama.</string>
     <string name="ai_error_model">Digite o nome de um modelo.</string>
+
+    <!-- ===== home assistant ===== -->
+    <!-- The page's two fields, and where the token comes from. -->
+    <string name="ha_title">Home Assistant</string>
+    <string name="ha_address">Endereço</string>
+    <string name="ha_address_placeholder">http://homeassistant.local:8123</string>
+    <string name="ha_address_note">Em casa, o endereço da caixa; fora de casa, o proxy que puser à frente.</string>
+    <string name="ha_token">Token de longa duração</string>
+    <string name="ha_token_note">No Home Assistant, abra seu perfil e crie um em Tokens de acesso de longa duração.</string>
+    <string name="ha_save">Salvar</string>
+    <string name="ha_saving">Salvando</string>
+    <string name="ha_forget">Esquecer o Home Assistant</string>
+    <string name="ha_note">O Frigo pergunta ao Home Assistant o que uma luz está fazendo, e liga e desliga. O token fica neste telefone.</string>
+
+    <!-- What a save says before it is sent, and what the box says back. -->
+    <string name="ha_error_address">Digite um endereço para o Home Assistant.</string>
+    <string name="ha_error_token">Cole um token de longa duração.</string>
+    <string name="ha_token_wrong">O Home Assistant não aceitou esse token.</string>
+    <string name="ha_no_answer">O Home Assistant não respondeu. Verifique o endereço e se está funcionando.</string>
+    <string name="ha_not_set_up">Configure o Home Assistant primeiro, nas definições.</string>
 
     <!-- ===== alerts ===== -->
     <!-- The quiet notification, and the buzz. -->
@@ -534,6 +559,10 @@
     <string name="player_sound_off">Desligar o som</string>
     <string name="player_no_sound">Nenhum som chegou.</string>
 
+    <!-- The floodlight, which is a light in Home Assistant rather than anything Frigate knows. -->
+    <string name="player_floodlight_on">Ligar o holofote</string>
+    <string name="player_floodlight_off">Desligar o holofote</string>
+
     <!-- The menu on the stills stream: its size and its frame rate. -->
     <string name="player_stream_quality">Qualidade da transmissão</string>
     <string name="player_resolution">Resolução</string>
@@ -583,6 +612,14 @@
     <string name="camsw_name_detail">Só este telefone usa esse nome. O Frigate mantém o nome que tem.</string>
     <string name="camsw_name_save">Salvar</string>
     <string name="camsw_name_use_server">Usar o nome do servidor</string>
+
+    <!-- The light in Home Assistant that goes with this camera. -->
+    <string name="camsw_floodlight">Holofote</string>
+    <string name="camsw_floodlight_none">Nenhum</string>
+    <string name="camsw_floodlight_pick">Escolher uma luz</string>
+    <string name="camsw_floodlight_detail">Qual luz do Home Assistant vai com esta câmera.</string>
+    <string name="camsw_floodlight_set_up">Configure o Home Assistant nas definições para escolher uma luz.</string>
+    <string name="camsw_no_lights">O Home Assistant não tem luzes.</string>
 
     <!-- The four groups the eight switches sit in. -->
     <string name="camsw_group_detection">Detecção</string>

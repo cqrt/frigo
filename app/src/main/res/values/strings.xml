@@ -84,6 +84,11 @@
     <string name="settings_live_view">Live view</string>
     <string name="settings_live_supporting">Plays video on the Cameras tab. It uses more battery and data.</string>
 
+    <!-- The other box in the house, which knows about a camera's floodlight. -->
+    <string name="settings_floodlights">Floodlights</string>
+    <string name="settings_home_assistant">Home Assistant</string>
+    <string name="settings_home_assistant_off">Not set up</string>
+
     <string name="settings_cameras">Cameras</string>
     <string name="settings_cameras_stale">Your server isn\'t answering. These are the cameras your phone last read, %1$s.</string>
     <string name="settings_cameras_offline">Your server isn\'t answering, so the cameras can\'t be read.</string>
@@ -226,6 +231,26 @@
     <!-- What a save says before it is sent, when a field is empty. -->
     <string name="ai_error_address">Enter an address for the model.</string>
     <string name="ai_error_model">Enter the name of a model.</string>
+
+    <!-- ===== home assistant ===== -->
+    <!-- The page's two fields, and where the token comes from. -->
+    <string name="ha_title">Home Assistant</string>
+    <string name="ha_address">Address</string>
+    <string name="ha_address_placeholder">http://homeassistant.local:8123</string>
+    <string name="ha_address_note">The box\'s own address at home, or the proxy you put in front of it away from home.</string>
+    <string name="ha_token">Long-lived token</string>
+    <string name="ha_token_note">In Home Assistant, open your profile and create one under Long-lived access tokens.</string>
+    <string name="ha_save">Save</string>
+    <string name="ha_saving">Saving</string>
+    <string name="ha_forget">Forget Home Assistant</string>
+    <string name="ha_note">Frigo asks Home Assistant what a light is doing, and turns it on and off. The token stays on this phone.</string>
+
+    <!-- What a save says before it is sent, and what the box says back. -->
+    <string name="ha_error_address">Enter an address for Home Assistant.</string>
+    <string name="ha_error_token">Paste a long-lived token.</string>
+    <string name="ha_token_wrong">Home Assistant didn\'t accept that token.</string>
+    <string name="ha_no_answer">Home Assistant didn\'t answer. Check its address, and that it\'s running.</string>
+    <string name="ha_not_set_up">Set up Home Assistant first, in Settings.</string>
 
     <!-- ===== alerts ===== -->
     <!-- The quiet notification, and the buzz. -->
@@ -534,6 +559,10 @@
     <string name="player_sound_off">Turn the sound off</string>
     <string name="player_no_sound">No sound came through.</string>
 
+    <!-- The floodlight, which is a light in Home Assistant rather than anything Frigate knows. -->
+    <string name="player_floodlight_on">Turn the floodlight on</string>
+    <string name="player_floodlight_off">Turn the floodlight off</string>
+
     <!-- The menu on the stills stream: its size and its frame rate. -->
     <string name="player_stream_quality">Stream quality</string>
     <string name="player_resolution">Resolution</string>
@@ -583,6 +612,14 @@
     <string name="camsw_name_detail">This renames the camera locally.</string>
     <string name="camsw_name_save">Save</string>
     <string name="camsw_name_use_server">Use the server\'s name</string>
+
+    <!-- The light in Home Assistant that goes with this camera. -->
+    <string name="camsw_floodlight">Floodlight</string>
+    <string name="camsw_floodlight_none">None</string>
+    <string name="camsw_floodlight_pick">Pick a light</string>
+    <string name="camsw_floodlight_detail">Which light in Home Assistant goes with this camera.</string>
+    <string name="camsw_floodlight_set_up">Set up Home Assistant in Settings to pick a light.</string>
+    <string name="camsw_no_lights">Home Assistant has no lights.</string>
 
     <!-- The four groups the eight switches sit in. -->
     <string name="camsw_group_detection">Detection</string>

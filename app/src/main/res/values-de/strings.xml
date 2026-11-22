@@ -85,6 +85,11 @@
     <string name="settings_live_view">Livebild</string>
     <string name="settings_live_supporting">Spielt Video im Tab Kameras. Das kostet mehr Akku und Daten.</string>
 
+    <!-- Das andere Gerät im Haus, das vom Flutlicht einer Kamera weiß. -->
+    <string name="settings_floodlights">Flutlichter</string>
+    <string name="settings_home_assistant">Home Assistant</string>
+    <string name="settings_home_assistant_off">Nicht eingerichtet</string>
+
     <string name="settings_cameras">Kameras</string>
     <string name="settings_cameras_stale">Dein Server antwortet nicht. Das sind die Kameras, die dein Handy zuletzt gelesen hat, %1$s.</string>
     <string name="settings_cameras_offline">Dein Server antwortet nicht, also lassen sich die Kameras nicht lesen.</string>
@@ -227,6 +232,26 @@
     <!-- Was ein Speichern sagt, bevor es rausgeht, wenn ein Feld leer ist. -->
     <string name="ai_error_address">Gib die Adresse deines Ollama-Servers ein.</string>
     <string name="ai_error_model">Gib den Namen eines Modells ein.</string>
+
+    <!-- ===== home assistant ===== -->
+    <!-- Die zwei Felder der Seite, und woher das Token kommt. -->
+    <string name="ha_title">Home Assistant</string>
+    <string name="ha_address">Adresse</string>
+    <string name="ha_address_placeholder">http://homeassistant.local:8123</string>
+    <string name="ha_address_note">Zuhause die Adresse des Geräts, von unterwegs der Proxy davor.</string>
+    <string name="ha_token">Langlebiges Token</string>
+    <string name="ha_token_note">Öffne in Home Assistant dein Profil und erstelle eins unter Langlebige Zugangstoken.</string>
+    <string name="ha_save">Speichern</string>
+    <string name="ha_saving">Wird gespeichert</string>
+    <string name="ha_forget">Home Assistant entfernen</string>
+    <string name="ha_note">Frigo fragt Home Assistant, was ein Licht macht, und schaltet es ein und aus. Das Token bleibt auf diesem Telefon.</string>
+
+    <!-- Was ein Speichern sagt, bevor es rausgeht, und was das Gerät antwortet. -->
+    <string name="ha_error_address">Gib eine Adresse für Home Assistant ein.</string>
+    <string name="ha_error_token">Füge ein langlebiges Token ein.</string>
+    <string name="ha_token_wrong">Home Assistant hat dieses Token nicht angenommen.</string>
+    <string name="ha_no_answer">Home Assistant hat nicht geantwortet. Prüfe die Adresse und ob es läuft.</string>
+    <string name="ha_not_set_up">Richte Home Assistant zuerst in den Einstellungen ein.</string>
 
     <!-- ===== alerts ===== -->
     <!-- Die stille Benachrichtigung und das Piepen. -->
@@ -535,6 +560,10 @@
     <string name="player_sound_off">Ton ausschalten</string>
     <string name="player_no_sound">Es kam kein Ton durch.</string>
 
+    <!-- Das Flutlicht, das ein Licht in Home Assistant ist und nichts, was Frigate kennt. -->
+    <string name="player_floodlight_on">Flutlicht einschalten</string>
+    <string name="player_floodlight_off">Flutlicht ausschalten</string>
+
     <!-- Das Menü des Standbild-Streams: seine Größe und seine Bildrate. -->
     <string name="player_stream_quality">Stream-Qualität</string>
     <string name="player_resolution">Auflösung</string>
@@ -584,6 +613,14 @@
     <string name="camsw_name_detail">Nur dieses Telefon nutzt ihn. Frigate behält seinen Namen.</string>
     <string name="camsw_name_save">Speichern</string>
     <string name="camsw_name_use_server">Namen des Servers verwenden</string>
+
+    <!-- Das Licht in Home Assistant, das zu dieser Kamera gehört. -->
+    <string name="camsw_floodlight">Flutlicht</string>
+    <string name="camsw_floodlight_none">Keins</string>
+    <string name="camsw_floodlight_pick">Ein Licht wählen</string>
+    <string name="camsw_floodlight_detail">Welches Licht in Home Assistant zu dieser Kamera gehört.</string>
+    <string name="camsw_floodlight_set_up">Richte Home Assistant in den Einstellungen ein, um ein Licht zu wählen.</string>
+    <string name="camsw_no_lights">Home Assistant hat keine Lichter.</string>
 
     <!-- Die vier Gruppen, in denen die acht Schalter sitzen. -->
     <string name="camsw_group_detection">Erkennung</string>

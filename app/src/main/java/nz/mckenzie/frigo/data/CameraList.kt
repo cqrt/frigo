@@ -6,6 +6,10 @@ import kotlinx.serialization.Serializable
  * This phone's own list of the server's cameras: which ones it leaves out, what it
  * calls them, and the order they appear in.
  *
+ * It also holds the light in Home Assistant that goes with a camera. Frigate has
+ * nothing to say about a floodlight, so which light belongs to which camera is the
+ * same kind of choice as what the camera is called: this phone's, about this server.
+ *
  * It belongs to the phone rather than to the server. Turning a camera off here takes
  * it off this phone's screens and stops it buzzing here. The server is untouched: it
  * still records, and every other phone is told what it was always told.
@@ -23,11 +27,25 @@ data class CameraList(
     val names: Map<String, String> = emptyMap(),
     /** The order picked on the manage list, first to last. */
     val order: List<String> = emptyList(),
+    /**
+     * The light in Home Assistant that goes with a camera, by the server's name for
+     * it. Frigate knows nothing about a floodlight, so the light is picked here.
+     */
+    val lights: Map<String, String> = emptyMap(),
 ) {
 
     /** What this phone calls a camera: its own name if it has one, otherwise the server's. */
     fun name(camera: String, server: String): String =
         names[camera]?.takeIf { it.isNotBlank() } ?: server
+
+    /** The light set for this camera, or null when it has none. */
+    fun light(camera: String): String? = lights[camera]?.takeIf { it.isNotBlank() }
+
+    /** The same list with this camera's light. A blank one goes back to none. */
+    fun withLight(camera: String, entity: String?): CameraList {
+        val trimmed = entity?.trim().orEmpty()
+        return copy(lights = if (trimmed.isEmpty()) lights - camera else lights + (camera to trimmed))
+    }
 
     /** Whether this camera is turned off on this phone. */
     fun hides(camera: String): Boolean = camera in hidden

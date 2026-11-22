@@ -116,4 +116,28 @@ class CameraListTest {
         assertEquals("Drive", cleared.name("drive", "Drive"))
         assertTrue(cleared.names.isEmpty())
     }
+
+    /** The light picked for a camera is kept against the server's name for it. */
+    @Test
+    fun aLightIsKeptPerCamera() {
+        val list = CameraList().withLight("drive", "light.drive_floodlight")
+
+        assertEquals("light.drive_floodlight", list.light("drive"))
+        assertEquals(null, list.light("shed"))
+    }
+
+    /** None goes back to no light, and the rest of the list is left alone. */
+    @Test
+    fun clearingALightLeavesTheOtherPicksAlone() {
+        val list = CameraList(names = mapOf("drive" to "Gate"), order = listOf("drive"))
+            .withLight("drive", "light.drive_floodlight")
+            .withLight("shed", "light.shed_floodlight")
+
+        val cleared = list.withLight("drive", null)
+
+        assertEquals(null, cleared.light("drive"))
+        assertEquals("light.shed_floodlight", cleared.light("shed"))
+        assertEquals(list.names, cleared.names)
+        assertEquals(list.order, cleared.order)
+    }
 }

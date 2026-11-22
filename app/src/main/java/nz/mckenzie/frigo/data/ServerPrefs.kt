@@ -259,6 +259,27 @@ class ServerPrefs(private val context: Context) {
     }
 
     /**
+     * The Home Assistant this phone asks about a camera's floodlight, or an empty
+     * one when it has never been told.
+     *
+     * It belongs to the phone rather than to a server: the box is in the house,
+     * and one token asks about every light in it. Nothing about it goes into a
+     * backup, since a token is not a setting to carry to another phone.
+     */
+    suspend fun readHomeAssistant(): HomeAssistant {
+        val stored = context.dataStore.data.first()[Keys.homeAssistant] ?: return HomeAssistant()
+        return runCatching { BlockJson.decodeFromString(HomeAssistant.serializer(), stored) }
+            .getOrDefault(HomeAssistant())
+    }
+
+    suspend fun writeHomeAssistant(homeAssistant: HomeAssistant) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.homeAssistant] =
+                BlockJson.encodeToString(HomeAssistant.serializer(), homeAssistant)
+        }
+    }
+
+    /**
      * The server's own settings, kept whole so the settings pages open when it
      * doesn't answer. It is one block for the same reason the rules are: Frigate
      * adding a key can't break the read.
@@ -470,6 +491,9 @@ class ServerPrefs(private val context: Context) {
         val lock = booleanPreferencesKey("lock")
         val onboarded = booleanPreferencesKey("onboarded")
         val streamChoices = stringSetPreferencesKey("stream_choices")
+
+        // The other box in the house, which is the phone's rather than any server's.
+        val homeAssistant = stringPreferencesKey("home_assistant")
 
         // The release check, which is about the app rather than any one server.
         val updateAnswer = stringPreferencesKey("update_answer")

@@ -69,6 +69,8 @@ class FrigoRepository(
      */
     val context: Context,
     private val api: FrigateApi,
+    /** The other box in the house, which knows about a camera's floodlight. */
+    private val homeAssistantApi: HomeAssistantApi,
     private val prefs: ServerPrefs,
     /** Where fetched clips are kept, so watching one twice costs one download. */
     cacheDir: File,
@@ -181,6 +183,16 @@ class FrigoRepository(
     val admin: StateFlow<Boolean?> = _admin.asStateFlow()
 
     /**
+     * The Home Assistant this phone asks about a camera's floodlight, or null when
+     * it has none set up.
+     *
+     * Watched rather than asked for each time: a phone with no box has no button
+     * on the picture, and setting one up puts it there without a restart.
+     */
+    private val _homeAssistant = MutableStateFlow<HomeAssistant?>(null)
+    val homeAssistant: StateFlow<HomeAssistant?> = _homeAssistant.asStateFlow()
+
+    /**
      * Whether the alert choices have been read off the phone yet. The service
      * starts by itself after a restart, before any screen has run, and it needs
      * the saved choices rather than a blank slate.
@@ -272,6 +284,11 @@ class FrigoRepository(
         cameraListLoaded = true
     }
 
+    /** Reads the box this phone asks about floodlights. Safe to call from anywhere. */
+    suspend fun loadHomeAssistant() {
+        _homeAssistant.value = prefs.readHomeAssistant().takeIf { it.isSet }
+    }
+
     /**
      * Asks the server what is worth a buzz and keeps the answer, on the phone as
      * well as in memory.
@@ -330,6 +347,7 @@ class FrigoRepository(
         _alertPeople.value = stored?.let { prefs.readAlertPeople(it) } ?: AlertPeople()
         _cameraList.value = stored?.let { prefs.readCameraList(it) } ?: CameraList()
         _admin.value = url?.let { prefs.readSettings(it) }?.let { it.profile.role == "admin" }
+        loadHomeAssistant()
         alertsLoaded = true
         alertRulesLoaded = true
         quietTimesLoaded = true
@@ -382,6 +400,7 @@ class FrigoRepository(
         loadAlertObjects()
         loadAlertPeople()
         loadCameraList()
+        loadHomeAssistant()
         // The first launch after the walkthrough arrived settles the question once
         // and writes the answer down. A phone with a server already saved is one
         // that was set up before the walkthrough existed, so it is not owed it.
@@ -930,6 +949,71 @@ class FrigoRepository(
     /** Moves one camera in the order, the way a row dragged up or down leaves it. */
     suspend fun moveCamera(from: String, to: Int, among: List<String>) =
         setCameraList(_cameraList.value.moving(from, to, among))
+
+    /** The light set for this camera in Home Assistant, or null when it has none. */
+    suspend fun cameraLight(camera: String): String? = _cameraList.value.light(camera)
+
+    /** Sets which light goes with a camera. A null one goes back to none. */
+    suspend fun setCameraLight(camera: String, entity: String?) =
+        setCameraList(_cameraList.value.withLight(camera, entity))
+
+    /**
+     * An address and a token for Home Assistant, checked against the box before
+     * they are kept. A token it doesn't accept is turned down here rather than the
+     * first time a light is tapped.
+     */
+    suspend fun setHomeAssistant(address: String, token: String) {
+        val clean = homeAssistantAddress(address)
+            ?: throw HomeAssistantException(context.words(R.string.ha_error_address))
+        val secret = token.trim()
+        if (secret.isEmpty()) {
+            throw HomeAssistantException(context.words(R.string.ha_error_token))
+        }
+        withContext(Dispatchers.IO) { homeAssistantApi.check(clean, secret) }
+        val next = HomeAssistant(address = clean, token = secret)
+        prefs.writeHomeAssistant(next)
+        _homeAssistant.value = next
+    }
+
+    /** Forgets the box, and the token with it. */
+    suspend fun forgetHomeAssistant() {
+        prefs.writeHomeAssistant(HomeAssistant())
+        _homeAssistant.value = null
+    }
+
+    /**
+     * The lights Home Assistant has, offered for a camera: the one named after the
+     * camera first, then the rest by name.
+     *
+     * [title] is what this phone calls the camera, because that is the name that
+     * says which light in the house belongs to it.
+     */
+    suspend fun lightsFor(camera: String, title: String): List<Light> {
+        val box = box() ?: throw HomeAssistantException(context.words(R.string.ha_not_set_up))
+        val found = withContext(Dispatchers.IO) { homeAssistantApi.lights(box.address, box.token) }
+        return lightsForCamera(found, camera, title)
+    }
+
+    /**
+     * Whether one light is on. Null when the box couldn't be asked or doesn't know
+     * that light: the picture says nothing rather than saying the wrong thing.
+     */
+    suspend fun lightIsOn(entity: String): Boolean? = runCatching {
+        val box = box() ?: return@runCatching null
+        withContext(Dispatchers.IO) { homeAssistantApi.isOn(box.address, box.token, entity) }
+    }.getOrNull()
+
+    /** Turns one light on or off. Throws with what went wrong, so the picture can say it. */
+    suspend fun setLight(entity: String, on: Boolean) {
+        val box = box() ?: throw HomeAssistantException(context.words(R.string.ha_not_set_up))
+        withContext(Dispatchers.IO) {
+            homeAssistantApi.turn(box.address, box.token, entity, on)
+        }
+    }
+
+    /** The box, read off the phone if this process hasn't looked yet. */
+    private suspend fun box(): HomeAssistant? =
+        _homeAssistant.value ?: prefs.readHomeAssistant().takeIf { it.isSet }
 
     /** Whether the reviews list shows the ones you've already watched. */
     suspend fun readShowReviewed(): Boolean = prefs.readShowReviewed()

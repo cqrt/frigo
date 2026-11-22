@@ -4,6 +4,7 @@ import android.content.Context
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.NotAnAdminException
 import nz.mckenzie.frigo.data.FrigateException
+import nz.mckenzie.frigo.data.HomeAssistantException
 import nz.mckenzie.frigo.data.words
 import java.io.IOException
 import java.net.SocketTimeoutException
@@ -21,6 +22,9 @@ import javax.net.ssl.SSLPeerUnverifiedException
  */
 fun Throwable.friendlyMessage(context: Context): String = when (this) {
     is FrigateException -> message ?: context.words(R.string.err_something_wrong)
+
+    // Home Assistant says what went wrong in words already built for the screen.
+    is HomeAssistantException -> message
 
     is NotAnAdminException -> context.words(R.string.err_not_admin)
 

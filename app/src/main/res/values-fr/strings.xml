@@ -84,6 +84,11 @@
     <string name="settings_live_view">Vue en direct</string>
     <string name="settings_live_supporting">Lit la vidéo dans l\'onglet Caméras. Ça consomme plus de batterie et de données.</string>
 
+    <!-- L'autre boîtier de la maison, qui connaît le projecteur d'une caméra. -->
+    <string name="settings_floodlights">Projecteurs</string>
+    <string name="settings_home_assistant">Home Assistant</string>
+    <string name="settings_home_assistant_off">Non configuré</string>
+
     <string name="settings_cameras">Caméras</string>
     <string name="settings_cameras_stale">Votre serveur ne répond pas. Voici les caméras que votre téléphone a lues en dernier, %1$s.</string>
     <string name="settings_cameras_offline">Votre serveur ne répond pas, donc les caméras ne peuvent pas être lues.</string>
@@ -226,6 +231,26 @@
     <!-- Ce qu'un enregistrement dit avant d'être envoyé, quand un champ est vide. -->
     <string name="ai_error_address">Entrez l\'adresse de votre serveur Ollama.</string>
     <string name="ai_error_model">Entrez le nom d\'un modèle.</string>
+
+    <!-- ===== home assistant ===== -->
+    <!-- Les deux champs de la page, et d'où vient le jeton. -->
+    <string name="ha_title">Home Assistant</string>
+    <string name="ha_address">Adresse</string>
+    <string name="ha_address_placeholder">http://homeassistant.local:8123</string>
+    <string name="ha_address_note">À la maison, l\'adresse du boîtier ; ailleurs, le proxy que vous mettez devant.</string>
+    <string name="ha_token">Jeton de longue durée</string>
+    <string name="ha_token_note">Dans Home Assistant, ouvrez votre profil et créez-en un dans Jetons d\'accès de longue durée.</string>
+    <string name="ha_save">Enregistrer</string>
+    <string name="ha_saving">Enregistrement</string>
+    <string name="ha_forget">Oublier Home Assistant</string>
+    <string name="ha_note">Frigo demande à Home Assistant ce que fait une lumière, et l\'allume ou l\'éteint. Le jeton reste sur ce téléphone.</string>
+
+    <!-- Ce qu'un enregistrement dit avant d'être envoyé, et ce que le boîtier répond. -->
+    <string name="ha_error_address">Saisissez une adresse pour Home Assistant.</string>
+    <string name="ha_error_token">Collez un jeton de longue durée.</string>
+    <string name="ha_token_wrong">Home Assistant n\'a pas accepté ce jeton.</string>
+    <string name="ha_no_answer">Home Assistant n\'a pas répondu. Vérifiez l\'adresse et qu\'il est allumé.</string>
+    <string name="ha_not_set_up">Configurez d\'abord Home Assistant, dans les réglages.</string>
 
     <!-- ===== alerts ===== -->
     <!-- La notification discrète, et le son. -->
@@ -534,6 +559,10 @@
     <string name="player_sound_off">Couper le son</string>
     <string name="player_no_sound">Aucun son n\'est passé.</string>
 
+    <!-- Le projecteur, qui est une lumière de Home Assistant et non une chose que Frigate connaît. -->
+    <string name="player_floodlight_on">Allumer le projecteur</string>
+    <string name="player_floodlight_off">Éteindre le projecteur</string>
+
     <!-- Le menu du flux d'images fixes : sa taille et son nombre d'images. -->
     <string name="player_stream_quality">Qualité du flux</string>
     <string name="player_resolution">Résolution</string>
@@ -583,6 +612,14 @@
     <string name="camsw_name_detail">Seul ce téléphone l\'utilise. Frigate garde le nom qu\'elle a.</string>
     <string name="camsw_name_save">Enregistrer</string>
     <string name="camsw_name_use_server">Utiliser le nom du serveur</string>
+
+    <!-- La lumière de Home Assistant qui va avec cette caméra. -->
+    <string name="camsw_floodlight">Projecteur</string>
+    <string name="camsw_floodlight_none">Aucun</string>
+    <string name="camsw_floodlight_pick">Choisir une lumière</string>
+    <string name="camsw_floodlight_detail">Quelle lumière de Home Assistant va avec cette caméra.</string>
+    <string name="camsw_floodlight_set_up">Configurez Home Assistant dans les réglages pour choisir une lumière.</string>
+    <string name="camsw_no_lights">Home Assistant n\'a pas de lumière.</string>
 
     <!-- Les quatre groupes où se rangent les huit interrupteurs. -->
     <string name="camsw_group_detection">Détection</string>

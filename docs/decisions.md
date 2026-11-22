@@ -3473,3 +3473,48 @@ them.
 Rejected: leaving person and car in the television and calling it a preference. It
 is not a preference, it is a copy of one answer, and it goes stale the moment a camera
 is set up differently.
+
+## The floodlight belongs to Home Assistant
+
+Frigate has no idea a camera has a floodlight. Its own switches go as far as recording,
+snapshots, detection and birds eye, and there is nothing in its config for a lamp. The
+lamp is real, though: a Tapo camera's floodlight is what makes the picture at night,
+and turning it on from the phone is the thing you actually want at two in the morning.
+
+Home Assistant already knows about it, because the Tapo Cameras Control integration
+puts the floodlight in as light.<camera>_floodlight. So Frigo asks Home Assistant for
+it, over its REST API: GET /api/states for the list of lights, GET /api/states/light.x
+for whether one is on, and POST /api/services/light/turn_on and 	urn_off to change it.
+A long-lived token is a bearer token, which is the same shape as the session Frigate
+gives back, so the app asks a second box in the house the way it already asks the first.
+
+The address and the token are asked for once, in Settings under Floodlights, and the
+token is checked against /api/ before it is kept, so a wrong one is refused while you
+are still looking at the field. The token is kept on the phone and nowhere else: it is
+not sent to the server, and a settings file has no use for one because a backup goes on
+another phone that would then hold a secret it never asked for.
+
+The button sits in live view's top bar, left of the speaker, and it is one tap rather
+than a menu. The speaker is the other control that is about the picture in front of you
+rather than about where in the day you are, so the light sits beside it. It is tinted
+the app's blue while the light is on, which is the whole of the state: no second icon,
+no words under the picture. A camera with no light picked, and a phone with no Home
+Assistant, get no button at all, because a button that can only say no is worse than no
+button. Turning the phone on its side keeps the light beside the sound over the picture,
+since a control that the turn of the phone hides is a control that looks broken.
+
+Rejected: talking to the Tapo camera itself. That is the integration's job, it changes
+with firmware, and it would mean a second set of camera credentials on the phone.
+
+Rejected: a webhook in Home Assistant per camera. It is one secret less on the phone,
+but a webhook only fires something: it cannot say whether the light is already on, so
+the button could not be tinted and a second tap would have to guess.
+
+The pick is kept with the phone's own list of cameras, beside what it calls each camera
+and which ones it hides. It is the same kind of choice: this phone's, about this server,
+and nothing the server or another phone is told about. What it stores is Home Assistant's
+entity id, so renaming the light in Home Assistant keeps the pick working.
+
+Nothing turns a light on by itself. Not an alert, not a review, not opening a camera. A
+light that comes on when nobody asked is a light that starts an argument with the
+neighbours, and the button is one tap away.

@@ -1,15 +1,21 @@
 package nz.mckenzie.frigo.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -24,6 +30,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -42,12 +50,15 @@ import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.CameraSwitch
+import nz.mckenzie.frigo.data.Light
+import nz.mckenzie.frigo.data.lightName
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.components.CardDivider
 import nz.mckenzie.frigo.ui.components.Group
 import nz.mckenzie.frigo.ui.components.Item
 import nz.mckenzie.frigo.ui.components.OpenMark
 import nz.mckenzie.frigo.ui.components.attention
+import nz.mckenzie.frigo.ui.friendlyMessage
 import nz.mckenzie.frigo.ui.relativeTime
 
 /**
@@ -82,9 +93,25 @@ fun CameraSwitchesScreen(
     // server gave it. The page says it the phone's way; every address behind it is
     // still built from the server's name.
     val list by container.repository.cameraList.collectAsStateWithLifecycle()
+    val homeAssistant by container.repository.homeAssistant.collectAsStateWithLifecycle()
     val serverName = state.title
     val title = list.name(cameraName, serverName)
     val ownName = list.names[cameraName].orEmpty()
+    // The light in Home Assistant that goes with this camera, if one has been
+    // picked, and the list offered while the picker is open.
+    val light = list.light(cameraName)
+    var picking by remember { mutableStateOf(false) }
+    var lights by remember { mutableStateOf<List<Light>?>(null) }
+    var lightsProblem by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(picking) {
+        if (!picking) return@LaunchedEffect
+        lights = null
+        lightsProblem = null
+        runCatching { container.repository.lightsFor(cameraName, title) }
+            .onSuccess { lights = it }
+            .onFailure { lightsProblem = it.friendlyMessage(context) }
+    }
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
@@ -176,6 +203,20 @@ fun CameraSwitchesScreen(
                             typed = title
                             renaming = true
                         },
+                        trailing = { OpenMark() },
+                    )
+
+                    CardDivider()
+
+                    // Frigate has nothing to say about a floodlight, so which light
+                    // in the house belongs to this camera is a choice of this
+                    // phone's, kept beside its name for the camera.
+                    Item(
+                        icon = FrigoIcons.Floodlight,
+                        title = stringResource(R.string.camsw_floodlight),
+                        value = light?.let { lightName(it) }
+                            ?: stringResource(R.string.camsw_floodlight_none),
+                        onClick = { picking = true },
                         trailing = { OpenMark() },
                     )
                 }
@@ -289,6 +330,80 @@ fun CameraSwitchesScreen(
             },
         )
     }
+    if (picking) {
+        AlertDialog(
+            onDismissRequest = { picking = false },
+            title = { Text(stringResource(R.string.camsw_floodlight_pick)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = stringResource(R.string.camsw_floodlight_detail),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    when {
+                        homeAssistant == null -> Text(
+                            text = stringResource(R.string.camsw_floodlight_set_up),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+
+                        lightsProblem != null -> Text(
+                            text = lightsProblem.orEmpty(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+
+                        lights == null -> Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+                        }
+
+                        lights?.isEmpty() == true -> Text(
+                            text = stringResource(R.string.camsw_no_lights),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+
+                        else -> Column(
+                            modifier = Modifier
+                                .heightIn(max = 320.dp)
+                                .verticalScroll(rememberScrollState()),
+                        ) {
+                            LightRow(
+                                name = stringResource(R.string.camsw_floodlight_none),
+                                chosen = light == null,
+                                onClick = {
+                                    picking = false
+                                    scope.launch {
+                                        container.repository.setCameraLight(cameraName, null)
+                                    }
+                                },
+                            )
+                            lights?.forEach { found ->
+                                LightRow(
+                                    name = found.name,
+                                    chosen = found.id == light,
+                                    onClick = {
+                                        picking = false
+                                        scope.launch {
+                                            container.repository.setCameraLight(cameraName, found.id)
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { picking = false }) {
+                    Text(stringResource(R.string.camsw_cancel))
+                }
+            },
+        )
+    }
 }
 
 /** The eight switches, in the order they sit on the page, and each group's heading. */
@@ -324,6 +439,39 @@ private fun SwitchRow(
             Switch(checked = on, onCheckedChange = null, enabled = changeable)
         },
     )
+}
+
+/**
+ * One light in the picker, with a tick on the one this camera has.
+ *
+ * The name is Home Assistant's own, which is the name that is on the box in the
+ * house rather than one the app made up.
+ */
+@Composable
+private fun LightRow(name: String, chosen: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = name,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        if (chosen) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
 }
 
 /** What each switch looks like at the start of its line. */

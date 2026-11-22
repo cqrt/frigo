@@ -32,10 +32,16 @@ class AppContainer(context: Context) {
 
     private val api = FrigateApi(context, requestClient, streamClient, clipClient)
 
+    /**
+     * The other box in the house, which knows about a camera's floodlight where
+     * Frigate doesn't.
+     */
+    private val homeAssistant = HomeAssistantApi(context, requestClient)
+
     /** What the phone keeps, shared between the repository and the release check. */
     private val prefs = ServerPrefs(context)
 
-    val repository = FrigoRepository(context, api, prefs, context.cacheDir)
+    val repository = FrigoRepository(context, api, homeAssistant, prefs, context.cacheDir)
 
     /** Asks GitHub for a newer Frigo, and fetches it. */
     val updater = Updater(requestClient, context.cacheDir)

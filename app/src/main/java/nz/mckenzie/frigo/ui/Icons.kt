@@ -358,6 +358,25 @@ object FrigoIcons {
         }
     }
 
+    /** A lamp on its stand with light coming off it, for a camera's floodlight. */
+    val Floodlight: ImageVector by lazy {
+        vector("Floodlight") {
+            path(
+                "M5.6 4.2h7.8a1.8 1.8 0 0 1 1.8 1.8v4.2a1.8 1.8 0 0 1-1.8 1.8H5.6" +
+                    "a1.8 1.8 0 0 1-1.8-1.8V6a1.8 1.8 0 0 1 1.8-1.8z",
+                strokeWidth = 1.7f,
+            )
+            // The face of the lamp, a shade dimmer than its body.
+            path("M6.4 6.2h6.2v3.8H6.4z", alpha = 0.4f)
+            // The light coming off that face.
+            path("M17 5.1 20.6 3.4", strokeWidth = 1.7f)
+            path("M17.9 8.1h3.6", strokeWidth = 1.7f)
+            path("M17 11.1 20.6 12.8", strokeWidth = 1.7f)
+            // The stand it sits on.
+            path("M9.4 12v5.4M6.6 17.4h5.6", strokeWidth = 1.7f)
+        }
+    }
+
     /** A page of dates, for a day to narrow to. */
     val Calendar: ImageVector by lazy {        vector("Calendar") {
             path(

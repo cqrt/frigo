@@ -84,6 +84,11 @@
     <string name="settings_live_view">Vídeo en vivo</string>
     <string name="settings_live_supporting">Reproduce vídeo en la pestaña Cámaras. Gasta más batería y datos.</string>
 
+    <!-- El otro equipo de la casa, que sabe del foco de una cámara. -->
+    <string name="settings_floodlights">Focos</string>
+    <string name="settings_home_assistant">Home Assistant</string>
+    <string name="settings_home_assistant_off">Sin configurar</string>
+
     <string name="settings_cameras">Cámaras</string>
     <string name="settings_cameras_stale">Tu servidor no responde. Estas son las cámaras que tu teléfono leyó por última vez, %1$s.</string>
     <string name="settings_cameras_offline">Tu servidor no responde, así que no se pueden leer las cámaras.</string>
@@ -226,6 +231,26 @@
     <!-- Lo que dice un guardado antes de enviarse, cuando un campo está vacío. -->
     <string name="ai_error_address">Escribe la dirección de tu servidor Ollama.</string>
     <string name="ai_error_model">Escribe el nombre de un modelo.</string>
+
+    <!-- ===== home assistant ===== -->
+    <!-- Los dos campos de la página, y de dónde sale el token. -->
+    <string name="ha_title">Home Assistant</string>
+    <string name="ha_address">Dirección</string>
+    <string name="ha_address_placeholder">http://homeassistant.local:8123</string>
+    <string name="ha_address_note">En casa, la dirección del equipo; fuera de casa, el proxy que pongas delante.</string>
+    <string name="ha_token">Token de larga duración</string>
+    <string name="ha_token_note">En Home Assistant, abre tu perfil y crea uno en Tokens de acceso de larga duración.</string>
+    <string name="ha_save">Guardar</string>
+    <string name="ha_saving">Guardando</string>
+    <string name="ha_forget">Olvidar Home Assistant</string>
+    <string name="ha_note">Frigo le pregunta a Home Assistant qué está haciendo una luz, y la enciende y la apaga. El token se queda en este teléfono.</string>
+
+    <!-- Lo que dice un guardado antes de enviarse, y lo que contesta el equipo. -->
+    <string name="ha_error_address">Escribe una dirección para Home Assistant.</string>
+    <string name="ha_error_token">Pega un token de larga duración.</string>
+    <string name="ha_token_wrong">Home Assistant no aceptó ese token.</string>
+    <string name="ha_no_answer">Home Assistant no respondió. Revisa la dirección y que esté encendido.</string>
+    <string name="ha_not_set_up">Configura Home Assistant primero, en Ajustes.</string>
 
     <!-- ===== alerts ===== -->
     <!-- La notificación silenciosa, y el aviso. -->
@@ -534,6 +559,10 @@
     <string name="player_sound_off">Desactivar el sonido</string>
     <string name="player_no_sound">No llegó sonido.</string>
 
+    <!-- El foco, que es una luz de Home Assistant y no algo que Frigate conozca. -->
+    <string name="player_floodlight_on">Encender el foco</string>
+    <string name="player_floodlight_off">Apagar el foco</string>
+
     <!-- El menú de la transmisión de imágenes fijas: su tamaño y sus fotogramas. -->
     <string name="player_stream_quality">Calidad de la transmisión</string>
     <string name="player_resolution">Resolución</string>
@@ -583,6 +612,14 @@
     <string name="camsw_name_detail">Solo lo usa este teléfono. Frigate conserva el nombre que tiene.</string>
     <string name="camsw_name_save">Guardar</string>
     <string name="camsw_name_use_server">Usar el nombre del servidor</string>
+
+    <!-- La luz de Home Assistant que va con esta cámara. -->
+    <string name="camsw_floodlight">Foco</string>
+    <string name="camsw_floodlight_none">Ninguno</string>
+    <string name="camsw_floodlight_pick">Elige una luz</string>
+    <string name="camsw_floodlight_detail">Qué luz de Home Assistant va con esta cámara.</string>
+    <string name="camsw_floodlight_set_up">Configura Home Assistant en Ajustes para elegir una luz.</string>
+    <string name="camsw_no_lights">Home Assistant no tiene luces.</string>
 
     <!-- Los cuatro grupos en que se reparten los ocho interruptores. -->
     <string name="camsw_group_detection">Detección</string>

@@ -61,6 +61,7 @@ import nz.mckenzie.frigo.ui.settings.AiModelScreen
 import nz.mckenzie.frigo.ui.settings.AlertObjectsScreen
 import nz.mckenzie.frigo.ui.settings.AlertPeopleScreen
 import nz.mckenzie.frigo.ui.settings.CameraSwitchesScreen
+import nz.mckenzie.frigo.ui.settings.HomeAssistantScreen
 import nz.mckenzie.frigo.ui.settings.LanguageScreen
 import nz.mckenzie.frigo.ui.settings.LinkTvScreen
 import nz.mckenzie.frigo.ui.settings.LogsScreen
@@ -292,6 +293,9 @@ private fun MainScaffold(
                     onOpenLogs = {
                         navController.navigate("system-logs") { launchSingleTop = true }
                     },
+                    onOpenHomeAssistant = {
+                        navController.navigate("home-assistant") { launchSingleTop = true }
+                    },
                     onAddServer = {
                         navController.navigate("add-server") { launchSingleTop = true }
                     },
@@ -373,6 +377,14 @@ private fun MainScaffold(
                     username = server.username,
                     modifier = Modifier.padding(padding),
                     onBack = { navController.popBackStack() },
+                )
+            }
+            composable("home-assistant") {
+                HomeAssistantScreen(
+                    container = container,
+                    modifier = Modifier.padding(padding),
+                    onBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() },
                 )
             }
             composable("camera-switches/{camera}") { entry ->

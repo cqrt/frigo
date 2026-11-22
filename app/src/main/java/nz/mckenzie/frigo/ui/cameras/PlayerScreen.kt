@@ -30,6 +30,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +44,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -64,6 +66,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.Camera
@@ -213,6 +216,15 @@ fun PlayerScreen(
 
     val title = named.firstOrNull { it.name == watching }?.title ?: prettyCameraName(watching)
 
+    // The floodlight. Frigate has no idea one exists, so the light is a pick of this
+    // phone's and the answer comes from Home Assistant. A camera with no light, or a
+    // phone with no box to ask, has no button at all.
+    val homeAssistant by repository.homeAssistant.collectAsStateWithLifecycle()
+    val light = list.light(watching)
+    var lightOn by remember(watching, light) { mutableStateOf(false) }
+    var lightProblem by remember(watching) { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
     var frame by remember(watching) { mutableStateOf<ImageBitmap?>(null) }
     var problem by remember(watching) { mutableStateOf<String?>(null) }
     var connecting by remember(watching) { mutableStateOf(true) }
@@ -313,6 +325,14 @@ fun PlayerScreen(
         runCatching { repository.cameras() }.onSuccess { cameras = it }
     }
 
+    // What the light is doing, asked when the camera is opened. A box that doesn't
+    // answer leaves the button reading as it was rather than saying the light is off.
+    LaunchedEffect(light, homeAssistant) {
+        val entity = light ?: return@LaunchedEffect
+        if (homeAssistant == null) return@LaunchedEffect
+        lightOn = repository.lightIsOn(entity) ?: lightOn
+    }
+
     // Live is now, so the day the stream belongs to comes back with it: the bar
     // reads today's clock rather than the afternoon you were looking through,
     // and whatever was playing stops.
@@ -342,6 +362,22 @@ fun PlayerScreen(
         keepingMoment = true
         keptDay = day
         watching = name
+    }
+
+    // One tap turns the floodlight over. The button reads the way it will be before
+    // the box confirms it, and goes back if Home Assistant won't take it: a light
+    // that takes a second to answer should not look like a button that didn't work.
+    fun turnLight(on: Boolean) {
+        val entity = light ?: return
+        lightOn = on
+        lightProblem = null
+        scope.launch {
+            runCatching { repository.setLight(entity, on) }
+                .onFailure { failure ->
+                    lightOn = !on
+                    lightProblem = failure.friendlyMessage(repository.context)
+                }
+        }
     }
 
     // What this camera was last watched at, brought inside the size and rate it can
@@ -672,6 +708,28 @@ fun PlayerScreen(
                     }
                 },
                 actions = {
+                    // The floodlight sits left of the speaker: it is the one control
+                    // here that is about the picture being bright enough to see, and
+                    // it is a tap rather than a menu.
+                    if (homeAssistant != null && light != null) {
+                        IconButton(onClick = { turnLight(!lightOn) }) {
+                            Icon(
+                                imageVector = FrigoIcons.Floodlight,
+                                contentDescription = stringResource(
+                                    if (lightOn) {
+                                        R.string.player_floodlight_off
+                                    } else {
+                                        R.string.player_floodlight_on
+                                    },
+                                ),
+                                tint = if (lightOn) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    LocalContentColor.current
+                                },
+                            )
+                        }
+                    }
                     IconButton(onClick = { sound = !sound; noSound = false }) {
                         Icon(
                             imageVector = if (sound) FrigoIcons.Sound else FrigoIcons.SoundOff,
@@ -897,26 +955,71 @@ fun PlayerScreen(
                 )
             }
 
-            // On its side there is no bar, so the sound sits over the picture.
+            // A light that wouldn't answer says so in the corner, in the same quiet
+            // pill the sound uses when it has nothing to play.
+            lightProblem?.let { said ->
+                Text(
+                    text = said,
+                    color = Color.White.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 12.dp, bottom = 44.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
+
+            // On its side there is no bar, so the sound sits over the picture, with
+            // the floodlight beside it. Both are about watching the picture, and the
+            // light would otherwise be the one control the turn of the phone hides.
             if (landscape) {
-                IconButton(
-                    onClick = { sound = !sound; noSound = false },
+                Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .statusBarsPadding()
                         .displayCutoutPadding()
-                        .padding(10.dp)
-                        .background(Color.Black.copy(alpha = 0.45f), CircleShape),
+                        .padding(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(
-                        imageVector = if (sound) FrigoIcons.Sound else FrigoIcons.SoundOff,
-                        contentDescription = if (sound) {
-                            stringResource(R.string.player_sound_off)
-                        } else {
-                            stringResource(R.string.player_sound_on)
-                        },
-                        tint = Color.White,
-                    )
+                    if (homeAssistant != null && light != null) {
+                        IconButton(
+                            onClick = { turnLight(!lightOn) },
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.45f), CircleShape),
+                        ) {
+                            Icon(
+                                imageVector = FrigoIcons.Floodlight,
+                                contentDescription = stringResource(
+                                    if (lightOn) {
+                                        R.string.player_floodlight_off
+                                    } else {
+                                        R.string.player_floodlight_on
+                                    },
+                                ),
+                                tint = if (lightOn) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    Color.White
+                                },
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = { sound = !sound; noSound = false },
+                        modifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.45f), CircleShape),
+                    ) {
+                        Icon(
+                            imageVector = if (sound) FrigoIcons.Sound else FrigoIcons.SoundOff,
+                            contentDescription = if (sound) {
+                                stringResource(R.string.player_sound_off)
+                            } else {
+                                stringResource(R.string.player_sound_on)
+                            },
+                            tint = Color.White,
+                        )
+                    }
                 }
             }
         }

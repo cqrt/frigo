@@ -132,6 +132,7 @@ fun SettingsScreen(
     onOpenLanguage: () -> Unit = {},
     onOpenSystem: () -> Unit = {},
     onOpenLogs: () -> Unit = {},
+    onOpenHomeAssistant: () -> Unit = {},
     onAddServer: () -> Unit = {},
     onLinkTv: () -> Unit = {},
 ) {
@@ -149,6 +150,8 @@ fun SettingsScreen(
         initialValue = ThemeMode.System.ordinal,
     )
     val lockOn by repository.lock.collectAsStateWithLifecycle()
+    // The other box in the house, which the floodlight row names.
+    val homeAssistant by repository.homeAssistant.collectAsStateWithLifecycle()
 
     // Whether this phone can ask for anything, and the prompt itself. The switch
     // only moves once the phone has said who is holding it, so nobody switches on
@@ -627,6 +630,20 @@ fun SettingsScreen(
                             },
                         )
                     },
+                )
+            }
+
+            // The floodlight is a light in Home Assistant, which is another box in
+            // the house rather than part of the server. It sits with the phone's own
+            // settings for that reason, and the token it needs is asked for once.
+            Group(stringResource(R.string.settings_floodlights)) {
+                Item(
+                    icon = FrigoIcons.Floodlight,
+                    title = stringResource(R.string.settings_home_assistant),
+                    value = homeAssistant?.address?.shortName()
+                        ?: stringResource(R.string.settings_home_assistant_off),
+                    onClick = onOpenHomeAssistant,
+                    trailing = { OpenMark() },
                 )
             }
 

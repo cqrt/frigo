@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.24.0
+
+- A floodlight button sits in live view's top bar, left of the speaker: one tap turns the light on, and it goes blue while the light is on.
+- Frigo asks Home Assistant for that light, so Settings has a Floodlights row holding the box's address and a long-lived token.
+- Each camera's page picks its own light, with the one named after the camera at the top of the list, and None to take it away.
+
 ## 0.23.2
 
 - The name beside the lens on the television reads Frigo, rather than all in capitals.

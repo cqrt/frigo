@@ -597,6 +597,26 @@ All of it belongs to the server you're signed in to, and to your username on it.
 two servers on the phone keep two lists, and two people on one server keep their
 own.
 
+## A camera's floodlight
+
+Frigate doesn't know a floodlight exists, so Frigo asks Home Assistant for it. You
+set that up once in Settings, under **Floodlights**: the box's address, and a
+long-lived token you make in your own Home Assistant profile. The token stays on this
+phone. It isn't sent to your server and it isn't in a settings backup.
+
+Tap a camera in Settings and pick its light under **Name**. The list is the lights
+Home Assistant has, and the one named after the camera sits at the top. **None** puts
+it back to no light.
+
+With a light picked, live view has a floodlight button in its top bar, left of the
+speaker. One tap turns the light on, and the button goes blue while it's on. Another
+tap turns it off. A camera with no light, and a phone with no Home Assistant, have no
+button at all. Nothing turns a light on by itself.
+
+At home the address is the box's own. Away from home it's the proxy you already put
+in front of Frigate, since the phone has to reach Home Assistant the same way it
+reaches the server.
+
 ## How the server is doing
 
 Settings has a System row for an admin. It shows what the server is running and how
@@ -684,6 +704,7 @@ is ever committed. Backup: there's a copy of the key and its password at
 
 - `data/FrigateApi.kt` - the Frigate endpoints this app uses, written against OkHttp.
 - `data/FrigoRepository.kt` - tokens, renewal, and the calls the screens make.
+- `data/HomeAssistantApi.kt` - the little of Home Assistant's API a floodlight needs, and which light belongs to which camera.
 - `data/Language.kt` - the languages the app speaks, and the words for the places that aren't a screen.
 - `data/ServerPrefs.kt` - what the phone keeps: the servers and their sign-ins, each one's choices, and the copy of its settings.
 - `data/Backup.kt` - the settings file: what it carries, how it is read and written, and the name it is offered under.
