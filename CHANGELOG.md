@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.25.1
+
+- On a server older than 0.16, Frigo now reads the version when it signs in, names it once, and leaves out the tabs and rows that server has no answers for. The sign-in page going away used to cancel that reading.
+- The welcome's Server page says No sign-in on this server rather than leaving the name blank.
+
 ## 0.25.0
 
 - Frigo signs in to a bare address, such as `192.168.0.99:5000`: it tries http in the house and https out on the internet, and keeps whichever answers.

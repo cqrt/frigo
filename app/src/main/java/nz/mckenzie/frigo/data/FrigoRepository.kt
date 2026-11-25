@@ -1,6 +1,7 @@
 package nz.mckenzie.frigo.data
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -11,6 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -92,6 +95,14 @@ class FrigoRepository(
 
     private val mutex = Mutex()
     @Volatile private var stored: ServerPrefs.Stored? = null
+
+    /**
+     * Work that outlives the screen that asked for it: what the server says about
+     * itself is asked again after signing in, and the sign-in page goes away the
+     * moment it is done. Work left in the caller's coroutine would be cancelled
+     * with it, which is how a server's version and rules went unread.
+     */
+    private val background = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /** Every server saved on the phone, in the order they were added. */
     private val _servers = MutableStateFlow<List<ServerPrefs.Stored>>(emptyList())
@@ -484,8 +495,10 @@ class FrigoRepository(
 
         signedIn.onSuccess {
             _gate.value = Gate.SignedIn(saved.baseUrl, saved.username)
-            refreshAlertRules()
-            refreshCapabilities()
+            background.launch {
+                refreshAlertRules()
+                refreshCapabilities()
+            }
         }.onFailure { error ->
             // The session ran out and there was no password to sign in with. The
             // gate has already been told why.
@@ -578,8 +591,12 @@ class FrigoRepository(
         // screens that replace this one never see the last server's.
         loadChoices()
         _gate.value = Gate.SignedIn(baseUrl, if (noSignIn) "" else named)
-        refreshAlertRules()
-        refreshCapabilities()
+        // The page that asked is gone as soon as the gate moves, so what the server
+        // says about itself is asked for on the repository's own job.
+        background.launch {
+            refreshAlertRules()
+            refreshCapabilities()
+        }
     }
 
     /**
@@ -683,7 +700,7 @@ class FrigoRepository(
         // A server with no sign-in has nothing to check and nothing to renew.
         if (next.username.isBlank()) {
             _gate.value = Gate.SignedIn(next.baseUrl, "")
-            refreshCapabilities()
+            background.launch { refreshCapabilities() }
             return
         }
 
@@ -700,7 +717,7 @@ class FrigoRepository(
                 // The sign-in page is already up, with the reason on it.
                 else -> return
             }
-            refreshCapabilities()
+            background.launch { refreshCapabilities() }
             return
         }
 
@@ -709,7 +726,7 @@ class FrigoRepository(
         } else {
             Gate.SignedIn(next.baseUrl, next.username)
         }
-        if (_gate.value is Gate.SignedIn) refreshCapabilities()
+        if (_gate.value is Gate.SignedIn) background.launch { refreshCapabilities() }
     }
 
     /**

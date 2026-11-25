@@ -346,7 +346,9 @@ private fun ServerStep(
                     Item(
                         icon = FrigoIcons.Person,
                         title = stringResource(R.string.onboard_server_signed_in_as),
-                        value = server.username,
+                        value = server.username.ifBlank {
+                            stringResource(R.string.settings_no_sign_in)
+                        },
                     )
                 }
             }
