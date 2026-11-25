@@ -77,6 +77,10 @@ class TvPairingClient {
         baseUrl: String,
         username: String,
         password: String,
+        /** The certificate this phone had already trusted for that server, or null. */
+        fingerprint: String? = null,
+        /** Whether the server has sign-in turned off, so the TV sends no token. */
+        noAccount: Boolean = false,
     ): PairOutcome = withContext(Dispatchers.IO) {
         val body = json.encodeToString(
             Handover.serializer(),
@@ -86,6 +90,8 @@ class TvPairingClient {
                 baseUrl = baseUrl,
                 username = username,
                 password = password,
+                fingerprint = fingerprint.orEmpty(),
+                noAccount = noAccount,
             ),
         )
         val request = Request.Builder()
@@ -120,6 +126,10 @@ class TvPairingClient {
         val baseUrl: String,
         val username: String,
         val password: String,
+        /** The certificate this phone trusts for that server, which the TV takes on. */
+        val fingerprint: String = "",
+        /** Whether the server has sign-in turned off. */
+        val noAccount: Boolean = false,
     )
 
     @Serializable

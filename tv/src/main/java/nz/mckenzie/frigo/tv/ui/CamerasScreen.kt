@@ -116,7 +116,10 @@ import nz.mckenzie.frigo.tv.data.Camera
 import nz.mckenzie.frigo.tv.data.Ring
 import nz.mckenzie.frigo.tv.data.ScreenGrid
 import nz.mckenzie.frigo.tv.data.ScreenOne
+import nz.mckenzie.frigo.tv.data.TvRelease
 import nz.mckenzie.frigo.tv.data.TvRepository
+import nz.mckenzie.frigo.tv.data.TvUpdater
+import java.io.File
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -197,6 +200,11 @@ fun CamerasScreen(
     val rotation by repository.rotation.collectAsStateWithLifecycle(initialValue = 0)
     val scope = rememberCoroutineScope()
 
+    // An old server has no reviews, so there is nothing behind the Alerts page.
+    // The pill goes rather than opening an empty screen.
+    val capabilities by repository.capabilities.collectAsStateWithLifecycle()
+    val alertsAction = onOpenAlerts.takeIf { capabilities.reviews }
+
     fun takeOver(cameraName: String) {
         val now = System.currentTimeMillis()
         val shown = current?.name ?: return
@@ -259,7 +267,7 @@ fun CamerasScreen(
                 newAlerts = newAlerts,
                 soundOn = soundOn,
                 onToggleSound = { scope.launch { repository.setLiveSound(!soundOn) } },
-                onAlerts = onOpenAlerts,
+                onAlerts = alertsAction,
                 onSettings = { settingsOpen = true },
                 settingsFocus = settingsFocus,
             )
@@ -542,7 +550,7 @@ fun CamerasScreen(
                 newAlerts = newAlerts,
                 soundOn = soundOn,
                 onToggleSound = { scope.launch { repository.setLiveSound(!soundOn) } },
-                onAlerts = onOpenAlerts,
+                onAlerts = alertsAction,
                 onSettings = { settingsOpen = true },
                 settingsFocus = settingsFocus,
                 requesters = wallRequesters,
@@ -572,7 +580,7 @@ fun CamerasScreen(
                             newAlerts = newAlerts,
                             soundOn = soundOn,
                             onToggleSound = { scope.launch { repository.setLiveSound(!soundOn) } },
-                            onAlerts = onOpenAlerts,
+                            onAlerts = alertsAction,
                             onSettings = { settingsOpen = true },
                             settingsFocus = settingsFocus,
                         )
@@ -688,8 +696,28 @@ private fun SettingsPanel(
     val defaultCamera by repository.defaultCamera.collectAsStateWithLifecycle()
     val screen by repository.screen.collectAsStateWithLifecycle(initialValue = ScreenOne)
     val rotation by repository.rotation.collectAsStateWithLifecycle(initialValue = 0)
+    val capabilities by repository.capabilities.collectAsStateWithLifecycle()
     val ringUrl by repository.ringUrl.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    // A newer Frigo TV, looked for once when the card opens. GitHub counts
+    // anonymous asks by the hour, so opening and closing the card is one ask.
+    val updater = remember { TvUpdater(context) }
+    var update by remember { mutableStateOf<TvUpdate>(TvUpdate.Looking) }
+    LaunchedEffect(Unit) {
+        update = runCatching { updater.latest() }
+            .fold(
+                onSuccess = { found ->
+                    if (found == null || !found.isNewerThan(updater.current)) {
+                        TvUpdate.Newest
+                    } else {
+                        TvUpdate.Waiting(found)
+                    }
+                },
+                onFailure = { TvUpdate.Unreachable },
+            )
+    }
 
     // The camera the big picture opens on: the one that was picked, or the first
     // in Frigate's list on a television that has never picked one. A camera that
@@ -936,6 +964,16 @@ private fun SettingsPanel(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        // An old server has no reviews, so the alerts page has
+                        // nothing behind its button and the pill is gone. This is
+                        // the line that says why, rather than leaving a gap.
+                        if (capabilities.old || !capabilities.reviews) {
+                            Text(
+                                text = stringResource(R.string.tv_server_limited),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                         HorizontalDivider(
                             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                         )
@@ -1056,6 +1094,66 @@ private fun SettingsPanel(
                             },
                         )
                         SettingRow(
+                            title = stringResource(R.string.tv_updates),
+                            supporting = when (val state = update) {
+                                TvUpdate.Looking -> stringResource(R.string.tv_updates_looking)
+                                TvUpdate.Newest -> stringResource(
+                                    R.string.tv_updates_newest,
+                                    updater.current,
+                                )
+
+                                TvUpdate.Unreachable -> stringResource(R.string.tv_updates_trouble)
+                                is TvUpdate.Waiting -> stringResource(
+                                    R.string.tv_updates_download,
+                                    state.release.version,
+                                )
+
+                                is TvUpdate.Downloading -> stringResource(
+                                    R.string.tv_updates_downloading,
+                                    state.percent,
+                                )
+
+                                is TvUpdate.Ready -> stringResource(
+                                    R.string.tv_updates_install,
+                                    state.release.version,
+                                )
+                            },
+                            modifier = placed(UpdatesAt),
+                            onFocused = {
+                                at = UpdatesAt
+                                reveal(UpdatesAt)
+                            },
+                            onClick = {
+                                when (val state = update) {
+                                    is TvUpdate.Waiting -> scope.launch {
+                                        val release = state.release
+                                        update = TvUpdate.Downloading(release, 0)
+                                        val file = runCatching {
+                                            updater.download(release) { percent ->
+                                                update = TvUpdate.Downloading(release, percent)
+                                            }
+                                        }.getOrNull()
+                                        update = if (file == null) {
+                                            TvUpdate.Unreachable
+                                        } else {
+                                            TvUpdate.Ready(release, file)
+                                        }
+                                        // A television that can't install yet says where
+                                        // the switch is rather than failing quietly.
+                                        if (file != null && !updater.canInstall()) updater.askToInstall()
+                                    }
+
+                                    is TvUpdate.Ready -> if (updater.canInstall()) {
+                                        runCatching { updater.install(state.file) }
+                                    } else {
+                                        updater.askToInstall()
+                                    }
+
+                                    else -> Unit
+                                }
+                            },
+                        )
+                        SettingRow(
                             title = stringResource(R.string.tv_pair_again),
                             supporting = stringResource(R.string.tv_pair_again_note),
                             modifier = placed(PairAt),
@@ -1092,15 +1190,26 @@ private const val ScreenAt = 2
 private const val DoorbellAt = 3
 private const val TakeoverAt = 4
 private const val RotationAt = 5
-private const val PairAt = 6
-private const val CloseAt = 7
-private const val CardRows = 8
+private const val UpdatesAt = 6
+private const val PairAt = 7
+private const val CloseAt = 8
+private const val CardRows = 9
 
 /** The lengths the rotation row offers, and Off. */
 private val RotationLengths = listOf(0, 3, 5, 10)
 
 /** Something that takes the card's place while it is up. */
 private enum class CardPicker { DefaultCamera, Cameras, Screen, Doorbell, Rotation }
+
+/** Where the television's own update stands, which its row says in one line. */
+private sealed interface TvUpdate {
+    data object Looking : TvUpdate
+    data object Newest : TvUpdate
+    data object Unreachable : TvUpdate
+    data class Waiting(val release: TvRelease) : TvUpdate
+    data class Downloading(val release: TvRelease, val percent: Int) : TvUpdate
+    data class Ready(val release: TvRelease, val file: File) : TvUpdate
+}
 
 /** One big picture, or a wall of every camera. Both hold the arrows while up. */
 @Composable
@@ -1507,7 +1616,7 @@ private fun Header(
     newAlerts: Boolean,
     soundOn: Boolean,
     onToggleSound: () -> Unit,
-    onAlerts: () -> Unit,
+    onAlerts: (() -> Unit)?,
     onSettings: () -> Unit,
     settingsFocus: FocusRequester,
 ) {
@@ -1542,8 +1651,10 @@ private fun Header(
         Spacer(Modifier.width(16.dp))
         SoundPill(on = soundOn, onClick = onToggleSound)
         Spacer(Modifier.width(10.dp))
-        AlertsPill(newAlerts = newAlerts, onClick = onAlerts)
-        Spacer(Modifier.width(10.dp))
+        if (onAlerts != null) {
+            AlertsPill(newAlerts = newAlerts, onClick = onAlerts)
+            Spacer(Modifier.width(10.dp))
+        }
         SettingsPill(onClick = onSettings, focusRequester = settingsFocus)
     }
 }
@@ -2190,7 +2301,11 @@ private fun CameraStream(
 
 private fun buildPlayer(context: android.content.Context, url: String, token: String): ExoPlayer {
     val source = DefaultHttpDataSource.Factory()
-        .setDefaultRequestProperties(mapOf("Authorization" to "Bearer $token"))
+        // A server with no sign-in is sent nothing: a token it never issued is
+        // turned down, and the picture would never arrive.
+        .setDefaultRequestProperties(
+            if (token.isBlank()) emptyMap() else mapOf("Authorization" to "Bearer $token"),
+        )
         .setConnectTimeoutMs(6_000)
         .setReadTimeoutMs(15_000)
         .setAllowCrossProtocolRedirects(true)
@@ -2242,7 +2357,7 @@ private fun CameraWall(
     newAlerts: Boolean,
     soundOn: Boolean,
     onToggleSound: () -> Unit,
-    onAlerts: () -> Unit,
+    onAlerts: (() -> Unit)?,
     onSettings: () -> Unit,
     settingsFocus: FocusRequester,
     requesters: MutableMap<String, FocusRequester>,

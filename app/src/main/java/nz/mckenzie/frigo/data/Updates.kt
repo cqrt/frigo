@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import nz.mckenzie.frigo.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -149,7 +150,7 @@ class Updater(
         File(folder, "frigo-$version.apk").takeIf { it.isFile && it.length() > 0 }
 
     private companion object {
-        const val ReleasesUrl = "https://api.github.com/repos/cqrt/frigo/releases"
+        val ReleasesUrl get() = "https://api.github.com/repos/${BuildConfig.UPDATE_REPO}/releases"
     }
 }
 
@@ -235,11 +236,10 @@ private data class Release(
     fun toUpdate(): Update? {
         val version = tag.trim().removePrefix("v")
         if (version.isEmpty()) return null
-        // The workflow names it after the version, and a release page can hold other
-        // files besides, so the name is what picks the APK out.
-        val apk = assets.firstOrNull { it.name == "frigo-$version.apk" }
-            ?: assets.firstOrNull { it.name.endsWith(".apk") }
-            ?: return null
+        // The workflow names the phone's APK after the version, and takes the
+        // television's own file too. Only this app's file will do: names differ, and
+        // taking whichever file ends in .apk is how a phone would install the TV's.
+        val apk = assets.firstOrNull { it.name == "frigo-$version.apk" } ?: return null
         return Update(version = version, page = page, apk = apk.url, bytes = apk.size)
     }
 }

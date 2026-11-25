@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Where a downloaded APK waits. Android's installer reads it through the app's
+     file provider, so it is the app's own cache that has to be shared. -->
+<paths>
+    <cache-path name="updates" path="updates/" />
+</paths>

@@ -68,10 +68,16 @@ fun LiveSound(
     }
 }
 
-/** A player for one stream, with the sign-in it needs, started at once. */
+/** A player for one stream, with the sign-in it needs when there is one, started at once. */
 private fun soundPlayer(context: Context, source: ClipSource, onError: () -> Unit): ExoPlayer {
     val data = DefaultHttpDataSource.Factory()
-        .setDefaultRequestProperties(mapOf("Authorization" to "Bearer ${source.token}"))
+        .setDefaultRequestProperties(
+            if (source.token.isBlank()) {
+                emptyMap()
+            } else {
+                mapOf("Authorization" to "Bearer ${source.token}")
+            },
+        )
         .setUserAgent("Frigo")
         .setConnectTimeoutMs(15_000)
         .setReadTimeoutMs(30_000)

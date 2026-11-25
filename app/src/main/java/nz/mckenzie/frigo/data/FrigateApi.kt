@@ -89,7 +89,7 @@ class FrigateApi(
     fun checkToken(baseUrl: String, token: String): String? {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/auth"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         client.newCall(request).execute().use { response ->
@@ -98,10 +98,77 @@ class FrigateApi(
         }
     }
 
+    /**
+     * Asks the server something that needs no sign-in, and answers with whatever it
+     * said. Any answer means the address is the right one: this is about reaching
+     * the box rather than about what it holds, and an old server that has no
+     * `/api/version` still counts as answering.
+     */
+    fun probe(baseUrl: String): Int {
+        val request = Request.Builder().url(url(baseUrl, "/api/version")).get().build()
+        return client.newCall(request).execute().use { it.code }
+    }
+
+    /**
+     * Whether the server answers for itself with no token at all, which is a server
+     * whose sign-in has been turned off. Asked only after a sign-in was turned down,
+     * because that is the moment it matters.
+     */
+    fun answersWithoutAccount(baseUrl: String): Boolean {
+        val request = Request.Builder().url(url(baseUrl, "/api/config")).get().build()
+        return client.newCall(request).execute().use { response ->
+            response.isSuccessful && !response.body?.string().isNullOrBlank()
+        }
+    }
+
+    /**
+     * Whether one of Frigate's endpoints is there at all. A 404 is the answer that
+     * says it isn't: everything else, including a refusal, means the route exists.
+     */
+    fun answers(baseUrl: String, token: String, path: String): Boolean {
+        val request = Request.Builder().url(url(baseUrl, path)).bearer(token).get().build()
+        return client.newCall(request).execute().use { it.code != 404 }
+    }
+
+    /**
+     * The session header, or none at all for a server with no sign-in. Such a server
+     * has nothing to send, and Frigate turns a token it issued to nobody down.
+     */
+    private fun Request.Builder.bearer(token: String): Request.Builder =
+        if (token.isBlank()) this else header("Authorization", "Bearer $token")
+
+    /** Every camera's census, and the version the server is running. */
+    fun version(baseUrl: String, token: String): String? {
+        val request = Request.Builder()
+            .url(url(baseUrl, "/api/stats"))
+            .bearer(token)
+            .get()
+            .build()
+        return runCatching {
+            json.decodeFromString(FrigateStats.serializer(), request.okBody())
+        }.getOrNull()?.service?.version?.takeIf { it.isNotBlank() }
+    }
+
+    /**
+     * What the server can do, asked once: its version, and whether each endpoint
+     * added after the oldest Frigate Frigo supports is there. A 404 is the only
+     * answer that means no, so a server that refuses the question still gets its
+     * features rather than losing them.
+     */
+    fun capabilities(baseUrl: String, token: String): ServerCapabilities = ServerCapabilities(
+        version = version(baseUrl, token).orEmpty(),
+        reviews = answers(baseUrl, token, "/api/review?limit=1"),
+        labels = answers(baseUrl, token, "/api/labels"),
+        subLabels = answers(baseUrl, token, "/api/sub_labels"),
+        genai = answers(baseUrl, token, "/api/genai/models"),
+        configSet = answers(baseUrl, token, "/api/config/set"),
+        readAt = System.currentTimeMillis(),
+    )
+
     fun config(baseUrl: String, token: String): FrigateConfig {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/config"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(FrigateConfig.serializer(), request.okBody())
@@ -122,7 +189,7 @@ class FrigateApi(
 
         val request = Request.Builder()
             .url(url(baseUrl, "/api/config/set"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .put(body)
             .build()
         request.okConfigWrite()
@@ -132,7 +199,7 @@ class FrigateApi(
     fun profile(baseUrl: String, token: String): FrigateProfile {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/profile"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(FrigateProfile.serializer(), request.okBody())
@@ -165,7 +232,7 @@ class FrigateApi(
 
         val request = Request.Builder()
             .url(builder.build())
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(ListSerializer(FrigateEvent.serializer()), request.okBody())
@@ -175,7 +242,7 @@ class FrigateApi(
     fun subLabels(baseUrl: String, token: String): List<String> {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/sub_labels"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(ListSerializer(String.serializer()), request.okBody())
@@ -207,7 +274,7 @@ class FrigateApi(
 
         val request = Request.Builder()
             .url(builder.build())
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(ListSerializer(FrigateReview.serializer()), request.okBody())
@@ -222,7 +289,7 @@ class FrigateApi(
     fun review(baseUrl: String, token: String, id: String): FrigateReview {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/review/$id"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(FrigateReview.serializer(), request.okBody())
@@ -254,7 +321,7 @@ class FrigateApi(
 
         val request = Request.Builder()
             .url(builder.build())
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(ListSerializer(FrigateReview.serializer()), request.okBody())
@@ -276,7 +343,7 @@ class FrigateApi(
         }.toString().toRequestBody(JSON)
         val request = Request.Builder()
             .url(url(baseUrl, "/api/reviews/viewed"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .post(body)
             .build()
         request.okBody()
@@ -305,7 +372,7 @@ class FrigateApi(
 
         val request = Request.Builder()
             .url(builder.build())
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         val counted = json.decodeFromString(
@@ -343,7 +410,7 @@ class FrigateApi(
     ) {
         val request = Request.Builder()
             .url(source.url)
-            .header("Authorization", "Bearer ${source.token}")
+            .bearer(source.token)
             .get()
             .build()
 
@@ -426,7 +493,7 @@ class FrigateApi(
             .build()
         return Request.Builder()
             .url(target)
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
             .okBytes()
@@ -492,7 +559,7 @@ class FrigateApi(
 
         val request = Request.Builder()
             .url(url(baseUrl, "/api/chat/completion"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .post(body)
             .build()
 
@@ -513,7 +580,7 @@ class FrigateApi(
     fun labels(baseUrl: String, token: String): List<String> {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/labels"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(ListSerializer(String.serializer()), request.okBody())
@@ -527,7 +594,7 @@ class FrigateApi(
     fun stats(baseUrl: String, token: String): FrigateStats {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/stats"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(FrigateStats.serializer(), request.okBody())
@@ -551,7 +618,7 @@ class FrigateApi(
             .build()
         val request = Request.Builder()
             .url(target)
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(
@@ -579,7 +646,7 @@ class FrigateApi(
             .build()
         val request = Request.Builder()
             .url(target)
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(
@@ -604,7 +671,7 @@ class FrigateApi(
             .build()
         val request = Request.Builder()
             .url(target)
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return request.okBytes()
@@ -613,7 +680,7 @@ class FrigateApi(
     fun eventThumbnail(baseUrl: String, token: String, eventId: String): ByteArray {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/events/$eventId/thumbnail.jpg"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return request.okBytes()
@@ -622,7 +689,7 @@ class FrigateApi(
     fun eventSnapshot(baseUrl: String, token: String, eventId: String): ByteArray {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/events/$eventId/snapshot.jpg"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return request.okBytes()
@@ -636,7 +703,7 @@ class FrigateApi(
     fun event(baseUrl: String, token: String, eventId: String): FrigateEvent {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/events/$eventId"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(FrigateEvent.serializer(), request.okBody())
@@ -651,7 +718,7 @@ class FrigateApi(
     fun restart(baseUrl: String, token: String) {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/restart"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .post(ByteArray(0).toRequestBody(null))
             .build()
         request.okBody()
@@ -661,7 +728,7 @@ class FrigateApi(
     fun logs(baseUrl: String, token: String, service: String): FrigateLogs {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/logs/$service"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(FrigateLogs.serializer(), request.okBody())
@@ -682,7 +749,7 @@ class FrigateApi(
             .build()
         val request = Request.Builder()
             .url(target)
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         val response = streamClient.newCall(request).execute()
@@ -705,7 +772,7 @@ class FrigateApi(
     fun exports(baseUrl: String, token: String): List<Export> {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/exports"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return json.decodeFromString(ListSerializer(Export.serializer()), request.okBody())
@@ -738,7 +805,7 @@ class FrigateApi(
 
         val request = Request.Builder()
             .url(url(baseUrl, "/api/export/$camera/start/${start.toLong()}/end/${end.toLong()}"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .post(body)
             .build()
 
@@ -764,7 +831,7 @@ class FrigateApi(
         val body = buildJsonObject { put("name", name) }.toString().toRequestBody(JSON)
         val request = Request.Builder()
             .url(url(baseUrl, "/api/export/$id/rename"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .patch(body)
             .build()
         request.okBody()
@@ -777,7 +844,7 @@ class FrigateApi(
         }.toString().toRequestBody(JSON)
         val request = Request.Builder()
             .url(url(baseUrl, "/api/exports/delete"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .post(body)
             .build()
         request.okBody()
@@ -787,7 +854,7 @@ class FrigateApi(
     fun exportThumbnail(baseUrl: String, token: String, export: Export): ByteArray {
         val request = Request.Builder()
             .url(url(baseUrl, export.thumbUrlPath))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         return request.okBytes()
@@ -812,7 +879,7 @@ class FrigateApi(
             .build()
         val request = Request.Builder()
             .url(target)
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         val response = streamClient.newCall(request).execute()

@@ -30,13 +30,21 @@ class TvException(val status: Int, override val message: String) : IOException(m
  * It is written against Frigate 0.18, the same version the phone talks to. The
  * sign-in is a JSON body of `user` and `password`, and the session comes back as
  * a JWT in a `Set-Cookie` header, which is then sent as a bearer token.
+ *
+ * A server with sign-in turned off has neither, and is sent no token at all: one
+ * it never issued is turned down, and every tile would be empty behind it.
  */
-class TvApi {
+class TvApi(
+    /** The certificates the phone handed over when it paired, if any. */
+    trust: TvTrust? = null,
+) {
 
-    private val client = OkHttpClient.Builder()
+    private val base = OkHttpClient.Builder()
         .connectTimeout(6, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
-        .build()
+        .let { if (trust != null) trust.apply(it) else it }
+
+    private val client = base.build()
 
     /** The MJPEG body never ends, so it gets a client with no read timeout. */
     private val streamClient = client.newBuilder()
@@ -64,13 +72,58 @@ class TvApi {
     }
 
     /**
+     * Asks the server something that needs no sign-in, and answers with whatever it
+     * said. Any answer means the address is the right one.
+     */
+    fun probe(baseUrl: String): Int {
+        val request = Request.Builder().url(url(baseUrl, "/api/version")).get().build()
+        return client.newCall(request).execute().use { it.code }
+    }
+
+    /** Whether the server answers for itself with no token, so has no sign-in. */
+    fun answersWithoutAccount(baseUrl: String): Boolean {
+        val request = Request.Builder().url(url(baseUrl, "/api/config")).get().build()
+        return client.newCall(request).execute().use { response ->
+            response.isSuccessful && !response.body?.string().isNullOrBlank()
+        }
+    }
+
+    /**
+     * What this server can do, asked once: its version, and whether it has reviews.
+     * A television stands on the camera list and on what has been flagged, and an
+     * old server has only the first of the two.
+     */
+    fun capabilities(baseUrl: String, token: String): TvCapabilities {
+        val version = runCatching {
+            val raw = open(baseUrl, token, "/api/stats").use { it.bodyText() }
+            runCatching { json.parseToJsonElement(raw) as? JsonObject }.getOrNull()
+                ?.get("service")?.let { it as? JsonObject }
+                ?.get("version")?.textOrNull()
+        }.getOrNull()
+        val reviews = runCatching {
+            client.newCall(
+                Request.Builder()
+                    .url(url(baseUrl, "/api/review?limit=1"))
+                    .bearer(token)
+                    .get()
+                    .build(),
+            ).execute().use { it.code != 404 }
+        }.getOrDefault(true)
+        return TvCapabilities(version = version.orEmpty(), reviews = reviews)
+    }
+
+    /** The session header, or none at all for a server with no sign-in. */
+    private fun Request.Builder.bearer(token: String): Request.Builder =
+        if (token.isBlank()) this else header("Authorization", "Bearer $token")
+
+    /**
      * 202 means the token is still good. The server may hand back a fresh one
      * near expiry, which is returned so it can be kept.
      */
     fun checkToken(baseUrl: String, token: String): String? {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/auth"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         client.newCall(request).execute().use { response ->
@@ -114,7 +167,7 @@ class TvApi {
             .build()
         val request = Request.Builder()
             .url(target)
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         client.newCall(request).execute().use { response ->
@@ -140,7 +193,7 @@ class TvApi {
             .build()
         val request = Request.Builder()
             .url(target)
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         val response = streamClient.newCall(request).execute()
@@ -175,7 +228,7 @@ class TvApi {
             .build()
         val request = Request.Builder()
             .url(target)
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         val raw = client.newCall(request).execute().use { response ->
@@ -191,7 +244,7 @@ class TvApi {
     fun eventThumbnail(baseUrl: String, token: String, eventId: String): ByteArray {
         val request = Request.Builder()
             .url(url(baseUrl, "/api/events/$eventId/thumbnail.jpg"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .get()
             .build()
         client.newCall(request).execute().use { response ->
@@ -205,7 +258,7 @@ class TvApi {
         val body = """{"ids":["$id"],"reviewed":true}""".toRequestBody(JSON)
         val request = Request.Builder()
             .url(url(baseUrl, "/api/reviews/viewed"))
-            .header("Authorization", "Bearer $token")
+            .bearer(token)
             .post(body)
             .build()
         client.newCall(request).execute().use { response ->
@@ -220,7 +273,7 @@ class TvApi {
         val response = client.newCall(
             Request.Builder()
                 .url(url(baseUrl, path))
-                .header("Authorization", "Bearer $token")
+                .bearer(token)
                 .get()
                 .build(),
         ).execute()
@@ -291,6 +344,32 @@ class TvApi {
         const val NO_TOKEN = "Frigate signed in but sent no session."
         val JSON = "application/json; charset=utf-8".toMediaType()
     }
+}
+
+/**
+ * What a server can do, as far as a television needs to know: its version, and
+ * whether it has reviews at all. A server older than 0.16 has no `/api/review`, so
+ * there is an alerts page worth opening there.
+ */
+data class TvCapabilities(
+    /** Frigate's own version, such as `0.18.2`, or blank when it wouldn't say. */
+    val version: String = "",
+    val reviews: Boolean = true,
+) {
+    /** Whether this server is older than the oldest Frigate the phone supports. */
+    val old: Boolean
+        get() = version.isNotBlank() && version.compareFrigate("0.16.0") < 0
+}
+
+/** Version parts counted as numbers, so 0.9 is older than 0.16. */
+private fun String.compareFrigate(other: String): Int {
+    val mine = trim().removePrefix("v").substringBefore('-').split('.').map { it.toIntOrNull() ?: 0 }
+    val theirs = other.split('.').map { it.toIntOrNull() ?: 0 }
+    for (at in 0 until maxOf(mine.size, theirs.size)) {
+        val result = mine.getOrElse(at) { 0 }.compareTo(theirs.getOrElse(at) { 0 })
+        if (result != 0) return result
+    }
+    return 0
 }
 
 /** One camera, as the television shows it. */

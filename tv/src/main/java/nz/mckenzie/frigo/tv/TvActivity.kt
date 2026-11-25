@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 import nz.mckenzie.frigo.tv.data.TvApi
 import nz.mckenzie.frigo.tv.data.TvPrefs
 import nz.mckenzie.frigo.tv.data.TvRepository
+import nz.mckenzie.frigo.tv.data.TvTrust
 import nz.mckenzie.frigo.tv.ring.RingServer
 import nz.mckenzie.frigo.tv.ui.FrigoTvTheme
 import nz.mckenzie.frigo.tv.ui.TvApp
@@ -42,9 +43,13 @@ class TvActivity : ComponentActivity() {
         }
 
         val prefs = TvPrefs(applicationContext)
+        // The certificates the phone hands over are kept here, so nothing on this
+        // screen ever has to ask about one with a remote.
+        val trust = TvTrust(applicationContext)
         val repository = TvRepository(
             prefs = prefs,
-            api = TvApi(),
+            api = TvApi(trust),
+            trust = trust,
             cacheDir = cacheDir,
         )
 

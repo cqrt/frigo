@@ -31,7 +31,7 @@ rest_command:
 ```
 
 Then ring it from the doorbell. This is the sensor Tapo Cameras Control makes for
-a D235:
+a D235; another integration has its own, and any of them can post to the address:
 
 ```yaml
 automation:
@@ -50,11 +50,13 @@ bell to try it.
 ## Which camera
 
 The door camera is the one Settings calls the Default camera. To bring up another
-one, add it to the address:
+one, add its name to the address, exactly as Frigate names it:
 
 ```
-http://192.168.0.139:8972/ring/13e970bbee?camera=north_cam
+http://192.168.0.139:8972/ring/13e970bbee?camera=drive_cam
 ```
+
+Leave the address as it comes and the television uses its own Default camera.
 
 ## What it doesn't do
 

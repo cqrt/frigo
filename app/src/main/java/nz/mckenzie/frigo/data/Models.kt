@@ -741,6 +741,21 @@ class FrigateException(val status: Int, override val message: String) : Exceptio
 }
 
 /**
+ * A server the phone reached, whose certificate it has not been told to trust.
+ *
+ * The certificate presented can't be read off the refused handshake itself, so it
+ * is asked for once more and its fingerprint carried here. The sign-in page offers
+ * to trust this one, and nothing else changes: the next request is refused again
+ * if the server presents a different certificate.
+ */
+class UntrustedCertificateException(
+    /** The address the certificate came from, which is the one to trust. */
+    val address: String,
+    val fingerprint: String,
+    override val message: String,
+) : Exception(message)
+
+/**
  * True when the server couldn't be asked at all, rather than turning the answer
  * down: no network, no such host, or a proxy that says the box behind it is out.
  *

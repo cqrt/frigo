@@ -8,6 +8,23 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.25.0
+
+- Frigo signs in to a bare address, such as `192.168.0.99:5000`: it tries http in the house and https out on the internet, and keeps whichever answers.
+- A server with sign-in turned off signs in with no account, says so under Servers, and is never sent a token.
+- A certificate Frigate made for itself is offered once with its fingerprint, and trusted for that one server after that. A changed certificate is refused rather than accepted quietly.
+- A server older than 0.16 is named once, then opens on the cameras, with Review, Explore and the server's own rows missing where it has no answers for them.
+- Buzz on detections too, under Notifications, lets a server set up with detections alone buzz. It stays off until you ask for it.
+- Home Assistant's switches are offered beside its lights, so a Reolink lamp appears and turns over.
+- The light is called a light everywhere: the Settings group is Lights, and the player says Turn the light on.
+- The Home Assistant card says the box belongs to the house, so two servers share it.
+- AI descriptions is only offered when the server has a model that can describe a picture.
+- The television pairs with a server that has no sign-in, and takes the certificate the phone already trusted.
+- A television on an old server shows its cameras and leaves its alerts page off.
+- Frigo TV has an Updates row, so it installs its next release without a computer.
+- The update checks point at whichever repository built the app, and each app takes only its own APK from the release page.
+- Frigo is MIT licensed, and Privacy under About says in plain words what leaves the phone.
+
 ## 0.24.2
 
 - The floodlight button follows the light itself, so turning it off in the Tapo app or at the wall puts the blue out here within a few seconds.

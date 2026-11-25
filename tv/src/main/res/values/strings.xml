@@ -47,11 +47,23 @@
     <string name="tv_screen_grid">Grid</string>
     <string name="tv_doorbell">Doorbell</string>
     <string name="tv_doorbell_note">The address Home Assistant rings.</string>
-    <string name="tv_doorbell_what">Post to this when someone rings, and that camera fills the screen for half a minute. Add ?camera=north_cam to choose another.</string>
+    <string name="tv_doorbell_what">Post to this when someone rings, and that camera fills the screen for half a minute. Add ?camera= with a camera\'s name to choose another, or leave it off for the default camera.</string>
     <string name="tv_doorbell_shut">The address is not open. Restart the app.</string>
     <string name="tv_pair_again_note">Use another server, or another account.</string>
     <string name="tv_sound">Sound</string>
     <string name="tv_muted">Muted</string>
+
+    <!-- A server older than Frigo expects: the cameras are there, the alerts page isn't. -->
+    <string name="tv_server_limited">This server is older than Frigo expects, so there is no alerts page.</string>
+
+    <!-- The television updates itself, because a set-top box is no place to fetch a file. -->
+    <string name="tv_updates">Updates</string>
+    <string name="tv_updates_looking">Looking for a newer version…</string>
+    <string name="tv_updates_newest">This is the newest version.</string>
+    <string name="tv_updates_trouble">Couldn\'t reach GitHub.</string>
+    <string name="tv_updates_download">A newer version, %1$s. Press Select to download it.</string>
+    <string name="tv_updates_downloading">Downloading, %1$d%%. Press Select again if it stops.</string>
+    <string name="tv_updates_install">Downloaded. Press Select to install %1$s.</string>
 
     <string name="alerts_title">Alerts</string>
     <string name="alerts_reading">Reading the alerts</string>

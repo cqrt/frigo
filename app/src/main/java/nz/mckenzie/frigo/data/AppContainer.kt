@@ -6,17 +6,22 @@ import nz.mckenzie.frigo.BuildConfig
 import java.util.concurrent.TimeUnit
 
 /**
- * Hand-built dependency holder. The app has four screens and one server, so a
- * container beats wiring in a DI library.
+ * Hand-built dependency holder. The app has five screens and a handful of servers,
+ * so a container beats wiring in a DI library.
  */
 class AppContainer(context: Context) {
 
-    private val requestClient = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        // The MJPEG response never ends, so it gets its own client with no read
-        // timeout. Everything else keeps a ceiling so a dead server fails fast.
-        .build()
+    /**
+     * The certificates this phone was told to trust, which every client here shares.
+     * A server at home makes its own, and trusting one is a thing the owner said once.
+     */
+    private val trust = TrustedCertificates(context)
+
+    private val requestClient = trust.apply(
+        OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS),
+    ).build()
 
     private val streamClient = requestClient.newBuilder()
         .readTimeout(0, TimeUnit.MILLISECONDS)
@@ -33,7 +38,7 @@ class AppContainer(context: Context) {
     private val api = FrigateApi(context, requestClient, streamClient, clipClient)
 
     /**
-     * The other box in the house, which knows about a camera's floodlight where
+     * The Home Assistant in the house, which knows about a camera's light where
      * Frigate doesn't.
      */
     private val homeAssistant = HomeAssistantApi(context, requestClient)
@@ -41,7 +46,7 @@ class AppContainer(context: Context) {
     /** What the phone keeps, shared between the repository and the release check. */
     private val prefs = ServerPrefs(context)
 
-    val repository = FrigoRepository(context, api, homeAssistant, prefs, context.cacheDir)
+    val repository = FrigoRepository(context, api, homeAssistant, prefs, trust, context.cacheDir)
 
     /** Asks GitHub for a newer Frigo, and fetches it. */
     val updater = Updater(requestClient, context.cacheDir)
@@ -61,4 +66,14 @@ class AppContainer(context: Context) {
 
     /** Hands a television the server and sign-in it needs, over the home network. */
     val tvPairing = TvPairingClient()
+
+    /**
+     * A client for a feed that never ends, with a ping to notice a connection that
+     * died quietly. The alert service keeps one open, and it needs the same
+     * certificate trust as everything else.
+     */
+    fun feedClient(): OkHttpClient = requestClient.newBuilder()
+        .readTimeout(0, TimeUnit.MILLISECONDS)
+        .pingInterval(30, TimeUnit.SECONDS)
+        .build()
 }

@@ -40,6 +40,10 @@ android {
         targetSdk = 36
         versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
         versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
+
+        // The same repository the phone checks, and its own APK on it. A fork points
+        // both builds at itself and each takes its own file from that release page.
+        buildConfigField("String", "UPDATE_REPO", "\"cqrt/frigo\"")
     }
 
     signingConfigs {

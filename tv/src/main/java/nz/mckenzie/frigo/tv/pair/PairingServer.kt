@@ -45,7 +45,15 @@ data class PairingCode(
  * anyone with the address.
  */
 class PairingServer(
-    private val onPair: suspend (baseUrl: String, username: String, password: String) -> String?,
+    private val onPair: suspend (
+        baseUrl: String,
+        username: String,
+        password: String,
+        /** The certificate the phone had already trusted, or null. */
+        fingerprint: String?,
+        /** Whether the server has no sign-in at all. */
+        noAccount: Boolean,
+    ) -> String?,
     private val onPaired: () -> Unit,
 ) {
 
@@ -124,14 +132,28 @@ class PairingServer(
             }
             return answer(client, 403, false, "That phone was not pairing with this TV.")
         }
-        if (said.baseUrl.isBlank() || said.username.isBlank() || said.password.isEmpty()) {
+        // A server with no sign-in is handed over with nothing in the two fields,
+        // and the flag is what says so rather than an empty string that could also
+        // be a half-filled form.
+        if (said.baseUrl.isBlank()) {
+            return answer(client, 400, false, "The phone sent no server address.")
+        }
+        if (!said.noAccount && (said.username.isBlank() || said.password.isEmpty())) {
             return answer(client, 400, false, "The phone sent no sign-in.")
         }
 
         // The repository signs in to Frigate before anything is kept, so a
         // password that does not work is refused here, with a sentence for the
         // phone to show, rather than being discovered on the television later.
-        val refused = kotlinx.coroutines.runBlocking { onPair(said.baseUrl, said.username, said.password) }
+        val refused = kotlinx.coroutines.runBlocking {
+            onPair(
+                said.baseUrl,
+                said.username,
+                said.password,
+                said.fingerprint.takeIf { it.isNotBlank() },
+                said.noAccount,
+            )
+        }
         if (refused != null) {
             return answer(client, 401, false, refused)
         }
@@ -214,6 +236,10 @@ private data class PairRequest(
     val baseUrl: String = "",
     val username: String = "",
     val password: String = "",
+    /** The certificate the phone had already trusted, so the TV never has to ask. */
+    val fingerprint: String = "",
+    /** Whether this server has sign-in turned off, so no token is asked for or sent. */
+    val noAccount: Boolean = false,
 )
 
 /**

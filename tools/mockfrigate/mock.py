@@ -58,6 +58,32 @@ CLIP = open(os.path.join(HERE, "clip.mp4"), "rb").read()
 # Review, and the config write below answers the 403 a real server gives.
 ROLE = os.environ.get("MOCK_ROLE", "admin")
 
+# The version this stand-in says it is. Set MOCK_VERSION=0.14.1 to be a server from
+# before Review: the endpoints added after it answer 404, which is what an old
+# Frigate does, and the app then hides the tabs and rows it has no answers for.
+VERSION = os.environ.get("MOCK_VERSION", "0.18.2-mock")
+
+# A server with sign-in turned off. It answers everything without a token, turns
+# the login down, and never hands out a session: exactly what Frigate does when
+# authentication is disabled. Set MOCK_NO_AUTH=1.
+NO_AUTH = os.environ.get("MOCK_NO_AUTH") == "1"
+
+
+def _version_parts(text):
+    return [int(part) if part.isdigit() else 0 for part in text.split("-")[0].split(".")]
+
+
+def older_than(version):
+    """Whether this stand-in is older than the version named, part by part."""
+    here = _version_parts(VERSION)
+    there = _version_parts(version)
+    for at in range(max(len(here), len(there))):
+        left = here[at] if at < len(here) else 0
+        right = there[at] if at < len(there) else 0
+        if left != right:
+            return left < right
+    return False
+
 # A long recording to cut clips from the way Frigate cuts them, and to hang the
 # day's stretches of recording off in ten second rows, as its database does. Set
 # MOCK_RECORDING to a file to have every clip cut from it, so the joins between
@@ -114,6 +140,16 @@ CONFIG = {
         "alerts": {"enabled": True, "labels": ALERT_LABELS},
         "detections": {"enabled": True},
         "genai": {"enabled": True, "alerts": True},
+    },
+    # A model the server can describe a picture with, which is what makes AI
+    # descriptions worth a row in Settings. Without one the app leaves the row out.
+    "genai": {
+        "ollama_large": {
+            "provider": "ollama",
+            "base_url": "http://192.168.0.50:11434",
+            "model": "llava:latest",
+            "roles": ["chat", "descriptions"],
+        }
     },
     "objects": {"track": ["person", "car", "dog", "cat"]},
     "audio": {"enabled": True, "listen": ["bark", "speech"]},
@@ -308,6 +344,8 @@ class Handler(BaseHTTPRequestHandler):
         return None
 
     def authorised(self):
+        if NO_AUTH:
+            return True
         return TOKEN in (self.bearer(), self.cookie_token())
 
     # --- endpoints --------------------------------------------------------
@@ -317,6 +355,10 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
 
         if path == "/api/login":
+            if NO_AUTH:
+                # A server with no sign-in says no to a login, and the app asks
+                # /api/config without a token instead, which is how it finds out.
+                return self.send_json({"message": "Login failed"}, status=401)
             try:
                 payload = json.loads(body.decode() or "{}")
             except ValueError:
@@ -357,6 +399,8 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
 
         if path == "/api/config/set":
+            if older_than("0.16"):
+                return self.send_json({"message": "not found"}, status=404)
             if not self.authorised():
                 return self.send_json({"message": "unauthorized"}, status=401)
             # Frigate answers a 403 rather than a 401 here, so the app can tell an
@@ -372,6 +416,22 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+
+        # What version this server is, which needs no sign-in on a real Frigate
+        # either: it is the question the app asks before it signs in.
+        if path == "/api/version":
+            return self.send_json({"version": VERSION})
+
+        # The endpoints added after 0.16 are absent on an older server, which is a
+        # 404 rather than a refusal, and the app reads that as "not there".
+        if older_than("0.16") and (
+            path == "/api/labels"
+            or path == "/api/sub_labels"
+            or path == "/api/review"
+            or path.startswith("/api/review/")
+            or path.startswith("/api/genai/")
+        ):
+            return self.send_json({"message": "not found"}, status=404)
 
         if path == "/ws":
             # Frigate's message feed. Nginx checks the token before this point on
@@ -402,6 +462,11 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/sub_labels":
             return self.send_json(SUB_LABELS)
+
+        # What the server has to describe a picture with. The app only asks whether
+        # this endpoint is there, so a list is enough.
+        if path.startswith("/api/genai/models"):
+            return self.send_json([])
 
         if path == "/api/profile":
             return self.send_json({"username": "test", "role": ROLE, "allowed_cameras": list(CAMERAS)})
@@ -819,7 +884,7 @@ def stats():
     """What /api/stats says, as far as the app reads it: how long the server has been
     up and how many frames a second each camera is producing."""
     return {
-        "service": {"version": "0.18.2-mock", "uptime": time.time() - STARTED},
+        "service": {"version": VERSION, "uptime": time.time() - STARTED},
         "cameras": {
             name: {
                 "camera_fps": 0.0 if name in SILENT else 5.0,

@@ -122,6 +122,63 @@ class HomeAssistantApiTest {
         )
     }
 
+    /**
+     * A Reolink lamp arrives as a switch, not as a light, and a lamp is a lamp. Both
+     * are offered, and each knows which kind it is, because the action to turn it
+     * over is named after the kind.
+     */
+    @Test
+    fun aSwitchComesOutBesideTheLights() {
+        box.enqueue(
+            MockResponse().setBody(
+                """
+                [
+                  {"entity_id": "light.drive_floodlight", "state": "off",
+                   "attributes": {"friendly_name": "Drive floodlight"}},
+                  {"entity_id": "switch.door_lamp", "state": "on",
+                   "attributes": {"friendly_name": "Door lamp"}},
+                  {"entity_id": "binary_sensor.motion", "state": "on", "attributes": {}}
+                ]
+                """.trimIndent(),
+            ),
+        )
+
+        val found = api().lights(address, token = "abc")
+
+        assertEquals(listOf("light", "switch"), found.map { it.domain })
+        assertEquals(listOf("Drive floodlight", "Door lamp"), found.map { it.name })
+    }
+
+    /** A switch is turned over through the switch action, not the light one. */
+    @Test
+    fun aSwitchIsTurnedOverThroughItsOwnAction() {
+        box.enqueue(MockResponse().setBody("[]"))
+
+        api().turn(address, token = "abc", entity = "switch.door_lamp", on = true)
+
+        assertEquals("/api/services/switch/turn_on", box.takeRequest().path)
+    }
+
+    /** A name Home Assistant gave no light keeps the kind off the front of it. */
+    @Test
+    fun anUnnamedSwitchIsCalledAfterItsOwnName() {
+        assertEquals("Door lamp", lightName("switch.door_lamp"))
+        assertEquals("Door lamp", lightName("light.door_lamp"))
+    }
+
+    /**
+     * Two things can share a name on the box, and a list of two "Door lamp" rows is
+     * no list at all. The kind of entity is what tells them apart.
+     */
+    @Test
+    fun aNameTwoShareCarriesItsKind() {
+        val both = listOf(Light("light.door_lamp", "Door lamp"), Light("switch.door_lamp", "Door lamp"))
+
+        assertEquals("Door lamp (light)", both[0].label(both))
+        assertEquals("Door lamp (switch)", both[1].label(both))
+        assertEquals("Drive light", Light("light.drive", "Drive light").label(both))
+    }
+
     /** A refused token is said as a refused token, not as a box that is away. */
     @Test
     fun aRefusedTokenSaysSo() {

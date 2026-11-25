@@ -18,9 +18,9 @@ class HomeAssistantTest {
     private val shedFloodlight = Light("light.shed_floodlight", "Shed Floodlight")
     private val porch = Light("light.porch_lamp", "Porch lamp")
 
-    /** Only lights are offered: a switch or a sensor is nothing this app turns on. */
+    /** Lights and switches are offered: a sensor is nothing this app turns on. */
     @Test
-    fun theStatesAnswerIsNarrowedToLightsAndNamedTheWayTheBoxNamesThem() {
+    fun theStatesAnswerIsNarrowedToLightsAndSwitchesNamedTheWayTheBoxNamesThem() {
         val states = """
             [
               {"entity_id": "light.porch_lamp", "state": "off",
@@ -33,7 +33,7 @@ class HomeAssistantTest {
         """.trimIndent()
 
         assertEquals(
-            listOf(porch, driveFloodlight),
+            listOf(porch, Light("switch.drive_floodlight", "Drive floodlight"), driveFloodlight),
             lightsIn(states),
         )
     }

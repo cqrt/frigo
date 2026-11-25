@@ -44,6 +44,11 @@ class ServerPrefs(private val context: Context) {
     @Serializable
     data class Stored(
         val baseUrl: String,
+        /**
+         * The account on the server, or empty for a server with sign-in turned off.
+         * Such a server has no name to send and no token to keep, and every request
+         * to it goes without an `Authorization` header.
+         */
         val username: String,
         val token: String? = null,
         /**
@@ -57,6 +62,13 @@ class ServerPrefs(private val context: Context) {
          * sign-in by hand after that leaves it false.
          */
         val keepPassword: Boolean = true,
+        /**
+         * The fingerprint of the certificate this server presented when you said to
+         * trust it, or null for one a phone trusts already. Written down here so the
+         * server list can say which ones asked, and so pairing a television can hand
+         * the same certificate over.
+         */
+        val certificate: String? = null,
     )
 
     /** Every server on the phone, and the one the app is on. */
@@ -66,8 +78,12 @@ class ServerPrefs(private val context: Context) {
     )
 
     /**
-     * The app's own switch for watching, and which of the two ways a buzz arrives
-     * it is trying.
+     * The app's own switch for watching, and whether a review the server calls a
+     * detection buzzes as well as one it calls an alert.
+     *
+     * A server set up with detections alone never sends an alert, so it would stay
+     * silent however the phone is set. This is the one switch that changes that,
+     * and it is off until you ask: the server's own alerts stay in charge.
      *
      * A phone from an older version still has the cameras and objects it picked
      * in this same file. They are left alone and no longer read, so going back a
@@ -75,6 +91,7 @@ class ServerPrefs(private val context: Context) {
      */
     data class Alerts(
         val on: Boolean = false,
+        val detections: Boolean = false,
     )
 
     /**
@@ -172,12 +189,14 @@ class ServerPrefs(private val context: Context) {
         val prefs = context.dataStore.data.first()
         return Alerts(
             on = prefs[alertsOnKey(server)] ?: false,
+            detections = prefs[alertsDetectionsKey(server)] ?: false,
         )
     }
 
     suspend fun writeAlerts(server: Stored, alerts: Alerts) {
         context.dataStore.edit { prefs ->
             prefs[alertsOnKey(server)] = alerts.on
+            prefs[alertsDetectionsKey(server)] = alerts.detections
         }
     }
 
@@ -277,6 +296,33 @@ class ServerPrefs(private val context: Context) {
             prefs[Keys.homeAssistant] =
                 BlockJson.encodeToString(HomeAssistant.serializer(), homeAssistant)
         }
+    }
+
+    /**
+     * What the server can do, kept beside the address it belongs to. One block, like
+     * the rules, so a field added later can't break the read.
+     */
+    suspend fun readCapabilities(baseUrl: String): ServerCapabilities? {
+        val stored = context.dataStore.data.first()[capabilitiesKey(baseUrl)] ?: return null
+        return runCatching { BlockJson.decodeFromString(ServerCapabilities.serializer(), stored) }
+            .getOrNull()
+    }
+
+    suspend fun writeCapabilities(baseUrl: String, capabilities: ServerCapabilities) {
+        val stored = BlockJson.encodeToString(ServerCapabilities.serializer(), capabilities)
+        context.dataStore.edit { prefs -> prefs[capabilitiesKey(baseUrl)] = stored }
+    }
+
+    /**
+     * The version this phone has already said is older than Frigo supports, so the
+     * page that says so comes once rather than at every launch. A different version
+     * on the server is a different page, because something may have changed.
+     */
+    suspend fun readVersionNotice(baseUrl: String): String? =
+        context.dataStore.data.first()[versionNoticeKey(baseUrl)]
+
+    suspend fun writeVersionNotice(baseUrl: String, version: String) {
+        context.dataStore.edit { prefs -> prefs[versionNoticeKey(baseUrl)] = version }
     }
 
     /**
@@ -462,6 +508,8 @@ class ServerPrefs(private val context: Context) {
     private fun who(server: Stored) = "${server.baseUrl}|${server.username}"
 
     private fun alertsOnKey(server: Stored) = booleanPreferencesKey("alerts_on:${who(server)}")
+    private fun alertsDetectionsKey(server: Stored) =
+        booleanPreferencesKey("alerts_detections:${who(server)}")
     private fun quietTimesKey(server: Stored) = stringPreferencesKey("quiet_times:${who(server)}")
     private fun alertObjectsKey(server: Stored) = stringPreferencesKey("alert_objects:${who(server)}")
     private fun alertPeopleKey(server: Stored) = stringPreferencesKey("alert_people:${who(server)}")
@@ -471,6 +519,8 @@ class ServerPrefs(private val context: Context) {
 
     private fun alertRulesKey(baseUrl: String) = stringPreferencesKey("alert_rules:$baseUrl")
     private fun settingsKey(baseUrl: String) = stringPreferencesKey("settings:$baseUrl")
+    private fun capabilitiesKey(baseUrl: String) = stringPreferencesKey("capabilities:$baseUrl")
+    private fun versionNoticeKey(baseUrl: String) = stringPreferencesKey("version_notice:$baseUrl")
 
     private object Keys {
         val servers = stringPreferencesKey("servers")

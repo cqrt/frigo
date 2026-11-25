@@ -34,9 +34,17 @@ class TvPrefs(private val context: Context) {
     @Serializable
     data class Server(
         val baseUrl: String,
+        /**
+         * The account, or empty for a server with sign-in turned off. Such a server
+         * has no name to send and no token to keep.
+         */
         val username: String,
         val password: String,
         val token: String? = null,
+        /** Whether this server has no sign-in, which pairing carried over from the phone. */
+        val noAccount: Boolean = false,
+        /** The certificate the phone had already trusted, so this screen never asks. */
+        val fingerprint: String? = null,
     )
 
     suspend fun readServer(): Server? {

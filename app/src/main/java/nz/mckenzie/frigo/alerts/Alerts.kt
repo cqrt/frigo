@@ -50,8 +50,17 @@ object Alerts {
         quiet: QuietTimes,
         hidden: Set<String> = emptySet(),
         only: AlertObjects = AlertObjects(),
+        detections: Boolean = false,
     ): NotificationCompat.Builder {
-        val text = state.text(context, rules, quiet, System.currentTimeMillis(), hidden, only)
+        val text = state.text(
+            context,
+            rules,
+            quiet,
+            System.currentTimeMillis(),
+            hidden,
+            only,
+            detections,
+        )
         val open = PendingIntent.getActivity(
             context,
             0,
@@ -318,6 +327,7 @@ sealed interface WatchState {
         now: Long = System.currentTimeMillis(),
         hidden: Set<String> = emptySet(),
         only: AlertObjects = AlertObjects(),
+        detections: Boolean = false,
     ): String {
         if (this is SignedOut) return context.words(R.string.alerts_session_expired)
 
@@ -328,10 +338,21 @@ sealed interface WatchState {
             return context.words(R.string.alerts_all_cameras_off)
         }
         val alerting = telling.filterValues { it.alertsOn }
-        if (alerting.isEmpty()) return context.words(R.string.alerts_no_alerts_on)
+        if (alerting.isEmpty()) {
+            // A server set up with detections alone sends no alert at all, and the
+            // switch that changes that is the one the line names.
+            if (!detections) return context.words(R.string.alerts_no_alerts_on)
+            val heard = telling.filterKeys { it !in hidden }
+            if (heard.isEmpty()) return context.words(R.string.alerts_all_cameras_hidden)
+            val count = heard.size
+            return context.words(
+                R.string.alerts_watching_detections,
+                context.counted(R.plurals.alerts_cameras, count, count),
+            )
+        }
 
         val buzzing = alerting.filterValues { it.labels.isNotEmpty() }
-        if (buzzing.isEmpty()) return context.words(R.string.alerts_no_alert_objects)
+        if (buzzing.isEmpty() && !detections) return context.words(R.string.alerts_no_alert_objects)
 
         // This phone's list, applied camera by camera: what is left of the objects
         // the server would tell you about.

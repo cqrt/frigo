@@ -26,6 +26,13 @@
     <!-- Settings. -->
     <string name="settings_title">Settings</string>
     <string name="settings_servers">Servers</string>
+    <string name="settings_no_sign_in">No sign-in on this server</string>
+    <string name="settings_server_limited">This server doesn\'t have everything Frigo uses, so some tabs and rows aren\'t here.</string>
+    <!-- A server older than the oldest Frigate Frigo supports, said once. -->
+    <string name="oldserver_title">This server is older than Frigo expects</string>
+    <string name="oldserver_running">It\'s running %1$s. Frigo is written for %2$s and later.</string>
+    <string name="oldserver_what">Cameras and clips still work. Review, Explore and the server\'s own pages may not, so their tabs and rows aren\'t here.</string>
+    <string name="oldserver_carry_on">Carry on</string>
     <string name="settings_add_server">Add a server</string>
     <string name="settings_sign_out">Sign out</string>
     <string name="settings_sign_out_this">Sign out of this server</string>
@@ -44,6 +51,7 @@
     <string name="link_tv_scan_again">Scan again</string>
     <string name="link_tv_tv_at">Android TV at %1$s</string>
     <string name="link_tv_signs_in">Signs in as %1$s on %2$s.</string>
+    <string name="link_tv_no_account">The Android TV will use %1$s, which asks for no sign-in.</string>
     <string name="link_tv_password">Frigate password</string>
     <string name="link_tv_pair">Pair the Android TV</string>
     <string name="link_tv_paired">Paired. The Android TV is signing in.</string>
@@ -60,6 +68,8 @@
     <string name="settings_ai">AI descriptions</string>
     <string name="settings_ai_supporting">Using Artificial Intelligence, Frigo will describe what it sees in your alerts</string>
     <string name="settings_alerts_and_detections">Alerts and detections</string>
+    <string name="settings_detections">Buzz on detections too</string>
+    <string name="settings_detections_supporting">A server set up with detections alone never sends an alert. This lets those buzz as well.</string>
     <string name="settings_alerts_supporting">The objects your server makes an alert from.</string>
     <string name="settings_all_cameras_off">Every camera is off on your server\'s notifications page, so nothing will notify.</string>
     <string name="settings_quiet_times">Quiet times</string>
@@ -77,7 +87,7 @@
     <!-- This phone's own list of the people it stays quiet about, by the name Frigate knows them by. -->
     <string name="alert_people_title">People to ignore</string>
     <string name="alert_people_nobody">No one</string>
-    <string name="alert_people_search">Angie, Matt…</string>
+    <string name="alert_people_search">Sam, Alex…</string>
     <string name="alert_people_cant_read">Your server isn\'t answering, so this lists only the people you\'ve ticked.</string>
     <string name="alert_people_no_descriptions">Your server doesn\'t describe its alerts, so this list only knows people whose name is on the alert.</string>
 
@@ -85,9 +95,10 @@
     <string name="settings_live_supporting">Plays video on the Cameras tab. It uses more battery and data.</string>
 
     <!-- The other box in the house, which knows about a camera's floodlight. -->
-    <string name="settings_floodlights">Floodlights</string>
+    <string name="settings_floodlights">Lights</string>
     <string name="settings_home_assistant">Home Assistant</string>
     <string name="settings_home_assistant_off">Not set up</string>
+    <string name="settings_home_assistant_note">This is the house\'s Home Assistant, not your server\'s, so every server in Frigo uses it.</string>
 
     <string name="settings_cameras">Cameras</string>
     <string name="settings_cameras_stale">Your server isn\'t answering. These are the cameras your phone last read, %1$s.</string>
@@ -192,7 +203,7 @@
 
     <!-- What a failed request says, where the failure is the phone's or the network's. -->
     <string name="err_certificate_name">That address doesn\'t match the server\'s certificate. Check it, including the port.</string>
-    <string name="err_certificate_untrusted">This phone doesn\'t trust the server\'s certificate. Frigate makes its own unless it has been given a real one. Sign in through the address your proxy serves.</string>
+    <string name="err_certificate_untrusted">This phone doesn\'t trust the server\'s certificate. If the server has a new one, sign out and sign in again to be asked about it.</string>
     <string name="err_no_address">Can\'t find that address. Check it and try again.</string>
     <string name="err_timeout">The server took too long to answer.</string>
     <string name="err_unreachable">Can\'t reach the server. Check your connection.</string>
@@ -260,8 +271,9 @@
 
     <!-- What the quiet notification says when nothing will buzz. -->
     <string name="alerts_all_cameras_off">Every camera is off on your server\'s notifications page, so nothing will notify.</string>
-    <string name="alerts_no_alerts_on">No camera has alerts on, so nothing will notify.</string>
+    <string name="alerts_no_alerts_on">No camera has alerts on, so nothing will buzz. Buzz on detections too, in Settings, hears about detections instead.</string>
     <string name="alerts_no_alert_objects">No camera has any alert objects, so nothing will notify.</string>
+    <string name="alerts_watching_detections">%1$s for detections, so everything they see buzzes.</string>
     <string name="alerts_only_objects">Your list of objects is why nothing will notify. Change it in Settings, Only these objects.</string>
     <string name="alerts_all_cameras_hidden">Every camera that would notify is turned off on this phone, so nothing will notify. Turn one back on in Settings, Cameras.</string>
 
@@ -309,6 +321,9 @@
     <string name="api_bad_address">That server address doesn\'t look right</string>
     <string name="api_enter_address">Enter your server address</string>
     <string name="api_not_a_web_address">That doesn\'t look like a web address</string>
+    <string name="api_cant_reach">No answer from that address. Check it\'s right and the server is on.</string>
+    <string name="api_certificate_untrusted">That server\'s certificate isn\'t trusted by this phone.</string>
+    <string name="api_need_sign_in">That server turned the sign-in down, and it needs one.</string>
 
     <!-- Watching a camera. -->
     <string name="api_live_view_returned">Live view returned %1$d</string>
@@ -393,6 +408,14 @@
     <string name="login_show_password">Show the password</string>
     <string name="login_hide_password">Hide the password</string>
     <string name="login_keeps_sign_in">Frigo keeps your sign-in on this phone only. It talks to your server and nothing else.</string>
+    <string name="login_no_account_note">A server with sign-in turned off needs only its address.</string>
+    <string name="login_addon_note">Reached through Home Assistant\'s add-on? Sign in to the add-on\'s own port instead.</string>
+
+    <!-- The one certificate a phone refuses until it is told to trust it. -->
+    <string name="login_certificate_title">This server\'s certificate isn\'t trusted</string>
+    <string name="login_certificate_detail">Your phone doesn\'t know the certificate %1$s sent, which is normal for a Frigate that made its own. Trust this one certificate, for this address, and nothing else?</string>
+    <string name="login_certificate_trust">Trust and sign in</string>
+    <string name="login_certificate_no">Don\'t trust it</string>
 
     <string name="login_add_server">Add a server</string>
     <string name="login_add_server_note">Add another Frigate server. Seamless switch between your servers.</string>
@@ -474,7 +497,7 @@
 
     <!-- The tour: a page for each tab. -->
     <string name="onboard_tour_cameras">Cameras</string>
-    <string name="onboard_tour_cameras_words">All four cameras at once, so a glance tells you whether anyone is about. Tap one for live view.</string>
+    <string name="onboard_tour_cameras_words">Every camera at once, so a glance tells you whether anyone is about. Tap one for live view.</string>
     <string name="onboard_tour_live">Live and playback</string>
     <string name="onboard_tour_live_words">Tap a camera and the picture goes live. The bar underneath is the day; drag it to go back through it. Turn the phone on its side for landscape mode.</string>
     <string name="onboard_tour_review">Review</string>
@@ -560,8 +583,8 @@
     <string name="player_no_sound">No sound came through.</string>
 
     <!-- The floodlight, which is a light in Home Assistant rather than anything Frigate knows. -->
-    <string name="player_floodlight_on">Turn the floodlight on</string>
-    <string name="player_floodlight_off">Turn the floodlight off</string>
+    <string name="player_floodlight_on">Turn the light on</string>
+    <string name="player_floodlight_off">Turn the light off</string>
 
     <!-- The menu on the stills stream: its size and its frame rate. -->
     <string name="player_stream_quality">Stream quality</string>
@@ -614,12 +637,12 @@
     <string name="camsw_name_use_server">Use the server\'s name</string>
 
     <!-- The light in Home Assistant that goes with this camera. -->
-    <string name="camsw_floodlight">Floodlight</string>
+    <string name="camsw_floodlight">Light</string>
     <string name="camsw_floodlight_none">None</string>
     <string name="camsw_floodlight_pick">Pick a light</string>
-    <string name="camsw_floodlight_detail">Which light in Home Assistant goes with this camera.</string>
+    <string name="camsw_floodlight_detail">Which light or switch in Home Assistant goes with this camera.</string>
     <string name="camsw_floodlight_set_up">Set up Home Assistant in Settings to pick a light.</string>
-    <string name="camsw_no_lights">Home Assistant has no lights.</string>
+    <string name="camsw_no_lights">Home Assistant has no lights or switches.</string>
 
     <!-- The four groups the eight switches sit in. -->
     <string name="camsw_group_detection">Detection</string>
@@ -822,4 +845,16 @@
     <string name="logs_clear">Clear</string>
     <string name="logs_feed_stopped">The feed stopped. Trying again.</string>
     <string name="logs_older_gone">The oldest lines have gone from this page.</string>
+
+    <!-- ===== privacy ===== -->
+    <!-- One page of plain words about what leaves the phone. -->
+    <string name="privacy_title">Privacy</string>
+    <string name="privacy_heading_server">Your server</string>
+    <string name="privacy_server">Frigo talks to the Frigate server you sign in to, and to nothing else of yours. The address, the sign-in and the password stay in this app\'s own storage on this phone. Android\'s backup is off, so they don\'t leave it.</string>
+    <string name="privacy_heading_home">Home Assistant</string>
+    <string name="privacy_home">If you set one up, Frigo asks it about a camera\'s light and turns that light on and off. The token stays on this phone.</string>
+    <string name="privacy_heading_ai">Descriptions</string>
+    <string name="privacy_ai">When a description is asked for, the pictures go from your server to the model you picked on the server. They don\'t pass through your phone, and a model gets nothing unless descriptions are on.</string>
+    <string name="privacy_heading_updates">Updates</string>
+    <string name="privacy_updates">The update check asks GitHub which version is newest, and fetches the APK from the same place. It sends no account, and nothing about your server.</string>
 </resources>

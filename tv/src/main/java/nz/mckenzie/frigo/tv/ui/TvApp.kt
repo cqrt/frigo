@@ -182,8 +182,8 @@ private fun PairingScreen(repository: TvRepository) {
         trouble = false
         code = null
         val created = PairingServer(
-            onPair = { baseUrl, username, password ->
-                repository.accept(baseUrl, username, password)
+            onPair = { baseUrl, username, password, fingerprint, noAccount ->
+                repository.accept(baseUrl, username, password, fingerprint, noAccount)
             },
             onPaired = {},
         )

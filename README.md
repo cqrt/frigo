@@ -118,10 +118,10 @@ box is doing.
 **System logs** under System shows what frigate, go2rtc and nginx have been saying,
 newest at the bottom.
 Then come two switches: one for notifications, and one that plays the home page
-tiles live. Under notifications sit **Only these objects**, the list this phone
-narrows its alerts by, then **People to ignore**, the names it stays quiet
-about, then **Quiet times**, the hours it keeps quiet and the cameras it keeps
-quiet.
+tiles live. Under notifications sit **Buzz on detections too**, **Only these
+objects**, the list this phone narrows its alerts by, then **People to ignore**,
+the names it stays quiet about, then **Quiet times**, the hours it keeps quiet and
+the cameras it keeps quiet.
 Under **Cameras** is every camera your server has, in the order
 this phone shows them. A switch there turns one off on this phone. Hold a row and
 drag it to move it, and tap one for its own page, where its name here is set.
@@ -146,7 +146,19 @@ other.
 Under
 **Updates** it says which version you're on, and whether there's a newer one to
 install. A small red dot on the Settings icon in the bar means a newer version is
-waiting.
+waiting. Under About there is **Privacy**, the one page about what leaves the
+phone.
+
+## Licence and privacy
+
+Frigo is MIT licensed, the same licence Frigate uses, so you can fork it and ship
+your own build ([LICENSE](LICENSE)).
+
+**Privacy** under Settings, next to About, is one page of plain words. The phone
+talks to your server and your Home Assistant, and to nothing else of yours. The
+update check asks GitHub. A picture sent for a description goes from your server
+to the model you chose there, never through the phone. Your password stays on the
+phone, in the app's own storage, with Android's backup off.
 
 ## On the television
 
@@ -158,7 +170,14 @@ camera it replaces goes back into the strip in its own place.
 The first time, the television shows a code. On your phone, open Settings, tap
 **Link a TV**, point the camera at the code, and type your Frigate password. The
 phone hands the television the server's address and your sign-in over your home
-network, and the television signs in to Frigate itself from then on.
+network, and the television signs in to Frigate itself from then on. A server
+with no sign-in pairs with no password at all, and the television sends no token
+to it.
+
+A television has no keyboard, so it never asks about a certificate. The phone
+has already trusted that server's certificate by the time it pairs, and hands the
+fingerprint over with the address. The television trusts that one certificate and
+nothing else.
 
 The television keeps that sign-in, so it stays signed in after Frigate's day-long
 session runs out. It signs in again with the password you gave it, and the phone
@@ -201,7 +220,7 @@ one at a time, and either one stops the loop where it lands. Under Settings the
 row sets how long each camera keeps the screen: 3, 5 or 10 seconds.
 
 Every camera's stream is open while the loop runs, so the picture that arrives is
-already playing. That is four streams on four cameras, which a television on a
+already playing. That is one stream open for each camera, which a television on a
 cable handles and a small box over Wi-Fi may not.
 
 **Doorbell** shows an address for Home Assistant. Post to it when someone presses
@@ -226,8 +245,18 @@ full screen with the sound, Select pauses, the arrows step ten seconds, and Back
 returns to the list. Watching a clip marks it watched on your server, so the list
 is what's still to see.
 
-The TV app is `frigo-tv-<version>.apk` on each release page. It installs beside
-the phone app under its own name, and updates on its own.
+The TV app is `frigo-tv-<version>.apk` on each release page, beside the phone's.
+It installs beside the phone app under its own name.
+
+**Updates** under Settings on the television does what the phone's does: it asks
+GitHub whether there's a newer Frigo TV, and Select downloads it and hands it to
+Android's installer. The first time, Android asks whether Frigo TV may install an
+app; after that a release is one press. A fork that builds its own copies points
+both apps at its own repository, in `build.gradle.kts`, and each takes its own APK
+from that release page.
+
+On a server older than 0.16 there is no Review, so the television shows its
+cameras and leaves the Alerts button off, with a line in Settings saying why.
 
 ## The first time you open it
 
@@ -248,17 +277,41 @@ You enter the same address you use in a browser, your username, and your
 password. If you reach Frigate through a reverse proxy, that is the proxy address,
 port included. The app keeps the sign-in on the phone.
 
+A bare address works too. Type `192.168.0.99:5000` and Frigo works out the rest:
+http for an address in the house, https for a name out on the internet, and
+whichever one answers is what it keeps.
+
+If your Frigate has sign-in turned off, enter the address and leave the other two
+empty. Frigo asks the server whether it needs an account, signs in with none, and
+shows it as **No sign-in on this server** under Servers.
+
+Frigate's own certificate is one it made for itself, and a phone refuses those.
+Frigo asks once: it shows the certificate's fingerprint and trusts that one
+certificate for that one address if you say yes. A server with a real certificate
+never sees the question. If the certificate ever changes, the app says so rather
+than accepting the new one quietly.
+
+Frigate through Home Assistant's add-on answers to Home Assistant's own session,
+which Frigo can't follow. Sign in to the add-on's own port instead.
+
 If your Frigate has roles set up, you see the cameras your role allows and no
 others.
-
-Frigate's own certificate is one it made for itself, and a phone refuses those. If
-the app says it doesn't trust the certificate, sign in through the address your
-proxy serves, which has a certificate from a real authority.
 
 Frigate's session lasts a day. The app keeps your password, so it signs in again
 by itself and you stay signed in. The switch for that is Stay signed in, under
 Settings, Servers. Turn it off and the password goes; a session that runs out
 then puts the sign-in page up, with your address and username already filled in.
+
+## Which Frigate it works with
+
+Frigo is written against Frigate 0.18, and works with 0.16 and later. 0.16 is the
+first release with `/api/review`, which Review and the alerts stand on.
+
+On an older server, Frigo says once which version it found and what Frigate needs,
+and then opens on the cameras. Review, Explore and the server's own pages are not
+offered there, because the server has no answers for them. Everything walks the
+server once when it signs in and keeps the answer, so a tab that isn't there
+doesn't pretend to be.
 
 ## More than one server
 
@@ -329,8 +382,8 @@ Leave the app and come back, and the stream is opened again rather than carried 
 where it stopped. Picked up where it stopped, a picture paused for two minutes would come
 back two minutes behind the clock, still saying Live.
 
-The stills are one whole frame at a time, kept at the size Frigate decodes for detection:
-640x360 on the two outdoor cameras, 1280x960 on the door, 1280x720 on the printer. Frigate
+The stills are one whole frame at a time, kept at the size Frigate decodes for detection,
+which is your camera's own choice on your server. Frigate
 scales each frame up to whatever it's asked for, so asking for more than the camera sends
 only buys a bigger copy of the same pixels. The player's menu sets the height and frame rate
 for that stream, offers only what the camera has, and ticks what's on. Each camera keeps its
@@ -366,6 +419,12 @@ lists on the alerts page. Turn either off and the phone stays quiet.
 The switch at the top of the notifications page turns the cameras on in a batch.
 You can leave it off and turn cameras on one at a time, and those cameras still
 buzz this phone.
+
+A server set up with detections alone never marks anything as an alert, so it
+never buzzes. **Buzz on detections too**, under Notifications, sends those as
+well. It's off until you ask for it, so on a server whose alerts are set up the
+server stays in charge. With no camera alerting and the switch off, the watching
+line says why nothing will buzz and names the switch.
 
 This phone can narrow that further. **Only these objects**, under Notifications
 in Settings, keeps a list of its own, and an alert about an object that isn't on
@@ -439,7 +498,7 @@ place of the bare "something was seen" on the notification already in the shade.
 buzz has already happened, so it stays quiet.
 
 The question carries any name your server has already recognised, so the sentence can
-say Matt rather than a man. Frigate's own description names people because the name
+say Sam rather than a man. Frigate's own description names people because the name
 is in the text it gets; pictures alone are all strangers.
 
 Frigate writes its own description of a review once the review has finished, which
@@ -597,25 +656,32 @@ All of it belongs to the server you're signed in to, and to your username on it.
 two servers on the phone keep two lists, and two people on one server keep their
 own.
 
-## A camera's floodlight
+## A camera's light
 
-Frigate doesn't know a floodlight exists, so Frigo asks Home Assistant for it. You
-set that up once in Settings, under **Floodlights**: the box's address, and a
+Frigate doesn't know a light exists, so Frigo asks Home Assistant for it. You
+set that up once in Settings, under **Lights**: the box's address, and a
 long-lived token you make in your own Home Assistant profile. The token stays on this
 phone. It isn't sent to your server and it isn't in a settings backup.
 
-Tap a camera in Settings and pick its light under **Name**. The list is the lights
-Home Assistant has, and the one named after the camera sits at the top. **None** puts
-it back to no light.
+Home Assistant lists a floodlight as a light, and a Reolink lamp or plenty of other
+things as a switch. Frigo offers both, turns each over the way its own kind is
+turned over, and the list names one of each when two share a name.
 
-With a light picked, live view has a floodlight button in its top bar, left of the
+Tap a camera in Settings and pick its light under **Light**. The list is the lights
+and switches Home Assistant has, and the one named after the camera sits at the top.
+**None** puts it back to no light.
+
+There is one Home Assistant for the house rather than one for each server, so two
+servers in one app point at the same box.
+
+With a light picked, live view has a light button in its top bar, left of the
 speaker. One tap turns the light on, and the button goes blue while it's on. Another
 tap turns it off. A camera with no light, and a phone with no Home Assistant, have no
 button at all. Nothing turns a light on by itself.
 
 The button follows the light rather than remembering what you did last. Turn it off
-in the Tapo app, at the wall, or from another phone, and the blue goes out here on its
-own within a few seconds. Coming back to Frigo from another app asks straight away.
+in the light's own app, at the wall, or from another phone, and the blue goes out here
+on its own within a few seconds. Coming back to Frigo from another app asks straight away.
 
 At home the address is the box's own. Away from home it's the proxy you already put
 in front of Frigate, since the phone has to reach Home Assistant the same way it
@@ -708,7 +774,10 @@ is ever committed. Backup: there's a copy of the key and its password at
 
 - `data/FrigateApi.kt` - the Frigate endpoints this app uses, written against OkHttp.
 - `data/FrigoRepository.kt` - tokens, renewal, and the calls the screens make.
-- `data/HomeAssistantApi.kt` - the little of Home Assistant's API a floodlight needs, and which light belongs to which camera.
+- `data/ServerAddress.kt` - which scheme to try first for what you typed, and telling a certificate apart from a server that is away.
+- `data/TrustedCertificates.kt` - the certificates this phone was told to trust, and matching them on every request.
+- `data/ServerCapabilities.kt` - what a server can do, so a tab or a row isn't promised where it can't be kept.
+- `data/HomeAssistantApi.kt` - the little of Home Assistant's API a camera's light needs, and which light belongs to which camera.
 - `data/Language.kt` - the languages the app speaks, and the words for the places that aren't a screen.
 - `data/ServerPrefs.kt` - what the phone keeps: the servers and their sign-ins, each one's choices, and the copy of its settings.
 - `data/Backup.kt` - the settings file: what it carries, how it is read and written, and the name it is offered under.
@@ -724,4 +793,6 @@ is ever committed. Backup: there's a copy of the key and its password at
 - `ui/cameras/Playback.kt` - the day's bar under a camera, its spikes, the moment's picture, and the other cameras.
 - `ui/clips/` - the tab of clips kept on the server: the list, the rename and the delete, and the copy saved to the phone.
 - `tv/` - the television app: the pairing code, the strip of live cameras, and the sign-in it keeps.
+- `tv/data/TvUpdater.kt` - the television fetching its own next release, named exactly as the workflow names it.
+- `tv/data/TvTrust.kt` - the certificate the phone handed over at pairing, matched on every request.
 - `tools/mockfrigate/mock.py` - a stand-in Frigate for working on either app without touching the real one.

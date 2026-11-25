@@ -24,6 +24,27 @@ MOCK_ROLE=viewer python tools/mockfrigate/mock.py
 Review loses its tune icon, and a settings write answers the 403 a real server
 gives. Settings, Only these objects is where a phone like that narrows its alerts.
 
+A server with sign-in turned off, which is the other way in a stranger meets:
+
+```
+MOCK_NO_AUTH=1 python tools/mockfrigate/mock.py
+```
+
+Every endpoint then answers without a token, and `/api/login` is refused. The app
+asks `/api/config` with no token, hears an answer, and keeps the server with no
+account. Nothing after that sends an `Authorization` header at all.
+
+A server from before Review, to see what the version check hides:
+
+```
+MOCK_VERSION=0.14.1 python tools/mockfrigate/mock.py
+```
+
+`/api/stats` says 0.14.1, and everything added after 0.16 (`/api/review`,
+`/api/labels`, `/api/sub_labels`, `/api/genai/models`, `/api/config/set`) answers
+404. The app says once which version it found, then opens on the cameras with the
+Review and Explore tabs and the server's own rows gone.
+
 It serves six cameras, one of them disabled, three events, thumbnails, snapshots,
 an endless MJPEG stream that cycles three frames, and a four second clip for two
 of the three events. The third event has no clip, so the still-only path is

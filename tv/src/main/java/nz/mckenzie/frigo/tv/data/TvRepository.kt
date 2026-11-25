@@ -32,6 +32,8 @@ import java.io.IOException
 class TvRepository(
     private val prefs: TvPrefs,
     private val api: TvApi,
+    /** Which certificates the phone handed over when it paired. */
+    private val trust: TvTrust,
     /** Where a clip is kept while it is watched, so a second look costs nothing. */
     private val cacheDir: File,
 ) {
@@ -62,6 +64,15 @@ class TvRepository(
     private val _session = MutableStateFlow<Session?>(null)
     val session: StateFlow<Session?> = _session.asStateFlow()
 
+    private val _capabilities = MutableStateFlow(TvCapabilities())
+
+    /**
+     * What the server can do: its version, and whether it has reviews at all. An old
+     * server still shows its cameras, and this is what takes the alerts page away
+     * rather than leaving a button that opens nothing.
+     */
+    val capabilities: StateFlow<TvCapabilities> = _capabilities.asStateFlow()
+
     /** One sign-in at a time: six tiles failing together should not mean six logins. */
     private val signingIn = Mutex()
 
@@ -82,24 +93,46 @@ class TvRepository(
     }
 
     /**
-     * The phone has sent the address and a sign-in. Frigate is asked before
-     * anything is kept, so a wrong password is refused at the television and
-     * the phone can try again. Answers null when the TV is paired, or the
-     * sentence to show when it is not.
+     * The phone has sent the address, a sign-in, and whether this server has one at
+     * all. Frigate is asked before anything is kept, so a wrong password is refused
+     * at the television and the phone can try again. Answers null when the TV is
+     * paired, or the sentence to show when it is not.
+     *
+     * [fingerprint] is the certificate the phone had already trusted, so a
+     * television never has to ask about one with a remote. [noAccount] is a server
+     * whose sign-in is turned off: no token is asked for, kept, or sent.
      */
     suspend fun accept(
         baseUrl: String,
         username: String,
         password: String,
+        fingerprint: String? = null,
+        noAccount: Boolean = false,
     ): String? = withContext(Dispatchers.IO) {
         signingIn.withLock {
             val address = baseUrl.trim().trimEnd('/')
+            fingerprint?.let { trust.remember(address, it) }
             try {
-                val token = api.login(address, username, password)
-                val cameras = api.cameras(address, token)
-                prefs.writeServer(TvPrefs.Server(address, username, password, token))
-                _session.value = Session(address, token)
+                val token = if (noAccount) {
+                    if (!api.answersWithoutAccount(address)) return@withLock "That server needs a sign-in."
+                    null
+                } else {
+                    api.login(address, username, password)
+                }
+                val cameras = api.cameras(address, token.orEmpty())
+                prefs.writeServer(
+                    TvPrefs.Server(
+                        baseUrl = address,
+                        username = if (noAccount) "" else username,
+                        password = if (noAccount) "" else password,
+                        token = token,
+                        noAccount = noAccount,
+                        fingerprint = fingerprint,
+                    ),
+                )
+                _session.value = Session(address, token.orEmpty())
                 _gate.value = Gate.Ready(cameras)
+                readCapabilities(address, token.orEmpty())
                 null
             } catch (refused: TvException) {
                 refused.message
@@ -107,6 +140,12 @@ class TvRepository(
                 "The TV could not reach $address."
             }
         }
+    }
+
+    /** What the server can do, asked once and kept, so a slow screen isn't answered twice. */
+    private fun readCapabilities(baseUrl: String, token: String) {
+        runCatching { api.capabilities(baseUrl, token) }
+            .onSuccess { _capabilities.value = it }
     }
 
     /**
@@ -118,6 +157,15 @@ class TvRepository(
     suspend fun renew(): Session? = withContext(Dispatchers.IO) {
         signingIn.withLock {
             val server = prefs.readServer() ?: return@withLock null
+            // A server with no sign-in has nothing to renew, and no password to
+            // renew it with. It is asked something small instead, so a server that
+            // is away reads as away rather than as signed out.
+            if (server.noAccount || server.username.isBlank()) {
+                return@withLock runCatching {
+                    api.probe(server.baseUrl)
+                    Session(server.baseUrl, "").also { _session.value = it }
+                }.getOrNull()
+            }
             runCatching {
                 val token = api.login(server.baseUrl, server.username, server.password)
                 prefs.writeServer(server.copy(token = token))
@@ -155,9 +203,14 @@ class TvRepository(
 
     /** The phone's pairing has been taken away, or the password no longer works. */
     suspend fun forget() = withContext(Dispatchers.IO) {
+        // The certificate came from the phone for that one server, so it goes with it.
+        prefs.readServer()?.let { server ->
+            if (server.fingerprint != null) trust.forget(server.baseUrl)
+        }
         prefs.clear()
         _session.value = null
         _hidden.value = emptySet()
+        _capabilities.value = TvCapabilities()
         _gate.value = Gate.Pairing
     }
 
@@ -424,6 +477,18 @@ class TvRepository(
     }
 
     private suspend fun signIn(server: TvPrefs.Server) {
+        if (server.noAccount || server.username.isBlank()) {
+            val reached = runCatching { api.probe(server.baseUrl) }.isSuccess
+            if (!reached) {
+                _gate.value = Gate.Problem(refused = false)
+                return
+            }
+            _session.value = Session(server.baseUrl, "")
+            _gate.value = Gate.Ready(api.cameras(server.baseUrl, ""))
+            readCapabilities(server.baseUrl, "")
+            return
+        }
+
         val kept = server.token
         if (kept != null) {
             try {
@@ -432,6 +497,7 @@ class TvRepository(
                 if (fresh != null) prefs.writeServer(server.copy(token = fresh))
                 _session.value = Session(server.baseUrl, token)
                 _gate.value = Gate.Ready(api.cameras(server.baseUrl, token))
+                readCapabilities(server.baseUrl, token)
                 return
             } catch (refused: TvException) {
                 if (refused.status == 401 || refused.status == 403) {
@@ -454,6 +520,7 @@ class TvRepository(
             prefs.writeServer(server.copy(token = token))
             _session.value = Session(server.baseUrl, token)
             _gate.value = Gate.Ready(api.cameras(server.baseUrl, token))
+            readCapabilities(server.baseUrl, token)
         } catch (refused: TvException) {
             _gate.value = Gate.Problem(refused = refused.status == 401 || refused.status == 403)
         } catch (failed: Throwable) {

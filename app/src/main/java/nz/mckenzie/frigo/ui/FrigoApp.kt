@@ -46,6 +46,7 @@ import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.alerts.AlertService
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.Gate
+import nz.mckenzie.frigo.data.ServerCapabilities
 import nz.mckenzie.frigo.ui.cameras.CamerasScreen
 import nz.mckenzie.frigo.ui.cameras.PlayerScreen
 import nz.mckenzie.frigo.ui.clips.ClipsScreen
@@ -65,9 +66,11 @@ import nz.mckenzie.frigo.ui.settings.HomeAssistantScreen
 import nz.mckenzie.frigo.ui.settings.LanguageScreen
 import nz.mckenzie.frigo.ui.settings.LinkTvScreen
 import nz.mckenzie.frigo.ui.settings.LogsScreen
+import nz.mckenzie.frigo.ui.settings.PrivacyScreen
 import nz.mckenzie.frigo.ui.settings.QuietTimesScreen
 import nz.mckenzie.frigo.ui.settings.SettingsScreen
 import nz.mckenzie.frigo.ui.settings.SystemScreen
+import nz.mckenzie.frigo.ui.version.OldServerScreen
 
 @Composable
 fun FrigoApp(container: AppContainer, openCamera: String? = null, onCameraOpened: () -> Unit = {}) {
@@ -96,6 +99,7 @@ private fun AppBody(
     val gate by container.repository.gate.collectAsStateWithLifecycle()
     val alerts by container.repository.alerts.collectAsStateWithLifecycle()
     val onboarded by container.repository.onboarded.collectAsStateWithLifecycle()
+    val oldServer by container.repository.oldServer.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -124,6 +128,17 @@ private fun AppBody(
     // whenever Settings asks for it back.
     if (onboarded == false) {
         OnboardingScreen(container)
+        return
+    }
+
+    // A server older than Frigo supports is named once, with a button that carries
+    // on. The tabs are behind it, so the app never opens on pages the server has no
+    // answers for without saying why.
+    val old = oldServer
+    if (gate is Gate.SignedIn && old != null) {
+        OldServerScreen(version = old) {
+            scope.launch { container.repository.dismissOldServer() }
+        }
         return
     }
 
@@ -162,6 +177,19 @@ internal val FrigoTabs = listOf(
     FrigoTab("settings", R.string.tab_settings, Icons.Filled.Settings),
 )
 
+/**
+ * The tabs this server has something behind. A server with no reviews has no
+ * Review tab, and one with no labels has nothing for Explore to filter by, so
+ * neither is offered rather than opening on an empty page.
+ */
+internal fun tabsFor(capabilities: ServerCapabilities): List<FrigoTab> = FrigoTabs.filter { tab ->
+    when (tab.route) {
+        "reviews" -> capabilities.reviews
+        "explore" -> capabilities.labels
+        else -> true
+    }
+}
+
 private const val PLAYER_PREFIX = "player/"
 
 @Composable
@@ -176,6 +204,8 @@ private fun MainScaffold(
     val currentRoute = backStackEntry?.destination?.route
     val watching = currentRoute?.startsWith(PLAYER_PREFIX) == true
     val updateWaiting by container.updateWatch.waiting.collectAsStateWithLifecycle()
+    val capabilities by container.repository.capabilities.collectAsStateWithLifecycle()
+    val tabs = tabsFor(capabilities)
 
     // A tapped alert asks for one camera, and it sits on top of the grid rather
     // than replacing it. Back from there lands on the grid with the tabs back,
@@ -190,7 +220,7 @@ private fun MainScaffold(
         bottomBar = {
             if (!watching) {
                 NavigationBar {
-                    FrigoTabs.forEach { tab ->
+                    tabs.forEach { tab ->
                         NavigationBarItem(
                             selected = currentRoute == tab.route,
                             onClick = { navController.switchTo(tab.route) },
@@ -302,6 +332,14 @@ private fun MainScaffold(
                     onLinkTv = {
                         navController.navigate("link-tv") { launchSingleTop = true }
                     },
+                    onOpenPrivacy = {
+                        navController.navigate("privacy") { launchSingleTop = true }
+                    },
+                )
+            }
+            composable("privacy") {
+                PrivacyScreen(
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable("system") {

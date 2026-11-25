@@ -30,8 +30,11 @@ data class HomeAssistant(val address: String = "", val token: String = "") {
     val isSet: Boolean get() = address.isNotBlank() && token.isNotBlank()
 }
 
-/** A light in Home Assistant: the id everything is asked for, and the name to show. */
-data class Light(val id: String, val name: String)
+/** A light or a switch in Home Assistant: the id everything is asked for, and the name to show. */
+data class Light(val id: String, val name: String) {
+    /** What Home Assistant calls this kind of entity: `light`, or `switch` for a lamp. */
+    val domain: String get() = id.substringBefore('.')
+}
 
 /** Home Assistant turning something down, in words a screen can show. */
 class HomeAssistantException(override val message: String) : Exception(message)
@@ -58,7 +61,7 @@ class HomeAssistantApi(
         request(address, token, "/api/").get().build().okText()
     }
 
-    /** Every light the box has, in the order it sent them. */
+    /** Every light and switch the box has, in the order it sent them. */
     fun lights(address: String, token: String): List<Light> =
         lightsIn(request(address, token, "/api/states").get().build().okText())
 
@@ -79,12 +82,18 @@ class HomeAssistantApi(
     }
 
     /**
-     * Turns one light on or off. Home Assistant takes either as an action call with
-     * the entity it applies to, and answers at once: the light itself catches up.
+     * Turns one light or switch on or off. Home Assistant takes either as an action
+     * call with the entity it applies to, and answers at once: the light itself
+     * catches up.
+     *
+     * The action is the entity's own domain, because a Reolink lamp and plenty of
+     * other things arrive as a `switch`, and `light/turn_on` for one of those is a
+     * call the box turns down.
      */
     fun turn(address: String, token: String, entity: String, on: Boolean) {
         val body = lightCallBody(entity).toRequestBody(JSON)
-        val path = if (on) "/api/services/light/turn_on" else "/api/services/light/turn_off"
+        val domain = entity.substringBefore('.')
+        val path = "/api/services/$domain/" + if (on) "turn_on" else "turn_off"
         request(address, token, path).post(body).build().okText()
     }
 
@@ -145,18 +154,23 @@ internal fun lightCallBody(entity: String): String =
     buildJsonObject { put("entity_id", entity) }.toString()
 
 /**
- * The lights in an `/api/states` answer: everything whose entity id says it is a
- * light, named by its friendly name where Home Assistant gave it one.
+ * The lights and switches in an `/api/states` answer: everything whose entity id
+ * is one of those two, named by its friendly name where Home Assistant gave it one.
+ *
+ * A floodlight arrives as a `light` from Tapo's own integration and as a `switch`
+ * from Reolink and plenty of others, and a lamp is a lamp either way, so both are
+ * offered. What kind it is travels with it, because the action to turn it over is
+ * named after it.
  *
  * The whole house's entities arrive in this one answer, which is a lot of JSON for
- * the handful of lights in it, so the rest is dropped as it is read.
+ * the handful in it, so the rest is dropped as it is read.
  */
 internal fun lightsIn(states: String): List<Light> =
     runCatching {
         (HaJson.parseToJsonElement(states) as? JsonArray).orEmpty().mapNotNull { element ->
             val state = element as? JsonObject ?: return@mapNotNull null
             val id = state["entity_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
-            if (!id.startsWith("light.")) return@mapNotNull null
+            if (!id.startsWith("light.") && !id.startsWith("switch.")) return@mapNotNull null
             val attributes = state["attributes"] as? JsonObject
             val named = attributes?.get("friendly_name")?.jsonPrimitive?.contentOrNull
             Light(id = id, name = named?.takeIf { it.isNotBlank() } ?: lightName(id))
@@ -168,12 +182,19 @@ internal fun lightsIn(states: String): List<Light> =
  * reads as "Door cam floodlight".
  */
 internal fun lightName(entity: String): String {
-    val bare = entity.removePrefix("light.")
+    val bare = entity.substringAfter('.')
         .replace('_', ' ')
         .trim()
     if (bare.isEmpty()) return entity
     return bare.replaceFirstChar { it.uppercaseChar() }
 }
+
+/**
+ * The name to show in a list: Home Assistant's own, and the kind of entity it is
+ * when two of them share a name and the name alone would read as two of the same.
+ */
+internal fun Light.label(among: List<Light>): String =
+    if (among.count { it.name.equals(name, ignoreCase = true) } > 1) "$name ($domain)" else name
 
 /**
  * The lights to offer for a camera: the one named after it first, then the rest by

@@ -38,6 +38,10 @@ android {
         targetSdk = 36
         versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
         versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
+
+        // The repository whose releases this app checks for a newer version. A fork
+        // sets its own here, and its updates then come from its own release page.
+        buildConfigField("String", "UPDATE_REPO", "\"cqrt/frigo\"")
     }
 
     signingConfigs {

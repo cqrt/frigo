@@ -51,6 +51,7 @@ import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.AppContainer
 import nz.mckenzie.frigo.data.CameraSwitch
 import nz.mckenzie.frigo.data.Light
+import nz.mckenzie.frigo.data.label
 import nz.mckenzie.frigo.data.lightName
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.components.CardDivider
@@ -342,11 +343,20 @@ fun CameraSwitchesScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     when {
-                        homeAssistant == null -> Text(
-                            text = stringResource(R.string.camsw_floodlight_set_up),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                        )
+                        homeAssistant == null -> Column(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.camsw_floodlight_set_up),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_home_assistant_note),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
 
                         lightsProblem != null -> Text(
                             text = lightsProblem.orEmpty(),
@@ -383,7 +393,7 @@ fun CameraSwitchesScreen(
                             )
                             lights?.forEach { found ->
                                 LightRow(
-                                    name = found.name,
+                                    name = found.label(lights.orEmpty()),
                                     chosen = found.id == light,
                                     onClick = {
                                         picking = false

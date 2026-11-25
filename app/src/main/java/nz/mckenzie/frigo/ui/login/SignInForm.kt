@@ -16,11 +16,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import nz.mckenzie.frigo.R
 import nz.mckenzie.frigo.data.FrigoRepository
+import nz.mckenzie.frigo.data.UntrustedCertificateException
 import nz.mckenzie.frigo.ui.FrigoIcons
 import nz.mckenzie.frigo.ui.friendlyMessage
 
@@ -68,19 +71,29 @@ fun SignInForm(
     var shown by rememberSaveable { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember(notice) { mutableStateOf(notice) }
+    // The one certificate the server offered, waiting on a yes or no.
+    var untrusted by remember { mutableStateOf<UntrustedCertificateException?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    val ready = address.isNotBlank() && username.isNotBlank() && password.isNotBlank() && !busy
+    // Only the address has to be there. A server with sign-in turned off has
+    // nothing to type in the other two, and it is the first thing a stranger meets.
+    val ready = address.isNotBlank() && !busy
 
-    fun submit() {
+    fun submit(trust: Pair<String, String>? = null) {
         if (!ready) return
         scope.launch {
             busy = true
             error = null
-            runCatching { repository.signIn(address, username, password) }
+            runCatching { repository.signIn(address, username, password, trust) }
                 .onSuccess { onSignedIn() }
-                .onFailure { error = it.friendlyMessage(context) }
+                .onFailure { failure ->
+                    if (failure is UntrustedCertificateException) {
+                        untrusted = failure
+                    } else {
+                        error = failure.friendlyMessage(context)
+                    }
+                }
             busy = false
         }
     }
@@ -148,7 +161,7 @@ fun SignInForm(
         Spacer(Modifier.height(2.dp))
 
         Button(
-            onClick = ::submit,
+            onClick = { submit() },
             enabled = ready,
             modifier = Modifier.fillMaxWidth().height(52.dp),
         ) {
@@ -168,6 +181,55 @@ fun SignInForm(
             text = stringResource(R.string.login_keeps_sign_in),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        // The two things a stranger meets and the page can save them looking up:
+        // a server that wants no account, and Frigate reached through the add-on.
+        Text(
+            text = stringResource(R.string.login_no_account_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(R.string.login_addon_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    // A certificate the phone won't take is the common case at home, and the one
+    // thing a browser does that an app can't do quietly. It is asked once, for the
+    // one address, and the fingerprint is what makes that safe.
+    untrusted?.let { offered ->
+        AlertDialog(
+            onDismissRequest = { untrusted = null },
+            title = { Text(stringResource(R.string.login_certificate_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(stringResource(R.string.login_certificate_detail, offered.address))
+                    Text(
+                        text = offered.fingerprint,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val offeredAddress = offered.address
+                        val fingerprint = offered.fingerprint
+                        untrusted = null
+                        submit(offeredAddress to fingerprint)
+                    },
+                ) {
+                    Text(stringResource(R.string.login_certificate_trust))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { untrusted = null }) {
+                    Text(stringResource(R.string.login_certificate_no))
+                }
+            },
         )
     }
 }

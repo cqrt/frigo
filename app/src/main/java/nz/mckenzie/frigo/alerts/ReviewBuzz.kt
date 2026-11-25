@@ -38,8 +38,9 @@ class ReviewBuzz(
         hidden: Set<String> = emptySet(),
         only: AlertObjects = AlertObjects(),
         leftOut: AlertPeople = AlertPeople(),
+        detections: Boolean = false,
     ): Boolean {
-        if (!allowed(review, change, now, rules, hidden, only, leftOut)) return false
+        if (!allowed(review, change, now, rules, hidden, only, leftOut, detections)) return false
         buzzed[review.id] = now
         return true
     }
@@ -63,9 +64,16 @@ class ReviewBuzz(
         hidden: Set<String> = emptySet(),
         only: AlertObjects = AlertObjects(),
         leftOut: AlertPeople = AlertPeople(),
+        /**
+         * Whether a review the server calls a detection is worth a buzz. Off by
+         * default: a server that marks its alerts is in charge of what reaches you,
+         * and one set up with detections alone is the only place this changes.
+         */
+        detections: Boolean = false,
     ): Boolean {
         if (change != "new" && change != "update") return false
-        if (review.severity != ALERT) return false
+        val wanted = review.severity == ALERT || (detections && review.severity == DETECTION)
+        if (!wanted) return false
         if (review.id.isBlank() || review.camera.isBlank()) return false
         if (review.camera in hidden) return false
 
@@ -100,5 +108,8 @@ class ReviewBuzz(
 
         /** The severity Frigate gives a review it thinks is worth telling you about. */
         const val ALERT = "alert"
+
+        /** The severity of a review the server decided was not an alert. */
+        const val DETECTION = "detection"
     }
 }

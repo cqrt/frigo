@@ -280,10 +280,12 @@ internal fun LiveVideo(
     }
 }
 
-/** A player that sends the sign-in and keeps the stream open until it is closed. */
+/** A player that sends the sign-in, when there is one, and keeps the stream open. */
 private fun http(token: String): DefaultHttpDataSource.Factory =
     DefaultHttpDataSource.Factory()
-        .setDefaultRequestProperties(mapOf("Authorization" to "Bearer $token"))
+        .setDefaultRequestProperties(
+            if (token.isBlank()) emptyMap() else mapOf("Authorization" to "Bearer $token"),
+        )
         .setUserAgent("Frigo")
         .setConnectTimeoutMs(15_000)
         .setReadTimeoutMs(15_000)

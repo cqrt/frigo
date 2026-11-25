@@ -135,6 +135,7 @@ fun SettingsScreen(
     onOpenHomeAssistant: () -> Unit = {},
     onAddServer: () -> Unit = {},
     onLinkTv: () -> Unit = {},
+    onOpenPrivacy: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -152,6 +153,16 @@ fun SettingsScreen(
     val lockOn by repository.lock.collectAsStateWithLifecycle()
     // The other box in the house, which the floodlight row names.
     val homeAssistant by repository.homeAssistant.collectAsStateWithLifecycle()
+    // What this server has, so a row for something it doesn't is not drawn.
+    val capabilities by repository.capabilities.collectAsStateWithLifecycle()
+
+    // Whether the server has a model that can describe a picture. A server without
+    // one has nothing behind AI descriptions, so the row is not drawn: an empty
+    // promise is worse than no row.
+    var aiReady by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        aiReady = runCatching { repository.aiSetup().ready }.getOrDefault(false)
+    }
 
     // Whether this phone can ask for anything, and the prompt itself. The switch
     // only moves once the phone has said who is holding it, so nobody switches on
@@ -385,7 +396,11 @@ fun SettingsScreen(
                     Item(
                         icon = FrigoIcons.Server,
                         title = server.baseUrl.shortName(),
-                        value = server.username,
+                        // A server with sign-in turned off has no account to name,
+                        // so the row says that rather than showing a blank.
+                        value = server.username.ifBlank {
+                            stringResource(R.string.settings_no_sign_in)
+                        },
                         // The one you are on is not a tap, and neither is one you
                         // are not allowed to move to.
                         onClick = if (switchable) {
@@ -413,38 +428,42 @@ fun SettingsScreen(
 
                 // The password this phone keeps is what signs it back in when the
                 // session runs out, so the row says what you get from it rather
-                // than what is stored.
-                val keptOn = servers.firstOrNull { it.baseUrl == baseUrl }?.password != null
-                Item(
-                    icon = FrigoIcons.Key,
-                    title = stringResource(R.string.settings_stay_signed_in),
-                    supporting = stringResource(
-                        if (keptOn) {
-                            R.string.settings_stay_signed_in_supporting
-                        } else {
-                            R.string.settings_stay_signed_in_off
-                        },
-                    ),
-                    trailing = {
-                        Switch(
-                            checked = keptOn,
-                            onCheckedChange = { on ->
-                                if (!on) {
-                                    scope.launch { repository.setKeepSignedIn(false) }
-                                    return@Switch
-                                }
-                                // Keeping it needs the password, which the phone
-                                // cannot know, so it is asked for once.
-                                stayPassword = ""
-                                stayShown = false
-                                stayProblem = null
-                                stayOn = true
+                // than what is stored. A server with no sign-in has no session and
+                // no password, so the row has nothing to offer and isn't shown.
+                val here = servers.firstOrNull { it.baseUrl == baseUrl }
+                if (here?.username?.isNotBlank() != false) {
+                    val keptOn = here?.password != null
+                    Item(
+                        icon = FrigoIcons.Key,
+                        title = stringResource(R.string.settings_stay_signed_in),
+                        supporting = stringResource(
+                            if (keptOn) {
+                                R.string.settings_stay_signed_in_supporting
+                            } else {
+                                R.string.settings_stay_signed_in_off
                             },
-                        )
-                    },
-                )
+                        ),
+                        trailing = {
+                            Switch(
+                                checked = keptOn,
+                                onCheckedChange = { on ->
+                                    if (!on) {
+                                        scope.launch { repository.setKeepSignedIn(false) }
+                                        return@Switch
+                                    }
+                                    // Keeping it needs the password, which the phone
+                                    // cannot know, so it is asked for once.
+                                    stayPassword = ""
+                                    stayShown = false
+                                    stayProblem = null
+                                    stayOn = true
+                                },
+                            )
+                        },
+                    )
 
-                CardDivider()
+                    CardDivider()
+                }
 
                 Item(
                     icon = FrigoIcons.Television,
@@ -487,26 +506,32 @@ fun SettingsScreen(
             // else. It sits under the servers it belongs to.
             if (admin == true) {
                 Group(stringResource(R.string.settings_frigate)) {
-                    Item(
-                        icon = FrigoIcons.Tune,
-                        title = stringResource(R.string.settings_alerts_and_detections),
-                        supporting = stringResource(R.string.settings_alerts_supporting),
-                        onClick = onOpenAlerts,
-                        trailing = { OpenMark() },
-                    )
+                    // A row for a page the server has no answers for is a promise
+                    // it can't keep, so only what exists is drawn.
+                    var rows = 0
+                    if (capabilities.reviews && capabilities.configSet) {
+                        rows++
+                        Item(
+                            icon = FrigoIcons.Tune,
+                            title = stringResource(R.string.settings_alerts_and_detections),
+                            supporting = stringResource(R.string.settings_alerts_supporting),
+                            onClick = onOpenAlerts,
+                            trailing = { OpenMark() },
+                        )
+                    }
 
-                    CardDivider()
+                    if (capabilities.genai && aiReady) {
+                        if (rows++ > 0) CardDivider()
+                        Item(
+                            icon = FrigoIcons.Sparkle,
+                            title = stringResource(R.string.settings_ai),
+                            supporting = stringResource(R.string.settings_ai_supporting),
+                            onClick = onOpenAi,
+                            trailing = { OpenMark() },
+                        )
+                    }
 
-                    Item(
-                        icon = FrigoIcons.Sparkle,
-                        title = stringResource(R.string.settings_ai),
-                        supporting = stringResource(R.string.settings_ai_supporting),
-                        onClick = onOpenAi,
-                        trailing = { OpenMark() },
-                    )
-
-                    CardDivider()
-
+                    if (rows++ > 0) CardDivider()
                     Item(
                         icon = FrigoIcons.Gauge,
                         title = stringResource(R.string.settings_system),
@@ -524,6 +549,12 @@ fun SettingsScreen(
                         onClick = onOpenLogs,
                         trailing = { OpenMark() },
                     )
+
+                    // The one line that says why something is missing, rather than
+                    // leaving a gap that looks like a fault.
+                    if (capabilities.limited) {
+                        Note(text = stringResource(R.string.settings_server_limited))
+                    }
                 }
             }
 
@@ -566,6 +597,23 @@ fun SettingsScreen(
 
                 CardDivider()
 
+                // A server set up with detections alone sends no alert at all, so
+                // without this it would never buzz however the phone is set. Off
+                // until you ask, so the server's own alerts stay in charge.
+                Item(
+                    icon = FrigoIcons.Motion,
+                    title = stringResource(R.string.settings_detections),
+                    supporting = stringResource(R.string.settings_detections_supporting),
+                    trailing = {
+                        Switch(
+                            checked = alerts.detections,
+                            onCheckedChange = { on -> save(alerts.copy(detections = on)) },
+                        )
+                    },
+                )
+
+                CardDivider()
+
                 Item(
                     icon = FrigoIcons.Tag,
                     title = stringResource(R.string.alert_objects_title),
@@ -578,13 +626,18 @@ fun SettingsScreen(
 
                 // The list for the person rather than the object: Frigate names a
                 // face on the alert, and this phone can stay quiet about that name.
-                Item(
-                    icon = FrigoIcons.Person,
-                    title = stringResource(R.string.alert_people_title),
-                    supporting = people.said(),
-                    onClick = onOpenAlertPeople,
-                    trailing = { OpenMark() },
-                )
+                // A server that has learned no names has nothing to offer here.
+                if (capabilities.subLabels) {
+                    Item(
+                        icon = FrigoIcons.Person,
+                        title = stringResource(R.string.alert_people_title),
+                        supporting = people.said(),
+                        onClick = onOpenAlertPeople,
+                        trailing = { OpenMark() },
+                    )
+
+                    CardDivider()
+                }
 
                 // Quiet without saying why would look broken. Every camera off on
                 // the server is the one thing that can silence all of them.
@@ -633,9 +686,9 @@ fun SettingsScreen(
                 )
             }
 
-            // The floodlight is a light in Home Assistant, which is another box in
-            // the house rather than part of the server. It sits with the phone's own
-            // settings for that reason, and the token it needs is asked for once.
+            // A camera's light is an entity in Home Assistant, which is another box
+            // in the house rather than part of the server. It sits with the phone's
+            // own settings for that reason, and the token it needs is asked for once.
             Group(stringResource(R.string.settings_floodlights)) {
                 Item(
                     icon = FrigoIcons.Floodlight,
@@ -645,6 +698,10 @@ fun SettingsScreen(
                     onClick = onOpenHomeAssistant,
                     trailing = { OpenMark() },
                 )
+
+                // One box per phone, however many servers are in the app, so the
+                // card says whose it is rather than leaving it to be guessed.
+                Note(text = stringResource(R.string.settings_home_assistant_note))
             }
 
             // Every camera the server has, including the ones this phone turned off:
@@ -946,6 +1003,14 @@ fun SettingsScreen(
                     Fact(stringResource(R.string.settings_version), BuildConfig.VERSION_NAME)
                     Fact(stringResource(R.string.settings_author), "Matt Mckenzie")
                     Fact(stringResource(R.string.settings_copyright), "© 2026 Matt Mckenzie")
+                    // What leaves the phone, next to who made it: the two things
+                    // someone reads before installing something they didn't write.
+                    TextButton(
+                        onClick = onOpenPrivacy,
+                        modifier = Modifier.padding(start = 0.dp),
+                    ) {
+                        Text(stringResource(R.string.privacy_title))
+                    }
                     TextButton(
                         onClick = { scope.launch { repository.setOnboarded(false) } },
                         modifier = Modifier.padding(start = 0.dp),

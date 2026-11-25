@@ -252,4 +252,52 @@ class ReviewBuzzTest {
         assertTrue(buzz.buzzes(review(), "new", ten, rules))
         assertFalse(buzz.allowed(review(), "new", ten + 1_000, rules))
     }
+
+    /**
+     * A server set up with detections alone never sends an alert, so off is the
+     * default and nothing changes for a server that already works.
+     */
+    @Test
+    fun aDetectionBuzzesOnlyWithTheSwitchOn() {
+        val detection = review(severity = "detection")
+
+        assertFalse(ReviewBuzz().buzzes(detection, "new", ten, rules))
+        assertTrue(ReviewBuzz().buzzes(detection, "new", ten, rules, detections = true))
+    }
+
+    /** With the switch on, an alert still buzzes, and the two are one notification each. */
+    @Test
+    fun theSwitchDoesNotChangeWhatAnAlertDoes() {
+        assertTrue(ReviewBuzz().buzzes(review(), "new", ten, rules, detections = true))
+        assertFalse(ReviewBuzz().buzzes(review(id = "2", severity = ""), "new", ten, rules, detections = true))
+    }
+
+    /** A camera turned off on this phone stays off for detections too. */
+    @Test
+    fun aDetectionOnACameraTurnedOffHereDoesNotBuzz() {
+        assertFalse(
+            ReviewBuzz().buzzes(
+                review(severity = "detection"),
+                "new",
+                ten,
+                rules,
+                hidden = setOf("drive"),
+                detections = true,
+            ),
+        )
+    }
+
+    /** And the server's own object lists still narrow it. */
+    @Test
+    fun aDetectionWithNoObjectOnTheAlertListDoesNotBuzz() {
+        assertFalse(
+            ReviewBuzz().buzzes(
+                review(severity = "detection", objects = listOf("car")),
+                "new",
+                ten,
+                rules,
+                detections = true,
+            ),
+        )
+    }
 }

@@ -27,6 +27,12 @@
     <!-- Einstellungen. -->
     <string name="settings_title">Einstellungen</string>
     <string name="settings_servers">Server</string>
+    <string name="settings_no_sign_in">Dieser Server fragt keine Anmeldung</string>
+    <string name="settings_server_limited">Dieser Server hat nicht alles, was Frigo nutzt, deshalb fehlen einige Reiter und Zeilen.</string>
+    <string name="oldserver_title">Dieser Server ist älter, als Frigo erwartet</string>
+    <string name="oldserver_running">Er läuft auf %1$s. Frigo ist für %2$s und neuer geschrieben.</string>
+    <string name="oldserver_what">Kameras und Clips gehen weiter. Review, Explore und die Seiten des Servers selbst vielleicht nicht, deshalb fehlen ihre Reiter und Zeilen.</string>
+    <string name="oldserver_carry_on">Weiter</string>
     <string name="settings_add_server">Server hinzufügen</string>
     <string name="settings_sign_out">Abmelden</string>
     <string name="settings_sign_out_this">Von diesem Server abmelden</string>
@@ -44,6 +50,7 @@
     <string name="link_tv_scan_again">Erneut scannen</string>
     <string name="link_tv_tv_at">Fernseher unter %1$s</string>
     <string name="link_tv_signs_in">Meldet sich als %1$s auf %2$s an.</string>
+    <string name="link_tv_no_account">Der Android-TV nutzt %1$s, das keine Anmeldung verlangt.</string>
     <string name="link_tv_password">Frigate-Passwort</string>
     <string name="link_tv_pair">Fernseher verbinden</string>
     <string name="link_tv_paired">Verbunden. Der Fernseher meldet sich an.</string>
@@ -61,6 +68,8 @@
     <string name="settings_ai">KI-Beschreibungen</string>
     <string name="settings_ai_supporting">Mit KI beschreibt Frigo, was es in deinen Alarmen sieht</string>
     <string name="settings_alerts_and_detections">Alarme und Erkennungen</string>
+    <string name="settings_detections">Auch bei Erkennungen piepen</string>
+    <string name="settings_detections_supporting">Ein Server, der nur auf Erkennungen eingestellt ist, sendet nie einen Alarm. Damit piepen auch die.</string>
     <string name="settings_alerts_supporting">Die Listen, aus denen dein Server einen Alarm macht.</string>
     <string name="settings_all_cameras_off">Auf der Benachrichtigungsseite deines Servers ist jede Kamera aus, also piept nichts.</string>
     <string name="settings_quiet_times">Ruhezeiten</string>
@@ -86,9 +95,10 @@
     <string name="settings_live_supporting">Spielt Video im Tab Kameras. Das kostet mehr Akku und Daten.</string>
 
     <!-- Das andere Gerät im Haus, das vom Flutlicht einer Kamera weiß. -->
-    <string name="settings_floodlights">Flutlichter</string>
+    <string name="settings_floodlights">Lichter</string>
     <string name="settings_home_assistant">Home Assistant</string>
     <string name="settings_home_assistant_off">Nicht eingerichtet</string>
+    <string name="settings_home_assistant_note">Das ist das Home Assistant des Hauses, nicht das deines Servers, deshalb nutzen es alle Server in Frigo.</string>
 
     <string name="settings_cameras">Kameras</string>
     <string name="settings_cameras_stale">Dein Server antwortet nicht. Das sind die Kameras, die dein Handy zuletzt gelesen hat, %1$s.</string>
@@ -193,7 +203,7 @@
 
     <!-- Was eine fehlgeschlagene Anfrage sagt, wenn der Fehler beim Handy oder im Netz liegt. -->
     <string name="err_certificate_name">Die Adresse passt nicht zum Zertifikat des Servers. Prüfe sie, samt Port.</string>
-    <string name="err_certificate_untrusted">Dieses Handy traut dem Zertifikat des Servers nicht. Frigate macht sein eigenes, wenn es kein echtes bekommen hat. Melde dich über die Adresse an, die dein Proxy liefert.</string>
+    <string name="err_certificate_untrusted">Dieses Handy traut dem Zertifikat des Servers nicht. Hat der Server ein neues, melde dich ab und wieder an, damit du danach gefragt wirst.</string>
     <string name="err_no_address">Die Adresse finde ich nicht. Prüfe sie und versuch es nochmal.</string>
     <string name="err_timeout">Der Server hat zu lange gebraucht.</string>
     <string name="err_unreachable">Der Server ist nicht erreichbar. Prüfe deine Verbindung.</string>
@@ -261,8 +271,9 @@
 
     <!-- Was die stille Benachrichtigung sagt, wenn nichts piept. -->
     <string name="alerts_all_cameras_off">Auf der Benachrichtigungsseite deines Servers ist jede Kamera aus, also piept nichts.</string>
-    <string name="alerts_no_alerts_on">Keine Kamera hat Alarme an, also piept nichts.</string>
+    <string name="alerts_no_alerts_on">Keine Kamera hat Alarme an, also piept nichts. „Auch bei Erkennungen piepen“ in den Einstellungen meldet stattdessen Erkennungen.</string>
     <string name="alerts_no_alert_objects">Keine Kamera hat Alarm-Objekte, also piept nichts.</string>
+    <string name="alerts_watching_detections">%1$s für Erkennungen, also piept alles, was sie sehen.</string>
     <string name="alerts_only_objects">Deine Objektliste ist der Grund, warum nichts piept. Ändere sie in Einstellungen, Nur diese Objekte.</string>
     <string name="alerts_all_cameras_hidden">Alle Kameras, die melden würden, sind auf diesem Telefon ausgeschaltet, also piept nichts. Schalte eine unter Einstellungen, Kameras wieder ein.</string>
 
@@ -310,6 +321,9 @@
     <string name="api_bad_address">Die Serveradresse sieht nicht richtig aus</string>
     <string name="api_enter_address">Gib deine Serveradresse ein</string>
     <string name="api_not_a_web_address">Das sieht nicht nach einer Webadresse aus</string>
+    <string name="api_cant_reach">Keine Antwort von dieser Adresse. Prüf, ob sie stimmt und der Server läuft.</string>
+    <string name="api_certificate_untrusted">Diesem Serverzertifikat vertraut dieses Handy nicht.</string>
+    <string name="api_need_sign_in">Der Server hat die Anmeldung abgelehnt, und er braucht eine.</string>
 
     <!-- Eine Kamera ansehen. -->
     <string name="api_live_view_returned">Das Livebild gab %1$d zurück</string>
@@ -394,6 +408,14 @@
     <string name="login_show_password">Passwort zeigen</string>
     <string name="login_hide_password">Passwort verbergen</string>
     <string name="login_keeps_sign_in">Frigo behält deine Anmeldung nur auf diesem Handy. Es spricht mit deinem Server und sonst niemandem.</string>
+    <string name="login_no_account_note">Ein Server ohne Anmeldung braucht nur seine Adresse.</string>
+    <string name="login_addon_note">Über das Home-Assistant-Add-on erreichbar? Melde dich am eigenen Port des Add-ons an.</string>
+
+    <!-- Das eine Zertifikat, das ein Handy ablehnt, bis man ihm sagt, dass es ihm vertrauen soll. -->
+    <string name="login_certificate_title">Diesem Serverzertifikat wird nicht vertraut</string>
+    <string name="login_certificate_detail">Dein Handy kennt das Zertifikat von %1$s nicht, was bei einem Frigate mit eigenem Zertifikat normal ist. Nur diesem einen Zertifikat für diese Adresse vertrauen?</string>
+    <string name="login_certificate_trust">Vertrauen und anmelden</string>
+    <string name="login_certificate_no">Nicht vertrauen</string>
 
     <string name="login_add_server">Server hinzufügen</string>
     <string name="login_add_server_note">Melde dich bei einem anderen Frigate-Server an. Der aktuelle behält seine Anmeldung, du kannst in den Einstellungen zurückwechseln.</string>
@@ -475,7 +497,7 @@
 
     <!-- Die Tour: eine Seite für jeden Tab. -->
     <string name="onboard_tour_cameras">Kameras</string>
-    <string name="onboard_tour_cameras_words">Alle vier Kameras auf einmal, ein Blick sagt dir, ob jemand da ist. Tippe eine an für das Livebild.</string>
+    <string name="onboard_tour_cameras_words">Alle Kameras auf einmal, ein Blick sagt dir, ob jemand da ist. Tippe eine an für das Livebild.</string>
     <string name="onboard_tour_live">Live und Wiedergabe</string>
     <string name="onboard_tour_live_words">Tippe eine Kamera an, und das Bild geht live. Der Balken darunter ist der Tag; zieh ihn, um darin zurückzugehen. Dreh das Handy auf die Seite für den ganzen Bildschirm.</string>
     <string name="onboard_tour_review">Prüfen</string>
@@ -561,8 +583,8 @@
     <string name="player_no_sound">Es kam kein Ton durch.</string>
 
     <!-- Das Flutlicht, das ein Licht in Home Assistant ist und nichts, was Frigate kennt. -->
-    <string name="player_floodlight_on">Flutlicht einschalten</string>
-    <string name="player_floodlight_off">Flutlicht ausschalten</string>
+    <string name="player_floodlight_on">Licht einschalten</string>
+    <string name="player_floodlight_off">Licht ausschalten</string>
 
     <!-- Das Menü des Standbild-Streams: seine Größe und seine Bildrate. -->
     <string name="player_stream_quality">Stream-Qualität</string>
@@ -615,12 +637,12 @@
     <string name="camsw_name_use_server">Namen des Servers verwenden</string>
 
     <!-- Das Licht in Home Assistant, das zu dieser Kamera gehört. -->
-    <string name="camsw_floodlight">Flutlicht</string>
+    <string name="camsw_floodlight">Licht</string>
     <string name="camsw_floodlight_none">Keins</string>
     <string name="camsw_floodlight_pick">Ein Licht wählen</string>
-    <string name="camsw_floodlight_detail">Welches Licht in Home Assistant zu dieser Kamera gehört.</string>
+    <string name="camsw_floodlight_detail">Welches Licht oder welcher Schalter in Home Assistant zu dieser Kamera gehört.</string>
     <string name="camsw_floodlight_set_up">Richte Home Assistant in den Einstellungen ein, um ein Licht zu wählen.</string>
-    <string name="camsw_no_lights">Home Assistant hat keine Lichter.</string>
+    <string name="camsw_no_lights">Home Assistant hat keine Lichter oder Schalter.</string>
 
     <!-- Die vier Gruppen, in denen die acht Schalter sitzen. -->
     <string name="camsw_group_detection">Erkennung</string>
@@ -823,4 +845,15 @@
     <string name="logs_clear">Leeren</string>
     <string name="logs_feed_stopped">Die Verbindung wurde beendet. Neuer Versuch.</string>
     <string name="logs_older_gone">Die ältesten Zeilen sind von dieser Seite verschwunden.</string>
+
+    <!-- Eine Seite in einfachen Worten darüber, was das Handy verlässt. -->
+    <string name="privacy_title">Datenschutz</string>
+    <string name="privacy_heading_server">Dein Server</string>
+    <string name="privacy_server">Frigo spricht mit dem Frigate-Server, bei dem du angemeldet bist, und mit sonst nichts von dir. Adresse, Anmeldung und Passwort bleiben im eigenen Speicher dieser App auf diesem Handy. Androids Sicherung ist aus, also verlassen sie es nicht.</string>
+    <string name="privacy_heading_home">Home Assistant</string>
+    <string name="privacy_home">Wenn du eins eingerichtet hast, fragt Frigo nach dem Licht einer Kamera und schaltet es ein und aus. Der Token bleibt auf diesem Handy.</string>
+    <string name="privacy_heading_ai">Beschreibungen</string>
+    <string name="privacy_ai">Wird eine Beschreibung verlangt, gehen die Bilder von deinem Server an das Modell, das du auf dem Server gewählt hast. Sie laufen nicht über dein Handy, und ein Modell bekommt nichts, solange Beschreibungen aus sind.</string>
+    <string name="privacy_heading_updates">Updates</string>
+    <string name="privacy_updates">Die Update-Prüfung fragt GitHub, welche Version die neueste ist, und lädt die APK von dort. Sie sendet kein Konto und nichts über deinen Server.</string>
 </resources>

@@ -3546,3 +3546,91 @@ tint on an icon that only exists while a camera is open.
 
 Rejected: polling everywhere, so the tiles and the camera list agree too. Nothing else
 shows whether a floodlight is on, so there is nothing to keep in step.
+## Lights, not floodlights, and switches too
+
+A floodlight was the first light Frigo knew about, so it is what the app called the
+whole idea. Tapo Cameras Control makes one, and its entity id is
+`light.<camera>_floodlight`, which is where the name came from. A house with a Reolink
+camera has the same lamp in Home Assistant as a `switch` instead, and a lamp is a lamp:
+the app says **Light** everywhere now, and offers both kinds in the same list.
+
+The kind travels with the entity because the service call is named after it. Asking
+Home Assistant for `light.turn_on` with a switch's entity id is a call the box turns
+down, with a 400 that says little, and the lamp simply never comes on. So the action
+path is built from the entity's own domain.
+
+The Settings group is **Lights** rather than the camera row, which stays **Light**:
+one is the house's box and its token, the other is this camera's lamp.
+
+Two entities can share a name on the box, and two rows reading the same thing are no
+list at all, so the kind is shown beside the name when that happens. It is not shown
+otherwise, because `Door lamp (light)` reads like a database.
+
+## A store listing is later work, and it costs the updater
+
+Frigo is published as an APK on each GitHub release page, with the app updating itself.
+A store listing would mean losing the self-updater and the install permission, because
+the store builds and delivers the app instead. That is a later piece of work, and the
+self-updater is what ships now.
+
+## The oldest Frigate is 0.16
+
+Frigo is written against 0.18. 0.16 is the first release with `/api/review`, which
+Review and the alert feed both stand on, so it is the floor: below it there is no
+Review page to open and nothing for the phone to buzz about that a browser would
+call an alert.
+
+The app asks a server what it can do once and keeps the answer. Each part added
+after the floor is probed, and only a 404 means it isn't there, because a refusal
+means the route exists. A version the server did give is compared part by part;
+one it wouldn't give is not called old on a guess. A tab or a row for something
+the server can't do is hidden, and Settings keeps one line saying why, rather than
+an empty page or a screenful of "The server has no such endpoint".
+
+## Trusting one certificate, per server
+
+Frigate at home makes its own certificate, and both Android and iOS refuse one
+from an authority they don't know. A browser lets you click through it; an app
+can't, which leaves a stranger at a sign-in page that fails without saying why.
+
+So the phone asks once, for that one address, and shows the certificate's
+fingerprint first. Saying yes writes the fingerprint down and every request after
+that is let through only while the server presents that same certificate. A
+certificate that changes is refused rather than accepted quietly, and the sign-in
+page offers the new one once. A server with a certificate a phone already trusts
+never sees the question.
+
+Rejected: a setting to trust any certificate. It is one switch away from being
+left on, and the point is that one certificate was looked at.
+
+Rejected: reading the certificate off the refused handshake. The chain isn't in
+the exception, so it is asked for once more on purpose, and that is also the
+certificate the dialog shows.
+
+## A bare address tries one scheme, then the other
+
+`192.168.0.99:5000` is what people type, and it was becoming `https://`, which a
+Frigate at home doesn't answer. Now a private address is tried over http first and
+a name out on the internet over https first, and the first one that answers
+anything is kept. `/api/version` is the question, because it needs no sign-in and
+an old server that lacks it still answers with a 404, which is an answer.
+
+An address with a scheme in it is taken at its word: that is a choice, and trying
+the other one could land on a different server.
+
+## A server with sign-in turned off is a server with no account
+
+Frigate with authentication disabled turns the login down and answers everything
+else to anyone. The app asks `/api/config` without a token when the login is
+refused, and if it answers it keeps the server with no username, no password and no
+token. Every request after that sends no `Authorization` header, since a token the
+server never issued is refused, and the Servers card says **No sign-in on this
+server**. Stay signed in is not offered there: there is no session to keep.
+
+## Detections buzz only when asked
+
+A server built on detections never marks anything as an alert, so the phone stayed
+silent and there was no switch to change it. **Buzz on detections too** is that
+switch, and it is off until asked for: the server's alerts stay in charge of what
+reaches you, which is where that decision belongs. With no camera alerting and the
+switch off, the quiet notification names the switch rather than going silent.

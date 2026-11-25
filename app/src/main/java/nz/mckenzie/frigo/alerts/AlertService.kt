@@ -99,19 +99,17 @@ class AlertService : Service() {
     /**
      * A client of its own: the feed stays open with no read timeout, and a ping
      * every half minute both keeps the phone's network path open and notices a
-     * connection that has quietly died.
+     * connection that has quietly died. It comes from the container so it trusts
+     * the same certificates the rest of the app was told to trust.
      */
-    private val socketClient = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(0, TimeUnit.MILLISECONDS)
-        .pingInterval(30, TimeUnit.SECONDS)
-        .build()
+    private lateinit var socketClient: OkHttpClient
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     override fun onCreate() {
         super.onCreate()
         container = (application as FrigoApplication).container
+        socketClient = container.feedClient()
         createChannels()
 
         // The quiet notification counts the cameras the server has turned on, so it
@@ -225,7 +223,11 @@ class AlertService : Service() {
     private suspend fun runSession(source: StreamSource): Session {
         val request = Request.Builder()
             .url(source.url)
-            .header("Authorization", "Bearer ${source.token}")
+            .apply {
+                // A server with no sign-in is sent nothing: a token it never issued
+                // is turned down, and the feed would never open.
+                if (source.token.isNotBlank()) header("Authorization", "Bearer ${source.token}")
+            }
             .build()
 
         return suspendCancellableCoroutine { cont ->
@@ -339,7 +341,8 @@ class AlertService : Service() {
         val hidden = container.repository.cameraList.value.hidden
         val only = container.repository.alertObjects.value
         val leftOut = container.repository.alertPeople.value
-        if (!reviewBuzz.allowed(review, message.text("type"), now, rules, hidden, only, leftOut)) {
+        val detections = container.repository.alerts.value.detections
+        if (!reviewBuzz.allowed(review, message.text("type"), now, rules, hidden, only, leftOut, detections)) {
             return
         }
 
@@ -423,10 +426,11 @@ class AlertService : Service() {
         val hidden = container.repository.cameraList.value.hidden
         val only = container.repository.alertObjects.value
         val leftOut = container.repository.alertPeople.value
+        val detections = container.repository.alerts.value.detections
         val now = System.currentTimeMillis()
         // Asked as a new message: an update that turned into an alert was already
         // checked against the window when it arrived.
-        if (!reviewBuzz.buzzes(review, "new", now, rules, hidden, only, leftOut)) {
+        if (!reviewBuzz.buzzes(review, "new", now, rules, hidden, only, leftOut, detections)) {
             return
         }
 
@@ -562,6 +566,7 @@ class AlertService : Service() {
             container.repository.quietTimes.value,
             container.repository.cameraList.value.hidden,
             container.repository.alertObjects.value,
+            container.repository.alerts.value.detections,
         ).build()
 
     private fun createChannels() {

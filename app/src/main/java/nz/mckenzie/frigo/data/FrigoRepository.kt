@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Response
 import nz.mckenzie.frigo.BuildConfig
 import nz.mckenzie.frigo.R
@@ -72,6 +71,8 @@ class FrigoRepository(
     /** The other box in the house, which knows about a camera's floodlight. */
     private val homeAssistantApi: HomeAssistantApi,
     private val prefs: ServerPrefs,
+    /** Which certificates this phone was told to trust, for a server that made its own. */
+    private val trust: TrustedCertificates,
     /** Where fetched clips are kept, so watching one twice costs one download. */
     cacheDir: File,
 ) {
@@ -183,6 +184,23 @@ class FrigoRepository(
     val admin: StateFlow<Boolean?> = _admin.asStateFlow()
 
     /**
+     * What the server can do: its version, and which parts added after the oldest
+     * Frigate Frigo supports it has. Read from the phone at launch and asked for
+     * once after signing in, so the tabs and rows match the server rather than
+     * promising pages it has no answers for.
+     */
+    private val _capabilities = MutableStateFlow(ServerCapabilities())
+    val capabilities: StateFlow<ServerCapabilities> = _capabilities.asStateFlow()
+
+    /**
+     * The version of a server older than Frigo supports, while the page that says
+     * so is up, or null. It is shown once: carrying on writes it down, so the next
+     * launch opens on the cameras.
+     */
+    private val _oldServer = MutableStateFlow<String?>(null)
+    val oldServer: StateFlow<String?> = _oldServer.asStateFlow()
+
+    /**
      * The Home Assistant this phone asks about a camera's floodlight, or null when
      * it has none set up.
      *
@@ -290,6 +308,45 @@ class FrigoRepository(
     }
 
     /**
+     * What the server can do, asked once and kept on the phone. A launch within a
+     * day of the last reading uses the copy, so opening the app costs nothing.
+     *
+     * A server that doesn't answer leaves the last reading alone rather than
+     * hiding every tab on a guess. A server that wouldn't say its version is not
+     * called old: only a version it did give is compared.
+     */
+    suspend fun refreshCapabilities() {
+        val server = activeServer() ?: return
+        val kept = prefs.readCapabilities(server.baseUrl)
+        val now = System.currentTimeMillis()
+        val fresh = kept != null && kept.readAt > 0 && now - kept.readAt < CapabilitiesStandMillis
+        val found = if (fresh) {
+            kept
+        } else {
+            runCatching {
+                withContext(Dispatchers.IO) { api.capabilities(server.baseUrl, server.token.orEmpty()) }
+            }.getOrNull()?.also { prefs.writeCapabilities(server.baseUrl, it) }
+        } ?: return
+
+        _capabilities.value = found
+
+        // The page that says a server is too old comes once for that version. A
+        // different version is a different page, since something may have changed
+        // on the server in the meantime.
+        if (found.olderThanFrigo && prefs.readVersionNotice(server.baseUrl) != found.version) {
+            _oldServer.value = found.version
+        }
+    }
+
+    /** Carried on past the page that names an old server. It isn't shown again. */
+    suspend fun dismissOldServer() {
+        val server = activeServer() ?: return
+        val version = _oldServer.value ?: _capabilities.value.version
+        if (version.isNotBlank()) prefs.writeVersionNotice(server.baseUrl, version)
+        _oldServer.value = null
+    }
+
+    /**
      * Asks the server what is worth a buzz and keeps the answer, on the phone as
      * well as in memory.
      *
@@ -347,6 +404,7 @@ class FrigoRepository(
         _alertPeople.value = stored?.let { prefs.readAlertPeople(it) } ?: AlertPeople()
         _cameraList.value = stored?.let { prefs.readCameraList(it) } ?: CameraList()
         _admin.value = url?.let { prefs.readSettings(it) }?.let { it.profile.role == "admin" }
+        _capabilities.value = url?.let { prefs.readCapabilities(it) } ?: ServerCapabilities()
         loadHomeAssistant()
         alertsLoaded = true
         alertRulesLoaded = true
@@ -420,12 +478,14 @@ class FrigoRepository(
 
         // The token is offered first, and a session that has run out is signed in
         // again with the password this phone kept, so a night away from the app
-        // doesn't end on the sign-in page.
+        // doesn't end on the sign-in page. A server with no sign-in has neither, and
+        // opens as it is.
         val signedIn = runCatching { mutex.withLock { renewLocked() } }
 
         signedIn.onSuccess {
             _gate.value = Gate.SignedIn(saved.baseUrl, saved.username)
             refreshAlertRules()
+            refreshCapabilities()
         }.onFailure { error ->
             // The session ran out and there was no password to sign in with. The
             // gate has already been told why.
@@ -441,20 +501,73 @@ class FrigoRepository(
      * the one the app is on. Signing in to a server you already have replaces its
      * token and leaves the rest of the list alone.
      *
+     * The address is tried as typed and in the other scheme, and the one that
+     * answers is kept, so `192.168.0.99:5000` works without a stranger knowing
+     * that Frigate at home answers http and not https.
+     *
+     * A username and password with nothing in them means a server with no sign-in,
+     * and so does one that turns the login down while answering without a token.
+     * Such a server is kept with no account, and no token is ever sent to it.
+     *
+     * A certificate the phone doesn't trust is thrown as
+     * [UntrustedCertificateException], carrying the one certificate the sign-in page
+     * can offer to trust. [trust] is that answer coming back: the address and the
+     * fingerprint to keep before anything is asked again.
+     *
      * The password is kept, unless this server's Stay signed in switch is off, so
      * this is usually the last one you type.
      */
-    suspend fun signIn(address: String, username: String, password: String) {
-        val baseUrl = normalizeBaseUrl(address)
-        val token = withContext(Dispatchers.IO) { api.login(baseUrl, username, password) }
+    suspend fun signIn(
+        address: String,
+        username: String,
+        password: String,
+        trustPair: Pair<String, String>? = null,
+    ) {
+        // The certificate is written down before the request that needs it, so the
+        // retry after a yes is the same sign-in as the one that was refused.
+        trustPair?.let { (where, fingerprint) -> this.trust.remember(where, fingerprint) }
+
+        val baseUrl = reachable(address)
+        val named = username.trim()
+
+        // A login that is turned down is kept rather than thrown, because the same
+        // server may answer happily without a token, which makes it a server with no
+        // sign-in rather than a wrong password.
+        val attempt = withContext(Dispatchers.IO) {
+            if (named.isEmpty() && password.isEmpty()) {
+                null
+            } else {
+                try {
+                    Result.success(api.login(baseUrl, named, password))
+                } catch (failure: FrigateException) {
+                    if (!failure.isAuthFailure) throw failure
+                    Result.failure(failure)
+                }
+            }
+        }
+        val token = attempt?.getOrNull()
+
+        // No token means either a server with no sign-in or a sign-in that was
+        // turned down. Only the server itself can say which.
+        val noSignIn = token == null && withContext(Dispatchers.IO) {
+            api.answersWithoutAccount(baseUrl)
+        }
+        if (token == null && !noSignIn) {
+            throw attempt?.exceptionOrNull()
+                ?: FrigateException(401, context.words(R.string.api_need_sign_in))
+        }
+
         mutex.withLock {
-            val keep = known().firstOrNull { it.baseUrl == baseUrl }?.keepPassword ?: true
+            val known = known().firstOrNull { it.baseUrl == baseUrl }
+            val keep = known?.keepPassword ?: true
             val saved = ServerPrefs.Stored(
                 baseUrl = baseUrl,
-                username = username,
+                // A server with no sign-in has no name to keep either.
+                username = if (noSignIn) "" else named,
                 token = token,
-                password = password.takeIf { keep },
-                keepPassword = keep,
+                password = password.takeIf { keep && !noSignIn },
+                keepPassword = keep && !noSignIn,
+                certificate = this.trust.fingerprintFor(baseUrl),
             )
             val servers = known()
                 .filterNot { it.baseUrl == baseUrl } + saved
@@ -464,8 +577,43 @@ class FrigoRepository(
         // The phone's choices for this server are read before the gate moves, so the
         // screens that replace this one never see the last server's.
         loadChoices()
-        _gate.value = Gate.SignedIn(baseUrl, username)
+        _gate.value = Gate.SignedIn(baseUrl, if (noSignIn) "" else named)
         refreshAlertRules()
+        refreshCapabilities()
+    }
+
+    /**
+     * The first of a typed address's two schemes that answers, which is the address
+     * the phone keeps. A certificate the phone won't take is read for its
+     * fingerprint on the way past, so the sign-in page has something to offer.
+     */
+    private suspend fun reachable(address: String): String {
+        if (address.isBlank()) throw FrigateException(0, context.words(R.string.api_enter_address))
+        val candidates = addressCandidates(address)
+        if (candidates.isEmpty()) {
+            throw FrigateException(0, context.words(R.string.api_not_a_web_address))
+        }
+
+        var untrusted: UntrustedCertificateException? = null
+        for (candidate in candidates) {
+            val failure = withContext(Dispatchers.IO) {
+                runCatching { api.probe(candidate) }.exceptionOrNull()
+            } ?: return candidate
+
+            if (failure.isCertificateProblem()) {
+                val fingerprint = withContext(Dispatchers.IO) {
+                    this@FrigoRepository.trust.inspect(candidate)
+                }
+                if (fingerprint != null) {
+                    untrusted = UntrustedCertificateException(
+                        address = candidate,
+                        fingerprint = fingerprint,
+                        message = context.words(R.string.api_certificate_untrusted),
+                    )
+                }
+            }
+        }
+        throw untrusted ?: FrigateException(0, context.words(R.string.api_cant_reach))
     }
 
     /**
@@ -505,6 +653,11 @@ class FrigoRepository(
         activeServer() ?: return false
         return mutex.withLock {
             val current = stored ?: return@withLock false
+            if (current.username.isBlank()) {
+                return@withLock withContext(Dispatchers.IO) {
+                    runCatching { api.probe(current.baseUrl) }.isSuccess
+                }
+            }
             signInLocked(current) != null
         }
     }
@@ -527,6 +680,13 @@ class FrigoRepository(
         statsAt = null
         loadChoices()
 
+        // A server with no sign-in has nothing to check and nothing to renew.
+        if (next.username.isBlank()) {
+            _gate.value = Gate.SignedIn(next.baseUrl, "")
+            refreshCapabilities()
+            return
+        }
+
         // A server whose session ran out is signed in again from the password this
         // phone kept, so moving to it is a tap rather than a sign-in.
         if (next.token.isNullOrBlank() && next.password != null) {
@@ -540,6 +700,7 @@ class FrigoRepository(
                 // The sign-in page is already up, with the reason on it.
                 else -> return
             }
+            refreshCapabilities()
             return
         }
 
@@ -548,6 +709,7 @@ class FrigoRepository(
         } else {
             Gate.SignedIn(next.baseUrl, next.username)
         }
+        if (_gate.value is Gate.SignedIn) refreshCapabilities()
     }
 
     /**
@@ -560,20 +722,27 @@ class FrigoRepository(
     suspend fun signOut() {
         val gone = stored ?: activeServer()
         var leaving: ServerPrefs.Stored? = null
+        var kept: List<ServerPrefs.Stored> = emptyList()
         mutex.withLock {
-            val kept = known().filterNot { it.baseUrl == gone?.baseUrl }
+            kept = known().filterNot { it.baseUrl == gone?.baseUrl }
             // Whatever is left takes over, preferring one that can still talk to
             // its server so a stale entry doesn't hide a working one.
-            leaving = kept.firstOrNull { !it.token.isNullOrBlank() } ?: kept.firstOrNull()
+            leaving = kept.firstOrNull { !it.token.isNullOrBlank() || it.username.isBlank() }
+                ?: kept.firstOrNull()
             stored = leaving
             persist(kept, leaving?.baseUrl)
+        }
+        // A certificate was trusted for that one server. With no server left at
+        // that address there is nothing to trust it for, and adding it again asks.
+        if (gone != null && kept.none { it.baseUrl == gone.baseUrl }) {
+            trust.forget(gone.baseUrl)
         }
         limits.clear()
         statsAt = null
         loadChoices()
 
         val next = leaving
-        _gate.value = if (next == null || next.token.isNullOrBlank()) {
+        _gate.value = if (next == null || (next.token.isNullOrBlank() && next.username.isNotBlank())) {
             Gate.SignedOut(
                 address = next?.baseUrl ?: gone?.baseUrl.orEmpty(),
                 username = next?.username ?: gone?.username.orEmpty(),
@@ -1112,7 +1281,12 @@ class FrigoRepository(
         var applied = false
 
         backup.alerts?.let { block ->
-            prefs.writeAlerts(server, ServerPrefs.Alerts(on = block.on))
+            // The file carries the switch, and nothing about detections, so a
+            // restore leaves the detections switch as it is rather than turning it off.
+            prefs.writeAlerts(
+                server,
+                ServerPrefs.Alerts(on = block.on, detections = _alerts.value.detections),
+            )
             // Whatever the file says, the hush it was saved mid-way through stays
             // behind: it is a moment, and the moment has long gone.
             prefs.writeQuietTimes(server, block.quietTimes.copy(hushUntil = 0L))
@@ -1309,7 +1483,7 @@ class FrigoRepository(
      */
     fun clipSource(eventId: String): ClipSource {
         val current = stored ?: throw FrigateException(401, notSignedIn)
-        val token = current.token ?: throw FrigateException(401, notSignedIn)
+        val token = current.token.orEmpty()
         return ClipSource(url = "${current.baseUrl}/api/events/$eventId/clip.mp4", token = token)
     }
 
@@ -1322,7 +1496,7 @@ class FrigoRepository(
      */
     fun soundSource(camera: String): ClipSource {
         val current = stored ?: throw FrigateException(401, notSignedIn)
-        val token = current.token ?: throw FrigateException(401, notSignedIn)
+        val token = current.token.orEmpty()
         return ClipSource(url = "${current.baseUrl}/api/stream.aac?src=$camera", token = token)
     }
 
@@ -1336,7 +1510,7 @@ class FrigoRepository(
      */
     fun liveSource(camera: String): ClipSource {
         val current = stored ?: throw FrigateException(401, notSignedIn)
-        val token = current.token ?: throw FrigateException(401, notSignedIn)
+        val token = current.token.orEmpty()
         return ClipSource(url = "${current.baseUrl}/api/stream.mp4?src=$camera", token = token)
     }
 
@@ -1363,7 +1537,7 @@ class FrigoRepository(
      */
     fun recordingClipSource(camera: String, start: Double, end: Double): ClipSource {
         val current = stored ?: throw FrigateException(401, notSignedIn)
-        val token = current.token ?: throw FrigateException(401, notSignedIn)
+        val token = current.token.orEmpty()
         return ClipSource(
             url = "${current.baseUrl}/api/$camera/start/${moment(start)}/end/${moment(end)}/clip.mp4",
             token = token,
@@ -1406,7 +1580,7 @@ class FrigoRepository(
      */
     fun exportSource(export: Export): ClipSource {
         val current = stored ?: throw FrigateException(401, notSignedIn)
-        val token = current.token ?: throw FrigateException(401, notSignedIn)
+        val token = current.token.orEmpty()
         return ClipSource(url = "${current.baseUrl}${export.videoUrlPath}", token = token)
     }
 
@@ -1534,8 +1708,9 @@ class FrigoRepository(
      */
     suspend fun streamSource(): StreamSource? {
         val current = activeServer() ?: return null
-        val token = current.token ?: return null
-        return StreamSource(url = "${current.baseUrl}/ws", token = token)
+        // A server with no sign-in has no token, and the feed must not be given one.
+        if (current.token.isNullOrBlank() && current.username.isNotBlank()) return null
+        return StreamSource(url = "${current.baseUrl}/ws", token = current.token.orEmpty())
     }
 
     /**
@@ -1544,7 +1719,11 @@ class FrigoRepository(
      */
     private suspend fun <T> authorized(block: suspend (baseUrl: String, token: String) -> T): T {
         val current = activeServer() ?: throw FrigateException(401, notSignedIn)
-        val token = current.token ?: throw FrigateException(401, notSignedIn)
+        // A server with no sign-in has no token to send and nothing to renew.
+        if (current.username.isBlank()) {
+            return withContext(Dispatchers.IO) { block(current.baseUrl, "") }
+        }
+        val token = current.token.orEmpty()
         return try {
             withContext(Dispatchers.IO) { block(current.baseUrl, token) }
         } catch (e: FrigateException) {
@@ -1567,6 +1746,14 @@ class FrigoRepository(
      */
     private suspend fun renewLocked(): String {
         val current = stored ?: throw FrigateException(401, notSignedIn)
+
+        // A server with sign-in turned off has no session to renew, and no password
+        // to renew it with. It is asked something small instead, so a server that is
+        // away still reads as away rather than as signed out.
+        if (current.username.isBlank()) {
+            withContext(Dispatchers.IO) { api.probe(current.baseUrl) }
+            return ""
+        }
 
         current.token?.let { token ->
             val fresh = runCatching {
@@ -1645,24 +1832,14 @@ class FrigoRepository(
     }
 
     /**
-     * Takes what people actually type - `frigate.example.com`, a full URL, or
-     * one that already ends in /api - and returns a clean base.
+     * Takes what people actually type - `frigate.example.com`, a full URL, or one
+     * that already ends in /api - and returns a clean base, with the scheme it is
+     * most likely to answer on. Signing in tries the other one too.
      */
     fun normalizeBaseUrl(input: String): String {
-        var value = input.trim()
-        if (value.isEmpty()) throw FrigateException(0, context.words(R.string.api_enter_address))
-        if (!value.startsWith("http://", ignoreCase = true) &&
-            !value.startsWith("https://", ignoreCase = true)
-        ) {
-            value = "https://$value"
-        }
-        value = value.trimEnd('/')
-        if (value.endsWith("/api", ignoreCase = true)) {
-            value = value.dropLast(4).trimEnd('/')
-        }
-        val parsed = value.toHttpUrlOrNull()
+        if (input.isBlank()) throw FrigateException(0, context.words(R.string.api_enter_address))
+        return addressCandidates(input).firstOrNull()
             ?: throw FrigateException(0, context.words(R.string.api_not_a_web_address))
-        return parsed.toString().trimEnd('/')
     }
 
     companion object {
@@ -1684,6 +1861,13 @@ class FrigoRepository(
 
         /** How long the server's census stands. Two calls in a row share one answer. */
         private const val StatsStandMillis = 15_000L
+
+        /**
+         * How long a reading of what the server can do stands. A day, because the
+         * version on the server moves when its owner upgrades it, and asking six
+         * questions on every launch would be felt.
+         */
+        private const val CapabilitiesStandMillis = 24L * 60 * 60 * 1000
 
         /** How many frames a quick description looks at, and how far apart they are. */
         private const val QuickFrames = 3

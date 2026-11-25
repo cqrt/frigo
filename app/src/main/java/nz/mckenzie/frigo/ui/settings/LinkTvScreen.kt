@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -122,6 +123,13 @@ fun LinkTvScreen(
     var said by remember { mutableStateOf<String?>(null) }
     var paired by remember { mutableStateOf(false) }
 
+    // A server with sign-in turned off has nothing to type, and the television has
+    // to be told that, or it lands on a sign-in it can never complete.
+    val servers by container.repository.servers.collectAsStateWithLifecycle()
+    val here = servers.firstOrNull { it.baseUrl == baseUrl }
+    val noAccount = here?.username?.isBlank() == true
+    val fingerprint = here?.certificate
+
     val askForCamera = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { allowed ->
@@ -135,11 +143,20 @@ fun LinkTvScreen(
 
     fun pair() {
         val pairing = scanned ?: return
-        if (busy || password.isBlank()) return
+        if (busy) return
+        if (!noAccount && password.isBlank()) return
         scope.launch {
             busy = true
             said = null
-            when (val outcome = container.tvPairing.pair(pairing, baseUrl, username, password)) {
+            val outcome = container.tvPairing.pair(
+                pairing = pairing,
+                baseUrl = baseUrl,
+                username = if (noAccount) "" else username,
+                password = if (noAccount) "" else password,
+                fingerprint = fingerprint,
+                noAccount = noAccount,
+            )
+            when (outcome) {
                 PairOutcome.Paired -> paired = true
                 is PairOutcome.Said -> said = outcome.message
                 PairOutcome.Silent -> said = context.getString(R.string.link_tv_no_answer)
@@ -216,20 +233,28 @@ fun LinkTvScreen(
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Text(
-                        text = stringResource(
-                            R.string.link_tv_signs_in,
-                            username,
-                            baseUrl.shortServer(),
-                        ),
+                        text = if (noAccount) {
+                            stringResource(R.string.link_tv_no_account, baseUrl.shortServer())
+                        } else {
+                            stringResource(
+                                R.string.link_tv_signs_in,
+                                username,
+                                baseUrl.shortServer(),
+                            )
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
-                    PasswordField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = stringResource(R.string.link_tv_password),
-                    )
+                    // A server with no sign-in has no password to type, so the form
+                    // is the button alone.
+                    if (!noAccount) {
+                        PasswordField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = stringResource(R.string.link_tv_password),
+                        )
+                    }
 
                     if (said != null) {
                         Text(
@@ -241,7 +266,7 @@ fun LinkTvScreen(
 
                     Button(
                         onClick = ::pair,
-                        enabled = password.isNotBlank() && !busy,
+                        enabled = (noAccount || password.isNotBlank()) && !busy,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                     ) {
                         if (busy) {
