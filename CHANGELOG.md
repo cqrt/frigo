@@ -8,6 +8,10 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.24.2
+
+- The floodlight button follows the light itself, so turning it off in the Tapo app or at the wall puts the blue out here within a few seconds.
+
 ## 0.24.1
 
 - The floodlight button turns the light on and off: Home Assistant was being asked in a shape it turned down, so nothing happened.

@@ -138,6 +138,15 @@ private const val StatusEveryMillis = 8_000L
 private const val SilentReadings = 2
 
 /**
+ * How often the floodlight's own state is asked for while its camera is on screen.
+ *
+ * A light is something the whole house touches: the Tapo app, a wall switch, another
+ * phone. Five seconds is well inside the time it takes to look back at the screen, and
+ * one small state read beside a live video stream is nothing to pay for it.
+ */
+private const val LightEveryMillis = 5_000L
+
+/**
  * How long the screen waits for the camera's own stream before Frigate's still is
  * drawn in its place. The still keeps being shown while the video arrives and is
  * taken away when the first frame is drawn, so this decides only how long the screen
@@ -223,6 +232,9 @@ fun PlayerScreen(
     val light = list.light(watching)
     var lightOn by remember(watching, light) { mutableStateOf(false) }
     var lightProblem by remember(watching) { mutableStateOf<String?>(null) }
+    // Whether a tap's answer is still on its way. The light's own state is left alone
+    // until it lands, since the state the box sends back is the newer of the two.
+    var lightBusy by remember(watching, light) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     var frame by remember(watching) { mutableStateOf<ImageBitmap?>(null) }
@@ -325,12 +337,27 @@ fun PlayerScreen(
         runCatching { repository.cameras() }.onSuccess { cameras = it }
     }
 
-    // What the light is doing, asked when the camera is opened. A box that doesn't
+    // What the light is doing, asked again every few seconds while the camera is on
+    // screen. A lamp is something the whole house touches, so the last answer is not
+    // good enough: turning it off in the Tapo app, at the wall or from another phone
+    // has to reach the icon without the camera being opened again. A box that doesn't
     // answer leaves the button reading as it was rather than saying the light is off.
-    LaunchedEffect(light, homeAssistant) {
+    LaunchedEffect(light, homeAssistant, watching) {
         val entity = light ?: return@LaunchedEffect
         if (homeAssistant == null) return@LaunchedEffect
-        lightOn = repository.lightIsOn(entity) ?: lightOn
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (isActive) {
+                // Left alone while a tap is in flight: the answer on its way there is
+                // the newer one, and reading over the top of it would flick the icon.
+                // The read is checked twice for the same reason: one already on its
+                // way when the tap lands would otherwise put the old state back.
+                if (!lightBusy) {
+                    val sent = repository.lightIsOn(entity)
+                    if (!lightBusy) sent?.let { lightOn = it }
+                }
+                delay(LightEveryMillis)
+            }
+        }
     }
 
     // Live is now, so the day the stream belongs to comes back with it: the bar
@@ -367,16 +394,24 @@ fun PlayerScreen(
     // One tap turns the floodlight over. The button reads the way it will be before
     // the box confirms it, and goes back if Home Assistant won't take it: a light
     // that takes a second to answer should not look like a button that didn't work.
+    // What the box says the light is doing afterwards is the answer that stays, in
+    // case the call went to a light that was already on its way somewhere else.
     fun turnLight(on: Boolean) {
         val entity = light ?: return
         lightOn = on
         lightProblem = null
+        lightBusy = true
         scope.launch {
-            runCatching { repository.setLight(entity, on) }
+            runCatching {
+                repository.setLight(entity, on)
+                repository.lightIsOn(entity)
+            }
+                .onSuccess { settled -> if (settled != null) lightOn = settled }
                 .onFailure { failure ->
                     lightOn = !on
                     lightProblem = failure.friendlyMessage(repository.context)
                 }
+            lightBusy = false
         }
     }
 

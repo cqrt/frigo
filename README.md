@@ -613,6 +613,10 @@ speaker. One tap turns the light on, and the button goes blue while it's on. Ano
 tap turns it off. A camera with no light, and a phone with no Home Assistant, have no
 button at all. Nothing turns a light on by itself.
 
+The button follows the light rather than remembering what you did last. Turn it off
+in the Tapo app, at the wall, or from another phone, and the blue goes out here on its
+own within a few seconds. Coming back to Frigo from another app asks straight away.
+
 At home the address is the box's own. Away from home it's the proxy you already put
 in front of Frigate, since the phone has to reach Home Assistant the same way it
 reaches the server.

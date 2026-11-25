@@ -3518,3 +3518,31 @@ entity id, so renaming the light in Home Assistant keeps the pick working.
 Nothing turns a light on by itself. Not an alert, not a review, not opening a camera. A
 light that comes on when nobody asked is a light that starts an argument with the
 neighbours, and the button is one tap away.
+
+## The floodlight button reads the light, it does not remember it
+
+The button started on the answer it got when the camera was opened, and turned over on
+the tap, which is wrong the moment anybody else touches the lamp. A floodlight is the
+most shared thing in the house: the Tapo app has a button for it, there is a wall switch,
+and there is the other phone. Frigo showing a blue icon for a light that has been off for
+an hour is worse than showing nothing, because it is a screen that lies about the house.
+
+So the state is asked for again every five seconds while a camera is on screen. One state
+read is a few hundred bytes against the video stream already running, and five seconds is
+inside the time it takes to look back at the phone. The ask stops when the picture does:
+the screen is the only place the button exists, and nothing here watches for a light in
+the background.
+
+A tap is still felt at once. The icon moves as the finger comes off, the call goes out,
+and what the box says the light is doing afterwards is the answer that stays. Reads are
+held back while that call is in flight, including one already on its way when the tap
+lands, or the old state would flick back over the new one. Coming back to Frigo from
+another app asks straight away, because the loop starts again when the screen does.
+
+Rejected: subscribing to Home Assistant's WebSocket for state changes. It would be
+instant and free of polling, but it is a second long-lived connection for the app to
+hold and re-authenticate, with its own reconnection story, and its whole job here is a
+tint on an icon that only exists while a camera is open.
+
+Rejected: polling everywhere, so the tiles and the camera list agree too. Nothing else
+shows whether a floodlight is on, so there is nothing to keep in step.
