@@ -84,7 +84,7 @@ you've seen enough of a day, Mark all as reviewed clears the rest without playin
 any of it, and Put them back undoes that. Pull the list down for what has happened
 since. The tune icon in the corner opens Alerts and detections, which is the
 server's page and only an admin can change it. On any other account, Settings,
-Only these objects is where you narrow what buzzes this phone.
+Only these objects is where you narrow what this phone is told about.
 
 **Explore.** What Frigate has recorded, newest first, with thumbnails, the way
 the Explore page on the server has it. Narrow it by camera, by what was seen, by
@@ -118,10 +118,10 @@ box is doing.
 **System logs** under System shows what frigate, go2rtc and nginx have been saying,
 newest at the bottom.
 Then come two switches: one for notifications, and one that plays the home page
-tiles live. Under notifications sit **Buzz on detections too**, **Only these
-objects**, the list this phone narrows its alerts by, then **People to ignore**,
-the names it stays quiet about, then **Quiet times**, the hours it keeps quiet and
-the cameras it keeps quiet.
+tiles live. Under notifications sit **Detections**, **Only these objects**, the
+list this phone narrows its alerts by, then **People to ignore**, the names it
+stays quiet about, then **Quiet times**, the hours it keeps quiet and the cameras
+it keeps quiet.
 Under **Cameras** is every camera your server has, in the order
 this phone shows them. A switch there turns one off on this phone. Hold a row and
 drag it to move it, and tap one for its own page, where its name here is set.
@@ -263,7 +263,7 @@ cameras and leaves the Alerts button off, with a line in Settings saying why.
 Frigo opens on a welcome, then takes you through what it needs:
 
 1. **Your server** is the address you use in a browser and your Frigate sign-in.
-2. **Alerts** turns notifications on. Which cameras and objects buzz is set on your server, so there is nothing to tick here. Android asks about notifications once, and the page says so if you turned them down.
+2. **Alerts** turns notifications on. Which cameras and objects notify is set on your server, so there is nothing to tick here. Android asks about notifications once, and the page says so if you turned them down.
 3. **Battery** says whether Android is free to shut Frigo down, and opens the phone's settings if it isn't. Come back and the page checks again.
 4. **Lock** offers to ask for your fingerprint each time Frigo starts. Not now leaves the app opening as it does now.
 5. **The tabs** is a page for each of the five, with a drawn picture of what it holds and the bar underneath lit on the one it's describing. Skip leaves at any point.
@@ -403,12 +403,12 @@ alert arrives as Frigate sees something rather than at the next poll.
 
 The connection lives in a background service, because Android will not let an app
 hold one otherwise. Android shows a notification for any such service, so there is
-a quiet "Watching for alerts" one in the shade. It says how many cameras will buzz
-and whether the connection is up, and it is the app's way of saying it is still
-there. Switching alerts off in Settings stops the service and takes the
+a quiet "Watching for alerts" one in the shade. It says how many cameras will
+notify and whether the connection is up, and it is the app's way of saying it is
+still there. Switching alerts off in Settings stops the service and takes the
 notification away.
 
-Your server decides what buzzes, not the phone. Two things have to agree:
+Your server decides what notifies you, not the phone. Two things have to agree:
 
 1. Notifications are on for that camera.
 2. Its alerts are on, and the thing it saw is in its alert objects.
@@ -418,13 +418,13 @@ lists on the alerts page. Turn either off and the phone stays quiet.
 
 The switch at the top of the notifications page turns the cameras on in a batch.
 You can leave it off and turn cameras on one at a time, and those cameras still
-buzz this phone.
+notify this phone.
 
-A server set up with detections alone never marks anything as an alert, so it
-never buzzes. **Buzz on detections too**, under Notifications, sends those as
-well. It's off until you ask for it, so on a server whose alerts are set up the
-server stays in charge. With no camera alerting and the switch off, the watching
-line says why nothing will buzz and names the switch.
+A server set up with detections alone never marks anything as an alert, so it never
+notifies. **Detections**, under Notifications, notifies you about those as well. It
+is off until you turn it on, so on a server whose alerts are set up the server stays
+in charge. With no camera alerting and the switch off, the watching line says why
+nothing will notify and names the switch.
 
 This phone can narrow that further. **Only these objects**, under Notifications
 in Settings, keeps a list of its own, and an alert about an object that isn't on
@@ -448,7 +448,7 @@ to make one from, so neither is there to set.
 
 **People to ignore** sits under it. Frigate works out who a person is, and puts
 the name on the review a second or so after the alert starts, or in the sentence it
-writes when the review ends. Pick someone and their alerts never buzz here, while
+writes when the review ends. Pick someone and their alerts never notify you, while
 everyone else still does.
 Frigate can't do this itself: its alerts are chosen by object and by zone, and its
 own push sends every alert. Nothing on your server or its other phones changes.
@@ -470,11 +470,11 @@ The app keeps a copy of those answers on the phone, so a restart with no signal
 still knows what to watch. The quiet notification says which of them is keeping
 everything quiet, so it never goes silent without saying why.
 
-A camera that has just buzzed stays quiet for twenty seconds, so one visitor
+A camera that has just notified stays quiet for twenty seconds, so one visitor
 walking past is one notification.
 
 Quiet times is this phone's own. Turn it on, pick two times, and pick the cameras
-to leave out, and none of them buzz between those times. A window from ten at
+to leave out, and none of them notify between those times. A window from ten at
 night to seven in the morning runs through midnight, and the same two times keeps
 the whole day quiet. Nothing arrives while it runs: the review is still on your
 server, so it's in Review when you look in the morning. The "Watching for alerts"
@@ -486,16 +486,16 @@ with the two times left as they are.
 None of this reaches your server. Its notifications page, and any other phone,
 are unchanged.
 
-A camera turned off in Settings, Cameras, doesn't buzz here either. That list is
+A camera turned off in Settings, Cameras, doesn't notify here either. That list is
 this phone's own, so your server and its other phones still hear it. Turn every
-camera off and the watching line says why nothing will buzz, rather than counting
+camera off and the watching line says why nothing will notify, rather than counting
 cameras that can't reach you.
 
-When something buzzes, the phone asks your server's model what it is looking at and
+When an alert arrives, the phone asks your server's model what it is looking at and
 fills the notification in about four seconds later. It takes three pictures a second
 apart and asks for one short sentence. This is the quick answer, and it takes the
 place of the bare "something was seen" on the notification already in the shade. The
-buzz has already happened, so it stays quiet.
+notification has already gone out, so it stays quiet.
 
 The question carries any name your server has already recognised, so the sentence can
 say Sam rather than a man. Frigate's own description names people because the name

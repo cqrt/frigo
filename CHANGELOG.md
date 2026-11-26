@@ -8,6 +8,11 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.25.2
+
+- The light picker has a search box, so a camera's light is found rather than scrolled for in a house with a lot of them.
+- Detections, under Notifications, says what it does in fewer words, and so do the lines that mention it.
+
 ## 0.25.1
 
 - On a server older than 0.16, Frigo now reads the version when it signs in, names it once, and leaves out the tabs and rows that server has no answers for. The sign-in page going away used to cancel that reading.
@@ -19,7 +24,7 @@ explain, leave out.
 - A server with sign-in turned off signs in with no account, says so under Servers, and is never sent a token.
 - A certificate Frigate made for itself is offered once with its fingerprint, and trusted for that one server after that. A changed certificate is refused rather than accepted quietly.
 - A server older than 0.16 is named once, then opens on the cameras, with Review, Explore and the server's own rows missing where it has no answers for them.
-- Buzz on detections too, under Notifications, lets a server set up with detections alone buzz. It stays off until you ask for it.
+- Detections, under Notifications, notifies you about those as well as alerts. It stays off until you turn it on, so a server that already marks its alerts is in charge.
 - Home Assistant's switches are offered beside its lights, so a Reolink lamp appears and turns over.
 - The light is called a light everywhere: the Settings group is Lights, and the player says Turn the light on.
 - The Home Assistant card says the box belongs to the house, so two servers share it.

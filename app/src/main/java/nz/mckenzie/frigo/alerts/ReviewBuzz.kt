@@ -65,9 +65,9 @@ class ReviewBuzz(
         only: AlertObjects = AlertObjects(),
         leftOut: AlertPeople = AlertPeople(),
         /**
-         * Whether a review the server calls a detection is worth a buzz. Off by
-         * default: a server that marks its alerts is in charge of what reaches you,
-         * and one set up with detections alone is the only place this changes.
+         * Whether a review the server calls a detection is worth a notification. Off
+         * by default: a server that marks its alerts is in charge of what reaches
+         * you, and one set up with detections alone is the only place this changes.
          */
         detections: Boolean = false,
     ): Boolean {

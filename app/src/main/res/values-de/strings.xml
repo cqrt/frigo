@@ -68,8 +68,8 @@
     <string name="settings_ai">KI-Beschreibungen</string>
     <string name="settings_ai_supporting">Mit KI beschreibt Frigo, was es in deinen Alarmen sieht</string>
     <string name="settings_alerts_and_detections">Alarme und Erkennungen</string>
-    <string name="settings_detections">Auch bei Erkennungen piepen</string>
-    <string name="settings_detections_supporting">Ein Server, der nur auf Erkennungen eingestellt ist, sendet nie einen Alarm. Damit piepen auch die.</string>
+    <string name="settings_detections">Erkennungen</string>
+    <string name="settings_detections_supporting">Auch bei Erkennungen melden, nicht nur bei Alarmen.</string>
     <string name="settings_alerts_supporting">Die Listen, aus denen dein Server einen Alarm macht.</string>
     <string name="settings_all_cameras_off">Auf der Benachrichtigungsseite deines Servers ist jede Kamera aus, also piept nichts.</string>
     <string name="settings_quiet_times">Ruhezeiten</string>
@@ -271,9 +271,9 @@
 
     <!-- Was die stille Benachrichtigung sagt, wenn nichts piept. -->
     <string name="alerts_all_cameras_off">Auf der Benachrichtigungsseite deines Servers ist jede Kamera aus, also piept nichts.</string>
-    <string name="alerts_no_alerts_on">Keine Kamera hat Alarme an, also piept nichts. „Auch bei Erkennungen piepen“ in den Einstellungen meldet stattdessen Erkennungen.</string>
-    <string name="alerts_no_alert_objects">Keine Kamera hat Alarm-Objekte, also piept nichts.</string>
-    <string name="alerts_watching_detections">%1$s für Erkennungen, also piept alles, was sie sehen.</string>
+    <string name="alerts_no_alerts_on">Keine Kamera hat Alarme an, also wird nichts gemeldet. Schalte in den Einstellungen Erkennungen ein, um über sie informiert zu werden.</string>
+    <string name="alerts_no_alert_objects">Keine Kamera hat Alarm-Objekte, also wird nichts gemeldet.</string>
+    <string name="alerts_watching_detections">%1$s für Erkennungen. Neue Ereignisse kommen, sobald sie passieren.</string>
     <string name="alerts_only_objects">Deine Objektliste ist der Grund, warum nichts piept. Ändere sie in Einstellungen, Nur diese Objekte.</string>
     <string name="alerts_all_cameras_hidden">Alle Kameras, die melden würden, sind auf diesem Telefon ausgeschaltet, also piept nichts. Schalte eine unter Einstellungen, Kameras wieder ein.</string>
 
@@ -640,6 +640,7 @@
     <string name="camsw_floodlight">Licht</string>
     <string name="camsw_floodlight_none">Keins</string>
     <string name="camsw_floodlight_pick">Ein Licht wählen</string>
+    <string name="camsw_light_search">Suchen</string>
     <string name="camsw_floodlight_detail">Welches Licht oder welcher Schalter in Home Assistant zu dieser Kamera gehört.</string>
     <string name="camsw_floodlight_set_up">Richte Home Assistant in den Einstellungen ein, um ein Licht zu wählen.</string>
     <string name="camsw_no_lights">Home Assistant hat keine Lichter oder Schalter.</string>

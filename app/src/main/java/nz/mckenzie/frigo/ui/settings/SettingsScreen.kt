@@ -598,7 +598,7 @@ fun SettingsScreen(
                 CardDivider()
 
                 // A server set up with detections alone sends no alert at all, so
-                // without this it would never buzz however the phone is set. Off
+                // without this it would never notify however the phone is set. Off
                 // until you ask, so the server's own alerts stay in charge.
                 Item(
                     icon = FrigoIcons.Motion,

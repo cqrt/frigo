@@ -79,7 +79,7 @@ class ServerPrefs(private val context: Context) {
 
     /**
      * The app's own switch for watching, and whether a review the server calls a
-     * detection buzzes as well as one it calls an alert.
+     * detection notifies as well as one it calls an alert.
      *
      * A server set up with detections alone never sends an alert, so it would stay
      * silent however the phone is set. This is the one switch that changes that,

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -43,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -60,6 +62,7 @@ import nz.mckenzie.frigo.ui.components.Item
 import nz.mckenzie.frigo.ui.components.OpenMark
 import nz.mckenzie.frigo.ui.components.attention
 import nz.mckenzie.frigo.ui.friendlyMessage
+import nz.mckenzie.frigo.ui.login.Field
 import nz.mckenzie.frigo.ui.relativeTime
 
 /**
@@ -104,11 +107,15 @@ fun CameraSwitchesScreen(
     var picking by remember { mutableStateOf(false) }
     var lights by remember { mutableStateOf<List<Light>?>(null) }
     var lightsProblem by remember { mutableStateOf<String?>(null) }
+    // A house can have a lot of lights, so the list is searched rather than
+    // scrolled. It starts empty each time the picker opens.
+    var lightSearch by remember { mutableStateOf("") }
 
     LaunchedEffect(picking) {
         if (!picking) return@LaunchedEffect
         lights = null
         lightsProblem = null
+        lightSearch = ""
         runCatching { container.repository.lightsFor(cameraName, title) }
             .onSuccess { lights = it }
             .onFailure { lightsProblem = it.friendlyMessage(context) }
@@ -376,32 +383,53 @@ fun CameraSwitchesScreen(
                             style = MaterialTheme.typography.bodyMedium,
                         )
 
-                        else -> Column(
-                            modifier = Modifier
-                                .heightIn(max = 320.dp)
-                                .verticalScroll(rememberScrollState()),
-                        ) {
-                            LightRow(
-                                name = stringResource(R.string.camsw_floodlight_none),
-                                chosen = light == null,
-                                onClick = {
-                                    picking = false
-                                    scope.launch {
-                                        container.repository.setCameraLight(cameraName, null)
-                                    }
-                                },
+                        else -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            // A house can have a lot of lights, and a list of them is
+                            // long. The search narrows it as you type, by the name
+                            // Home Assistant gave or by the entity's own id.
+                            Field(
+                                value = lightSearch,
+                                onValueChange = { lightSearch = it },
+                                label = stringResource(R.string.camsw_light_search),
+                                icon = FrigoIcons.Search,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                             )
-                            lights?.forEach { found ->
+                            val found = lights.orEmpty().filter { it.matches(lightSearch) }
+                            Column(
+                                modifier = Modifier
+                                    .heightIn(max = 320.dp)
+                                    .verticalScroll(rememberScrollState()),
+                            ) {
                                 LightRow(
-                                    name = found.label(lights.orEmpty()),
-                                    chosen = found.id == light,
+                                    name = stringResource(R.string.camsw_floodlight_none),
+                                    chosen = light == null,
                                     onClick = {
                                         picking = false
                                         scope.launch {
-                                            container.repository.setCameraLight(cameraName, found.id)
+                                            container.repository.setCameraLight(cameraName, null)
                                         }
                                     },
                                 )
+                                if (found.isEmpty()) {
+                                    Text(
+                                        text = stringResource(R.string.logs_no_match),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
+                                    )
+                                }
+                                found.forEach { found ->
+                                    LightRow(
+                                        name = found.label(lights.orEmpty()),
+                                        chosen = found.id == light,
+                                        onClick = {
+                                            picking = false
+                                            scope.launch {
+                                                container.repository.setCameraLight(cameraName, found.id)
+                                            }
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -414,6 +442,17 @@ fun CameraSwitchesScreen(
             },
         )
     }
+}
+
+/**
+ * Whether a light matches what has been typed: its name as Home Assistant gives it,
+ * or the entity's own id with the underscores read as spaces.
+ */
+private fun Light.matches(query: String): Boolean {
+    val wanted = query.trim().lowercase()
+    if (wanted.isEmpty()) return true
+    val said = id.lowercase().replace('_', ' ')
+    return name.lowercase().contains(wanted) || said.contains(wanted)
 }
 
 /** The eight switches, in the order they sit on the page, and each group's heading. */

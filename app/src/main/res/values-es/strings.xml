@@ -67,8 +67,8 @@
     <string name="settings_ai">Descripciones con IA</string>
     <string name="settings_ai_supporting">Con inteligencia artificial, Frigo describe lo que ve en tus alertas</string>
     <string name="settings_alerts_and_detections">Alertas y detecciones</string>
-    <string name="settings_detections">Avisar también de detecciones</string>
-    <string name="settings_detections_supporting">Un servidor configurado solo con detecciones nunca envía una alerta. Esto hace que también avisen.</string>
+    <string name="settings_detections">Detecciones</string>
+    <string name="settings_detections_supporting">Avisar de detecciones además de alertas.</string>
     <string name="settings_alerts_supporting">Las listas con las que tu servidor crea una alerta.</string>
     <string name="settings_all_cameras_off">Todas las cámaras están desactivadas en la página de notificaciones de tu servidor, así que no avisará nada.</string>
     <string name="settings_quiet_times">Horas de silencio</string>
@@ -270,9 +270,9 @@
 
     <!-- Lo que dice la notificación silenciosa cuando nada va a avisar. -->
     <string name="alerts_all_cameras_off">Todas las cámaras están desactivadas en la página de notificaciones de tu servidor, así que no avisará nada.</string>
-    <string name="alerts_no_alerts_on">Ninguna cámara tiene alertas activadas, así que no avisará nada. Avisar también de detecciones, en Ajustes, avisa de las detecciones.</string>
+    <string name="alerts_no_alerts_on">Ninguna cámara tiene alertas activadas, así que no avisará nada. Activa Detecciones en Ajustes para que te avise de ellas.</string>
     <string name="alerts_no_alert_objects">Ninguna cámara tiene objetos de alerta, así que no avisará nada.</string>
-    <string name="alerts_watching_detections">%1$s para detecciones, así que todo lo que vean avisará.</string>
+    <string name="alerts_watching_detections">%1$s para detecciones. Los eventos nuevos llegan según pasan.</string>
     <string name="alerts_only_objects">Tu lista de objetos es la razón de que no avise nada. Cámbiala en Ajustes, Solo estos objetos.</string>
     <string name="alerts_all_cameras_hidden">Todas las cámaras que avisarían están desactivadas en este teléfono, así que no avisará nada. Vuelve a activar una en Ajustes, Cámaras.</string>
 
@@ -639,6 +639,7 @@
     <string name="camsw_floodlight">Luz</string>
     <string name="camsw_floodlight_none">Ninguno</string>
     <string name="camsw_floodlight_pick">Elige una luz</string>
+    <string name="camsw_light_search">Buscar</string>
     <string name="camsw_floodlight_detail">Qué luz o interruptor de Home Assistant va con esta cámara.</string>
     <string name="camsw_floodlight_set_up">Configura Home Assistant en Ajustes para elegir una luz.</string>
     <string name="camsw_no_lights">Home Assistant no tiene luces ni interruptores.</string>
