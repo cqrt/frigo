@@ -344,11 +344,6 @@ fun CameraSwitchesScreen(
             title = { Text(stringResource(R.string.camsw_floodlight_pick)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = stringResource(R.string.camsw_floodlight_detail),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                     when {
                         homeAssistant == null -> Column(
                             verticalArrangement = Arrangement.spacedBy(4.dp),

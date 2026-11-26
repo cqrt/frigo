@@ -28,7 +28,7 @@
     <string name="settings_title">Einstellungen</string>
     <string name="settings_servers">Server</string>
     <string name="settings_no_sign_in">Dieser Server fragt keine Anmeldung</string>
-    <string name="settings_server_limited">Dieser Server hat nicht alles, was Frigo nutzt, deshalb fehlen einige Reiter und Zeilen.</string>
+    <string name="settings_server_limited">Älterer Server: einige Reiter und Zeilen fehlen.</string>
     <string name="oldserver_title">Dieser Server ist älter, als Frigo erwartet</string>
     <string name="oldserver_running">Er läuft auf %1$s. Frigo ist für %2$s und neuer geschrieben.</string>
     <string name="oldserver_what">Kameras und Clips gehen weiter. Review, Explore und die Seiten des Servers selbst vielleicht nicht, deshalb fehlen ihre Reiter und Zeilen.</string>
@@ -98,7 +98,7 @@
     <string name="settings_floodlights">Lichter</string>
     <string name="settings_home_assistant">Home Assistant</string>
     <string name="settings_home_assistant_off">Nicht eingerichtet</string>
-    <string name="settings_home_assistant_note">Das ist das Home Assistant des Hauses, nicht das deines Servers, deshalb nutzen es alle Server in Frigo.</string>
+    <string name="settings_home_assistant_note">Einmal einrichten, und alle Server in Frigo nutzen es.</string>
 
     <string name="settings_cameras">Kameras</string>
     <string name="settings_cameras_stale">Dein Server antwortet nicht. Das sind die Kameras, die dein Handy zuletzt gelesen hat, %1$s.</string>
@@ -254,7 +254,7 @@
     <string name="ha_save">Speichern</string>
     <string name="ha_saving">Wird gespeichert</string>
     <string name="ha_forget">Home Assistant entfernen</string>
-    <string name="ha_note">Frigo fragt Home Assistant, was ein Licht macht, und schaltet es ein und aus. Das Token bleibt auf diesem Telefon.</string>
+    <string name="ha_note">Die Live-Ansicht hat einen Knopf für das Licht einer Kamera. Der Token bleibt auf diesem Handy.</string>
 
     <!-- Was ein Speichern sagt, bevor es rausgeht, und was das Gerät antwortet. -->
     <string name="ha_error_address">Gib eine Adresse für Home Assistant ein.</string>
@@ -641,7 +641,6 @@
     <string name="camsw_floodlight_none">Keins</string>
     <string name="camsw_floodlight_pick">Ein Licht wählen</string>
     <string name="camsw_light_search">Suchen</string>
-    <string name="camsw_floodlight_detail">Welches Licht oder welcher Schalter in Home Assistant zu dieser Kamera gehört.</string>
     <string name="camsw_floodlight_set_up">Richte Home Assistant in den Einstellungen ein, um ein Licht zu wählen.</string>
     <string name="camsw_no_lights">Home Assistant hat keine Lichter oder Schalter.</string>
 

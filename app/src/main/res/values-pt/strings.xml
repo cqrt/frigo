@@ -27,7 +27,7 @@
     <string name="settings_title">Ajustes</string>
     <string name="settings_servers">Servidores</string>
     <string name="settings_no_sign_in">Este servidor não pede login</string>
-    <string name="settings_server_limited">Este servidor não tem tudo o que o Frigo usa, então faltam algumas abas e linhas.</string>
+    <string name="settings_server_limited">Servidor antigo: faltam algumas abas e linhas.</string>
     <string name="oldserver_title">Este servidor é mais antigo do que o Frigo espera</string>
     <string name="oldserver_running">Ele roda %1$s. O Frigo é feito para %2$s e posteriores.</string>
     <string name="oldserver_what">As câmeras e os clipes continuam funcionando. O Review, o Explore e as páginas do próprio servidor podem não funcionar, então suas abas e linhas não estão aqui.</string>
@@ -97,7 +97,7 @@
     <string name="settings_floodlights">Luzes</string>
     <string name="settings_home_assistant">Home Assistant</string>
     <string name="settings_home_assistant_off">Não configurado</string>
-    <string name="settings_home_assistant_note">Este é o Home Assistant da casa, não o do seu servidor, então todos os servidores no Frigo o usam.</string>
+    <string name="settings_home_assistant_note">Configure uma vez, e todos os servidores no Frigo o usam.</string>
 
     <string name="settings_cameras">Câmeras</string>
     <string name="settings_cameras_stale">Seu servidor não está respondendo. Estas são as câmeras que o celular leu por último, %1$s.</string>
@@ -253,7 +253,7 @@
     <string name="ha_save">Salvar</string>
     <string name="ha_saving">Salvando</string>
     <string name="ha_forget">Esquecer o Home Assistant</string>
-    <string name="ha_note">O Frigo pergunta ao Home Assistant o que uma luz está fazendo, e liga e desliga. O token fica neste telefone.</string>
+    <string name="ha_note">A vista ao vivo tem um botão para a luz de uma câmera. O token fica neste celular.</string>
 
     <!-- What a save says before it is sent, and what the box says back. -->
     <string name="ha_error_address">Digite um endereço para o Home Assistant.</string>
@@ -640,7 +640,6 @@
     <string name="camsw_floodlight_none">Nenhum</string>
     <string name="camsw_floodlight_pick">Escolher uma luz</string>
     <string name="camsw_light_search">Pesquisar</string>
-    <string name="camsw_floodlight_detail">Qual luz ou interruptor do Home Assistant vai com esta câmera.</string>
     <string name="camsw_floodlight_set_up">Configure o Home Assistant nas definições para escolher uma luz.</string>
     <string name="camsw_no_lights">O Home Assistant não tem luzes nem interruptores.</string>
 

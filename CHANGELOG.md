@@ -8,6 +8,12 @@ released, so the notes are never left to memory.
 One line per change, in a sentence you'd say out loud. Anything you'd have to
 explain, leave out.
 
+## 0.25.3
+
+- The line under Home Assistant says the box is set up once for every server, and the Home Assistant page says what the light button gives you.
+- The light picker drops the sentence under its title; the title, the search and the list say enough.
+- On an old server, Settings says Older server: some tabs and rows are missing.
+
 ## 0.25.2
 
 - The light picker has a search box, so a camera's light is found rather than scrolled for in a house with a lot of them.

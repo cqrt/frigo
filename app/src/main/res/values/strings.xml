@@ -27,7 +27,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_servers">Servers</string>
     <string name="settings_no_sign_in">No sign-in on this server</string>
-    <string name="settings_server_limited">This server doesn\'t have everything Frigo uses, so some tabs and rows aren\'t here.</string>
+    <string name="settings_server_limited">Older server: some tabs and rows are missing.</string>
     <!-- A server older than the oldest Frigate Frigo supports, said once. -->
     <string name="oldserver_title">This server is older than Frigo expects</string>
     <string name="oldserver_running">It\'s running %1$s. Frigo is written for %2$s and later.</string>
@@ -98,7 +98,7 @@
     <string name="settings_floodlights">Lights</string>
     <string name="settings_home_assistant">Home Assistant</string>
     <string name="settings_home_assistant_off">Not set up</string>
-    <string name="settings_home_assistant_note">This is the house\'s Home Assistant, not your server\'s, so every server in Frigo uses it.</string>
+    <string name="settings_home_assistant_note">Set it up once, and every server in Frigo uses it.</string>
 
     <string name="settings_cameras">Cameras</string>
     <string name="settings_cameras_stale">Your server isn\'t answering. These are the cameras your phone last read, %1$s.</string>
@@ -254,7 +254,7 @@
     <string name="ha_save">Save</string>
     <string name="ha_saving">Saving</string>
     <string name="ha_forget">Forget Home Assistant</string>
-    <string name="ha_note">Frigo asks Home Assistant what a light is doing, and turns it on and off. The token stays on this phone.</string>
+    <string name="ha_note">Live view gets a button for a camera\'s light. The token stays on this phone.</string>
 
     <!-- What a save says before it is sent, and what the box says back. -->
     <string name="ha_error_address">Enter an address for Home Assistant.</string>
@@ -641,7 +641,6 @@
     <string name="camsw_floodlight_none">None</string>
     <string name="camsw_floodlight_pick">Pick a light</string>
     <string name="camsw_light_search">Search</string>
-    <string name="camsw_floodlight_detail">Which light or switch in Home Assistant goes with this camera.</string>
     <string name="camsw_floodlight_set_up">Set up Home Assistant in Settings to pick a light.</string>
     <string name="camsw_no_lights">Home Assistant has no lights or switches.</string>
 
